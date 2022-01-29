@@ -13,7 +13,7 @@ D2 = H2_boundary_matrix(edges=R['edges'], triangles=R['triangles'])
 
 R1, R2, V1, V2 = _reduction_naive(D1, D2)
 
-is_reduced(R1)
+is_reduced(D1)
 is_reduced(R2)
 
 piv = np.array([low_entry(R2, j) for j in range(R2.shape[1])], dtype=int)
