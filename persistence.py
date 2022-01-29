@@ -169,32 +169,58 @@ def rips(X: ArrayLike, r: float = np.inf, d: int = 1):
   }
   return(result)
 
-
-
-
-def low_entry(j: int, D: csc_matrix):
+def low_entry(D: csc_matrix, j: int):
   """ Provides O(1) access to low entries of D """
   assert isinstance(D, csc_matrix)
   nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
   return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
 
-def reduction(D1: csc_matrix, D2: csc_matrix):
-  assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), 
+def _reduction_naive(D1: csc_matrix, D2: csc_matrix):
+  assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
   assert D1.shape[1] == D2.shape[0], "Must be matching boundary matrices"
   n, m, k = D1.shape[0], D2.shape[0], D2.shape[1]
-  V1, V2 = sps.identity(m), sps.identity(k)
-
-  piv1 = np.array([low_entry(j, D1) for j in range(m)], dtype=int)
-  piv2 = np.array([low_entry(j, D2) for j in range(k)], dtype=int)
+  V1, V2 = sps.identity(m).tocsc(), sps.identity(k).tocsc()
+  piv1 = np.array([low_entry(D1,j) for j in range(m)], dtype=int)
 
   ## Reduce D1
   for j in range(1, m):
     while( piv1[j] != -1 and np.any(J := piv1[:j] == piv1[j]) ):
-      jj = np.flatnonzero(J)[0] # guarenteed to exist
-      
-      raise ValueError("test")
+      i = np.flatnonzero(J)[0] # i < j
+      c = D1[piv1[j],j] / D1[piv1[i],i]
+      D1[:,j] -= c*D1[:,i] # real-valued case
+      V1[:,j] -= c*V1[:,i] # also do V1
+      D1.eliminate_zeros() # needed to changes the indices
+      piv1[j] = -1 if len(D1[:,j].indices) == 0 else D1[:,j].indices[-1]
 
   ## Reduce D2
+  piv2 = np.array([low_entry(D2,j) for j in range(k)], dtype=int)
+  for j in range(1, k):
+    while( piv2[j] != -1 and np.any(J := piv2[:j] == piv2[j]) ):
+      i = np.flatnonzero(J)[0] # i < j
+      c = D2[piv2[j],j] / D2[piv2[i],i]
+      D2[:,j] -= c*D2[:,i] # real-valued case
+      V2[:,j] -= c*V2[:,i] # also do V1
+      D2.eliminate_zeros() # needed to changes the indices
+      piv2[j] = D2[:,j].indices[-1] if len(D2[:,j].indices) == 0 else -1 
+
+  return((D1, D2, V1, V2))
+
+## Add persistent pairs
+# I1 = D1.indices[D1.indptr[1]:D1.indptr[2]]
+# I2 = D1.indices[D1.indptr[2]:D1.indptr[3]]
+# np.bitwise_xor
+# np.setxor1d(I1, I2)
+# D1[:,2] = D1[:,2] + D1[:,3]
+# raise ValueError("test")
+
+
+def is_reduced(R: csc_matrix) -> bool:
+  """ Checks if a matrix R is indeed reduced. """
+  assert isinstance(R, csc_matrix), "R must be a CSC sparse matrix."
+  R.eliminate_zeros() # fix indices if need be
+  low_ind = np.array([low_entry(R, j) for j in range(R.shape[1])], dtype=int)
+  low_ind = low_ind[low_ind != -1]
+  return(len(np.unique(low_ind)) == len(low_ind))
 
 # class Reduction():
 #   def __init__(D0: csc_matrix, D1: csc_matrix): # boundary matrix

@@ -5,11 +5,14 @@
 \usepackage{hyperref}
 \usepackage{url}
 
+\usepackage{titlesec}
+\titlelabel{\thetitle.\quad}
+
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
-\let\oldref\ref
-\renewcommand{\ref}[1]{(\oldref{#1})}
+%\let\oldref\ref
+%\renewcommand{\ref}[1]{((\oldref{#1}))}
 
 \newcommand\sbullet[1][.5]{\mathbin{\vcenter{\hbox{\scalebox{#1}{$\bullet$}}}}}
 \newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
@@ -29,7 +32,7 @@ $<$ insert motivating examples, etc $>$
 % Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
 % Towards understanding its dynamic, one may ask whether one can infer properties of the underlying evolving system
 
-\section*{Introduction}
+\section{Introduction}
 
 
  %by tracing changes in the geometry of 
@@ -64,11 +67,11 @@ Recall the $p$-th persistent Betti number between scales $(b,d)$ is defined as:
 	&= \mathrm{dim} \left( Z_p(X_b) / (Z_p(X_b) \cap B_p(X_d) \right) \\
 	& \numberthis = \mathrm{dim} \left( Z_p(X_b) \right) - \mathrm{dim}\left( Z_p(X_b) \cap B_p(X_d) \right ) \label{eq:pb2}
 \end{align*}
-Note we may rewrite~\ref{eq:pb2} with a straightforward application of the rank-nullity theorem:
+Note we may rewrite~\eqref{eq:pb2} with a straightforward application of the rank-nullity theorem:
 \begin{equation} \label{eq:pb3}
 \beta_p^{b,d} = \mathrm{dim} \left( C_p(X_b) \right) - \mathrm{dim} \left( B_p(X_b) \right) - \mathrm{dim}\left( Z_p(X_b) \cap B_p(X_d) \right )  
 \end{equation}
-Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_p(X_b)$ and $Z_p(X_b) \cap B_p(X_d)$, respectively. We address their computation in section~\ref{}. Observe that equation~\ref{eq:pb3} can be written as: 
+Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_p(X_b)$ and $Z_p(X_b) \cap B_p(X_d)$, respectively. We address their computation in section~\eqref{}. Observe that equation~\eqref{eq:pb3} can be written as: 
 \begin{align}
 	\beta_p^{b,d} &= \lvert \, \partial_p^b \, \rvert - \mathrm{rank}(\partial_p^b) - \mathrm{rank}(\partial_p^{b,d}) \\
 	&= \lvert \, \partial_p^b \, \rvert - \left( \mathrm{rank}(\partial_p^b) + \mathrm{rank}(\partial_p^{b,d}) \right) \\
@@ -81,20 +84,29 @@ Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span 
 		0 & \partial_p^{b,d}
 	\end{array}\right] \right) \label{eq:block_pb}
 \end{align}
-Thus, the persistence Betti number can be expressed as a difference between a simple quantity to compute and the rank of a particular matrix. A remarkable result established by~\cite{} show that the $\mathrm{rank}(\cdot)$ function is lower-bounded by the convex envelope... [describe this more in detail]
+where here we use $\lvert \, M \, \rvert = \mathrm{dim}(\mathrm{dom}(M))$. Thus, in the Rips-specific setting, the persistence Betti number can be expressed as a difference between the number of $p$-simplices satisfying $\{ \mathrm{diam}(\sigma) \leq b \}$ for some fixed $b \in \mathbb{R}_+$ and the rank of a particular block matrix. 
+\\
+\\
 % Thus, after suitable normalization, the right-most term of equation~\ref{eq:block_pb} can be relaxed to a convex function. 
-
 % The columns of $\partial_p^\ast$ span $C_p(X_\ast)$, thus 
 % Let $\mathcal{N}(\cdot)$ and $\mathcal{R}(\cdot)$ denote the null-space of column-space of its arguments, respectively. 
+\noindent \textbf{Continuous Relaxation:} Ideally, we would like an expression akin to equation~\eqref{eq:block_pb} that is amenable to optimization.
 
-\subsection*{Relaxation}
-\noindent We would like a continuous relaxation of equation~\ref{eq:block_pb} amenable to optimization.
+A remarkable result established by~\cite{} show that the $\mathrm{rank}(\cdot)$ function is lower-bounded by the convex envelope... [describe this more in detail]
 
+\section{Computation}
 \subsection*{Bases computation}
 In this section, we discuss the computation of suitable bases for the subspaces $Z_p(X_\ast)$, $B_p(X_\ast)$, and $Z_p(X_\ast) \cap B_p(X_\ast)$. In particular, we address two cases: the \emph{dense} case, wherein the aforementioned bases are represented densely in memory, and the \emph{sparse} case, which uses the structure of a particular decomposition of the boundary matrices to derive bases whose size in memory inherits the sparsity pattern of the decomposition.
 \\
 \\
 \textbf{Dense case:} 
+$<$ TODO $>$
+
+\textbf{Sparse case:} 
+$<$ TODO $>$
+
+\appendix
+\section{Appendix}
 
 \subsection*{Dynamic Metric Spaces}
 Consider an $\mathbb{R}$-parameterized metric space $\delta_X = ( X, d_X(\cdot) )$ where
