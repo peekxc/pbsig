@@ -15,19 +15,6 @@ from itertools import combinations
 from scipy.special import binom
 from scipy.spatial.distance import pdist
 
-
-# def boundary_matrix(S: Iterable, F: Iterable):
-#   """
-#   Creates a p-boundary matrix (CSC format) from an iterable of simplices.
-
-#   Assumes S only enumerates p-simplices.
-
-#   Parameters:
-#     S := Iterable over p-simplices
-#     F := Iterable over (p-1)-faces
-#   """ 
-#   array('I')
-
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
   return(int(n*i - i*(i+1)/2 + j - i - 1))
@@ -169,16 +156,19 @@ def rips(X: ArrayLike, r: float = np.inf, d: int = 1):
   }
   return(result)
 
-def low_entry(D: csc_matrix, j: int):
+def low_entry(D: csc_matrix, j: Optional[int] = None):
   """ Provides O(1) access to low entries of D """
   assert isinstance(D, csc_matrix)
-  nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
-  return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
+  if j is None: 
+    return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
+  else: 
+    nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
+    return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
 
-def _pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
+def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
   assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
   assert R.shape[1] == V.shape[0], "Must be matching boundary matrices"
-  n, m = R.shape
+  m = R.shape[1]
   I = range(1, m) if I is None else I
   piv = np.array([low_entry(R, j) for j in range(m)], dtype=int)
   for j in I:
@@ -189,51 +179,32 @@ def _pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
       V[:,j] -= c*V[:,i] 
       R.eliminate_zeros() # needed to changes the indices
       piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
+  return(None)
 
-def _reduction_naive(D1: csc_matrix, D2: csc_matrix):
+def reduction_pHcol(D1: csc_matrix, D2: csc_matrix):
   assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
   assert D1.shape[1] == D2.shape[0], "Must be matching boundary matrices"
-  n, m, k = D1.shape[0], D2.shape[0], D2.shape[1]
-  V1, V2 = sps.identity(m).tocsc(), sps.identity(k).tocsc()
+  V1, V2 = sps.identity(D1.shape[1]).tocsc(), sps.identity(D2.shape[1]).tocsc()
   R1, R2 = D1.copy(), D2.copy()
-  _pHcol(R1, V1)
-  _pHcol(R2, V2)
+  pHcol(R1, V1)
+  pHcol(R2, V2)
   return((R1, R2, V1, V2))
 
-  # piv1 = np.array([low_entry(D1,j) for j in range(m)], dtype=int)
-
-
-  ## Reduce D1
-  # for j in range(1, m):
-  #   while( piv1[j] != -1 and np.any(J := piv1[:j] == piv1[j]) ):
-  #     i = np.flatnonzero(J)[0] # i < j
-  #     c = D1[piv1[j],j] / D1[piv1[i],i]
-  #     D1[:,j] -= c*D1[:,i] # real-valued case
-  #     V1[:,j] -= c*V1[:,i] # also do V1
-  #     D1.eliminate_zeros() # needed to changes the indices
-  #     piv1[j] = -1 if len(D1[:,j].indices) == 0 else D1[:,j].indices[-1]
-
-  ## Reduce D2
-  # piv2 = np.array([low_entry(D2,j) for j in range(k)], dtype=int)
-  # for j in range(1, k):
-  #   while( piv2[j] != -1 and np.any(J := piv2[:j] == piv2[j]) ):
-  #     i = np.flatnonzero(J)[0] # i < j
-  #     c = D2[piv2[j],j] / D2[piv2[i],i]
-  #     D2[:,j] -= c*D2[:,i] # real-valued case
-  #     V2[:,j] -= c*V2[:,i] # also do V1
-  #     D2.eliminate_zeros() # needed to changes the indices
-  #     piv2[j] = -1 if len(D2[:,j].indices) == 0 else D2[:,j].indices[-1]
-
-  return((D1, D2, V1, V2))
-
-## Add persistent pairs
-# I1 = D1.indices[D1.indptr[1]:D1.indptr[2]]
-# I2 = D1.indices[D1.indptr[2]:D1.indptr[3]]
-# np.bitwise_xor
-# np.setxor1d(I1, I2)
-# D1[:,2] = D1[:,2] + D1[:,3]
-# raise ValueError("test")
-
+def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
+  """ 
+  D must be given as an iterable of boundary matrices given in decreasing dimensions
+  """
+  R, V = [], []
+  cleared = np.array([], dtype=int)
+  for Dp in D:
+    m_p = Dp.shape[1] 
+    Rp, Vp = Dp.copy(), sps.identity(m_p).tocsc()
+    uncleared = filter(lambda p: not(p in cleared), range(m_p))
+    pHcol(Rp, Vp, uncleared)
+    R.append(Rp)
+    V.append(Vp)
+    cleared = filter(lambda p: p != -1, low_entry(Rp))
+  return((R, V))
 
 def is_reduced(R: csc_matrix) -> bool:
   """ Checks if a matrix R is indeed reduced. """
@@ -243,7 +214,51 @@ def is_reduced(R: csc_matrix) -> bool:
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
 
+#ind = np.setdiff1d(np.fromiter(range(Rp.shape[1]), dtype=int), cleared)
+#low_p = np.array([low_entry(Rp, j) for j in range(Rp.shape[1])], dtype=int)
+#cleared = low_p[low_p != -1]
+
+# piv1 = np.array([low_entry(D1,j) for j in range(m)], dtype=int
+## Reduce D1
+# for j in range(1, m):
+#   while( piv1[j] != -1 and np.any(J := piv1[:j] == piv1[j]) ):
+#     i = np.flatnonzero(J)[0] # i < j
+#     c = D1[piv1[j],j] / D1[piv1[i],i]
+#     D1[:,j] -= c*D1[:,i] # real-valued case
+#     V1[:,j] -= c*V1[:,i] # also do V1
+#     D1.eliminate_zeros() # needed to changes the indices
+#     piv1[j] = -1 if len(D1[:,j].indices) == 0 else D1[:,j].indices[-1]
+## Reduce D2
+# piv2 = np.array([low_entry(D2,j) for j in range(k)], dtype=int)
+# for j in range(1, k):
+#   while( piv2[j] != -1 and np.any(J := piv2[:j] == piv2[j]) ):
+#     i = np.flatnonzero(J)[0] # i < j
+#     c = D2[piv2[j],j] / D2[piv2[i],i]
+#     D2[:,j] -= c*D2[:,i] # real-valued case
+#     V2[:,j] -= c*V2[:,i] # also do V1
+#     D2.eliminate_zeros() # needed to changes the indices
+#     piv2[j] = -1 if len(D2[:,j].indices) == 0 else D2[:,j].indices[-1]
+
+## Add persistent pairs
+# I1 = D1.indices[D1.indptr[1]:D1.indptr[2]]
+# I2 = D1.indices[D1.indptr[2]:D1.indptr[3]]
+# np.bitwise_xor
+# np.setxor1d(I1, I2)
+# D1[:,2] = D1[:,2] + D1[:,3]
+# raise ValueError("test")
+
 # class Reduction():
 #   def __init__(D0: csc_matrix, D1: csc_matrix): # boundary matrix
     
 
+# def boundary_matrix(S: Iterable, F: Iterable):
+#   """
+#   Creates a p-boundary matrix (CSC format) from an iterable of simplices.
+
+#   Assumes S only enumerates p-simplices.
+
+#   Parameters:
+#     S := Iterable over p-simplices
+#     F := Iterable over (p-1)-faces
+#   """ 
+#   array('I')
