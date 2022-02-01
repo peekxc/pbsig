@@ -1,37 +1,55 @@
 import numpy as np
+from scipy.spatial.distance import pdist
 from persistence import *
+import persistence as pers
 
-X = np.random.uniform(size=(20, 2))
-R = rips(X, d=2)
+X = np.random.uniform(size=(15, 2))
+K = rips(X, r=np.max(pdist(X))*0.15, d=2)
 
-D1 = H1_boundary_matrix(vertices=R['vertices'], edges=R['edges'])
-D2 = H2_boundary_matrix(edges=R['edges'], triangles=R['triangles'])
+D1 = H1_boundary_matrix(vertices=K['vertices'], edges=K['edges'])
+D2 = H2_boundary_matrix(edges=K['edges'], triangles=K['triangles'])
 
 # D1 = D1.astype(bool)
 # D2 = D2.astype(bool)
 
-
+## Regular reduction algorithm
 R1, R2, V1, V2 = reduction_pHcol(D1, D2)
-
+print(pers._reduce_perf['n_col_adds'])
 is_reduced(R1)
 is_reduced(R2)
 np.sum((D1 @ V1) - R1) == 0.0
 np.sum((D2 @ V2) - R2) == 0.0
-
 np.allclose(V1.A, np.triu(V1.A))
 np.allclose(V2.A, np.triu(V2.A))
 
-piv = np.array([low_entry(R2, j) for j in range(R2.shape[1])], dtype=int)
-
-
+## pHcol w/ clearing
 R, V = reduction_pHcol_clearing([D2, D1])
+print(pers._perf['n_col_adds'])
+is_reduced(R[0])
+is_reduced(R[1])
+np.sum((D1 @ V[1]) - R[1]) == 0.0
+np.sum((D2 @ V[0]) - R[0]) == 0.0
+np.allclose(V[0].A, np.triu(V[0].A))
+np.allclose(V[1].A, np.triu(V[1].A))
 
 
+## Coboundary matrix construction 
+C1 = H1_boundary_matrix(vertices=K['vertices'], edges=K['edges'], coboundary=True)
+C2 = H2_boundary_matrix(edges=K['edges'], triangles=K['triangles'], coboundary=True)
+R, V = reduction_pHcol_clearing([C2, C1])
+print(pers._perf['n_col_adds'])
+is_reduced(R[0])
+is_reduced(R[1])
+np.sum((C1 @ V[1]) - R[1]) == 0.0
+np.sum((C2 @ V[0]) - R[0]) == 0.0
+np.allclose(V[1].A, np.triu(V[1].A))
+np.allclose(V[0].A, np.triu(V[0].A))
 
 ## weighted boundary matrices
 D1 = H1_boundary_matrix(vertices=R['vertices'], edges=R['edges'])
 b = np.max(pdist(X))/10.0
 edge_weights = pdist(X)[np.array([rank_C2(u,v,X.shape[0]) for u,v in R['edges']], dtype=int)]
+
 
 # D1.data = D1.data*(b - np.repeat(edge_weights,2))
 D1 = D1[:, np.argsort(edge_weights)]

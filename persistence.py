@@ -15,6 +15,12 @@ from itertools import combinations
 from scipy.special import binom
 from scipy.spatial.distance import pdist
 
+
+_perf = {
+  "n_col_adds" : 0,
+  "n_field_ops": 0
+}
+
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
   return(int(n*i - i*(i+1)/2 + j - i - 1))
@@ -177,6 +183,7 @@ def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
       c = R[piv[j],j] / R[piv[i],i]
       R[:,j] -= c*R[:,i] 
       V[:,j] -= c*V[:,i] 
+      _perf['n_col_adds'] += 2
       R.eliminate_zeros() # needed to changes the indices
       piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
   return(None)
@@ -199,11 +206,11 @@ def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
   for Dp in D:
     m_p = Dp.shape[1] 
     Rp, Vp = Dp.copy(), sps.identity(m_p).tocsc()
-    uncleared = filter(lambda p: not(p in cleared), range(m_p))
+    uncleared = np.array(list(filter(lambda p: not(p in cleared), range(m_p))))
     pHcol(Rp, Vp, uncleared)
     R.append(Rp)
     V.append(Vp)
-    cleared = filter(lambda p: p != -1, low_entry(Rp))
+    cleared = np.array(list(filter(lambda p: p != -1, low_entry(Rp))))
   return((R, V))
 
 def is_reduced(R: csc_matrix) -> bool:
@@ -213,6 +220,19 @@ def is_reduced(R: csc_matrix) -> bool:
   low_ind = np.array([low_entry(R, j) for j in range(R.shape[1])], dtype=int)
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
+
+
+def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
+  """
+  Given an iterable of reduced matrices 'R', a simplicial complex 'K', and optionally a 
+  list of function values 'F', reads off the persistence diagram of 'K' from 'R'. 
+
+  If cohomology = True, then the reduced matrices are expected to be reduced coboundary matrices. 
+
+  If F is given, then the persistence pairs are returned as function persistence.
+  """
+  # p_birth = np.where(low_entry(R1) == -1)
+  # p_death = 
 
 #ind = np.setdiff1d(np.fromiter(range(Rp.shape[1]), dtype=int), cleared)
 #low_p = np.array([low_entry(Rp, j) for j in range(Rp.shape[1])], dtype=int)
