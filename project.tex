@@ -11,6 +11,7 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
+\newtheorem{remark}{Remark}
 %\let\oldref\ref
 %\renewcommand{\ref}[1]{((\oldref{#1}))}
 
@@ -26,14 +27,50 @@
 \begin{document}
 \noindent
 
-% \section*{Motivation}
+\section{Motivation}
 $<$ insert motivating examples, etc $>$
 
 % Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
 % Towards understanding its dynamic, one may ask whether one can infer properties of the underlying evolving system
+\section{Background \& Notation}
+% \textbf{Persistent Homology:}
+A \emph{simplicial complex} $K$ is a collection of simplices $\{\sigma\}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$. A $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$. The collection of $p$-chains under addition yields an $\mathbb{F}$-vector space denoted $C_p(K)$. 
+The $p$-boundary $\partial_p(\sigma)$ of a $p$-simplex $\sigma\in K$ is the alternating sum of its oriented co-dimension 1 faces, and the $p$-boundary of a $p$-chain is defined linearly in terms of its constitutive simplices. 
+A $p$-chain with zero boundary is called a $p$-cycle, and together they form $Z_p(K) = \mathrm{Ker}\,\partial_p$. Similarly, the collection of $p$-boundaries forms  $B_p(K) = \mathrm{Im}\,\partial_{p+1}$. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, then the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is well-defined, and called the $p$-th homology of $K$ with coefficients in $\mathbb{F}$. 
+
+A \emph{filtration} $K_\bullet$ of a simplicial complex $K$ is a function $f : K \to \mathbb{R}$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$. Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
+\begin{equation}
+	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet
+\end{equation} 
+where $K_i  = K_{i-1} \cup \{\sigma_i\}$. For every pair $i,j \in [m]$ with $i < j$, the inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j}$  at the level of homology:
+\begin{equation}
+	0 = H_p(K_1) \to H_p(K_2) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) 
+\end{equation}
+The $p$-th persistent homology groups are the images of these transformations: $H_{p}^{i,j} = \mathrm{Im}\,h_p^{i,j}$. 
+When persistent homology is considered with field coefficients $\mathbb{F}$, the sequence of homology groups admits a unique decomposition of $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$~\cite{}. These pairs demarcate the evolution of homology classes: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}. For a fixed $p \geq 0$, the collection of persistent pairs $(f(\sigma_i), f(\sigma_j))$ together with unpaired simplices $(f(\sigma_l), \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}.
+
+\begin{remark}
+\normalfont In practice, filtrations often arise from triangulations parameterized by geometric scaling parameters, and references to the ``persistence'' of a given homology class actually refers to its lifetime $\lvert f(\sigma_i) - f(\sigma_j) \rvert$ with respect to the scaling parameter.
+$<$TODO: introduce Rips, switch notation accordingly $>$
+
+For a fixed $t \in \mathrm{T}$, the \emph{Vietoris-Rips} complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
+$$\mathrm{Rips_{\epsilon}}(d_X(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \} $$ 
+\noindent Connecting successive complexes via inclusion maps $\mathrm{Rips_{\epsilon}}(d_X(t)) \hookrightarrow \mathrm{Rips_{\epsilon'}}(d_X(t))$ for $\epsilon < \epsilon'$ yields a family of complexes $\mathrm{Rips}_{\alpha} := \{ \, \mathrm{Rips}_\epsilon(d_X(t)) \, \}_{\epsilon \leq \alpha}$ which we call the \emph{Vietoris-Rips filtration at time $t$}. 
+These inclusions induce linear maps at level of homology, i.e. 
+$$ \mathrm{H}_p(\mathrm{Rips}_{\epsilon}(d_X(t))) \to \mathrm{H}_p(\mathrm{Rips}_{\epsilon'}(d_X(t))) \to \dots \to \mathrm{H}_p(\mathrm{Rips}_{\alpha}(d_X(t)))$$ 
+where $0 \leq \epsilon \leq \epsilon' \leq \alpha$. 
+
+\end{remark} 
+
+%Note that if $i = j$, then $H_{p}^{i,j} = H_{p}(K_i) = H_{p}(K_i)$ is   just the ``standard'' homology. 
+% Simplices whose inclusion in the filtration creates a new homology class are called \emph{creators}, and simplices that destroy homology classes are   called \emph{destroyers}. 
+% The filtration indices of these creators/destroyers are referred to as \emph{birth} and \emph{death} times, respectively. 
+%The collection of birth/death pairs $(i,j)$ is denoted $\mathrm{dgm}_p(K)$, and referred to as the $p$-th \emph{persistence diagram} of $K$.
+%If a homology class is born at time $i$ and dies entering time $j$, the difference $\lvert i - j \rvert$ is called the \emph{persistence} of that class.
+
+
 
 \section{Introduction}
-
 
  %by tracing changes in the geometry of 
 
@@ -41,14 +78,16 @@ $<$ insert motivating examples, etc $>$
 
 % Towards understanding the behavior of such a collection of points 
 
-Let $\delta_X$ denote an $\mathrm{T}$-parameterized metric space $\delta_X = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x'): \mathbb{R} \to \mathbb{R}_{+}$ is continuous for every pair $x, x' \in X$ and, for every $t \in \mathrm{T}$, $(X, d_X(t))$ is a pseudo-metric space. 
-For a fixed $t \in \mathrm{T}$, the \emph{Vietoris-Rips} complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
-$$\mathrm{Rips_{\epsilon, t}}(X, d_X(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \} $$ 
-\noindent By connecting successive complexes via inclusion maps $\mathrm{Rips_{\epsilon, t}} \hookrightarrow \mathrm{Rips_{\epsilon', t}}$ for $\epsilon < \epsilon'$, one obtains a family of complexes is called the \emph{Vietoris-Rips filtration} $\mathrm{Rips}_{\alpha, t} := \{ \mathrm{Rips}_\epsilon \}_{\epsilon \leq \alpha}$ as some fixed $t \in \mathrm{T}$. 
-These inclusions induce maps at level of homology, i.e. 
-$$ \mathrm{H}_p(\mathrm{Rips}_{\epsilon, t}) \hookrightarrow \mathrm{H}_p(\mathrm{Rips}_{\epsilon', t}) \hookrightarrow \dots \hookrightarrow \mathrm{H}_p(\mathrm{Rips}_{\alpha, t})$$ 
-where $0 \leq \epsilon \leq \epsilon' \leq \alpha$. The $p$th \emph{Betti number} is defined as the dimension of any of these homology groups $\beta_p = \mathrm{dim}(H_p(\mathrm{Rips}_{\alpha, t})))$. By restricting our attention to the persistent homology groups which were born before $b \in \mathbb{R}$ and died after $d \in \mathbb{R}$, we obtain the $p$-th \emph{persistent Betti number} with respect to $(b,d)$ at time $t \in \mathrm{T}$: 
-$$ \beta_{p}^{b,d} = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ d_X \right)(t)$$
+Suppose one is given a time-varying metric space $(X, d_X(\cdot))$ and is interested in finding an instance in time where the persistence diagram contains many highly persistent pairs. 
+
+
+Formally, let $\delta_X$ denote an $\mathrm{T}$-parameterized metric space $\delta_X = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x'): \mathbb{R} \to \mathbb{R}_{+}$ is continuous for every pair $x, x' \in X$ and $(X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
+
+
+The $p$th \emph{Betti number} is defined as the dimension of any of these homology groups $\beta_p = \mathrm{dim}(H_p(\mathrm{Rips}_{\alpha})))$. 
+
+By restricting our attention to the persistent homology groups which were born before $b \in \mathbb{R}$ and died after $d \in \mathbb{R}$, we obtain the $p$-th \emph{persistent Betti number} with respect to $(b,d)$ as a function of $t \in \mathrm{T}$: 
+$$ \beta_{p}^{b,d}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ d_X \right)(t)$$
 This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, b] \times (d, \infty)$  on the collection of all persistence diagrams for varying $t \in \mathrm{T}$.
 We consider the problem of maximizing the $p$-th \emph{persistent} Betti number $\beta^{b,d}_p$ over $\mathrm{T}$: 
 \begin{equation}
@@ -58,20 +97,20 @@ Since Betti numbers are integer-valued invariants, direct optimization is diffic
 Nonetheless, the differentiability of persistence has been studied extensively in [show chain rule paper on persistence diagrams]...
 
 \subsection*{A motivating derivation}
-For the moment, we omit the subscript $t \in \mathrm{T}$ and focus our attention on a particular instance in time. Let $B_p(X_\ast) \subseteq Z_p(X_\ast) \subseteq C_p(X_\ast)$ denote the $p$-th boundary, cycle, and chain groups of $X_\ast$, respectively. 
-Given a simplicial filtration $X_{\bullet}$, let boundary operator $\partial_p : C_p( X_{\bullet}) \to C_p(X_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
+For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. Let $B_p(K_\ast) \subseteq Z_p(K_\ast) \subseteq C_p(K_\ast)$ denote the $p$-th boundary, cycle, and chain groups of $K_\ast$, respectively. 
+Given a simplicial filtration $K_{\bullet}$, let boundary operator $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
 With a slight abuse of notation, we use $\partial_p$ to also denote the filtration boundary matrix with respect to the ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
-Recall the $p$-th persistent Betti number between scales $(b,d)$ is defined as: 
+The $p$-th persistent Betti number between scales $(b,d)$ is defined as: 
 \begin{align*}
 	\beta_p^{b,d} &= \mathrm{dim}(H_p^{b,d}) \\
-	&= \mathrm{dim} \left( Z_p(X_b) / (Z_p(X_b) \cap B_p(X_d) \right) \\
-	& \numberthis = \mathrm{dim} \left( Z_p(X_b) \right) - \mathrm{dim}\left( Z_p(X_b) \cap B_p(X_d) \right ) \label{eq:pb2}
+	&= \mathrm{dim} \left( Z_p(K_b) / (Z_p(K_b) \cap B_p(K_d) \right) \\
+	& \numberthis = \mathrm{dim} \left( Z_p(K_b) \right) - \mathrm{dim}\left( Z_p(K_b) \cap B_p(K_d) \right ) \label{eq:pb2}
 \end{align*}
 Note we may rewrite~\eqref{eq:pb2} with a straightforward application of the rank-nullity theorem:
 \begin{equation} \label{eq:pb3}
-\beta_p^{b,d} = \mathrm{dim} \left( C_p(X_b) \right) - \mathrm{dim} \left( B_p(X_b) \right) - \mathrm{dim}\left( Z_p(X_b) \cap B_p(X_d) \right )  
+\beta_p^{b,d} = \mathrm{dim} \left( C_p(K_b) \right) - \mathrm{dim} \left( B_p(K_b) \right) - \mathrm{dim}\left( Z_p(K_b) \cap B_p(K_d) \right )  
 \end{equation}
-Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_p(X_b)$ and $Z_p(X_b) \cap B_p(X_d)$, respectively. We address their computation in section~\eqref{}. Observe that equation~\eqref{eq:pb3} can be written as: 
+Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_p(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\eqref{}. Observe that equation~\eqref{eq:pb3} can be written as: 
 \begin{align}
 	\beta_p^{b,d} &= \lvert \, \partial_p^b \, \rvert - \mathrm{rank}(\partial_p^b) - \mathrm{rank}(\partial_p^{b,d}) \\
 	&= \lvert \, \partial_p^b \, \rvert - \left( \mathrm{rank}(\partial_p^b) + \mathrm{rank}(\partial_p^{b,d}) \right) \\
@@ -84,13 +123,18 @@ Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span 
 		0 & \partial_p^{b,d}
 	\end{array}\right] \right) \label{eq:block_pb}
 \end{align}
-where here we use $\lvert \, M \, \rvert = \mathrm{dim}(\mathrm{dom}(M))$. Thus, in the Rips-specific setting, the persistence Betti number can be expressed as a difference between the number of $p$-simplices satisfying $\{ \mathrm{diam}(\sigma) \leq b \}$ for some fixed $b \in \mathbb{R}_+$ and the rank of a particular block matrix. 
+where here we use $\lvert \, M \, \rvert = \mathrm{dim}(\mathrm{dom}(M))$. Thus, $\beta_p^{b,d}$ is expressible as a difference between a simple-to-compute quantity ($\lvert \, \partial_p^b \, \rvert$ simply counts the number of $p$-simplices satisfying $\{ \mathrm{diam}(\sigma) \leq b \}$ for some fixed $b \in \mathbb{R}_+$) and the rank of a particular block matrix. We make use of this fact in what following section. 
 \\
 \\
 % Thus, after suitable normalization, the right-most term of equation~\ref{eq:block_pb} can be relaxed to a convex function. 
 % The columns of $\partial_p^\ast$ span $C_p(X_\ast)$, thus 
 % Let $\mathcal{N}(\cdot)$ and $\mathcal{R}(\cdot)$ denote the null-space of column-space of its arguments, respectively. 
-\noindent \textbf{Continuous Relaxation:} Ideally, we would like an expression akin to equation~\eqref{eq:block_pb} that is amenable to optimization.
+\noindent \textbf{Continuous Relaxation:} 
+The $p$-th persistent Betti number is informative in capturing the necessary conditions of our goal: ...
+
+However, as an integer-valued invariant, Betti numbers pose several difficulties to direct optimization. 
+
+Ideally, we would like an expression akin to equation~\eqref{eq:block_pb} that is amenable to optimization.
 
 A remarkable result established by~\cite{} show that the $\mathrm{rank}(\cdot)$ function is lower-bounded by the convex envelope... [describe this more in detail]
 
