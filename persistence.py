@@ -9,7 +9,7 @@ import numbers
 import scipy.sparse as sps
 
 ## Function/structure imports
-from scipy.sparse import coo_matrix, csc_matrix
+from scipy.sparse import coo_matrix, csc_matrix, lil_matrix, isspmatrix
 from array import array
 from itertools import combinations
 from scipy.special import binom
@@ -69,6 +69,58 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
     D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
+def boundary_matrix(K: Union[List, ArrayLike], p: int, sorted: bool = False):
+  assert p == 1 or p == 2, "invalid p"
+  if p == 1: 
+    D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
+  elif p == 2:
+    D = H2_boundary_matrix(K['edges'], K['triangles'], coboundary=False)
+  return(D)
+
+# def rips_boundary(X: ArrayLike, p: int, threshold: float):
+#   pw_dist = pdist(X)
+#   n = X.shape[0]
+#   edge_ind = np.flatnonzero(pw_dist <= threshold)
+#   edges = unrank_combs(edge_ind, n=n, k=2)
+#   # edge_weights = D[np.array([rank_C2(u,v,X.shape[0]) for u,v in K['edges']], dtype=int)]
+#   # D1.data = D1.data*np.maximum(b - np.repeat(edge_weights,2), 0)
+#   if sorted: 
+#     edge_weights = pw_dist[edge_ind]
+#     ind = np.argsort(edge_weights)
+#     D1 = D1[:,ind]
+#     edge_weights = edge_weights[ind]
+
+# def rips_H1(X: ArrayLike, K: List, b: float, sorted=False):
+#   """ K := Rips complex """
+#   E, T = len(K['edges']), len(K['triangles'])
+#   D1 = H1_boundary_matrix(vertices=K['vertices'], edges=K['edges'])
+#   edge_weights = pdist(X)[np.array([rank_C2(u,v,X.shape[0]) for u,v in K['edges']], dtype=int)]
+#   D1.data = D1.data*np.maximum(b - np.repeat(edge_weights,2), 0)
+#   if sorted: 
+#     ind = np.argsort(edge_weights)
+#     D1 = D1[:,ind]
+#     edge_weights = edge_weights[ind]
+#   return(D1, edge_weights)
+
+def weighted_H1(X: ArrayLike, K: List, sorted=False):
+  """ K := Rips complex """
+  E, T = len(K['edges']), len(K['triangles'])
+  D1 = H1_boundary_matrix(vertices=K['vertices'], edges=K['edges'])
+  edge_weights = pdist(X)[np.array([rank_C2(u,v,X.shape[0]) for u,v in K['edges']], dtype=int)]
+  if sorted: 
+    ind = np.argsort(edge_weights)
+    D1, edge_weights = D1[:,ind], edge_weights[ind] 
+  return(D1, edge_weights)
+
+def weighted_H2(X: ArrayLike, K: List, sorted=False):
+  n, D = X.shape[0], pdist(X)
+  tri_weight = lambda T: np.max([D[rank_C2(T[0],T[1],n)], D[rank_C2(T[0],T[2],n)], D[rank_C2(T[1],T[2],n)]])
+  tri_weights = np.array([tri_weight(tri) for tri in K['triangles']])
+  D2 = H2_boundary_matrix(edges=K['edges'], triangles=K['triangles'], N = X.shape[0])
+  if sorted: 
+    ind = np.argsort(tri_weights)
+    D2, tri_weights = D2[:,ind], tri_weights[ind]
+  return(D2, tri_weights)
 
 def inverse_choose(x: int, k: int):
 	assert k >= 1, "k must be >= 1" 
@@ -171,6 +223,9 @@ def low_entry(D: csc_matrix, j: Optional[int] = None):
     nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
     return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
 
+
+
+
 def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
   assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
   assert R.shape[1] == V.shape[0], "Must be matching boundary matrices"
@@ -184,17 +239,28 @@ def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
       R[:,j] -= c*R[:,i] 
       V[:,j] -= c*V[:,i] 
       _perf['n_col_adds'] += 2
+      # print(np.max(np.linalg.svd(R.A)[1]))
       R.eliminate_zeros() # needed to changes the indices
       piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
   return(None)
 
-def reduction_pHcol(D1: csc_matrix, D2: csc_matrix):
+def reduction_pHcol(D1: csc_matrix, D2: csc_matrix, clearing: bool = False):
   assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
   assert D1.shape[1] == D2.shape[0], "Must be matching boundary matrices"
   V1, V2 = sps.identity(D1.shape[1]).tocsc(), sps.identity(D2.shape[1]).tocsc()
   R1, R2 = D1.copy(), D2.copy()
-  pHcol(R1, V1)
-  pHcol(R2, V2)
+  if not(clearing):
+    pHcol(R1, V1)
+    pHcol(R2, V2)
+  else: 
+    pHcol(R2, V2)
+    cleared = np.array(list(filter(lambda p: p != -1, low_entry(R2))))
+    uncleared = np.setdiff1d(np.array(list(range(R1.shape[1]))), cleared)
+    pHcol(R1, V1, uncleared)
+    R1[:,cleared] = 0
+    R1.eliminate_zeros()
+    cleared_domain = np.flatnonzero(low_entry(R2) != -1)
+    V1[:,cleared] = R2[:,cleared_domain] # set Vi = Rj
   return((R1, R2, V1, V2))
 
 def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
@@ -207,7 +273,7 @@ def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
     m_p = Dp.shape[1] 
     Rp, Vp = Dp.copy(), sps.identity(m_p).tocsc()
     uncleared = np.array(list(filter(lambda p: not(p in cleared), range(m_p))))
-    pHcol(Rp, Vp, uncleared)
+    pHcol(Rp, Vp, uncleared) # is_reduced(Rp[:,uncleared]) == true
     R.append(Rp)
     V.append(Vp)
     cleared = np.array(list(filter(lambda p: p != -1, low_entry(Rp))))
@@ -231,6 +297,7 @@ def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, co
 
   If F is given, then the persistence pairs are returned as function persistence.
   """
+  
   # p_birth = np.where(low_entry(R1) == -1)
   # p_death = 
 
