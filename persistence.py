@@ -1,4 +1,5 @@
 ## Typing support 
+from multiprocessing.sharedctypes import Value
 from typing import *
 from numpy.typing import ArrayLike 
 
@@ -14,6 +15,7 @@ from array import array
 from itertools import combinations
 from scipy.special import binom
 from scipy.spatial.distance import pdist
+from apparent_pairs import *
 
 
 _perf = {
@@ -53,7 +55,7 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
 
   E_ranks = np.array([rank_C2(u, v, N) for (u,v) in edges], dtype=int)
   p = np.argsort(E_ranks)        ## inverse permutation 
-  E_sort = E_ranks[p]  ## use p for log(n) lookup 
+  E_sort = E_ranks[p]            ## use p for log(n) lookup 
   E, T = len(E_ranks), len(triangles) # todo: fix 
   
   data_val, row_ind, col_ind = np.zeros(3*T, dtype=dtype), np.zeros(3*T, dtype=int), np.zeros(3*T, dtype=int)
@@ -186,33 +188,98 @@ def enclosing_radius(a: ArrayLike) -> float:
 	assert is_distance_matrix(a)
 	return(np.min(np.amax(a, axis = 0)))
 
-def rips(X: ArrayLike, r: float = np.inf, d: int = 1):
+def rips(X: ArrayLike, diam: float = np.inf, p: int = 1):
   ''' 
   Returns dictionary containing simplices and possibly weights of Rips d-complex of point cloud 'X' up to dimension 'd'.
 
   Parameters: 
     X := point cloud data 
-    r := radius parameter for the Rips complex
+    diam:= diameter parameter for the Rips complex
+    p := dimension of boundary matrix to create
   '''
-  N, D = X.shape[0], pdist(X) 
-  if r == np.inf:
-    r = enclosing_radius(as_dist_matrix(D))
+  assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  D = pdist(X) if is_point_cloud(X) else X
+  N = inverse_choose(len(D), 2)
   rank_tri = lambda T : np.array([rank_C2(T[0],T[1],N), rank_C2(T[0],T[2],N), rank_C2(T[1],T[2],N)])
   Vertices, Edges, Triangles = np.arange(N, dtype=int), np.array([], dtype=int), array('I')
-  if d >= 1:
-    Edges = np.flatnonzero(D <= r*2)
-    if d >= 2 and len(Edges) > 0:
-      for T in combinations(range(N), 3):
-        e_ranks = rank_tri(T)
-        ind = np.searchsorted(Edges, e_ranks)
-        if np.all(ind < len(Edges)) and np.all(Edges[ind] == e_ranks):
-          Triangles.extend(array('I', T))
+  if p == 0: 
+    pass
+  elif p == 1:
+    Edges = np.flatnonzero(D <= diam) # done
+  elif p == 2: 
+    Edges = np.flatnonzero(D <= diam)
+    for T in combinations(range(N), 3):
+      e_ranks = rank_tri(T)
+      ind = np.searchsorted(Edges, e_ranks)
+      if np.all(ind < len(Edges)) and np.all(Edges[ind] == e_ranks):
+        Triangles.extend(array('I', T))
+  else: 
+    raise ValueError("invalid p")
   result = {
     'vertices' : Vertices, 
     'edges' : np.array([unrank_C2(x,N) for x in Edges], dtype=int).reshape((len(Edges), 2)),
     'triangles' : np.asarray(Triangles).reshape((int(len(Triangles)/3), 3))
   }
   return(result)
+
+def persistent_betti(D1, D2, i: int, j: int):
+  """
+  Computes the p-th persistent Betti number Bij of a pair of boundary matrices. 
+
+  Bij = dim(Zp(Ki)) - dim(Zp(Ki) \cap Bp(Kj))
+
+  Given filtered boundary matrices (D1, D2) of dimensions (n,m) and (m,l), respectively, and 
+  indices i \in [1, m] and j \in [1, l], returns the persistent Betti number 
+  representing the number of p-dimensional persistent homology groups born at 
+  or before index i (in D1) that were not destroyed by inclusion of the first j 
+  (p+1)-simplices (D2).
+
+  Note that (i,j) are given here as 1-based, index-coordinates. Typically, the indices 
+  i and j are derived from geometric scaling parameters. 
+  """
+  #assert i < j, "i must be less than j"
+  i, j = int(i), int(j)
+  if (i == 0): return(0)
+  t1 = i # D1.shape[1]
+  t2 = np.linalg.matrix_rank(D1[:,:i].A)
+  D2_tmp = D2[:,:j]
+  t3_1 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
+  D2_tmp = D2_tmp[i:,:]
+  t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
+  t3 = t3_1 - t3_2
+  return(t1 - (t2 + t3))
+
+def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1):
+  """ 
+  TODO: get rid of K / infer it from X """
+  assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  D = pdist(X) if is_point_cloud(X) else X
+  D1, ew = rips_boundary(D, p=1, diam=d, sorted=True)
+  D2, tw = rips_boundary(D, p=2, diam=d, sorted=True)
+  b_ind, d_ind = np.maximum(np.flatnonzero(ew <= b)), np.max(np.flatnonzero(tw <= d))
+  return(persistent_betti(D1, D2, b_ind+1, d_ind+1))
+
+def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = False):
+  """ 
+  Computes the p-th boundary matrix of Rips complex directly from a point cloud or set of pairwise distances
+  """
+  # TODO: remove both steps and make specialized method based on distances alone
+  assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  XD = pdist(X) if is_point_cloud(X) else X
+  K = rips(XD, p=p, diam=diam)
+  D = boundary_matrix(K, p=p)
+  n = len(K['vertices'])
+  if p == 0:
+    w = np.zeros(n)
+  elif p == 1: 
+    w = XD[rank_combs(K['edges'], n=n, k=2)]
+  elif p == 2:
+    tri_weight = lambda T: np.max([XD[rank_C2(T[0],T[1],n)], XD[rank_C2(T[0],T[2],n)], XD[rank_C2(T[1],T[2],n)]])
+    w = np.array([tri_weight(tri) for tri in K['triangles']])
+  if sorted: 
+    ind = np.argsort(w)
+    D, w = D[:,ind], w[ind]
+  return(D, w)
 
 def low_entry(D: csc_matrix, j: Optional[int] = None):
   """ Provides O(1) access to low entries of D """
@@ -222,9 +289,6 @@ def low_entry(D: csc_matrix, j: Optional[int] = None):
   else: 
     nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
     return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
-
-
-
 
 def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
   assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
