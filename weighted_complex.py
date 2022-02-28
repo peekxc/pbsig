@@ -1,5 +1,4 @@
 # %%
-from multiprocessing.dummy import Array
 import numpy as np
 import matplotlib.pyplot as plt
 from persistence import * 
@@ -14,15 +13,6 @@ for u, v in K['edges']: axs[1].plot(*circle[(u,v),:].T)
 axs[1].scatter(*circle.T)
 axs[0].set_aspect('equal')
 axs[1].set_aspect('equal')
-
-# %% Parameterization of the circle defined on [0, \infty) 
-def circle_family(n: int):
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)
-  unit_circle = np.c_[np.cos(theta), np.sin(theta)]
-  def circle(t: float):
-    t = np.max([t, 0])
-    return(unit_circle @ np.diag([t, t]))
-  return(circle)
 
 # %%
 from apparent_pairs import *
@@ -93,8 +83,8 @@ from persistence import *
 
 f = circle_family(8)
 X = f(1.0)
-persistent_betti_rips(X, 0.50, 0.60)
-plot_rips(X, diam=0.50)
+persistent_betti_rips(X, 1.65, 1.90) # issue = 1.90 check w/ smaller example
+plot_rips(X, diam=1.90)
 
 
 
@@ -134,33 +124,6 @@ plot_rips(X, 1.00, figsize=(2.5,2.5), dpi=180)
 plot_rips(X, 0.40, figsize=(2.5,2.5), dpi=180, poly_opt={'alpha': 0.50})
 plot_rips(X, 0.42, figsize=(2.5,2.5), dpi=180, poly_opt={'alpha': 0.50})
 plot_rips(X, 0.43, figsize=(2.5,2.5), dpi=180, poly_opt={'alpha': 0.50})
-
-def plot_rips(X, diam: float, poly_opt: Dict = {}, **kwargs):
-  import matplotlib
-  import matplotlib.pyplot as plt
-  from matplotlib.patches import Polygon
-  from matplotlib.collections import PatchCollection
-  K = rips(X, diam=diam, p=2)
-  fig = plt.figure(**kwargs)
-  ax = plt.gca()
-  ax.scatter(*X.T, zorder=2)
-  for u,v in K['edges']:
-    ax.plot(*X[(u,v),:].T, c='black', zorder=1)
-  patches = []
-  for u,v,w in K['triangles']:
-    polygon = Polygon(X[(u,v,w),:], True)
-    patches.append(polygon)
-  if not('alpha' in poly_opt.keys()):
-    poly_opt['alpha'] = 0.04
-  poly_opt['zorder'] = 0
-  p = PatchCollection(patches, **poly_opt)
-  p.set_color((255/255, 215/255, 0, 0))
-  ax.add_collection(p)  
-  for x in X: 
-    ball = plt.Circle(x, diam/2, color='y', clip_on=False) 
-    ax.add_patch(ball)
-  ax.set_aspect('equal')
-  plt.show()
 
 np.sum(abs(weighted_H1(K, f, 0.01).data))
 

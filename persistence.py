@@ -1,5 +1,4 @@
 ## Typing support 
-from multiprocessing.sharedctypes import Value
 from typing import *
 from numpy.typing import ArrayLike 
 
@@ -16,22 +15,16 @@ from itertools import combinations
 from scipy.special import binom
 from scipy.spatial.distance import pdist
 from apparent_pairs import *
+from apparent_pairs import rank_C2
 
+## temporary cpp hooks
+import cppimport.import_hook
+import boundary
 
 _perf = {
   "n_col_adds" : 0,
   "n_field_ops": 0
 }
-
-def rank_C2(i: int, j: int, n: int):
-  i, j = (j, i) if j < i else (i, j)
-  return(int(n*i - i*(i+1)/2 + j - i - 1))
-
-def unrank_C2(x: int, n: int):
-  i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
-  j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
-  return(i,j) 
-
 def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = False, dtype = int):
   p = np.argsort(vertices)        ## inverse permutation 
   v_sort = np.array(vertices)[p]  ## use p for log(n) lookup 
@@ -76,7 +69,7 @@ def boundary_matrix(K: Union[List, ArrayLike], p: int, sorted: bool = False):
   if p == 1: 
     D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
   elif p == 2:
-    D = H2_boundary_matrix(K['edges'], K['triangles'], coboundary=False)
+    D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
   return(D)
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
@@ -222,64 +215,158 @@ def rips(X: ArrayLike, diam: float = np.inf, p: int = 1):
   }
   return(result)
 
-def persistent_betti(D1, D2, i: int, j: int):
+def persistent_betti(D1, D2, i: int, j: int, summands: bool = False):
   """
   Computes the p-th persistent Betti number Bij of a pair of boundary matrices. 
 
   Bij = dim(Zp(Ki)) - dim(Zp(Ki) \cap Bp(Kj))
 
+  Parameters:
+    D1 := p-th filtered boundary matrix 
+    D2 := (p+1) filtered boundary matrix 
+    i := Birth index (integer)
+    j := Death index (integer)
+    summands := if True, returns a tuple (a, b, c) where the persistent Betti number B = a - b - c. Defaults to False. See details. 
+
   Given filtered boundary matrices (D1, D2) of dimensions (n,m) and (m,l), respectively, and 
   indices i \in [1, m] and j \in [1, l], returns the persistent Betti number 
   representing the number of p-dimensional persistent homology groups born at 
   or before index i (in D1) that were not destroyed by inclusion of the first j 
-  (p+1)-simplices (D2).
+  (p+1)-simplices (D2). Note that (i,j) are given here as 1-based, index-coordinates. 
+  Typically, the indices i and j are derived from geometric scaling parameters. 
 
-  Note that (i,j) are given here as 1-based, index-coordinates. Typically, the indices 
-  i and j are derived from geometric scaling parameters. 
+  If summands = True, then a tuple (a, b, c) is returned where: 
+    a := dim(Cp(Ki))
+    b := dim(B{p-1}(Ki))
+    c := dim(Zp(Ki) \cap Bp(Kj))
+  The corresponding persistent Betti number is Bij = a - (b + c). 
+  This can be useful for assessing the size of the group in the denominator (c).
   """
   #assert i < j, "i must be less than j"
   i, j = int(i), int(j)
-  if (i == 0): return(0)
-  t1 = i # D1.shape[1]
-  t2 = np.linalg.matrix_rank(D1[:,:i].A)
+  if (i == 0): 
+    return((0, 0, 0) if summands else 0)
+  t1 = D1[:,:i].shape[1] # i, D1.shape[1]
+  t2 = 0 if np.prod(D1[:,:i].shape) == 0 else np.linalg.matrix_rank(D1[:,:i].A)
   D2_tmp = D2[:,:j]
   t3_1 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
   D2_tmp = D2_tmp[i:,:]
   t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
   t3 = t3_1 - t3_2
-  return(t1 - (t2 + t3))
+  return((t1, t2, t3) if summands else t1 - (t2 + t3))
 
-def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1):
+def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs):
   """ 
-  TODO: get rid of K / infer it from X """
+  X := point cloud or set of pairwise distances
+  b := birth diameter threshold
+  d := death diameter threshold 
+  p := unused 
+  kwargs 
+  """
   assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  assert b <= d, "Birth time must be less than death time"
   D = pdist(X) if is_point_cloud(X) else X
-  D1, ew = rips_boundary(D, p=1, diam=d, sorted=True)
-  D2, tw = rips_boundary(D, p=2, diam=d, sorted=True)
-  b_ind, d_ind = np.maximum(np.flatnonzero(ew <= b)), np.max(np.flatnonzero(tw <= d))
-  return(persistent_betti(D1, D2, b_ind+1, d_ind+1))
+  D1, (vw, ew) = rips_boundary(D, p=1, diam=d, sorted=True) # NOTE: Make sure D2 is row-sorted as well
+  D2, (ew, tw) = rips_boundary(D, p=2, diam=d, sorted=True)
+  if np.all(ew > b):
+    return((0,0,0) if kwargs.get('summands', False) else 0)
+  b_ind = 0 if np.all(ew > b) else np.max(np.flatnonzero(ew <= b))
+  d_ind = 0 if np.all(tw > d) else np.max(np.flatnonzero(tw <= d))
+  # if b_ind == 0 and d_ind == 0: 
+  #   return((0,0,0) if kwargs.get('summands', False) else 0)
+  i, j = b_ind+1, d_ind+1
 
-def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = False):
+  # if check_poset:
+  #   from itertools import product, combinations
+  #   Edges = np.reshape(D1.indices, (D1.shape[1], 2))
+  #   Triangles = np.reshape(D2.indices, (D2.shape[1], 3))
+  #   ## TODO: fix this 
+  #   all_faces = [list(combinations(tri, 2)) for tri in Triangles[:j,:]]
+  #   all_faces = np.array(all_faces).flatten()
+  #   F = np.sort(np.unique(rank_combs(Edges[all_faces,:], n=X.shape[0], k=2)))
+  #   # all_faces = np.unique(np.reshape(np.array(all_faces).flatten(), (len(all_faces)*3, 2)), axis=0)
+  #   E = np.sort(rank_combs(Edges[:i,:], n=X.shape[0], k=2))
+  #   # F = rank_combs(all_faces, n=X.shape[0], k=2)
+  #   assert np.all(np.array([face in E for face in F]))
+  return(persistent_betti(D1, D2, i, j, **kwargs))
+
+def boundary_faces(D: csc_matrix):
+  # D.eliminate_zeros()
+  d = len(D[:,0].indices)
+  F = np.reshape(D.indices, (D.shape[1], d))
+  if d == 2:
+    return(F)
+  else: 
+    all_faces = np.array([list(combinations(face, 2)) for face in F]).flatten()
+  #   F = np.sort(np.unique(rank_combs(Edges[all_faces,:], n=X.shape[0], k=2)))
+
+def rips_weights(X: ArrayLike, faces: ArrayLike):
+  """ faces := (n x k) integer matrix of (k-1)-faces """
+  assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  XD = pdist(X) if is_point_cloud(X) else X
+  n = inverse_choose(len(XD), 2)
+  if faces.shape[1] == 2:
+    w = XD[rank_combs(faces, n=n, k=2)]
+  elif faces.shape[1] == 3:
+    w = np.array([np.max([XD[rank_C2(T[0],T[1],n)], XD[rank_C2(T[0],T[2],n)], XD[rank_C2(T[1],T[2],n)]]) for T in faces])
+  else: 
+    w = np.array([np.max([XD[rank_C2(u,v,n)] for u,v in combinations(F, 2)]) for F in faces])
+  return(w)
+
+def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = False, optimized: bool = True):
   """ 
   Computes the p-th boundary matrix of Rips complex directly from a point cloud or set of pairwise distances
   """
   # TODO: remove both steps and make specialized method based on distances alone
   assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
   XD = pdist(X) if is_point_cloud(X) else X
-  K = rips(XD, p=p, diam=diam)
-  D = boundary_matrix(K, p=p)
-  n = len(K['vertices'])
-  if p == 0:
-    w = np.zeros(n)
-  elif p == 1: 
-    w = XD[rank_combs(K['edges'], n=n, k=2)]
-  elif p == 2:
-    tri_weight = lambda T: np.max([XD[rank_C2(T[0],T[1],n)], XD[rank_C2(T[0],T[2],n)], XD[rank_C2(T[1],T[2],n)]])
-    w = np.array([tri_weight(tri) for tri in K['triangles']])
-  if sorted: 
-    ind = np.argsort(w)
-    D, w = D[:,ind], w[ind]
-  return(D, w)
+  n = inverse_choose(len(XD), 2)
+  if (optimized):
+    if p == 0:
+      D = csc_matrix([], shape=(0, 0))
+      fw, cw = 0, np.zeros(n) # face, coface weights
+    elif p == 1: 
+      cdata, cindices, cindptr, ew = boundary.rips_boundary_matrix_1(XD, n, diam)
+      D = csc_matrix((cdata, cindices, cindptr), shape=(n, len(cindptr)-1))
+      if sorted: 
+        eind = np.argsort(ew)
+        D, ew = D[:,eind], ew[eind]
+      fw, cw = np.zeros(n), ew
+    elif p == 2:       
+      cdata, cindices, cindptr, tw = boundary.rips_boundary_matrix_2_dense(XD, n, diam)
+      mask = np.cumsum(XD <= diam)
+      cindices = (mask-1)[cindices] # re-map to lowest indices
+      D = csc_matrix((cdata, cindices, cindptr), shape=(mask[-1], len(cindptr)-1))
+      ew = XD[XD <= diam]
+      if sorted: 
+        eind, tind = np.argsort(ew), np.argsort(tw)
+        D, ew, tw = D[np.ix_(eind,tind)], ew[eind], tw[tind]
+      fw, cw = ew, tw
+    return(D, (fw, cw)) # face, coface weights
+  else:
+    K = rips(XD, p=p, diam=diam)
+    D = boundary_matrix(K, p=p)
+    if p == 0:
+      fw = 0
+      cw = np.zeros(n)
+    elif p == 1: 
+      w = rips_weights(XD, K['edges'])
+      # w = XD[rank_combs(K['edges'], n=n, k=2)]
+      if sorted: 
+        eind = np.argsort(w)
+        D, w = D[:,eind], w[eind]
+      fw, cw = np.zeros(n), w
+    elif p == 2:
+      #tri_weight = lambda T: np.max([XD[rank_C2(T[0],T[1],n)], XD[rank_C2(T[0],T[2],n)], XD[rank_C2(T[1],T[2],n)]])
+      #ew = XD[rank_combs(K['edges'], n=n, k=2)]
+      #tw = np.array([tri_weight(tri) for tri in K['triangles']])
+      ew, tw = rips_weights(XD, K['edges']), rips_weights(XD, K['triangles'])
+      if sorted: 
+        eind, tind = np.argsort(ew), np.argsort(tw)
+        D, fw, cw = D[np.ix_(eind, tind)], ew[eind], tw[tind]
+      else: 
+        fw, cw = ew, tw # face, coface weights
+    return(D, (fw, cw)) # face, coface weights
 
 def low_entry(D: csc_matrix, j: Optional[int] = None):
   """ Provides O(1) access to low entries of D """
@@ -351,6 +438,72 @@ def is_reduced(R: csc_matrix) -> bool:
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
 
+# from enum import Enum
+def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps: float = 100*np.finfo(float).resolution):
+  """ 
+  Creates a projector that projects onto the intersection of spaces (A,B), where
+  A and B are linear subspace.
+  
+  method := one of 'neumann', 'anderson', or 'israel' 
+  """
+  assert space in ["RR", "RN", "NR", "NN"], "Invalid space argument"
+  # if A.shape
+  U, E, Vt = np.linalg.svd(A.A, full_matrices=False)
+  X, S, Yt = np.linalg.svd(B.A, full_matrices=False)
+  PA = U @ U.T if space[0] == 'R' else np.eye(A.shape[1]) - Vt.T @ Vt
+  PB = X @ X.T if space[1] == 'R' else np.eye(B.shape[1]) - Yt.T @ Yt
+  if method == "neumann":
+    PI = np.linalg.matrix_power(PA @ PB, 125)# von neumanns identity
+  elif method == "anderson":
+    PI = 2*(PA @ np.linalg.pinv(PA + PB) @ PB)
+  elif method == "israel":
+    L, s, _ = np.linalg.svd(PA @ PB, full_matrices=False)
+    s_ind = np.flatnonzero(abs(s - 1.0) <= eps)
+    PI = np.zeros(shape=PA.shape)
+    for si in s_ind:
+      PI += L[:,[si]] @ L[:,[si]].T
+  else:
+    raise ValueError("Invalid method given.")
+  return(PI)
+  # np.sum(abs(np.linalg.svd(np.c_[PI @ D1.T, PI @ D2])[1]))
+
+def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_opt: Dict = {}, balls: bool = False, **kwargs):
+  import matplotlib.pyplot as plt
+  from matplotlib.patches import Polygon
+  from matplotlib.collections import PatchCollection
+  K = rips(X, diam=diam, p=2)
+  fig = kwargs.pop('fig', None)
+  ax = kwargs.pop('ax', None)
+  if fig is None:
+    fig = plt.figure(**kwargs)
+  else: 
+    fig = fig
+  ax = ax if not(ax is None) else fig.gca()
+  
+  ## Vertices - draw in front
+  ax.scatter(*X.T, zorder=20, **vertex_opt)
+
+  ## Edges 
+  for u,v in K['edges']:
+    ax.plot(*X[(u,v),:].T, c=edge_opt.get('c', 'black'), zorder=10)
+  
+  ## Triangles 
+  triangles = []
+  for u,v,w in K['triangles']:
+    polygon = Polygon(X[(u,v,w),:], True)
+    triangles.append(polygon)
+  poly_opt['alpha'] = poly_opt.get('alpha', 0.40)
+  poly_opt['zorder'] = 0
+  p = PatchCollection(triangles, **poly_opt)
+  p.set_color(poly_opt.get('c', (255/255, 215/255, 0, 0)))
+  ax.add_collection(p)  
+  
+  ## Optionally draw the balls to visualize rips/cech better
+  if balls: 
+    for x in X: 
+      ball = plt.Circle(x, diam/2, color='y', clip_on=False) 
+      ax.add_patch(ball)
+  ax.set_aspect('equal')
 
 def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
   """
@@ -400,7 +553,7 @@ def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, co
 
 # class Reduction():
 #   def __init__(D0: csc_matrix, D1: csc_matrix): # boundary matrix
-    
+
 
 # def boundary_matrix(S: Iterable, F: Iterable):
 #   """
@@ -413,3 +566,58 @@ def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, co
 #     F := Iterable over (p-1)-faces
 #   """ 
 #   array('I')
+
+def sw_parameters(bounds: Tuple, d: int = None, tau: float = None,  w: float = None, L: int = None):
+  """ 
+  Computes 'nice' slidding window parameters. 
+  
+  Given an interval [a,b] and any two slidding window parameters (d, w, tau, L), 
+  returns the necessary parameters (d, tau) needed to construct Takens slidding window embedding 
+  
+  """
+  if not(d is None) and not(tau is None):
+    return(d, tau)
+  elif not(d is None) and not(w is None):
+    return(d, w/d)
+  elif not(d is None) and not(L is None):
+    w = bounds[1]*d/(L*(d+1))
+    return(d, w/d)
+  elif not(tau is None) and not(w is None):
+    d = int(w/tau)
+    return(d, tau)
+  elif not(tau is None) and not(L is None):
+    d = bounds[1]/(L*tau) - 1
+    return(d, tau)
+  elif not(w is None) and not(L is None):
+    d = np.round(1/((bounds[1] - w*L)/(w*L)))
+    assert d > 0, "window*L must be less than the entire time duration!"
+    return(d, w/d)
+  else:
+    raise ValueError("Invalid combination of parameters given.")
+
+
+def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
+  ''' 
+  Slidding Window Embedding of a time series 
+  
+  Returns a function which generates a n-point slidding window point cloud of a fixed time-series/function 'f'. 
+
+  The function takes any two of: 
+    - n := number of point to generate the embedding
+    - d := dimension-1 of the resulting embedding 
+    - w := (optional) window size each (d+1)-dimensional delay coordinate is derived from
+    - tau := (optional) step size 
+    - L := (optional) expected number of periods, if known
+  The parameter n and d must be supplied, along with exactly one of 'w', 'tau' or 'L'.  
+  '''
+  assert isinstance(f, Callable) or isinstance(f, ArrayLike), "Time series must be function or array like"
+  # Assume function like, defined on [0, 1]
+  # Otherwise, construct a continuous interpolation via e.g. cubic spline
+  def sw(n: int, d: int = None, tau: float = None, w: float = None, L: int = None):
+    ''' Creates a slidding window point cloud over 'n' windows '''
+    d, tau = sw_parameters(bounds, d=d, tau=tau, w=w, L=L)
+    T = np.linspace(bounds[0], bounds[1] - d*tau, n)
+    delay_coord = lambda t: np.array([f(t + di*tau) for di in range(d+1)])
+    X = np.array([delay_coord(t) for t in T])
+    return(X)
+  return(sw)

@@ -5,6 +5,17 @@ from scipy.special import comb
 from itertools import combinations
 from persistence import *
 
+def rank_C2(i: int, j: int, n: int):
+  i, j = (j, i) if j < i else (i, j)
+  return(int(n*i - i*(i+1)/2 + j - i - 1))
+
+def unrank_C2(x: int, n: int):
+  i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
+  j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
+  return(i,j) 
+
+
+
 def unrank_comb(r: int, k: int, n: int):
   result = np.zeros(k, dtype=int)
   x = 1
@@ -63,14 +74,6 @@ def apparent_pairs(D: ArrayLike, K: List):
       in dimension 1 are precisely the apparent pairs
   
   Empirically, it also known that apparent pairs form a large portion of the total number of persistence pairs. 
-  
-  dataset   | # points | p | apparent pairs | total pairs | percentage |
-  o3        |          |   |                |             |            | 
-  o3        |          |   |                |             |            | 
-  torus4    |          |   |                |             |            | 
-  dragon    |          |   |                |             |            | 
-  fractal-r |          |   |                |             |            | 
-  random16  |          |   |                |             |            | 
   """
   result = []
   for T in K['triangles']:  
@@ -99,6 +102,7 @@ def apparent_pairs(D: ArrayLike, K: List):
 # pair_totals = np.array([18145, 32167, 230051, 2192209, 1386646, 122324, 893])
 # non_ap = np.array([ 53, 576, 2466, 14006, 576, 438, 39 ])
 # (pair_totals-non_ap)/pair_totals
+# array([0.99707909, 0.98209345, 0.98928064, 0.99361101, 0.99958461, 0.99641935, 0.95632699])
 
 # ## Test unrank works
 # C = np.array([unrank_comb(c, k=3, n=10) for c in range(int(comb(10,3)))])
