@@ -1,0 +1,54 @@
+\documentclass{article}
+\usepackage[letterpaper,hmargin=0.9in,vmargin=0.8in]{geometry}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{mathbbol}
+
+\usepackage{algorithm}
+\usepackage{algorithmicx}
+\usepackage[noend]{algpseudocode}
+
+\begin{document}
+	
+\begin{algorithm}[!htb]
+	\caption{Vineyards: Tranposition Framework}\label{alg:tr}
+	\begin{algorithmic}[1]
+		\Require Matrices $R, V$ satisfying $R = D V$, $1 \leq i \leq m - 1$
+		\Ensure Output $(R, V)$ maintains the decomposition invariants
+        \Function{Transpose}{$R$, $V$, $i$}
+            \State $\mathrm{pos} \gets $ columns satisfying $\mathrm{col}_R = 0$
+            \If {$\mathrm{pos}[i]$ \textbf{and} $\mathrm{pos}[i+1]$}
+	            \If{$V[i,i+1] \neq 0$}
+            		\State $\mathrm{col}_V(i+1)  \mathrel{+}= \mathrm{col}_V(i)$	
+            	\EndIf
+            	\If {$\exists \; k, l$ s.t. $\mathrm{low}_R(k) = i, \mathrm{low}_R(l) = i+1$ and $R[i,l] \neq 0$} \Comment{O(m)}
+            		\If {$k < l$}
+            			\State \Return $(\, R, \, V \,) \gets (\, PRPS_k^l, \, PVP S_k^l \,)$
+            		\Else
+            			\State \Return $(\, R, \, V \,) \gets  (\, PRPS_l^k, \, PVP S_l^k\,) $
+            		\EndIf
+            	\EndIf 
+            \ElsIf{$!\mathrm{pos}[i]$ \textbf{and} $!\mathrm{pos}[i+1]$}
+            	\If{$V[i,i+1] \neq 0$}\Comment{O(m)}
+            		\If{$\mathrm{low}_R(i) < \mathrm{low}_R(i+1)$}
+            			\State \Return  $(\, R, V \,) \gets (P R S^{i+1}_i P, \, P V S^{i+1}_i  P) $
+            		\Else 
+            			\State \Return  $(\, R, V \,) \gets (P R S^{i+1}_i P S^{i+1}_i, \, P V S^{i+1}_i P S^{i+1}_i ) $
+            		\EndIf 
+            	\EndIf
+          	\ElsIf{$!\mathrm{pos}[i]$ \textbf{and} $\mathrm{pos}[i+1]$} 
+            	\If{$V[i,i+1] \neq 0$}\Comment{O(m)}
+            		\State \Return  $(\, R, V \,) \gets (P R S^{i+1}_i P S^{i+1}_i, \, P V S^{i+1}_i P S^{i+1}_i ) $
+            	\EndIf
+            \ElsIf{$\mathrm{pos}[i]$ \textbf{and} $!\mathrm{pos}[i+1]$}
+            	\If{$V[i,i+1] \neq 0$}\Comment{O(m)}
+            		\State $\mathrm{col}_V(i+1) \mathrel{+}= \mathrm{col}_V(i)$
+            	\EndIf 
+            \EndIf
+            \State \Return $(\, R , V \,) \gets (\, P R P , P V P \,)$
+        \EndFunction
+    \end{algorithmic}
+\end{algorithm}
+\end{document}
