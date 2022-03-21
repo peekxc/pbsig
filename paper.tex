@@ -1,0 +1,419 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{url}
+
+\usepackage{titlesec}
+\titlelabel{\thetitle.\quad}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\usepackage{dsfont}
+
+\newtheorem{definition}{Definition}
+\newtheorem{remark}{Remark}
+%\let\oldref\ref
+%\renewcommand{\ref}[1]{((\oldref{#1}))}
+\newcommand{\inv}{^{\raisebox{.2ex}{$\scriptscriptstyle-1$}}}
+\newcommand\sbullet[1][.5]{\mathbin{\vcenter{\hbox{\scalebox{#1}{$\bullet$}}}}}
+\newcommand\numberthis{\addtocounter{equation}{1}\tag{\theequation}}
+\newcommand{\bigzero}{\mbox{\normalfont\Large\bfseries 0}}
+\newcommand{\rvline}{\hspace*{-\arraycolsep}\vline\hspace*{-\arraycolsep}}
+
+\title{\vspace{-2.0em} \vspace{-0.5em}}
+\author{Matt Piekenbrock}
+\date{}
+
+\begin{document}
+\noindent
+
+\section{Motivation}
+$<$ insert motivating examples, etc $>$
+
+% Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
+% Towards understanding its dynamic, one may ask whether one can infer properties of the underlying evolving system
+\section{Background \& Notation}\label{sec:background_notation}
+% \textbf{Persistent Homology:}
+A \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a vertex set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$.
+A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$, and $K_\bullet$ is \emph{essential} if $i \neq j$ implies $K_i \neq K_j$ whenever $j$ is the immediate successor of $i$ in $I$:
+%Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
+\begin{equation}
+	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
+\end{equation} 
+Filtrations may be equivalently defined as functions $f : K \to I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$. Here, we consider two index sets for $I$: $\mathbb{R}$ and $[n] = \{ 1, \dots, n\}$. 
+Any finite filtration may be trivially converted into an essential, simplexwise filtration via a set of \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. Thus, without loss of generality, we exclusively consider essential simplexwise filtrations and for brevity refer to them as filtrations.
+
+For $K$ a simplicial complex and $\mathbb{F}$ a field, a $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$. The collection of $p$-chains under addition yields an $\mathbb{F}$-vector space denoted $C_p(K)$. 
+The $p$-boundary $\partial_p(\sigma)$ of an oriented $p$-simplex $\sigma\in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
+\begin{equation}\label{eq:alt_sum}
+	\partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p]
+\end{equation}
+where $\hat{v}_i$ indicates the removal of $v_i$ from the $i$th summand. Similarly, the $p$-boundary of a $p$-chain is defined linearly in terms of its constitutive simplices. 
+A $p$-chain with zero boundary is called a $p$-cycle, and together they form $Z_p(K) = \mathrm{Ker}\,\partial_p$. Similarly, the collection of $p$-boundaries forms  $B_p(K) = \mathrm{Im}\,\partial_{p+1}$. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is well-defined, and $H_p(K)$ is called the $p$-th homology of $K$ with coefficients in $\mathbb{F}$. The dimension of the $p$-th homology group $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the $p$-th \emph{Betti} number of $K$. 
+
+Let $K_\bullet = \{K_i\}_{i\in [m]}$ denote a filtration of size $\lvert K_\bullet \rvert = m$. For every pair $i,j \in [m]$ with $i < j$, the inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j}$  at the level of homology:
+\begin{equation}\label{eq:hom_map}
+	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) 
+\end{equation}
+When $\mathbb{F}$ is a field, this sequence of homology groups admits a unique decomposition of $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$~\cite{} demarcating the evolution of homology classes: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
+The $p$-th persistent homology groups are the images of these transformations and the $p$-th persistent Betti numbers are their dimensions:
+\begin{equation}
+	H_{p}^{i,j} = \begin{cases}
+	H(K_i) & i = j \\ 
+ 	\mathrm{Im}\,h_p^{i,j} & i < j
+ \end{cases}
+, \quad \quad 
+\beta_p^{i,j} = \begin{cases}
+ 	\beta_p(K_i) & i = j \\
+ 	\mathrm{dim}(H_{p}^{i,j}) & i < j
+ \end{cases}
+\end{equation}
+For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}.
+
+\begin{remark}
+\normalfont In practice, filtrations often arise from triangulations parameterized by geometric scaling parameters, and references to the ``persistence'' of a given homology class are with respect to these parameterizations. For example, given a finite metric space $\mathcal{X} = (X, d_X)$, the \emph{Rips complex} at scale $\epsilon \in \mathbb{R}_{+}$ is the complex given by: 
+\begin{equation}
+	\mathrm{Rips_{\epsilon}}(\mathcal{X}) := \{ \sigma \subseteq X : d_X(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \} 
+\end{equation}
+\noindent Connecting successive complexes via inclusions $\mathrm{Rips_{\epsilon}}(\mathcal{X}) \hookrightarrow \mathrm{Rips_{\epsilon'}}(\mathcal{X})$ for $\epsilon < \epsilon'$ yields a family of complexes $\mathrm{Rips}_{\alpha} := \{ \, \mathrm{Rips}_\epsilon(\mathcal{X}) \, \}_{\epsilon \leq \alpha}$ called the \emph{Rips filtration}. 
+As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level of homology. Though we consider primarily Rips filtrations in this effort, we will at times keep the notation simple and general by letting $K_\bullet$ denote any simplicial filtration. 
+\end{remark} 
+
+%Note that if $i = j$, then $H_{p}^{i,j} = H_{p}(K_i) = H_{p}(K_i)$ is   just the ``standard'' homology. 
+% Simplices whose inclusion in the filtration creates a new homology class are called \emph{creators}, and simplices that destroy homology classes are   called \emph{destroyers}. 
+% The filtration indices of these creators/destroyers are referred to as \emph{birth} and \emph{death} times, respectively. 
+%The collection of birth/death pairs $(i,j)$ is denoted $\mathrm{dgm}_p(K)$, and referred to as the $p$-th \emph{persistence diagram} of $K$.
+%If a homology class is born at time $i$ and dies entering time $j$, the difference $\lvert i - j \rvert$ is called the \emph{persistence} of that class.
+
+
+\section{Methodology}
+In this section, we derive the relaxed objective function we seek to maximize. 
+%We begin with a motivating application: suppose one has a dynamic point cloud that varies continuously with respect to some set of parameters and one expects this point cloud to have non-trivial topology as it changes. 
+%Moreover, suppose one is interested in finding an a specific setting of parameter values wherein the $p$-th persistence diagram contains many highly persistent pairs; equivalently, one is interested in finding the parameter values where topological features are the most pronounced in the system's corresponding persistence diagram. in what follows, we make this problem statement and corresponding objective more precise towards developing an efficient tool for finding these parameter values. 
+\\
+\\
+Let $\delta_\mathcal{X}$ denote an $\mathrm{T}$-parameterized metric space $\delta_\mathcal{X}(\cdot) = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x')$ is continuous for every pair $x, x' \in X$ and $\delta_\mathcal{X}(t) = (X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
+For a fixed $t \in \mathrm{T}$, the Rips complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
+\begin{equation}
+	\mathrm{Rips_{\epsilon}}(\delta_\mathcal{X}(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \}
+\end{equation}
+\noindent As before, the family of Rips complexes for varying $\epsilon > 0$ yields a filtration whose inclusion maps induce linear maps at the level of homology. The time-varying counterpart is analogous.  
+In this context, we write the $p$-th persistent Betti number with respect to fixed values $i,j \in I$ as a function of $t \in \mathrm{T}$: 
+\begin{equation}
+\beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
+\end{equation}
+This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$, representing the persistent homology groups which were born at or before $i$ and died sometime after $j$. 
+We consider the problem of maximizing the $p$-th \emph{persistent} Betti number $\beta^{i,j}_p$ over some set $T \subseteq \mathrm{T}$: 
+\begin{equation}
+	t_\ast = \argmax_{t \in T}	 \beta_{p}^{i,j}(t)
+\end{equation}
+As an illustrative example, see Figure. 
+$<$ insert SW1Pers vineyards plot $>$
+%Since Betti numbers are integer-valued invariants, direct optimization is difficult. Moreover, the space of persistence diagrams is [banach space statement]....
+%Nonetheless, the differentiability of persistence has been studied extensively in [show chain rule paper on persistence diagrams]...
+
+
+% For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
+\subsubsection*{Persistent Betti Numbers:} 
+As in section~\ref{sec:background_notation}, let $B_p(K_\ast) \subseteq Z_p(K_\ast) \subseteq C_p(K_\ast)$ denote the $p$-th boundary, cycle, and chain groups of $K_\ast$, respectively. 
+Given a simplicial filtration $K_{\bullet}$, let $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
+With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
+The $p$-th persistent Betti number between scales $(i,j)$ is defined as: 
+\begin{align*}
+	\beta_p^{i,j} &= \mathrm{dim}(H_p^{i,j}) \\
+	&= \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
+	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) \label{eq:pb2}
+\end{align*}
+Note that $\mathrm{dim}(C_p(K_\ast)) = \mathrm{dim}(B_{p-1}(K_\ast)) + \mathrm{dim}(Z_p(K_\ast))$ by the rank-nullity theorem, so we may rewrite~\eqref{eq:pb2} as:
+\begin{equation} \label{eq:pb3}
+\beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )  
+\end{equation}
+The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. To express the intersection term, we require more notation. If $A$ is a $m \times m$ matrix, then let $A_i^j$ denote the lower-left submatrix of $A$ given by the first $j$ columns and last $m - i + 1$ rows (rows $i$ through $m$, inclusive). For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$:
+\begin{equation}
+	r_A(i,j) = \mathrm{rank}(A_i^j) - \mathrm{rank}(A_{i+1}^j) + \mathrm{rank}(A_{i+1}^{j-1}) - \mathrm{rank}(A_i^{j-1})
+\end{equation}
+One of the seminal results from the Pairing Uniqueness lemma~\cite{} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then for any $1 \leq i < j \leq m$, we have (todo: elaborate more): 
+$$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R_i^j) = \mathrm{rank}(\partial_i^j)$$
+Thus, the lower-left submatrices of the filtered boundary matrix $\partial$ has the same rank as $R$. 
+Let $\hat{\partial} = \partial_p$ and $\bar{\partial} = \partial_{p+1}$. Utilizing the result above, observe $\beta_p^{i,j}$ may be written as: 
+\begin{equation}\label{eq:betti_four}
+	\beta_p^{i,j} = \lvert \hat{\partial}_1^i \rvert - \mathrm{rank}(\hat{\partial}_1^i) - \mathrm{rank}(\bar{\partial}_1^j) + \mathrm{rank}(\bar{\partial}_{i+1}^j)
+\end{equation}
+where $\lvert \, A \, \rvert = \mathrm{dim}(\mathrm{dom}(A))$ denotes the order of the matrix. Thus, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
+% DONT ERASE
+%Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_{p-1}(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\ref{sec:computation}. Substituting these matrices appropriately, equation~\eqref{eq:pb3} can be written as: 
+%\begin{equation}\label{eq:pb_rank}
+%	\beta_p^{b,d} = \lvert \, \partial_p^b \, \rvert - \mathrm{rank}(\partial_p^b) - \mathrm{rank}(\partial_{p+1}^{b,d}) 
+%\end{equation}
+%where $\lvert \, M \, \rvert = \mathrm{dim}(\mathrm{dom}(M))$. Thus, $\beta_p^{b,d}$ is expressible as a difference between a simple-to-compute quantity ($\lvert \, \partial_p^b \, \rvert$ simply counts the number of $p$-simplices with filtration value $f(\sigma) \leq b$ for some fixed $b \in \mathbb{R}_+$) and the rank of two particular matrices. We make use of this fact in later sections of the paper. 
+
+
+\subsubsection*{Boundary Matrix Relaxation}
+As integer-valued invariants, Betti numbers pose several difficulties to direct optimization. Thus, we require alternative expressions for each of the terms in equation~\eqref{eq:betti_four} to extend its applicability to the time-varying setting. Towards deriving these expression, we first require a replacement of the standard boundary matrix formulation. 
+% Give example of optimal homologus cycle 
+
+Recall that the boundary operator $\partial_p$ for a finite simplicial filtration $K_{\bullet}$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices, respectively. The entries of $\partial_p$ depend on the choice of $\mathbb{F}$; in general, after orientating the simplices of $K$ arbitrarily, they have the form: 
+%Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
+%\begin{equation}\label{eq:alt_sum}
+%	\partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum\limits_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p]
+%\end{equation}
+%where $\hat{v}_i$ indicates the removal of $v_i$ from the $i$th summand.  
+\begin{equation}\label{eq:matrix_pchain}
+	\partial_p[i, j] = \begin{cases} 
+	c(\sigma)  & \text{if } \sigma_i \in \partial_p(\sigma_j) \\
+	0 & \text{otherwise}
+   \end{cases}
+\end{equation}
+where $c(\sigma) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex.
+In practice, $c(\sigma)$ is typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we propose an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
+\begin{definition}[Time-varying boundary matrix]\label{def:time_boundary_matrix}
+Let $\mathbb{F} = \mathbb{R}$ denote the field, $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$, and let $(\mathcal{P}(X), \preceq^\ast)$ be a linear extension of the face poset of the $(n-1)$-simplex $\Delta_n$. 
+For a fixed $\epsilon > 0$, a time-varying $p$-th boundary matrix $\partial_p^t$ is an $\binom{n}{p} \times \binom{n}{p+1}$ matrix whose entries $c(\sigma)$ satisfy:
+$$
+\partial_p^t[i,j] = \begin{cases}
+	\lvert \epsilon - \mathrm{diam}_t(\sigma) \rvert_{+} & \text{if } \sigma_i \in \partial_p(\sigma_j)\\
+	0 & \text{otherwise}
+\end{cases} 
+% c(\sigma) = \lvert \epsilon - \mathrm{diam}_t(\sigma) \rvert_{+}
+$$
+and whose rows and columns are ordered by $\preceq^\ast$ for all $t \in T$.% the image of a function $\partial_p^\ast: T \to \mathbb{R}^{k \times l}$ 
+%and the total order on $K(\cdot)$ is fixed.  
+\end{definition}
+\noindent
+We now show a few properties that $\partial_p^t$ exhibits which is advantageous for optimization. Clearly the entries of $\partial_p^t$ must vary continuously in $t \in T$. Moreover, for all $t, t' \in T$, we have:
+% 
+% Lipshitz statement about boundary matrix
+% At the algebraic level, persistent homology admits a canonical decomposition for coefficients in any choice of field~\cite{}, though at the expense of torsion information.\footnote{}
+% Given a strict total order $(V, <)$ on the vertices of $K$, define the ranking function $\varsigma_p(\tau) : K_p \to [m_p]$ which ranks the $p$-simplices of $K$ in a fixed way according to the order given by $<$. 
+% If $\sigma$
+%We begin by extending the standard definition of an elementary $p$-chain to the dynamic setting. Recall a $p$-chain of a simplicial filtration $K_\bullet$ with coefficients in $\mathbb{F}$ is a function $c_p$ on the oriented $p$-simplices of $K$ satisfying $c_p(\sigma) = -c_p(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, and $c_p(\sigma) = 0$ otherwise. 
+%A $p$-chain is called \emph{elementary with respect to $q \in \mathbb{F}$} if it satisfies:
+%\begin{align*}
+%	c_p(\sigma) &= +q  \quad & \\
+%	c_p(\sigma') &= -q \quad &\text{if } \sigma' \text{ is the opposite orientation of }\sigma \\
+%	c_p(\tau) &= 0 \quad & \text{otherwise}
+%\end{align*}
+%Once all $p$-simplices of $K$ are oriented, each $p$-chain can be written unique as a finite linear combination $c_p = \sum_{i=0}^p n_i \sigma_i$ 
+%of the corresponding elementary chains $\sigma_i$. 
+%\begin{equation}
+%	\partial_p(\sigma_i) = \partial_p[ v_0, \dots, v_p ] = \sum\limits_{i = 0}^p q(-1)^i [v_0, \dots, \hat{v_i}, \dots, v_p]
+%\end{equation}
+%where the notation $\hat{v}_p$ means that $v_p$ is excluded in the $i$-th summand, and $[v_0, \dots, v_p]$ denotes the oriented simplex. 
+%\begin{definition}[Time-varying elementary $p$-chain]
+%	An elementary $p$-chain $c_p : T \times K$ is said to be time-varying if $c_p(\cdot)(\sigma) = f(\sigma; t)$ is continuous in $T$. 
+%\end{definition}
+\begin{enumerate}
+	\item $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ where $K_t = \mathrm{Rips}_{\epsilon}(\delta_{\mathcal{X}}(t))$  
+	\item $\lVert \partial_p^t - \partial_p^{t'} \rVert_F \leq C \lvert t - t' \rvert (p+1)$ when $\delta_\mathcal{X}$ is $C$-Lipshitz over $T$
+	\item $\lVert \partial_p^t \rVert_{2} \leq \sqrt{\kappa} \, (p+1) \, \epsilon$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$
+	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
+\end{enumerate}
+\begin{proof}
+First, consider property (1). For any $t \in T$, applying the boundary operator $\partial_p$ to $K_t = \mathrm{Rips}_\epsilon(\delta_{\mathcal{X}}(t))$ with non-zero entries satisfying~\eqref{eq:matrix_pchain} by definition yields a matrix $\partial_p$ satisfying $\mathrm{rank}(\partial_p) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$. In contrast, definition~\eqref{def:time_boundary_matrix} always produces $p$-boundary matrices of $\Delta_n$; however, notice that the only entries which are non-zero are precisely those whose simplices $\sigma$ that satisfy $\mathrm{diam}(\sigma) < \epsilon$. Thus, $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ for all $t \in T$. 
+$<$ (show proof of (2))$>$
+Property (3) follows from the construction of $\partial_p$ and from the inequality $\lVert A \rVert_2 \leq \sqrt{m} \lVert A \rVert_1$ for an $n \times m$ matrix $A$, as $\lVert \partial_p^t \rVert_1 \leq (p+1) \, \epsilon$ for all $t \in T$.
+
+	% Assume that $\delta_{\mathcal{X}}$ is $C$-Lipshitz. Then $d_X(t)(x, x') \leq C d_X(t')(x, x')$ for all $x, x' \in X$, then observe $\partial_p^\ast$. 
+\end{proof}
+%At the algorithmic level, the choice of field coefficient affects the practical implementation 
+% Insert proofs about rank, about lipshitz continuity, about being valid boundary matrices 
+% Insert rank/convex envelope statement
+
+\subsubsection*{Rank Relaxation (TODO)}
+In light of the formulation of~\eqref{eq:betti_four}, we may interpret $\beta_p^{i,j}$ from a function composition perspective: 
+$$ t \stackrel{f}{\mapsto} \partial_\ast^t \stackrel{g}{\mapsto} \mathrm{rank}(\partial_\ast^t ) $$
+In this sense, by modifying the entries of $\partial_p^\ast$ via~\ref{def:time_boundary_matrix}, we ensure that $f$ is both continuous and inherits the the smoothness of $\partial_\mathcal{X}(\cdot)$. We now address $g$.
+ 
+\subsection*{Smoothness}
+%In this section we introduce the notion of the Moreau envelope as means of smoothing our objective function. The study of the Moreau envelope and proximal operators has a long history related to infimal convolution and the Fenchel conjugate, see~\cite{}.
+Given a function $f: \mathbb{R} \to (-\infty, \infty]$ and a fixed $\mu > 0$, the \emph{proximal operator} or \emph{prox} of $f$ is given by:
+\begin{equation}
+	\mathrm{prox}_f^\mu(x) = \argmin_{u \in \mathbb{R}} \left\{ f(u) + \frac{1}{2\mu} \lVert u - x \rVert^2 \right\}
+\end{equation}
+When $f$ is proper closed convex, $\mathrm{prox}_f^\mu(x)$ is single-valued and yields the solution to the \emph{Moreau envelope} of $f$:
+\begin{equation*}
+	M_f^\mu(x) = \min\limits_{u \in \mathbb{R}} \left\{ f(u) + \frac{1}{2 \mu} \lVert x - u \rVert^2 \right\} = f(\mathrm{prox}_f^\mu(x)) + \frac{1}{2 \mu} \lVert x -\mathrm{prox}_f^\mu(x) \rVert^2
+\end{equation*}
+$M_f^\mu(x)$ exhibits a number of properties suitable for optimization: it is $\frac{1}{\mu}$-Lipshitz over $\mathbb{R}$, it retains the same minima as $f$, and for any $x \in \mathbb{R}$ it admits a gradient $\nabla M_f^\mu(x)$ which again is expressible via the proximal operator:
+\begin{equation}
+	\nabla M_f^\mu(x) = \frac{1}{\mu}(x - \mathrm{prox}_f^\mu(x))
+\end{equation}
+Moreover, if $\nabla f$ is $L_f$-Lipshitz, then $\nabla M_f^\mu(x)$ is $L_f/\mu$-Lipshitz, and if $f$ is $L_f$-Lipshitz, then $\lvert f(x) - M_f^\mu(x) \rvert \leq L_f^2 \mu$. 
+Thus, the Moreau envelope acts as a smooth approximation of $f$, which makes it an excellent candidate for smoothing~\eqref{eq:relaxation_pb} if $\mathrm{prox}_f^\mu$ can be efficiently computed. Fortunately, the prox of $\lVert \cdot \rVert_\ast$ admits a simple characterization: 
+%\begin{equation}	
+\begin{align}	\label{eq:prox_nuclear}
+	\mathrm{prox}_{\lVert \cdot \rVert_\ast}^\mu(X) &= \argmin_{Y \in \mathbb{R}^{n \times m}} \left\{ \lVert Y \rVert_\ast + \frac{1}{2\mu}\lVert Y - X \rVert_F^2 \right\} \\
+	&= U \mathcal{D}_\mu(S) V^T
+\end{align}
+where $X = U S V^T$ is the SVD of an $(n \times m)$ matrix $X$ and $\mathcal{D}_\mu(S) = \mathrm{diag}(\{ \lvert \sigma_i - \mu \rvert_{+} \}_{1 \leq i \leq r} )$ is the application of the \emph{soft-thresholding operator} to the singular values  $S = \mathrm{diag}(\{ \sigma_i \}_{1 \leq i \leq r})$.  
+%\end{equation} 
+Equation~\eqref{eq:prox_nuclear} yields the prox operator for nuclear norm $\lVert A \rVert_\ast$, which is not necessarily a convex function. However, it is known that $\lVert \cdot \rVert_\ast$ is convex over the set $\{ X \in \mathbb{R}^{n \times m} : \lVert X \rVert_2 \leq m \} $, thus we may inherit the smoothing properties of $M_f^\mu$ by considering the prox operator for the function $f: X \mapsto \frac{1}{m} \lVert X \rVert_\ast$. Letting $\alpha = m^{-1}$, the proximal operator of this function is given by: 
+\begin{equation}
+	\mathrm{prox}_{\alpha f}^\mu(X) = \argmin_{Y \in \mathbb{R}^{n \times m}} \left \{ \alpha \lVert Y \rVert_\ast  + \frac{1}{2\mu}\lVert Y - X \rVert_F^2 \right \} = \alpha \cdot \mathrm{prox}_f^{\mu \alpha}(X)
+\end{equation}
+%It may be shown that if $f(x) = g(\lambda x)$ and $\alpha = \sqrt{\lambda}$, then: 
+%\begin{equation}
+%	\mathrm{prox}_f(x) = \lambda^{-1}\mathrm{prox}_{\lambda^2 g}( \lambda x) \iff \mathrm{prox}_{\alpha f}(x) = \alpha^\frac{1}{2} \, \mathrm{prox}_{f}( \alpha^{-\frac{1}{2}} x)
+%\end{equation}
+%Thus, if $f: X \mapsto \lVert X \rVert_\ast$ is the nuclear norm and $\alpha = m^{-1}$ is chosen such that $f$ is convex, and $X = U S V^T$ is the SVD of $X$, then $\mathrm{prox}_{\alpha f}^\mu$ is given by: 
+%\begin{equation}
+%	\mathrm{prox}_{\alpha f}^{\mu}(X) = \argmin_{Y \in \mathbb{R}^{n \times m}} \left \{ \alpha \lVert Y \rVert_\ast  + \frac{1}{2\mu}\lVert Y - X \rVert_F^2 \right \} = \alpha^{\frac{1}{2}} U \mathcal{D}_{\mu}(\alpha^{-\frac{1}{2}} S ) V^T
+%\end{equation}
+%The corresponding Moreau envelope $M_{\alpha f}^\mu$ is given by:
+%\begin{equation}
+%	M_{\alpha f}^\mu(X) = \alpha^{\frac{3}{2}} \mathrm{tr}(\mathcal{D}_\mu(\alpha^{-\frac{1}{2}} S)) + \frac{1}{2\mu} \lVert X - \mathrm{prox}_{\alpha f}^\mu(X) \rVert_F^2
+%\end{equation}
+%\begin{equation}
+%	\mathrm{prox}_{\lVert \cdot \rVert_\ast}^\mu( \partial_p^\ast ) = \argmin_{U \in \mathbb{R}^{m \times n}} \left\{ \lVert U \rVert_\ast - \frac{1}{2\mu}\lVert U - \partial_p^\ast \rVert_F^2 \right\}
+%	%\argmin_{U \in \mathbb^{m \times n}} 
+%\end{equation}
+%Whose solution is given by: 
+%\begin{equation}
+%	\mathrm{prox}_{\lVert \cdot \rVert_\ast}^\mu( \partial_p^\ast ) = U \mathcal{D}_\mu(S) V^T \quad \text{ where } \partial_p^\ast = U S V^T
+%\end{equation}
+%where $\eta_\mu$ is the soft-threshold function: 
+%\begin{equation}
+%\eta_\mu(\sigma) = \begin{cases}
+%	\sigma - \mu &\sigma \geq \mu  \\
+%	0 & -\mu \leq \sigma \leq \mu \\
+%	\sigma + \mu & \sigma \leq -\mu 
+%\end{cases}	
+%\end{equation}
+% 
+
+%Since $f$ is proper and convex, $M_f^\mu$ is convex and acts as a smooth relaxation of $f$. In particular, the proximal operator $$
+
+% Equipping the set of all simplices $\mathcal{P}(X)$ with an appropriate total order,
+% Thus, after suitable normalization, the right-most term of equation~\ref{eq:block_pb} can be relaxed to a convex function. 
+% The columns of $\partial_p^\ast$ span $C_p(X_\ast)$, thus 
+% Let $\mathcal{N}(\cdot)$ and $\mathcal{R}(\cdot)$ denote the null-space of column-space of its arguments, respectively. 
+%The $p$-th persistent Betti number is informative in capturing the necessary conditions of our goal: ...
+%Ideally, we would like an expression akin to equation~\eqref{eq:block_pb} that is amenable to optimization.
+\begin{remark}
+	Show example of Moreau envelope 
+\end{remark}
+
+
+
+%$<$ TODO $>$
+
+%A remarkable result established by~\cite{} show that the $\mathrm{rank}(\cdot)$ function is lower-bounded by the convex envelope... [describe this more in detail]
+%
+%
+%\noindent  \textbf{DC Formulation:}
+%The 
+%\begin{align}
+%	\beta_p^{b,d} &= \lvert \, \partial_p^b \, \rvert - \mathrm{rank}(\partial_p^b) - \mathrm{rank}(\partial_p^{b,d}) \\
+%	&= \lvert \, \partial_p^b \, \rvert - \left( \mathrm{rank}(\partial_p^b) + \mathrm{rank}(\partial_p^{b,d}) \right) \\
+%	&=
+%	\lvert \, \partial_p^b \, \rvert - 
+%	\arraycolsep=1.8pt\def\arraystretch{1.25}
+%	\mathrm{rank}\left(\left[\begin{array}{c|c}
+% 		\partial_p^{b} & 0 \\
+%		\hline
+%		0 & \partial_p^{b,d}
+%	\end{array}\right] \right) \label{eq:block_pb}
+%\end{align}
+
+
+\appendix
+\section{Appendix}
+
+\subsection*{Dynamic Metric Spaces}
+Consider an $\mathbb{R}$-parameterized metric space $\delta_X = ( X, d_X(\cdot) )$ where
+$X$ is a finite set and $d_X(\cdot): \mathbb{R} \times X \times X \to \mathbb{R}_{+}$, satisfying: 
+\begin{enumerate}
+	\item For every $t \in \mathbb{R}, \delta_X(t) = (X, d_X(t))$ is a pseudo-metric space\footnote{This is required so that if one can distinguish the two distinct points $x, x' \in X$ incase $d_X(t)(x, x') = 0$ at some $t \in \mathbb{R}$. } 
+	\item For fixed $x, x' \in X$, $d_X(\cdot)(x, x'): \mathbb{R} \to \mathbb{R}_{+}$ is continuous.
+\end{enumerate}
+When the parameter $t \in \mathbb{R}$ is interpreted as \emph{time}, the above yields a natural characterization of a ``time-varying'' metric space. More generally, we refer to an $\mathbb{R}^h$-parameterized metric space as \emph{dynamic metric space}(DMS). Such space have been studied more in-depth~\cite{} and have been shown...
+ 
+
+\subsection*{Rank relaxation}
+A common approach in the literature to optimize quantities involving $\mathrm{rank}(A)$ for some $m \times n$ matrix $A$ is to consider optimizing its \emph{nuclear norm} $\lVert A \rVert_\ast = \mathrm{tr}(\sqrt{A^T A}) = \sum_{i=1}^r \lvert \sigma_i \rvert$, where $\sigma_i$ denotes the $i$th singular value of $A$ and $r=\mathrm{rank}(A)$. One of the primary motivations for this substitution is that the nuclear norm is a convex envelope of the rank function over the set: 
+$$
+S := \{ A \in \mathbb{R}^{n \times m} \mid \lVert A \rVert_2 \leq m \}
+$$
+That is, for an appropriate $m > 0$, the function $A \mapsto \frac{1}{m}\lVert A \rVert_\ast$ is a lower convex envelope of the rank function over $S$. The nuclear norm also admits a subdifferential... thus, we may consider replacing~\eqref{} with: 
+\begin{align}\label{eq:betti_four_nuc}
+	\beta_p^{i,j}(t) &= \lvert \partial_{p,t}^{1,i} \rvert -
+	m_1\inv \lVert \partial_{p,t}^{1,i} \rVert_\ast - 
+	m_2\inv \lVert \partial_{\bar{p},t}^{1,j}\rVert_\ast - 
+	m_3\inv \lVert\partial_{\bar{p},t}^{\bar{i},j}\rVert_\ast 
+\end{align}
+where $\bar{c} = c + 1$. Now, if $t \mapsto \partial_p^\ast(t)$ is a non-decreasing, convex function in $t$, then the composition ... is convex, as each of the individual terms are convex. Moreover, we have...
+
+$<$ Insert proof about this relaxation always lower-bounding $\beta$ $>$
+
+\subsection*{Computation}
+In this section, we discuss the computation of suitable bases for the subspaces $Z_p(X_\ast)$, $B_p(K_\ast)$, and $Z_p(X_\ast) \cap B_p(X_\ast)$. In particular, we address two cases: the \emph{dense} case, wherein the aforementioned bases are represented densely in memory, and the \emph{sparse} case, which uses the structure of a particular decomposition of the boundary matrices to derive bases whose size in memory inherits the sparsity pattern of the decomposition.
+\\
+\\
+\textbf{Sparse case:} We require an appropriate choice of bases for the groups $B_{p-1}(K_\ast)$ and $Z_p(X_\ast) \cap B_p(X_\ast)$. 
+For some fixed $t \in T$, let $R_p = \partial_p V_p$ denote the decomposition discussed above, and let $b, d \in \mathbb{R}_+$ be fixed constants satisfying $b \leq d$. Since the boundary group $B_{p-1}(K_b)$ lies in the image of the $\partial_{p}$, it can be shown that a basis for the boundary group $B_{p-1}(K_\ast)$ is given by: 
+\begin{flalign}
+	&& M_p^b = \{ \, \mathrm{col}_{R_{p+1}}(j) \neq 0 \mid j \leq b \, \}  && span()
+\end{flalign}
+Moreover, since $B_{p-1}(K_b) = \mathrm{Im}(\partial_p^b)$, we have $\mathrm{span}(M_p^b) = B_{p-1}(K_b)$ and thus $\mathrm{rank}(M_p^b) = \mathrm{rank}(\partial_p^b)$. Indeed, it can be shown that every lower-left submatrix of $\partial_p^\ast$ satisfies $\mathrm{rank}(\partial_p^\ast) = \mathrm{rank}(R_p^\ast)$. Thus, although $M_p^b$ does provide a minimal basis for the boundary group $B_{p-1}(K_b)$, it is unneeded here. 
+
+A suitable basis for the cycle group can also be read off from the reduced decomposition directly as well. Indeed, let $R_p = \partial_p V_p$ as before. Then the cycle group is spanned by linear combinations of columns of $V_p$: 
+\begin{equation}
+	Z_p^b = \{ \, \mathrm{col}_{V_p}(j) \mid \mathrm{col}_{R_{p}}(j) = 0, j \leq b \, \}	
+\end{equation}
+The formulation of a basis spanning $Z_p(K_i) \cap B_p(K_j)$ is more subtle, as we can no longer use the  fact that every lower-left submatrix of $R_p$ has the same rank as the same lower-left submatrix of $\partial_p$. 
+Nonetheless, a basis for this group can be obtained by reading off specific columns from $R_p$: 
+\begin{equation}
+	M_p^{b, d} := \{\, \mathrm{col}_{R_{p+1}}(k) \neq 0 \mid 1 \leq k \leq d \text{ and } 1 \leq \mathrm{low}_\mathrm{R_{p+1}}(k) \leq b \, \}
+\end{equation}
+%\begin{flalign}
+%	(\, Z_p(K_i) \cap B_p(K_j) \, ) && M_p^{b, d} := \{\, \mathrm{col}_{R_p}(k) \mid 1 \leq k \leq d \text{ and } 1 \leq \mathrm{low}_\mathrm{R_p}(k) \leq b \, \} &&
+%\end{flalign}
+One can show that $M_b^d$ does indeed span $Z_p(X_\ast) \cap B_p(X_\ast)$ by using the fact that the non-zero columns of $R_p$ with indices at most at most $d$ form a basis for $B_p(K_d)$, and that each low-row index for every non-zero is unique. 
+%The issue here is that 
+\\
+\\
+\noindent
+\textbf{Dense case:} 
+In general, persistent homology groups and its various factor groups are well-defined and computable with the reduction algorithm with coefficients chosen over any ring. By applying operations with respect to a field $\mathbb{F}$, both the various group structures $Z_p(K_\bullet) \subseteq B_p(K_\bullet)  \subseteq C_p(K_\bullet) $ and their induced quotient groups $H_p(K_\bullet)$ are vector spaces; thus, the computation of suitable bases can be approached from a purely linear algebraic perspective.
+In particular, by fixing $\mathbb{F} = \mathbb{R}$, we inherit not only many useful tools for obtaining suitable bases for these groups, but also access to their corresponding optimized implementations as well. 
+
+Consider the $p$-th boundary operator $\partial_p^\ast : C_p(K_\ast) \to C_{p-1}(K_\ast)$ whose matrix realization with respect to some choice of simplex ordering $\{\sigma_i\}_{1 \leq i \leq m}$ we also denote with $\partial_p$. By definition, the boundary group $B_p(K_\ast)$ is given by the image $\mathrm{Im}(\partial_{p+1}^\ast) = B_p(K_\ast)$, thus one may basis for $B_p(K_\ast)$ by computing the considering the first $r > 0$  columns of the reduced SVD: 
+\begin{equation}
+	M_p^\ast = [\, u_1 \mid u_2 \mid \dots \mid u_r \, ] = \{ \,  \, \}
+\end{equation}
+
+%For a fixed $t \in T$, we obtain a boundary matrix $\partial_{p}^{b,d}$ up to filtration value (diameter) $d \in \mathbb{R}$ for $d_X(t)$. We recall the integer-valued function (equation~\eqref{eq:pb_rank}) we would like to relax. To do this, we substitute the nuclear norm $\lVert \, \cdot \, \rVert_\ast$  for the $\mathrm{rank}$ function and a sigmoid-like function $S_b : K \to \mathbb{R}_{+}$ for the order function $\lvert \, \cdot \, \rvert$, obtaining: 
+%\begin{equation}\label{eq:relaxation_pb}
+%\hat{\beta}_p^{b,d} = S_b(K) - \lVert \partial_p^b \rVert_{\ast} - \lVert \partial_p^{b,d} \rVert_\ast
+%\end{equation} 
+%where $S_b(K) = \sum_{\sigma \in K} \mathrm{sigmoid}(\lvert b - \mathrm{diam}(\sigma)\rvert)$.
+%Our choice of the nuclear norm is motivated by the fact that it is often used due to its close relationship to the rank function, as first observed by Fazel et al~\cite{} (we discuss this more in section~\ref{}). 
+
+%$<$ TODO: the goal $>$
+%First, we that prove the following properties of equation~\eqref{eq:relaxation_pb}:
+%\begin{enumerate}
+%	\item If $t^\ast = \argmin\limits_{t \in T} \beta_{p}^{b,d}$ and $\hat{t}^\ast = \argmin\limits_{t \in T} \hat{\beta}_{p}^{b,d}$, then $t^\ast = \hat{t}^\ast$
+%	\item $\hat{\beta}_{p}^{b,d}(t)$ is continuous as a function of $t \in T$
+%	\item $\hat{\beta}_{p}^{b,d}(t)$ admits a subgradient $\hat{\beta}_{p}^{b,d}(t)$
+%\end{enumerate}
+%We first begin with properties (2) and (3). (2) is obvious... To see (3), consider:
+%Equation~\eqref{eq:relaxation_pb} admits a differentiable form amenable to optimization. 
+%\begin{equation}
+%	\nabla \hat{\beta}_p^{b,d} = \nabla S_b(K) - \nabla \lVert \partial_p^b \rVert_{\ast} \cdot J_b - \nabla \lVert \partial_p^{b,d} \rVert_\ast \cdot J_{b,d}
+%\end{equation}
+%For any matrix $M \in \mathbb{R}^{n \times m}$ whose corresponding singular value decomposition (SVD) is $M = U \Sigma V^T $, the characterization of the (sub)gradient of $\lVert M \rVert_\ast$ is given by\cite{}: 
+%\begin{equation}
+%	\partial\|M\|_{*}=\left\{U V^T + W: P_{U} W=0, W P_{V}=0,\|W\| \leq 1\right\}
+%\end{equation}
+%where $P_U$ ($P_V$, resp.) is an orthogonal projector onto the column space of $U$ ($V$, resp.). For simplicity we set $W = 0$ and obtain: % TODO: write as functional way
+% \begin{equation}
+%	\nabla \hat{\beta}_p^{b,d} = \nabla S_b(K) - U_b V_b^T J_b - U_{b,d} V_{b,d}^T J_{b,d}
+%\end{equation}
+
+%Given a Rips complex, 	$H_p(K_1) \to H_p(K_2) \to \dots \to H_p(K_m)$
+
+
+\end{document}
