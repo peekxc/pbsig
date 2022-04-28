@@ -38,7 +38,7 @@ $<$ insert motivating examples, etc $>$
 \section{Background \& Notation}\label{sec:background_notation}
 % \textbf{Persistent Homology:}
 A \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a vertex set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$.
-A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$, and $K_\bullet$ is \emph{essential} if $i \neq j$ implies $K_i \neq K_j$ whenever $j$ is the immediate successor of $i$ in $I$:
+A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$ and $K_\bullet$ is called \emph{essential} if $i \neq j$ implies $K_i \neq K_j$:
 %Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
 \begin{equation}
 	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
@@ -137,18 +137,19 @@ The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from
 \end{equation}
 One of the seminal results from the Pairing Uniqueness lemma~\cite{} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then for any $1 \leq i < j \leq m$, we have (todo: elaborate more): 
 $$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R_i^j) = \mathrm{rank}(\partial_i^j)$$
-Thus, the lower-left submatrices of the filtered boundary matrix $\partial$ has the same rank as $R$. 
-Let $\hat{\partial} = \partial_p$ and $\bar{\partial} = \partial_{p+1}$. Utilizing the result above, observe $\beta_p^{i,j}$ may be written as: 
+Thus, all lower-left submatrices of the filtered boundary matrix $\partial$ have the same rank as their corresponding submatrices in $R$. 
+Let $E = \partial_p$ and $T = \partial_{p+1}$. Utilizing this fact, we may write $\beta_p^{i,j}$ as: 
 \begin{equation}\label{eq:betti_four}
-	\beta_p^{i,j} = \lvert \hat{\partial}_1^i \rvert - \mathrm{rank}(\hat{\partial}_1^i) - \mathrm{rank}(\bar{\partial}_1^j) + \mathrm{rank}(\bar{\partial}_{i+1}^j)
+	\beta_p^{i,j} = \lvert E_1^i \rvert - \mathrm{rank}(E_1^i) - \mathrm{rank}(T_1^j) + \mathrm{rank}(T_{i+1}^j)
 \end{equation}
-where $\lvert \, A \, \rvert = \mathrm{dim}(\mathrm{dom}(A))$ denotes the order of the matrix. Thus, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
+where $\lvert \, A \, \rvert = \mathrm{dim}(\mathrm{dom}(A))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
 % DONT ERASE
 %Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_{p-1}(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\ref{sec:computation}. Substituting these matrices appropriately, equation~\eqref{eq:pb3} can be written as: 
 %\begin{equation}\label{eq:pb_rank}
 %	\beta_p^{b,d} = \lvert \, \partial_p^b \, \rvert - \mathrm{rank}(\partial_p^b) - \mathrm{rank}(\partial_{p+1}^{b,d}) 
 %\end{equation}
 %where $\lvert \, M \, \rvert = \mathrm{dim}(\mathrm{dom}(M))$. Thus, $\beta_p^{b,d}$ is expressible as a difference between a simple-to-compute quantity ($\lvert \, \partial_p^b \, \rvert$ simply counts the number of $p$-simplices with filtration value $f(\sigma) \leq b$ for some fixed $b \in \mathbb{R}_+$) and the rank of two particular matrices. We make use of this fact in later sections of the paper. 
+% NOTE: Keep i,j as the indices in the notation for the above section; the next section makes clear the transition to \epsilon_i, \epsilon_j
 
 
 \subsubsection*{Boundary Matrix Relaxation}
@@ -163,18 +164,17 @@ Recall that the boundary operator $\partial_p$ for a finite simplicial filtratio
 %where $\hat{v}_i$ indicates the removal of $v_i$ from the $i$th summand.  
 \begin{equation}\label{eq:matrix_pchain}
 	\partial_p[i, j] = \begin{cases} 
-	c(\sigma)  & \text{if } \sigma_i \in \partial_p(\sigma_j) \\
+	c(\sigma_j)  & \text{if } \sigma_i \in \partial_p(\sigma_j) \\
 	0 & \text{otherwise}
    \end{cases}
 \end{equation}
-where $c(\sigma) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex.
-In practice, $c(\sigma)$ is typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we propose an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
+where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we propose an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
 \begin{definition}[Time-varying boundary matrix]\label{def:time_boundary_matrix}
 Let $\mathbb{F} = \mathbb{R}$ denote the field, $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$, and let $(\mathcal{P}(X), \preceq^\ast)$ be a linear extension of the face poset of the $(n-1)$-simplex $\Delta_n$. 
 For a fixed $\epsilon > 0$, a time-varying $p$-th boundary matrix $\partial_p^t$ is an $\binom{n}{p} \times \binom{n}{p+1}$ matrix whose entries $c(\sigma)$ satisfy:
 $$
 \partial_p^t[i,j] = \begin{cases}
-	\lvert \epsilon - \mathrm{diam}_t(\sigma) \rvert_{+} & \text{if } \sigma_i \in \partial_p(\sigma_j)\\
+	\pm \, \lvert \epsilon - \mathrm{diam}_t(\sigma_j) \rvert_{+} & \text{if } \sigma_i \in \partial_p(\sigma_j)\\
 	0 & \text{otherwise}
 \end{cases} 
 % c(\sigma) = \lvert \epsilon - \mathrm{diam}_t(\sigma) \rvert_{+}
@@ -183,7 +183,7 @@ and whose rows and columns are ordered by $\preceq^\ast$ for all $t \in T$.% the
 %and the total order on $K(\cdot)$ is fixed.  
 \end{definition}
 \noindent
-We now show a few properties that $\partial_p^t$ exhibits which is advantageous for optimization. Clearly the entries of $\partial_p^t$ must vary continuously in $t \in T$. Moreover, for all $t, t' \in T$, we have:
+We now show a few properties that $\partial_p^t$ exhibits which is advantageous for optimization. Clearly the entries of $\partial_p^t$ must vary continuously in $t \in T$. Moreover, for fixed $p \geq 0$, we have:
 % 
 % Lipshitz statement about boundary matrix
 % At the algebraic level, persistent homology admits a canonical decomposition for coefficients in any choice of field~\cite{}, though at the expense of torsion information.\footnote{}
@@ -206,9 +206,9 @@ We now show a few properties that $\partial_p^t$ exhibits which is advantageous 
 %	An elementary $p$-chain $c_p : T \times K$ is said to be time-varying if $c_p(\cdot)(\sigma) = f(\sigma; t)$ is continuous in $T$. 
 %\end{definition}
 \begin{enumerate}
-	\item $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ where $K_t = \mathrm{Rips}_{\epsilon}(\delta_{\mathcal{X}}(t))$  
-	\item $\lVert \partial_p^t - \partial_p^{t'} \rVert_F \leq C \lvert t - t' \rvert (p+1)$ when $\delta_\mathcal{X}$ is $C$-Lipshitz over $T$
-	\item $\lVert \partial_p^t \rVert_{2} \leq \sqrt{\kappa} \, (p+1) \, \epsilon$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$
+	\item $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ for all $t \in T$, where $K_t = \mathrm{Rips}_{\epsilon}(\delta_{\mathcal{X}}(t))$, 
+	\item $\lVert \partial_p^t - \partial_p^{t'} \rVert_F \sim O(m_p)$ when $\delta_\mathcal{X}$ is $C$-Lipshitz over $T$ and $\lvert t - t' \rvert$ is small,
+	\item $\lVert \partial_p^t \rVert_{2} \leq \epsilon \sqrt{\kappa} \, (p+1)$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$
 	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
 \end{enumerate}
 \begin{proof}
@@ -222,10 +222,17 @@ Property (3) follows from the construction of $\partial_p$ and from the inequali
 % Insert proofs about rank, about lipshitz continuity, about being valid boundary matrices 
 % Insert rank/convex envelope statement
 
+% Revisit the conditions on the four matrices making the PB computation; express their conditions via chain conditions/mins
+
+
 \subsubsection*{Rank Relaxation (TODO)}
-In light of the formulation of~\eqref{eq:betti_four}, we may interpret $\beta_p^{i,j}$ from a function composition perspective: 
+In light of expression~\eqref{eq:betti_four}, we may interpret many of the terms of $\beta_p^{i,j}$ from a function composition perspective: 
 $$ t \stackrel{f}{\mapsto} \partial_\ast^t \stackrel{g}{\mapsto} \mathrm{rank}(\partial_\ast^t ) $$
 In this sense, by modifying the entries of $\partial_p^\ast$ via~\ref{def:time_boundary_matrix}, we ensure that $f$ is both continuous and inherits the the smoothness of $\partial_\mathcal{X}(\cdot)$. We now address $g$.
+
+A common relaxation of the $\mathrm{rank}$ function found in the literature is the nuclear norm, $\lVert A \rVert_\ast = \mathrm{tr}(S)$, where $A = U S V^T$. This is due to the fact that the nuclear norm is the tightest convex envelope of the $\mathrm{rank}$ function over the set of matrices whose spectral norm is less than $m > 0$:
+$$ \mathcal{A} = \{ A \in \mathbb{R}^{n_1 \times n_2} \,:\, \lVert A \rVert_2 \leq m \}$$
+Equivalently, $\mathcal{A}$ may be thought of as the set of matrices $A \in \mathbb{R}^{n_1 \times n_2}$ such that $\lVert \frac{1}{m}A\rVert_2 \leq 1$, for some appropriate choice of $m > 0$. 
  
 \subsection*{Smoothness}
 %In this section we introduce the notion of the Moreau envelope as means of smoothing our objective function. The study of the Moreau envelope and proximal operators has a long history related to infimal convolution and the Fenchel conjugate, see~\cite{}.
@@ -254,6 +261,9 @@ Equation~\eqref{eq:prox_nuclear} yields the prox operator for nuclear norm $\lVe
 \begin{equation}
 	\mathrm{prox}_{\alpha f}^\mu(X) = \argmin_{Y \in \mathbb{R}^{n \times m}} \left \{ \alpha \lVert Y \rVert_\ast  + \frac{1}{2\mu}\lVert Y - X \rVert_F^2 \right \} = \alpha \cdot \mathrm{prox}_f^{\mu \alpha}(X)
 \end{equation}
+
+% Consider U[S - lambda I]V as SVT notation
+
 %It may be shown that if $f(x) = g(\lambda x)$ and $\alpha = \sqrt{\lambda}$, then: 
 %\begin{equation}
 %	\mathrm{prox}_f(x) = \lambda^{-1}\mathrm{prox}_{\lambda^2 g}( \lambda x) \iff \mathrm{prox}_{\alpha f}(x) = \alpha^\frac{1}{2} \, \mathrm{prox}_{f}( \alpha^{-\frac{1}{2}} x)
@@ -297,6 +307,15 @@ Equation~\eqref{eq:prox_nuclear} yields the prox operator for nuclear norm $\lVe
 \end{remark}
 
 
+
+\section{Persistent $1$-Betti Number Approximation}
+In this section we demonstrate that there exists a convenient output-sensitive approximation the $p=1$ Persistent Betti number using the formulation we given in Equation~\ref{eq:betti_four_nuc}. 
+In what follows, we assume was have as input a $d=2$ Rips complex $\mathcal{R}_b$ constructed up to some threshold $b > 0$ over a fixed metric space $(X, d_X)$ with $n_v = \lvert X \rvert$ vertices. 
+Recall we can write the $p=1$ persistent Betti number as a sum of rank functions:
+\begin{equation}\label{eq:betti_four_1}
+	\beta_p^{a,b} = \mathrm{rank}(I_1^a) - \mathrm{rank}(\partial_1^a) - \mathrm{rank}(\partial_2^b) + \mathrm{rank}(\partial_2^{\bar{a},b})
+\end{equation}
+Thus, any algorithm which can approximate the $\mathrm{rank}$ function provides an approximation algorithm for $\beta_p^{a,b}$. 
 
 %$<$ TODO $>$
 

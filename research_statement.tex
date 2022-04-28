@@ -1,0 +1,24 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{url}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{\vspace{-2.0em} Research Statement\vspace{-0.5em}}
+\author{Matt Piekenbrock}
+\date{}
+
+\begin{document} \vspace{-2em} \maketitle \vspace{-1em}
+Topological data analysis (TDA) constitutes a set of tools which blend ideas from geometry and topology towards enabling topology-aware analysis of data. The theory that TDA provides often subsumes or extends common applications of unsupervised and metric learning, such as clustering, dimensionality reduction, and data summarization (e.g. feature learning, graph learning, vector quantization). 
+Examples include identifying high-density clusters non-parametrically, recovering latent topological invariants in noisy data, and exploiting low-dimensional topological structure in compressed sensing contexts. 
+A common property shared among the many topologically-inspired approaches to these tasks is \emph{stability}: small changes in the input yield provably small changes in the output. Thus, a natural question to ask is: what barriers exist---in theory and in practice---to the application of these tools in dynamic settings?
+
+My research is focused on the study of many of these ideas in \emph{dynamic metric spaces}. For example, one research direction I'm exploring is a relaxation of the persistent Betti number computation that is more amenable to optimization in parameterized settings. 
+% The relaxation incorporates many tools from compressed sensing, e.g. the use of the nuclear norm as a convex surrogate to the rank function, the use of proximal operators to endow the relaxation with smoothness, the exploitation of graph Laplacian for tight bounds, etc. 
+Another aspect of my research is topological dimensionality reduction, wherein the goal is to recover topologically accurate embeddings of noisy manifold data by incorporating concepts and tools from fiber bundle theory. 
+Moreover, towards enabling applications of this theory in practical contexts, I've also done research on how to reduce the algorithmic complexity associated with extending several topological invariants to time-varying contexts, such as those derived from persistent homology. 
+\end{document}

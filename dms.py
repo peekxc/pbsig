@@ -4,14 +4,15 @@
 # 1. a parameterized-closure which upon evaluation yields a new point set 'X' or set of pairwise distances
 # 2. a dictionary containing information about the DMS, including e.g. parameter bounds, Betti numbers, etc.
 import numpy as np
+import autograd.numpy as auto_np 
 
 def circle_family(n: int, lb: float = 0.0, ub: float = np.inf, sd: float = 0):
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)
-  unit_circle = np.c_[np.cos(theta), np.sin(theta)]
-  unit_circle += np.random.normal(scale=sd, size=unit_circle.shape)
+  theta = auto_np.linspace(0, 2*np.pi, n, endpoint=False)
+  unit_circle = auto_np.c_[auto_np.cos(theta), auto_np.sin(theta)]
+  unit_circle += auto_np.random.normal(scale=sd, size=unit_circle.shape)
   def circle(t: float):
-    t = np.max([t, 0])
-    return(unit_circle @ np.diag([t, t]))
+    # t = auto_np.max([t, 0])
+    return(auto_np.dot(unit_circle, auto_np.diag([t, t])))
   return(circle, { 'n_points': n,  'parameter_bounds' : [lb, ub] })
 
 

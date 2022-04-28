@@ -3,6 +3,17 @@ import numpy as np
 from persistence import * 
 from apparent_pairs import *
 
+
+def Lipshitz(f: ArrayLike, x: ArrayLike):
+  """ 
+  Estimate Lipshitz constant K such that: 
+  
+  (|f(x) - f(x')|) / (|x - x'|) <= K 
+  
+  """
+  assert len(f) == len(x)
+  return(np.max(np.abs(np.diff(f))/np.abs(np.diff(x))))
+
 def make_smooth_step(b, bp):
   def S(x):
     if x <= b: return(1.0)
@@ -17,6 +28,44 @@ def smooth_grad(b, bp):
     if x >= bp: return(0)
     return(-(3*(b-bp)*(bp-x))/(bp-b)**3)
   return(sg)
+
+def soft_threshold(s: ArrayLike, mu: Union[float, ArrayLike] = 1.0):
+  s = s.copy()
+  if isinstance(mu, float):
+    mu = np.repeat(mu, len(s))
+  gt, et, lt = s >= mu, np.logical_and(-mu <= s, s <= mu), s <= -mu
+  s[gt] = s[gt] - mu[gt]
+  s[et] = 0.0
+  s[lt] = s[lt] + mu[lt]
+  return(s)
+
+def prox_moreau(X: Union[ArrayLike, Tuple], alpha: float = 1.0, mu: Union[float, ArrayLike] = 0.0):
+  """
+  Evaluates the proximal operator of a matrix (or SVD) 'X' under the nuclear norm scaled by 'alpha', and 'mu' is a smoothing parameter. 
+  
+  As mu -> 0, Mf(X) converges to the nuclear norm of X. 
+  
+  If mu < 1, the term |X - Y| tends to be larger and so the optimization will tend prefer matrices with lower nuclear norms
+
+  If mu > 1, the term |X - Y| tends to be smaller and so the optimization will tend to prefer 'closer' matrices in the neighborhood of X that happen to have small nuclear norm. 
+
+  As mu -> C for some very large constant C, the gradient of should become smoother as the expense of |f(x) - Mf(x)| becoming larger.
+  """
+  ## alpha-scaled prox operator 
+  if isinstance(X, np.ndarray):
+    usv = np.linalg.svd(X, compute_uv=True, full_matrices=False)
+  else: 
+    assert isinstance(X, Tuple)
+    usv = X
+    X = usv[0] @ np.diag(usv[1]) @ usv[2]
+  # s_threshold = soft_threshold((1.0/np.sqrt(alpha))*usv[1], mu=mu)
+  s_threshold = soft_threshold(usv[1], mu=alpha*mu)
+  prox_af = alpha * (usv[0] @ np.diag(s_threshold) @ usv[2])
+
+  ## Moreau envelope 
+  Ma = alpha**2 * np.sum(s_threshold) # to check
+  Mb = 0 if mu == 0 else (1/(2*mu))*np.linalg.norm(X - prox_af, 'fro')**2
+  return(Ma + Mb, prox_af)
 
 def relaxed_pb(X: ArrayLike, b: float, d: float, bp: float, m1: float, m2: float, summands: bool = False, p: Tuple = (1.0, 1.0), rank_adjust: bool = False, **kwargs):
   """ Relaxed Persistent betti objective """

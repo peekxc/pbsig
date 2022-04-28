@@ -164,7 +164,7 @@ def linear_homotopy(f0: ArrayLike, f1: ArrayLike, plot_lines: bool = False):
     for x,y,label in zip(P[:,0],P[:,1],pp): plt.text(x, y, s=str(label),ha='left')
     for x,y,label in zip(Q[qp,0],Q[qp,1],qp): plt.text(x, y, s=str(label),ha='right')
 
-  ## Convert id transpositions to relative transpositions
+  ## Convert id transpositions to relative position transpositions
   rtransp = np.zeros(shape=transpositions.shape, dtype=int)
   p_inv = np.argsort(pp)
   perm = pp.copy()
@@ -172,6 +172,7 @@ def linear_homotopy(f0: ArrayLike, f1: ArrayLike, plot_lines: bool = False):
     rtransp[c,:] = [p_inv[i],p_inv[j]]
     perm[[p_inv[j],p_inv[i]]] = perm[[p_inv[i],p_inv[j]]]
     # p_inv[[i,j]] = [j,i]
+    # p_inv[i], p_inv[j] = p_inv[j], p_inv[i]
     p_inv = np.argsort(perm)
   
   assert np.all(qp == perm)

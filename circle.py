@@ -190,6 +190,43 @@ axs[1].set_yscale("log")
 axs[2].set_yscale("log")
 axs[3].set_yscale("log")
 
+## %% Weighted nuclear norm idea 
+from betti import *
+m = np.max(np.linalg.svd(D1.A, compute_uv=False))
+A = (1/m)*D1.A 
+np.sum(np.linalg.svd(A, compute_uv=False))
+
+# weight vector 
+usv = np.linalg.svd(A, compute_uv=True, full_matrices=False)
+s = usv[1]
+l = 0.20 
+w = (1-0.20)*s + 0.20/s
+s_threshold = soft_threshold(s, mu=w)
+prox_af = (usv[0] @ np.diag(s_threshold) @ usv[2])
+
+## Moreau envelope 
+Ma = np.sum(s_threshold) # to check
+Mb = 0 if mu == 0 else (1/(2*mu))*np.linalg.norm(A - prox_af, 'fro')**2
+
+
+# %% Preconditioning idea 
+M_x = lambda x: D1.solve(x)
+M = spla.LinearOperator((3,3), M_x)
+
+# %% Grassmanian idea 
+from geomstats.geometry.grassmannian import Grassmannian
+r = np.linalg.matrix_rank(A)
+G = Grassmannian(A.shape[0], int(r))
+B = G.projection((1/m)*A)
+A_norm = (1/m)*A
+I = np.array([nuclear_norm(A_norm*(1-alpha) + alpha*B) for alpha in np.linspace(0, 1, 100)])
+plt.plot(range(100), I)
+
+S = np.array([np.linalg.svd(A_norm*(1-alpha) + alpha*B, compute_uv=False) for alpha in np.linspace(0, 1, 100)])
+
+for j in range(S.shape[1]):
+  plt.plot(range(100), S[:,j])
+
 
 # %% Enumerate the singular values for T1, T2 for the whole family
 def singular_values_T1(t):
@@ -390,8 +427,194 @@ for i,t in enumerate(T):
 plt.plot(T, sv)
 
 
-
-
 # %% vineyards 
 
 reduction_pHcol()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# %% Circle WSVT examples  
+import numpy as np 
+from dms import circle_family
+from betti import *
+from persistence import * 
+from scipy.spatial.distance import pdist 
+from ripser import ripser
+from persim import plot_diagrams
+import matplotlib.pyplot as plt
+np.set_printoptions(suppress=True)
+
+C, params = circle_family(n=16, sd=0.15)
+T = np.linspace(0, 1.5, 1000)
+diagrams = [ripser(C(t))['dgms'][1] for t in T]
+birth, death = diagrams[int(len(diagrams)/2)][0]*np.array([1.10, 0.90])
+
+X = C(np.median(T))
+D1, D2, D3 = persistent_betti_rips_matrix(X, birth, death)
+D1.data = np.sign(D1.data)*np.maximum(birth - abs(D1.data), 0)
+
+# %% Show nice interpolation from proximal nuclear norm -> rank
+
+# weight vector 
+m = np.max(np.linalg.svd(D1.A, compute_uv=False, full_matrices=False))
+A = D1.A/m
+usv = np.linalg.svd(A, compute_uv=True, full_matrices=False)
+s = usv[1]
+W = lambda alpha: (1-alpha) + alpha*(1/s)
+assert np.allclose(s*W(0), s)
+assert np.allclose(s*W(1), np.repeat(1.0, len(s)))
+
+# %% 
+m1,m2 = nuclear_constants(D1.shape[0], birth, death, 'global')
+ALPHA = np.linspace(0, 1, 10)
+MU = np.linspace(0, 0.20, 20)
+
+## Alpha -> 1 should increase closeness to rank
+## mu -> 0 should make it closer to proximal nuclear
+results = np.zeros(shape=(len(T), len(MU), len(ALPHA)))
+for i,t in enumerate(T): 
+  D1, D2, D3 = persistent_betti_rips_matrix(C(t), birth, death)
+  D1.data = np.sign(D1.data)*np.maximum(birth - abs(D1.data), 0)
+  m = np.max(np.linalg.svd(D1.A, compute_uv=False, full_matrices=False))
+  # A = D1.A/m1
+  if m == 0: 
+    results[i,:,:] = 0.0
+    continue
+  A = D1.A / m
+  usv = np.linalg.svd(A, compute_uv=True, full_matrices=False)
+  s = usv[1].copy()
+  W = lambda alpha: (1-alpha) + alpha*(1/s)
+  for j,mu in enumerate(MU): 
+    for k,alpha in enumerate(ALPHA):
+      s_threshold = np.maximum(s-mu*W(alpha), 0.0)
+      prox_af = usv[0] @ np.diag(s_threshold) @ usv[2]
+      Ma = np.sum(s_threshold) # to check
+      Mb = (1/2)*np.linalg.norm(A - prox_af, 'fro')**2
+      results[i,j,k] = (Ma + Mb)
+
+plt.plot(T, NN1, c='black')
+for k in range(len(ALPHA)):
+  plt.plot(T, results[:,1,k])
+
+
+# %% 
+NN1 = np.zeros(len(T))
+for i, t in enumerate(T): 
+  D1, D2, D3 = persistent_betti_rips_matrix(C(t), birth, death)
+  D1.data = np.sign(D1.data)*np.maximum(birth - abs(D1.data), 0)
+  # NN1[i] = np.sum(np.linalg.svd(D1.A, compute_uv=False, full_matrices=False))
+  NN1[i] = np.linalg.matrix_rank(D1.A)
+plt.plot(T, NN1)
+
+# %% Modified Schatten p-norm idea 
+P = np.linspace(0, 1, 10)
+EPS = np.linspace(0, 0.20, 20)
+
+## Alpha -> 1 should increase closeness to rank
+## mu -> 0 should make it closer to proximal nuclear
+results = np.zeros(shape=(len(T), len(P), len(EPS)))
+for i,t in enumerate(T): 
+  D1, D2, D3 = persistent_betti_rips_matrix(C(t), birth, death)
+  D1.data = np.sign(D1.data)*np.maximum(birth - abs(D1.data), 0)
+  m = np.max(np.linalg.svd(D1.A, compute_uv=False, full_matrices=False))
+  if m == 0: 
+    results[i,:,:] = 0.0
+    continue
+  A = D1.A / m
+  usv = np.linalg.svd(A, compute_uv=True, full_matrices=False)
+  s = usv[1].copy()
+  W = lambda alpha: (1-alpha) + alpha*(1/s)
+  for j,p in enumerate(P): 
+    for k,eps in enumerate(EPS):
+      w = 1/((s+eps*W(0.10))**(1-p))
+      s_threshold = np.maximum(s-w, 0.0)
+      prox_af = usv[0] @ np.diag(s_threshold) @ usv[2]
+      Ma = np.sum(s_threshold) # to check
+      Mb = (1/2)*np.linalg.norm(A - prox_af, 'fro')**2
+      results[i,j,k] = (Ma + Mb)
+
+plt.plot(T, NN1, c='black')
+for k in range(len(EPS)):
+  plt.plot(T, results[:,0,k])
+
+plt.plot(T, NN1, c='black')
+for k in range(len(P)):
+  plt.plot(T, results[:,k,9])
+
+# %% Double handled torus 
+# import mcubes
+import numpy as np
+np.set_printoptions(suppress=True)
+from skimage import measure
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d.art3d import Poly3DCollection
+import mcubes
+
+f = lambda x, y, z: (x*(x-1)**2 * (x-2) + y**2)**2 + z**2 - 0.025
+vertices, triangles = mcubes.marching_cubes_func((-0.5,-1,-0.32), (2.5,1,0.32), 100, 100, 100, f, 0.0)
+
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(111, projection='3d')
+mesh = Poly3DCollection(vertices[triangles])
+mesh.set_edgecolor('black')
+ax.add_collection3d(mesh)
+min_xyz = np.min(vertices, axis=0)*1.1
+max_xyz = np.max(vertices, axis=0)*1.1
+ax.set_xlim(min_xyz[0], max_xyz[0]) 
+ax.set_ylim(min_xyz[1], max_xyz[1])
+ax.set_zlim(min_xyz[2], max_xyz[2])  
+ax.set_aspect('auto')
+plt.show()
+
+## Get down-sampling point cloud
+P = np.zeros(shape=(triangles.shape[0], 3))
+for i, VT in enumerate(vertices[triangles]):
+  u = np.random.uniform(size=3)
+  u = u / np.sum(u)
+  p = u[0]*VT[0,:] + u[1]*VT[1,:] + u[2]*VT[2,:]
+  P[i,:] = p
+
+
+from tallem.samplers import landmarks
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter3D(*P.T, c='black', s=1.1)
+
+Lind, Lrad = landmarks(P, 750)
+fig = plt.figure(figsize=(10, 10))
+ax = fig.add_subplot(111, projection='3d')
+ax.scatter3D(*P[Lind,:].T, c='black', s=5.1)
+ax.set_aspect('auto')
+
+from ripser import ripser
+from persim import plot_diagrams
+PH = ripser(P[Lind,:])
+plot_diagrams(PH['dgms'])
+
+DGM1 = PH['dgms'][1]
+np.flip(np.sort(DGM1[:,1]-DGM1[:,0]))[:5]
+
+# %%

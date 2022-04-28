@@ -281,3 +281,11 @@ np.sum(pdist(X)[ap[:,0]] <= b)
 
 
 # %%
+import numpy as np
+s = np.flip(np.sort(np.random.uniform(size=10)))
+# w = np.sort(np.random.uniform(size=len(s), low=1.0, high=2.0))
+W = lambda alpha: (1-alpha) + alpha*(1/s)
+
+s*W(0.0)
+
+# %%

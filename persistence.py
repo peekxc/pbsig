@@ -290,6 +290,32 @@ def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs
   #   assert np.all(np.array([face in E for face in F]))
   return(persistent_betti(D1, D2, i, j, **kwargs))
 
+def persistent_betti_rips_matrix(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs):
+  """ 
+  X := point cloud or set of pairwise distances
+  b := birth diameter threshold
+  d := death diameter threshold 
+  p := unused 
+  kwargs 
+  """
+  assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
+  assert b <= d, "Birth time must be less than death time"
+  D = pdist(X) if is_point_cloud(X) else X
+  D1, (vw, ew) = rips_boundary(D, p=1, diam=d, sorted=True) # NOTE: Make sure D2 is row-sorted as well
+  D2, (ew, tw) = rips_boundary(D, p=2, diam=d, sorted=True)
+  if np.all(ew > b):
+    T1, T2, T3 = csc_matrix((0,0)), csc_matrix((0,0)), csc_matrix((0,0))
+    return(T1, T2, T3)
+  D1.data = np.sign(D1.data)*np.repeat(ew, 2)
+  D2.data = np.sign(D2.data)*np.repeat(tw, 3)
+  b_ind = 0 if np.all(ew > b) else np.max(np.flatnonzero(ew <= b))
+  d_ind = 0 if np.all(tw > d) else np.max(np.flatnonzero(tw <= d))
+  i, j = int(b_ind+1), int(d_ind+1)
+  T1 = D1[:,:i].copy()
+  T2 = D2[:,:j].copy()
+  T3 = D2[i:,:j].copy()
+  return(T1, T2, T3)
+
 def boundary_faces(D: csc_matrix):
   # D.eliminate_zeros()
   d = len(D[:,0].indices)
@@ -505,23 +531,42 @@ def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_o
       ax.add_patch(ball)
   ax.set_aspect('equal')
 
-def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
-  """
-  Given an iterable of reduced matrices 'R', a simplicial complex 'K', and optionally a 
-  list of function values 'F', reads off the persistence diagram of 'K' from 'R'. 
 
-  If cohomology = True, then the reduced matrices are expected to be reduced coboundary matrices. 
+def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, collapse: bool = True):
+  births_index = np.flatnonzero(low_entry(R1) == -1)
+  deaths_index = low_entry(R2)
+  ew, tw = f if not(f is None) else (np.array(range(R1.shape[1])), np.array(range(R2.shape[1])))
+  births = ew[deaths_index[deaths_index != -1]]
+  deaths = tw[np.flatnonzero(deaths_index != -1)]
+  dgm = np.c_[births, deaths]
+  essential_ind = np.setdiff1d(births_index, deaths_index[deaths_index != -1])
+  dgm = np.vstack((dgm, np.c_[ew[essential_ind], np.repeat(np.inf, len(essential_ind))]))
+  dgm = dgm[np.lexsort(np.rot90(dgm)),:]
+  if collapse: 
+    pos_pers = abs(dgm[:,1] - dgm[:,0]) >= 10*np.finfo(float).eps
+    valid_ind = np.logical_or(dgm[:,1] == np.inf, pos_pers)
+    dgm = dgm[valid_ind,:]
+  return(dgm)
 
-  If F is given, then the persistence pairs are returned as function persistence.
-  """
-  
-  # p_birth = np.where(low_entry(R1) == -1)
-  # p_death = 
+from scipy.sparse import triu
 
+def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float = 10*np.finfo(float).eps):
+  valid = is_reduced(R1)
+  valid &= np.isclose(abs(np.sum((D1 @ V1) - R1)), 0.0)
+  valid &= np.isclose(np.sum(V1 - triu(V1)), 0.0)
+  if not(D2 is None):
+    valid &= is_reduced(R2)
+    valid &= np.isclose(np.sum((D2 @ V2) - R2), 0.0)
+    valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
+  return(valid)
+
+
+# def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
+# p_birth = np.where(low_entry(R1) == -1)
+# p_death = 
 #ind = np.setdiff1d(np.fromiter(range(Rp.shape[1]), dtype=int), cleared)
 #low_p = np.array([low_entry(Rp, j) for j in range(Rp.shape[1])], dtype=int)
 #cleared = low_p[low_p != -1]
-
 # piv1 = np.array([low_entry(D1,j) for j in range(m)], dtype=int
 ## Reduce D1
 # for j in range(1, m):
