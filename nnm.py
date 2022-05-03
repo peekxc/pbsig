@@ -281,7 +281,10 @@ def g(D: ArrayLike):
 def h(D: ArrayLike):
   D3, (ew, tw) = rips_boundary(D, p=2, diam=np.inf, sorted=False)
   D3 = D3.tocoo()
-  D3.data = (1/m3)*np.sign(D3.data)*np.minimum(np.maximum(death - tw[D3.col], 0.0), np.maximum(ew[D3.row] - birth, 0.0))
+  D4 = D3.copy()
+  D3.data = (1/m3)*np.sign(D3.data)*np.maximum(death - tw[D3.col], 0.0)
+  D4.data = (1/m3)*np.sign(D3.data)*np.maximum(ew[D3.row] - birth, 0.0)
+  # D3.data = (1/m3)*np.sign(D3.data)*np.minimum(np.maximum(death - tw[D3.col], 0.0), np.maximum(ew[D3.row] - birth, 0.0))
   # D3.data = (1/m3)*np.sign(D3.data)*np.maximum(ew[D3.row] - birth, 0.0)
   return(D3.tocsc())
 
@@ -461,21 +464,45 @@ def h(D: ArrayLike): # unnormalized
   D3, (ew, tw) = rips_boundary(D, p=2, diam=np.inf, sorted=False)
   D0 = csc_matrix(np.diag(np.maximum(birth - ew, 0.0)))
   D3 = D3.tocoo()
+  D4 = D3.copy()
   # D3.data = np.sign(D3.data)*np.minimum(np.maximum(death - tw[D3.col], 0.0), np.maximum(ew[D3.row] - birth, 0.0))
-  D3.data = np.sign(D3.data)*np.maximum(ew[D3.row] - birth, 0.0)
-  return(D0, D3.tocsc())
+  # D3.data = np.sign(D3.data)*np.maximum(ew[D3.row] - birth, 0.0)
+  D3.data = np.sign(D3.data)*np.maximum(death - tw[D3.col], 0.0)
+  D4.data = np.sign(D4.data)*np.maximum(ew[D4.row] - birth, 0.0)
+  return(D0, D3.tocsc(), D4.tocsc())
 
 m0 = np.max([np.max(birth - pdist(C(t))) for t in T])
 m1 = np.max([spectral_norm(g(pdist(C(t)))[0].A) for t in T])
 m2 = np.max([spectral_norm(g(pdist(C(t)))[1].A) for t in T])
 m3 = np.max([spectral_norm(h(pdist(C(t)))[1].A) for t in T])
+m4 = np.max([spectral_norm(h(pdist(C(t)))[2].A) for t in T])
 
 ## Normalize using constants 
 g_norm = lambda t: tuple(np.array([1/m1, 1/m2])*g(pdist(C(t))))
-h_norm = lambda t: tuple(np.array([1/m0, 1/m3])*h(pdist(C(t))))
+h_norm = lambda t: tuple(np.array([1/m0, 1/m3, 1/m4])*h(pdist(C(t))))
 
 ## This is indeed convex with the single rule
 plt.plot(T, np.array([nuclear_norm(((1/m3)*h(pdist(C(t)))[1]).A) for t in T]))
+
+## This is also convex
+plt.plot(T, np.array([nuclear_norm(((1/m4)*h(pdist(C(t)))[2]).A) for t in T]))
+
+
+plt.plot(T, np.array([nuclear_norm(((1/m3)*h(pdist(C(t)))[1]).A)*nuclear_norm(((1/m4)*h(pdist(C(t)))[2]).A) for t in T]))
+
+t3 = np.array([nuclear_norm(((1/m3)*h(pdist(C(t)))[1]).A) for t in T])
+t4 = np.array([nuclear_norm(((1/m4)*h(pdist(C(t)))[2]).A) for t in T])
+plt.plot(T, t3*(1-t4))
+
+## Now this is convex ! 
+for z in np.linspace(0.20, 0.80, 20):
+  plt.plot(T, 0.5*((z*t3)**2 + ((1/z)*t4)**2))
+for z in np.linspace(0.20, 0.80, 20):
+  plt.plot(T, 0.5*(((1/z)*t3)**2 + ((z)*t4)**2))
+
+
+
+
 
 ## This is convex
 t2 = np.array([np.sum([nuclear_norm(A.A) for A in h_norm(t)]) for t in T])
@@ -753,7 +780,9 @@ D2.data = np.sign(D2.data)*np.maximum(death - np.repeat(tw, 3), 0.0)
 
 plt.spy(D2 @ D2.T, markersize=1.0)
 
-
+# A = D2 @ D2.T
+# ind = np.array([len(A[:,j].data) != 0 for j in range(A.shape[1])])
+# B = A[np.ix_(ind, ind)]
 def rank_approx1(X: ArrayLike, eps: float = 0.001) -> float:
   assert isinstance(X, np.ndarray) 
   Y = np.linalg.inv((X.T @ X) + eps*np.eye(X.shape[1]))
@@ -877,6 +906,86 @@ counts = np.array([count_dot(X[i,:], X[j,:]) for i,j in product(range(X.shape[0]
 
 
 # %%
+
+t3 = np.array([nuclear_norm(((1/m3)*h(pdist(C(t)))[1]).A) for t in T])
+t4 = np.array([nuclear_norm(((1/m4)*h(pdist(C(t)))[2]).A) for t in T])
+
+from scipy.optimize import minimize
+H = lambda t: nuclear_norm(((1/m3)*h(pdist(C(t)))[1]).A)
+G = lambda t: nuclear_norm(((1/m4)*h(pdist(C(t)))[2]).A)
+
+def HG4(t: float):
+  
+  ## 1. Find solution x^*
+  z_lb, z_ub = 0.20, 1/0.20
+  HG_np = lambda t: 0.5*((z_lb*H(t.item()))**2 + (z_ub*G(t.item()))**2)
+  sln = minimize(HG_np, x0=np.array([np.min(T)]), bounds=np.array([(np.min(T), np.max(T))]))
+  t_opt = sln.x.item()
+
+  ## 2. Using t_opt, pseudo-minimize (z,n)
+  Z = np.linspace(z_lb, z_ub, 20)
+  def G4(p: ArrayLike, return_x: bool = False):
+    z, n = p
+    HG_np = lambda t: 0.5*((z*H(t.item()))**2 + (n*G(t.item()))**2)
+    sln = minimize(HG_np, x0=np.array([t_opt]), bounds=np.array([(np.min(T), np.max(T))]))
+    return(sln.fun if not(return_x) else sln.x.item())
+  ZN = np.array([G4([z,1/z]) for z in Z])
+  z_opt, n_opt = Z[np.argmin(ZN)],1/Z[np.argmin(ZN)] 
+
+  ## 3. Plug these back into the minimization to recover optimal x
+  x_opt = G4([z_opt, n_opt], return_x=True)
+  return(x_opt)
+
+## Try it! 
+ub_d34 = np.array([HG4(t) for t in T])
+plt.plot(T, )
+
+
+
+
+t_opt = sln.x.item()
+
+F = lambda x, z, n: (z*H(t_opt))**2 + (n*G(t_opt))**2
+
+z,n = 1.1, 1.1
+
+from scipy.optimize import LinearConstraint
+A = np.vstack((np.eye(2), np.array([1.0, 1.0])))
+
+lb = np.array([lb_zeta, lb_eta, 1.0])
+ub = np.array([ub_zeta, ub_eta, ub_zeta*ub_eta])
+constraint_box = LinearConstraint(A, lb, ub)
+
+def G4(p: ArrayLike):
+  z, n = p
+  HG_np = lambda t: 0.5*((z*H(t.item()))**2 + (n*G(t.item()))**2)
+  sln = minimize(HG_np, x0=np.array([np.min(T)]), bounds=np.array([(np.min(T), np.max(T))]))
+  return(sln.fun)
+
+# constraint_box = scipy.optimize.Bounds(lb=(lb_zeta, lb_eta), ub=())
+
+box_soln = minimize(G4, x0=np.array([lb_zeta, 1/lb_zeta]), constraints=constraint_box, method='SLSQP')
+
+G4(np.array([lb_zeta, lb_eta]))
+
+P = np.meshgrid(np.linspace(lb_zeta, ub_zeta, 10), np.linspace(lb_eta, ub_eta, 10))
+
+from itertools import combinations, product
+z_bnds = np.linspace(lb_zeta, ub_zeta, 10)
+n_bnds = np.linspace(lb_eta, ub_eta, 10)
+# ZN = np.array([G4([z,n]) for (z,n) in product(z_bnds, n_bnds)])
+# list(product(z_bnds, n_bnds))[np.argmin(ZN)]
+
+## First minimize (zeta, eta)
+Z = np.linspace(0.20, 0.80, 20)
+ZN = np.array([G4([z,1/z]) for z in Z])
+z,n = Z[np.argmin(ZN)],1/Z[np.argmin(ZN)] 
+HG = lambda t: 0.5*((z*H(t))**2 + (n*G(t))**2)
+
+minimize()
+
+
+plt.plot(T, [HG(t) for t in T])
 
 
 
