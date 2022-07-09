@@ -3,6 +3,14 @@ import numpy as np
 from persistence import * 
 from apparent_pairs import *
 
+# def rank_C2(i: int, j: int, n: int):
+#   i, j = (j, i) if j < i else (i, j)
+#   return(int(n*i - i*(i+1)/2 + j - i - 1))
+
+# def unrank_C2(x: int, n: int):
+#   i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
+#   j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
+#   return(i,j) 
 
 def Lipshitz(f: ArrayLike, x: ArrayLike):
   """ 
@@ -221,3 +229,171 @@ def pb_gradient(f: Callable, t: Any, b: float, d: float, Sg: Callable, summands:
     g1 = g1.item()
     g2 = g2.item()
   return((g0, g1, g2) if summands else g0 - (g1 + g2))
+
+
+def edges_from_triangles(triangles: ArrayLike, nv: int):
+  ER = np.array([[rank_C2(*t[[0,1]], n=nv), rank_C2(*t[[0,2]], n=nv), rank_C2(*t[[1,2]], n=nv)] for t in triangles])
+  ER = np.unique(ER.flatten())
+  E = np.array([unrank_C2(r, n=nv) for r in ER])
+  return(E)
+
+def scale_diameter(X: ArrayLike, diam: float = 1.0):
+  from scipy.spatial.distance import pdist
+  vec_mag = np.reshape(np.linalg.norm(X, axis=1), (X.shape[0], 1))
+  vec_mag[vec_mag == 0] = 1 
+  VM = np.reshape(np.repeat(vec_mag, X.shape[1]), (len(vec_mag), X.shape[1]))
+  Xs = (X / VM) * diam*(VM/(np.max(vec_mag)))
+  return(Xs)
+
+def plot_direction(V: ArrayLike, T: ArrayLike, W: ArrayLike, cmap: str = 'jet'):
+  import matplotlib
+  assert V.shape[0] == len(W)
+  import plotly.graph_objects as go
+  from tallem.color import bin_color
+  cm = matplotlib.cm.get_cmap(cmap)
+  colors = list(np.array([cm(v) for v in np.linspace(0, 1, endpoint=True)]))
+  TW = np.array([np.max(W[t]) for t in T])
+  face_colors = bin_color(TW, colors)
+  axis = dict(showbackground=True,backgroundcolor="rgb(230, 230,230)",gridcolor="rgb(255, 255, 255)",zerolinecolor="rgb(255, 255, 255)")
+  layout = go.Layout(scene=dict(xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis), aspectmode='data', aspectratio=dict(x=1, y=1, z=1)))
+  mesh = go.Mesh3d(x=V[:,0], y=V[:,1], z=V[:,2], i=T[:,0],j=T[:,1],k=T[:,2],facecolor=face_colors) #  intensity=W+np.min(W), colorscale='Jet'
+  tri_points = V[T]
+  Xe, Ye, Ze = [], [], []
+  for T in tri_points:
+    Xe.extend([T[k%3][0] for k in range(4)]+[ None])
+    Ye.extend([T[k%3][1] for k in range(4)]+[ None])
+    Ze.extend([T[k%3][2] for k in range(4)]+[ None])
+  lines = go.Scatter3d(x=Xe, y=Ye, z=Ze, mode='lines', name='', line=dict(color= 'rgb(70,70,70)', width=1))  
+  fig = go.Figure(data=[mesh, lines], layout=layout)
+  fig.show()
+
+def lower_star_boundary(weights: ArrayLike, threshold: Optional[float] = np.inf, simplices: Optional[ArrayLike] = None, dim: Optional[int] = 1):
+  """
+  Given vertex weights and either 1. a threshold + dimension or 2. a (m x k) set of simplices, returns a tuple (D, sw) where:
+    D := an (l x m) boundary matrix of the given simplices, in lex order
+    sw := simplex weights, given by the maximal weight of its lower stars
+  If (1) is supplied, all 'dim'-dimensional simplices are computed. 
+  """
+  nv = len(weights)
+  if not(simplices is None):
+    assert isinstance(simplices, np.ndarray) # TODO: accept tuple (E, T) and use as overload
+    d = simplices.shape[1]
+    assert d == 2 or d == 3
+    simplices.sort(axis=1)
+    S = simplices[np.lexsort(np.rot90(simplices))]  ## ensure sorted lex order
+    SR = np.sort(rank_combs(S, k=d, n=nv))
+    if d == 2:
+      cdata, cindices, cindptr, ew = boundary.lower_star_boundary_1_sparse(weights, SR)
+      D1 = csc_matrix((cdata, cindices, cindptr), shape=(len(weights), len(cindptr)-1))
+      return(D1, ew)
+    else:
+      ER = np.sort(rank_combs(edges_from_triangles(S, nv), k=2, n=nv))
+      cdata, cindices, cindptr, tw = boundary.lower_star_boundary_2_sparse(weights, ER, SR)
+      D2 = csc_matrix((cdata, cindices, cindptr), shape=(len(ER), len(cindptr)-1))
+      return(D2, tw)
+  else:
+    assert (dim == 1 or dim == 2) and isinstance(threshold, float)
+    from math import comb
+    cdata, cindices, cindptr, sw = boundary.lower_star_boundary_1(weights, threshold) if dim == 1 else boundary.lower_star_boundary_2(weights, threshold)
+    D = csc_matrix((cdata, cindices, cindptr), shape=(int(comb(len(weights), dim)), len(cindptr)-1))
+    return(D, sw)
+
+
+def lower_star_pb_terms(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float):
+  E = edges_from_triangles(T, V.shape[0])
+  
+  D1, ew = lower_star_boundary(W, simplices=E)
+  D1.data = np.sign(D1.data)*np.maximum(a - np.repeat(ew, 2), 0.0)
+  
+  D2, tw = lower_star_boundary(W, simplices=T)
+  D2.data = np.sign(D2.data)*np.maximum(b - np.repeat(tw, 3), 0.0)
+  
+  D2_g, D2_h = D2.copy().tocoo(), D2.copy().tocoo()
+  D2_g.data = np.sign(D2_g.data)*np.maximum(b - tw[D2_g.col], 0.0)
+  D2_h.data = np.sign(D2_h.data)*np.maximum(ew[D2_h.row] - a, 0.0)
+  
+  D0 = csc_matrix(np.diag(np.maximum(a - ew, 0.0)))
+  return(D0, D1, D2, D2_g, D2_h)
+
+def rips_pb_terms(D: ArrayLike, a: float, b: float, max_diam: Optional[float] = np.inf):
+  from betti import rips_boundary
+  D1, (vw, ew) = rips_boundary(D, p=1, diam=max_diam, sorted=False)
+  D1.data = np.sign(D1.data)*np.maximum(a - np.repeat(ew, 2), 0.0)
+  D2, (ew, tw) = rips_boundary(D, p=2, diam=max_diam, sorted=False)
+  D2.data = np.sign(D2.data)*np.maximum(b - np.repeat(tw, 3), 0.0)
+  D0 = csc_matrix(np.diag(np.maximum(a - ew, 0.0)))
+  
+  D2_g, D2_h = D2.copy().tocoo(), D2.copy().tocoo() 
+  D2_g.data = np.sign(D2_g.data)*np.maximum(b - tw[D2_g.col], 0.0) # maybe signum 
+  D2_h.data = np.sign(D2_h.data)*np.maximum(ew[D2_h.row] - a, 0.0) 
+  D2_g.eliminate_zeros()
+  D2_h.eliminate_zeros()
+  return(D0, D1, D2, D2_g, D2_h)
+
+def _pb_relaxations(D0, D1, D2, H, type, terms, **kwargs):
+  if isinstance(type, list) or type == "norm_nuc" or type == "nuc":
+    from scipy.sparse.linalg import aslinearoperator, svds
+    type = "norm_nuc" if isinstance(type, list) else type
+    d0_sv = D0.diagonal()
+    d1_sv = svds(D1, k=np.min(D1.shape)-1, return_singular_vectors=False)
+    d2_sv = svds(D2, k=np.min(D2.shape)-1, return_singular_vectors=False)
+    dh_sv = svds(H, k=np.min(H.shape)-1, return_singular_vectors=False)
+    if type == "norm_nuc":
+      d0_t = np.sum(D0.diagonal()/np.max(d0_sv))
+      d1_t = np.sum(d1_sv/np.max(d1_sv))
+      d2_t = np.sum(d2_sv/np.max(d2_sv))
+      dh_t = np.sum(dh_sv/np.max(dh_sv))
+    else: 
+      d0_t = np.sum(D0.diagonal())
+      d1_t = np.sum(d1_sv)
+      d2_t = np.sum(d2_sv)
+      dh_t = np.sum(dh_sv)
+  elif type == 'fro': 
+    d0_t = np.sqrt(np.sum(D0.diagonal()**2))
+    d1_t = np.sqrt(np.sum(D1.data**2))
+    d2_t = np.sqrt(np.sum(D2.data**2))
+    dh_t = np.sqrt(np.sum(H.data**2))
+  elif type=="approx": 
+    from sksparse.cholmod import analyze, cholesky, analyze_AAt, cholesky_AAt
+    D1_m, D2_m, H_m = D1 @ D1.T, D2 @ D2.T, H @ H.T
+    d1_factor = cholesky(D1_m, beta=kwargs['beta'])
+    d2_factor = cholesky(D2_m, beta=kwargs['beta'])
+    h_factor = cholesky(H_m, beta=kwargs['beta'])
+    d0_t = np.sum((D0.diagonal()**2)/(D0.diagonal()**2 + kwargs['beta']))
+    d1_t = np.sum([d1_factor(D1_m[:,j])[j][0,0] for j in range(D1_m.shape[1])])
+    d2_t = np.sum([d2_factor(D2_m[:,j])[j][0,0] for j in range(D2_m.shape[1])])
+    dh_t = np.sum([h_factor(H_m[:,j])[j][0,0] for j in range(H_m.shape[1])])
+  elif type=="rank":
+    from scipy.linalg.interpolative import estimate_rank
+    from scipy.sparse.linalg import aslinearoperator, svds
+    d0_t = np.sum(abs(D0.diagonal()) > 0.0)
+    sval = lambda X: np.append(svds(X, k=np.min(X.shape)-1, return_singular_vectors=False, which='SM'), svds(X, k=1, return_singular_vectors=False, which='LM'))
+    s1,s2,sh = sval(D1), sval(D2), sval(H)
+    d1_t = np.sum(s1 > np.max(s1)*np.max(D1.shape)*np.finfo(D1.dtype).eps)
+    d2_t = np.sum(s2 > np.max(s2)*np.max(D2.shape)*np.finfo(D2.dtype).eps)
+    dh_t = np.sum(sh > np.max(sh)*np.max(H.shape)*np.finfo(H.dtype).eps)
+  return(d0_t - d1_t - d2_t + dh_t if not(terms) else (d0_t, d1_t, d2_t, dh_t))
+
+def rips_pb(D: ArrayLike, a: float, b: float, type: str = ["norm_nuc", "nuc", "fro", "approx", "rank"], max_diam: Optional[float] = np.inf, terms: bool = False, **kwargs):
+  D0, D1, D2, D2_g, D2_h = rips_pb_terms(D, a, b, max_diam=max_diam)
+  H = D2_g.multiply(D2_h)
+  #D2_g.data = np.sign(D2.data)*np.abs(D2_g.data*D2_h.data)
+  
+  ## Normalize by Frobenius norm 
+  # D0.data = D0.data / (1.0 if np.sqrt(np.sum(D0.data**2)) == 0.0 else np.sqrt(np.sum(D0.data**2)))
+  # D1.data = D1.data / (1.0 if np.sqrt(np.sum(D1.data**2)) == 0.0 else np.sqrt(np.sum(D1.data**2)))
+  # D2.data = D2.data / (1.0 if np.sqrt(np.sum(D2.data**2)) == 0.0 else np.sqrt(np.sum(D2.data**2)))
+  # D2_g.data = D2_g.data / (1.0 if np.sqrt(np.sum(D2_g.data**2)) == 0.0 else np.sqrt(np.sum(D2_g.data**2)))
+
+  return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, **kwargs))
+
+def lower_star_pb(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float, type: str = ["norm_nuc", "nuc", "fro", "approx", "rank"], terms: bool = False, beta: float = 0.001):
+  """
+  Computes the lower-star 
+  
+  """
+  from betti import lower_star_boundary
+  from scipy.sparse.linalg import svds
+  D0, D1, D2, D2_g, D2_h = lower_star_pb_terms(V, T, W, a, b)
+  H = D2_g.multiply(D2_h)
+  return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, beta=beta))

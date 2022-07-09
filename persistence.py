@@ -253,7 +253,7 @@ def persistent_betti(D1, D2, i: int, j: int, summands: bool = False):
   D2_tmp = D2_tmp[i:,:]
   t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
   t3 = t3_1 - t3_2
-  return((t1, t2, t3) if summands else t1 - (t2 + t3))
+  return((t1, t2, t3_1, t3_2) if summands else t1 - t2 - t3_1 + t3_2)
 
 def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs):
   """ 
@@ -267,9 +267,9 @@ def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs
   assert b <= d, "Birth time must be less than death time"
   D = pdist(X) if is_point_cloud(X) else X
   D1, (vw, ew) = rips_boundary(D, p=1, diam=d, sorted=True) # NOTE: Make sure D2 is row-sorted as well
-  D2, (ew, tw) = rips_boundary(D, p=2, diam=d, sorted=True)
+  D2, (ew, tw) = rips_boundary(D, p=2, diam=d, sorted=True) # keep sorted = True!
   if np.all(ew > b):
-    return((0,0,0) if kwargs.get('summands', False) else 0)
+    return((0,0,0,0) if kwargs.get('summands', False) else 0)
   b_ind = 0 if np.all(ew > b) else np.max(np.flatnonzero(ew <= b))
   d_ind = 0 if np.all(tw > d) else np.max(np.flatnonzero(tw <= d))
   # if b_ind == 0 and d_ind == 0: 
@@ -352,14 +352,14 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
       D = csc_matrix([], shape=(0, 0))
       fw, cw = 0, np.zeros(n) # face, coface weights
     elif p == 1: 
-      cdata, cindices, cindptr, ew = boundary.rips_boundary_matrix_1(XD, n, diam)
+      cdata, cindices, cindptr, ew = boundary.rips_boundary_1(XD, n, diam)
       D = csc_matrix((cdata, cindices, cindptr), shape=(n, len(cindptr)-1))
       if sorted: 
         eind = np.argsort(ew)
         D, ew = D[:,eind], ew[eind]
       fw, cw = np.zeros(n), ew
     elif p == 2:       
-      cdata, cindices, cindptr, tw = boundary.rips_boundary_matrix_2_dense(XD, n, diam)
+      cdata, cindices, cindptr, tw = boundary.rips_boundary_2(XD, n, diam)
       mask = np.cumsum(XD <= diam)
       cindices = (mask-1)[cindices] # re-map to lowest indices
       D = csc_matrix((cdata, cindices, cindptr), shape=(mask[-1], len(cindptr)-1))

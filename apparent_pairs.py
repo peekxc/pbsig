@@ -3,7 +3,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.special import comb
 from itertools import combinations
-from persistence import *
 
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
@@ -13,8 +12,6 @@ def unrank_C2(x: int, n: int):
   i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
   j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
   return(i,j) 
-
-
 
 def unrank_comb(r: int, k: int, n: int):
   result = np.zeros(k, dtype=int)

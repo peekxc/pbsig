@@ -131,18 +131,17 @@ Note that $\mathrm{dim}(C_p(K_\ast)) = \mathrm{dim}(B_{p-1}(K_\ast)) + \mathrm{d
 \begin{equation} \label{eq:pb3}
 \beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )  
 \end{equation}
-The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. To express the intersection term, we require more notation. If $A$ is a $m \times m$ matrix, then let $A_i^j$ denote the lower-left submatrix of $A$ given by the first $j$ columns and last $m - i + 1$ rows (rows $i$ through $m$, inclusive). For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$:
+The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. To express the intersection term, we require more notation. If $A$ is a $m \times m$ matrix, then let $A^{i,j}$ denote the lower-left submatrix of $A$ given by the first $j$ columns and last $m - i + 1$ rows (rows $i$ through $m$, inclusive). For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$:
 \begin{equation}
-	r_A(i,j) = \mathrm{rank}(A_i^j) - \mathrm{rank}(A_{i+1}^j) + \mathrm{rank}(A_{i+1}^{j-1}) - \mathrm{rank}(A_i^{j-1})
+	r_A(i,j) = \mathrm{rank}(A^{i, j}) - \mathrm{rank}(A^{i+1, j}) + \mathrm{rank}(A^{i+1, j-1}) - \mathrm{rank}(A^{i, j-1})
 \end{equation}
 One of the seminal results from the Pairing Uniqueness lemma~\cite{} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then for any $1 \leq i < j \leq m$, we have (todo: elaborate more): 
-$$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R_i^j) = \mathrm{rank}(\partial_i^j)$$
-Thus, all lower-left submatrices of the filtered boundary matrix $\partial$ have the same rank as their corresponding submatrices in $R$. 
-Let $E = \partial_p$ and $T = \partial_{p+1}$. Utilizing this fact, we may write $\beta_p^{i,j}$ as: 
+$$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})$$
+Thus, all lower-left submatrices of the filtered boundary matrix $\partial$ have the same rank as their corresponding submatrices in $R$. Thus, we may write $\beta_p^{i,j}$ as: 
 \begin{equation}\label{eq:betti_four}
-	\beta_p^{i,j} = \lvert E_1^i \rvert - \mathrm{rank}(E_1^i) - \mathrm{rank}(T_1^j) + \mathrm{rank}(T_{i+1}^j)
+	\beta_p^{i,j} = \mathrm{rank}(S_p^i) - \mathrm{rank}(\partial_p^{\ast,i}) - \mathrm{rank}(\partial_p^{i,j}) + \mathrm{rank}(\partial_p^{i+1,j})
 \end{equation}
-where $\lvert \, A \, \rvert = \mathrm{dim}(\mathrm{dom}(A))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
+where $S_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
 % DONT ERASE
 %Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_{p-1}(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\ref{sec:computation}. Substituting these matrices appropriately, equation~\eqref{eq:pb3} can be written as: 
 %\begin{equation}\label{eq:pb_rank}
@@ -170,8 +169,7 @@ Recall that the boundary operator $\partial_p$ for a finite simplicial filtratio
 \end{equation}
 where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we propose an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
 \begin{definition}[Time-varying boundary matrix]\label{def:time_boundary_matrix}
-Let $\mathbb{F} = \mathbb{R}$ denote the field, $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$, and let $(\mathcal{P}(X), \preceq^\ast)$ be a linear extension of the face poset of the $(n-1)$-simplex $\Delta_n$. 
-For a fixed $\epsilon > 0$, a time-varying $p$-th boundary matrix $\partial_p^t$ is an $\binom{n}{p} \times \binom{n}{p+1}$ matrix whose entries $c(\sigma)$ satisfy:
+Let $\mathbb{F} = \mathbb{R}$ denote the field, $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$, and let $(\mathcal{P}(X), \preceq^\ast)$ be a linear extension of the face poset of the $(n-1)$-simplex $\Delta_n$. For some constant $\epsilon > 0$, a time-varying $p$-th boundary matrix $\partial_p^t$ is an $\binom{n}{p} \times \binom{n}{p+1}$ matrix whose entries $c(\sigma)$ satisfy:
 $$
 \partial_p^t[i,j] = \begin{cases}
 	\pm \, \lvert \epsilon - \mathrm{diam}_t(\sigma_j) \rvert_{+} & \text{if } \sigma_i \in \partial_p(\sigma_j)\\
@@ -222,7 +220,8 @@ Property (3) follows from the construction of $\partial_p$ and from the inequali
 % Insert proofs about rank, about lipshitz continuity, about being valid boundary matrices 
 % Insert rank/convex envelope statement
 
-% Revisit the conditions on the four matrices making the PB computation; express their conditions via chain conditions/mins
+% Revisit the conditions on the four matrices making the PB computation; express their conditions via chain conditions/min
+We now re-write equation using this relaxation. Fix persistence parameters $a,b \in \mathbb{R}^+$. Since our boundary matrices now follow a constant order, we write $\partial_p^{}$.
 
 
 \subsubsection*{Rank Relaxation (TODO)}

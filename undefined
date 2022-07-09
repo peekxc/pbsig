@@ -1,4 +1,0 @@
-d,tau_min = sw_parameters(bounds=(0, 12*np.pi), d=18, L=24)
-d,tau_max = sw_parameters(bounds=(0, 12*np.pi), d=18, L=1)
-T = np.linspace(tau_min, tau_max)
-PB = np.array([persistent_betti_rips(F(n=120, d=18, tau=tau), b=0.75, d=1.0) for tau in T])
