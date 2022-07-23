@@ -1,7 +1,0 @@
-# ninja log v5
-0	4667	1658074363226595689	CMakeFiles/boundary.dir/src/pbsig/boundary.cpp.o	6dc1c186b94b005
-4668	5893	1658074364468473370	boundary.cpython-38-darwin.so	9f0a76a8cc861b53
-5893	5907	0	CMakeFiles/install.util	be0a54d23f5ef14c
-3	5392	1658074419734510946	CMakeFiles/boundary.dir/src/pbsig/boundary.cpp.o	334fb851932463e0
-5392	5533	1658074419890091134	boundary.cpython-38-darwin.so	b368a7dfe912b64f
-5533	5547	0	CMakeFiles/install.util	c562d4f33fba79ad
