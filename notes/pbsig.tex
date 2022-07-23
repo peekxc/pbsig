@@ -33,6 +33,8 @@
 \section{Motivation}
 $<$ insert motivating examples, etc $>$
 
+In what follows, we illicit connections back to spectral graph theory. 
+
 % Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
 % Towards understanding its dynamic, one may ask whether one can infer properties of the underlying evolving system
 \section{Background \& Notation}\label{sec:background_notation}
@@ -106,6 +108,10 @@ In this context, we write the $p$-th persistent Betti number with respect to fix
 \beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
 \end{equation}
 This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$, representing the persistent homology groups which were born at or before $i$ and died sometime after $j$. 
+
+
+
+
 We consider the problem of maximizing the $p$-th \emph{persistent} Betti number $\beta^{i,j}_p$ over some set $T \subseteq \mathrm{T}$: 
 \begin{equation}
 	t_\ast = \argmax_{t \in T}	 \beta_{p}^{i,j}(t)

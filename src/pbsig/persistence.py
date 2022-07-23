@@ -14,12 +14,12 @@ from array import array
 from itertools import combinations
 from scipy.special import binom
 from scipy.spatial.distance import pdist
-from apparent_pairs import *
-from apparent_pairs import rank_C2
+from .apparent_pairs import *
 
 ## temporary cpp hooks
-import cppimport.import_hook
-import boundary
+# import cppimport.import_hook
+# import boundary
+from . import boundary
 
 _perf = {
   "n_col_adds" : 0,
@@ -327,7 +327,10 @@ def boundary_faces(D: csc_matrix):
   #   F = np.sort(np.unique(rank_combs(Edges[all_faces,:], n=X.shape[0], k=2)))
 
 def rips_weights(X: ArrayLike, faces: ArrayLike):
-  """ faces := (n x k) integer matrix of (k-1)-faces """
+  """ 
+  X := point cloud or pairwise distances
+  faces := (n x k) integer matrix of (k-1)-faces 
+  """
   assert is_point_cloud(X) or is_pairwise_distances(X), "Invalid format for rips"
   XD = pdist(X) if is_point_cloud(X) else X
   n = inverse_choose(len(XD), 2)

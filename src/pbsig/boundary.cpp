@@ -276,6 +276,7 @@ py::tuple rips_boundary_2(const py::array_t< double >& D, const size_t n, const 
 
 
 PYBIND11_MODULE(boundary, m) {
+  m.doc() = "boundary";
   m.def("rips_boundary_1", &rips_boundary_1);
   m.def("rips_boundary_2", &rips_boundary_2);
   m.def("lower_star_boundary_1", &lower_star_boundary_1);
@@ -285,5 +286,8 @@ PYBIND11_MODULE(boundary, m) {
 }
 
 /*
-
+<%
+cfg['extra_compile_args'] = ['-std=c++17']
+setup_pybind11(cfg)
+%>
 */

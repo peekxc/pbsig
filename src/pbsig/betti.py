@@ -3,14 +3,14 @@ import numpy as np
 from persistence import * 
 from apparent_pairs import *
 
-# def rank_C2(i: int, j: int, n: int):
-#   i, j = (j, i) if j < i else (i, j)
-#   return(int(n*i - i*(i+1)/2 + j - i - 1))
+def rank_C2(i: int, j: int, n: int):
+  i, j = (j, i) if j < i else (i, j)
+  return(int(n*i - i*(i+1)/2 + j - i - 1))
 
-# def unrank_C2(x: int, n: int):
-#   i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
-#   j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
-#   return(i,j) 
+def unrank_C2(x: int, n: int):
+  i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
+  j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
+  return(i,j) 
 
 def Lipshitz(f: ArrayLike, x: ArrayLike):
   """ 
@@ -244,6 +244,34 @@ def scale_diameter(X: ArrayLike, diam: float = 1.0):
   VM = np.reshape(np.repeat(vec_mag, X.shape[1]), (len(vec_mag), X.shape[1]))
   Xs = (X / VM) * diam*(VM/(np.max(vec_mag)))
   return(Xs)
+
+def scale_diameter(X: ArrayLike, diam: float = 1.0):
+  from scipy.spatial.distance import pdist
+  vec_mag = np.reshape(np.linalg.norm(X, axis=1), (X.shape[0], 1))
+  vec_mag[vec_mag == 0] = 1 
+  VM = np.reshape(np.repeat(vec_mag, X.shape[1]), (len(vec_mag), X.shape[1]))
+  Xs = (X / VM) * diam*(VM/(np.max(vec_mag)))
+  return(Xs)
+
+def lower_star_ph_dionysus(V, W, T):
+  E = edges_from_triangles(T, V.shape[0])
+  vertices = [([i], w) for i,w in enumerate(W)]
+  edges = [(list(e), np.max(W[e])) for e in E]
+  triangles = [(list(t), np.max(W[t])) for t in T]
+  F = []
+  for v in vertices: F.append(v)
+  for e in edges: F.append(e) 
+  for t in triangles: F.append(t)
+
+  import dionysus as d
+  f = d.Filtration()
+  for vertices, time in F: f.append(d.Simplex(vertices, time))
+  f.sort()
+  m = d.homology_persistence(f)
+  dgms = d.init_diagrams(m, f)
+  DGM0 = np.array([[pt.birth, pt.death] for pt in dgms[0]])
+  DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
+  return([DGM0, DGM1])
 
 def plot_direction(V: ArrayLike, T: ArrayLike, W: ArrayLike, cmap: str = 'jet'):
   import matplotlib

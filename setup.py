@@ -1,28 +1,33 @@
 # -*- coding: utf-8 -*-
-# python setup.py install
-from setuptools import setup
-from glob import glob
-from pybind11.setup_helpers import Pybind11Extension, build_ext
+# Install with: python setup.py install
+# Build with: python setup.py bdist_wheel
+from skbuild import setup
+# from setuptools import find_packages
+#from glob import glob
+#from pybind11.setup_helpers import Pybind11Extension, build_ext
 
-ext_modules = [
-	Pybind11Extension(
-	"boundary",
-		sorted(glob("boundary.cpp")),
-	)
-]
+# ext_modules = [
+# 	Pybind11Extension(
+# 	"boundary",
+# 		sorted(glob("boundary.cpp")),
+# 	)
+# ]
 
 setup(
-  name="boundary",
+  name="pbsig",
   author="Matt Piekenbrock",
   author_email="matt.piekenbrock@gmail.com",
-  description="Persistent Betti optimization",
+  description="Persistent Betti Signatures",
   long_description="",
-  ext_modules=ext_modules,
-  cmdclass={"build_ext": build_ext},
+  #ext_modules=ext_modules,
+  #cmdclass={'build_ext': build_ext},
   zip_safe=False,
   python_requires=">=3.8",
+  packages=['pbsig'],
+  package_dir={'': 'src'},
+  cmake_install_dir='src/pbsig'
+  #cmake_args=['-DSOME_FEATURE:BOOL=OFF']
 )
-
 # package_dir = \
 # {'': 'src'}
 
