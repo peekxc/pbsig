@@ -75,6 +75,13 @@ The $p$-th persistent homology groups are the images of these transformations an
 \end{equation}
 For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}.
 
+Although the persistence diagram $\mathrm{dgm}_p(K_\bullet)$ characterizes elements of $H_p^{i,j}$, one may define $\mathrm{dgm}_p(K_\bullet)$ through $\beta_p^{i,j}$ alone. To see this, let $f: K \to \mathbb{R}$ be a tame function and $(\tau_i)$
+
+\begin{definition}[Persistence diagram]
+	Given a finite filtration $K_\bullet$ of , the $p$-th persistence diagram for some $p \geq 0$ is the set of points $(i,j)$ counted with multiplicity $\mu_p^{i,j}$ for all $0 < i < j < m+1$, union all the points on the diagonal, counted with infinite .  
+\end{definition}
+
+
 \begin{remark}
 \normalfont In practice, filtrations often arise from triangulations parameterized by geometric scaling parameters, and references to the ``persistence'' of a given homology class are with respect to these parameterizations. For example, given a finite metric space $\mathcal{X} = (X, d_X)$, the \emph{Rips complex} at scale $\epsilon \in \mathbb{R}_{+}$ is the complex given by: 
 \begin{equation}
@@ -92,35 +99,8 @@ As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level 
 
 
 \section{Methodology}
-In this section, we derive the relaxed objective function we seek to maximize. 
 %We begin with a motivating application: suppose one has a dynamic point cloud that varies continuously with respect to some set of parameters and one expects this point cloud to have non-trivial topology as it changes. 
 %Moreover, suppose one is interested in finding an a specific setting of parameter values wherein the $p$-th persistence diagram contains many highly persistent pairs; equivalently, one is interested in finding the parameter values where topological features are the most pronounced in the system's corresponding persistence diagram. in what follows, we make this problem statement and corresponding objective more precise towards developing an efficient tool for finding these parameter values. 
-\\
-\\
-Let $\delta_\mathcal{X}$ denote an $\mathrm{T}$-parameterized metric space $\delta_\mathcal{X}(\cdot) = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x')$ is continuous for every pair $x, x' \in X$ and $\delta_\mathcal{X}(t) = (X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
-For a fixed $t \in \mathrm{T}$, the Rips complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
-\begin{equation}
-	\mathrm{Rips_{\epsilon}}(\delta_\mathcal{X}(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \}
-\end{equation}
-\noindent As before, the family of Rips complexes for varying $\epsilon > 0$ yields a filtration whose inclusion maps induce linear maps at the level of homology. The time-varying counterpart is analogous.  
-In this context, we write the $p$-th persistent Betti number with respect to fixed values $i,j \in I$ as a function of $t \in \mathrm{T}$: 
-\begin{equation}
-\beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
-\end{equation}
-This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$, representing the persistent homology groups which were born at or before $i$ and died sometime after $j$. 
-
-
-
-
-We consider the problem of maximizing the $p$-th \emph{persistent} Betti number $\beta^{i,j}_p$ over some set $T \subseteq \mathrm{T}$: 
-\begin{equation}
-	t_\ast = \argmax_{t \in T}	 \beta_{p}^{i,j}(t)
-\end{equation}
-As an illustrative example, see Figure. 
-$<$ insert SW1Pers vineyards plot $>$
-%Since Betti numbers are integer-valued invariants, direct optimization is difficult. Moreover, the space of persistence diagrams is [banach space statement]....
-%Nonetheless, the differentiability of persistence has been studied extensively in [show chain rule paper on persistence diagrams]...
-
 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
 \subsubsection*{Persistent Betti Numbers:} 
@@ -145,9 +125,9 @@ One of the seminal results from the Pairing Uniqueness lemma~\cite{} asserts tha
 $$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})$$
 Thus, all lower-left submatrices of the filtered boundary matrix $\partial$ have the same rank as their corresponding submatrices in $R$. Thus, we may write $\beta_p^{i,j}$ as: 
 \begin{equation}\label{eq:betti_four}
-	\beta_p^{i,j} = \mathrm{rank}(S_p^i) - \mathrm{rank}(\partial_p^{\ast,i}) - \mathrm{rank}(\partial_p^{i,j}) + \mathrm{rank}(\partial_p^{i+1,j})
+	\beta_p^{i,j} = \mathrm{rank}(I_p^i) - \mathrm{rank}(\partial_p^{\ast,i}) - \mathrm{rank}(\partial_p^{i,j}) + \mathrm{rank}(\partial_p^{i+1,j})
 \end{equation}
-where $S_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
+where $I_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
 % DONT ERASE
 %Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_{p-1}(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\ref{sec:computation}. Substituting these matrices appropriately, equation~\eqref{eq:pb3} can be written as: 
 %\begin{equation}\label{eq:pb_rank}
@@ -157,9 +137,24 @@ where $S_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes 
 % NOTE: Keep i,j as the indices in the notation for the above section; the next section makes clear the transition to \epsilon_i, \epsilon_j
 
 
-\subsubsection*{Boundary Matrix Relaxation}
-As integer-valued invariants, Betti numbers pose several difficulties to direct optimization. Thus, we require alternative expressions for each of the terms in equation~\eqref{eq:betti_four} to extend its applicability to the time-varying setting. Towards deriving these expression, we first require a replacement of the standard boundary matrix formulation. 
+\subsubsection*{A Time-varying Boundary Matrix Relaxation}
+Let $\delta_\mathcal{X}$ denote an $\mathrm{T}$-parameterized metric space $\delta_\mathcal{X}(\cdot) = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x')$ is continuous for every pair $x, x' \in X$ and $\delta_\mathcal{X}(t) = (X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
+For a fixed $t \in \mathrm{T}$, the Rips complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
+\begin{equation}
+	\mathrm{Rips_{\epsilon}}(\delta_\mathcal{X}(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \}
+\end{equation}
+\noindent As before, the family of Rips complexes for varying $\epsilon > 0$ yields a filtration whose inclusion maps induce linear maps at the level of homology. The time-varying counterpart is analogous.  
+In this context, we write the $p$-th persistent Betti number with respect to fixed values $i,j \in I$ as a function of $t \in \mathrm{T}$: 
+\begin{equation}
+\beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
+\end{equation}
+This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$, representing the persistent homology groups which were born at or before $i$ and died sometime after $j$. 
+
+As integer-valued invariants, Betti numbers pose several difficulties to vectorization. 
+Thus, we require alternative expressions for each of the terms in equation~\eqref{eq:betti_four} to extend its applicability to the time-varying setting. Towards deriving these expression, we first require a replacement of the standard boundary matrix formulation. 
 % Give example of optimal homologus cycle 
+
+
 
 Recall that the boundary operator $\partial_p$ for a finite simplicial filtration $K_{\bullet}$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices, respectively. The entries of $\partial_p$ depend on the choice of $\mathbb{F}$; in general, after orientating the simplices of $K$ arbitrarily, they have the form: 
 %Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
@@ -408,6 +403,21 @@ Consider the $p$-th boundary operator $\partial_p^\ast : C_p(K_\ast) \to C_{p-1}
 \begin{equation}
 	M_p^\ast = [\, u_1 \mid u_2 \mid \dots \mid u_r \, ] = \{ \,  \, \}
 \end{equation}
+
+
+\subsection{Old}
+
+We consider the problem of maximizing the $p$-th \emph{persistent} Betti number $\beta^{i,j}_p$ over some set $T \subseteq \mathrm{T}$: 
+\begin{equation}
+	t_\ast = \argmax_{t \in T}	 \beta_{p}^{i,j}(t)
+\end{equation}
+As an illustrative example, see Figure. 
+$<$ insert SW1Pers vineyards plot $>$
+
+%Since Betti numbers are integer-valued invariants, direct optimization is difficult. Moreover, the space of persistence diagrams is [banach space statement]....
+%Nonetheless, the differentiability of persistence has been studied extensively in [show chain rule paper on persistence diagrams]...
+
+
 
 %For a fixed $t \in T$, we obtain a boundary matrix $\partial_{p}^{b,d}$ up to filtration value (diameter) $d \in \mathbb{R}$ for $d_X(t)$. We recall the integer-valued function (equation~\eqref{eq:pb_rank}) we would like to relax. To do this, we substitute the nuclear norm $\lVert \, \cdot \, \rVert_\ast$  for the $\mathrm{rank}$ function and a sigmoid-like function $S_b : K \to \mathbb{R}_{+}$ for the order function $\lvert \, \cdot \, \rvert$, obtaining: 
 %\begin{equation}\label{eq:relaxation_pb}

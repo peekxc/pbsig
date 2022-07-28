@@ -108,12 +108,16 @@ import numpy as np
 import networkx as nx
 from pbsig import *
 import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, cdist, squareform
 
 G = nx.fast_gnp_random_graph(n=10, p=0.30)
-
 X = np.random.uniform(size=(10,2))
+
+## lot X 
+nx.draw(G, pos=X)
+
 ER = enclosing_radius(squareform(pdist(X)))
-K = rips(X, p=2, diam=ER, )
+K = rips(X, p=2, diam=ER)
 D1 = boundary_matrix(K, p=1)
 D2 = boundary_matrix(K, p=2)
 
@@ -145,4 +149,7 @@ dgms = [lower_star_ph_dionysus(scale_diameter(X), X @ v[:,np.newaxis],  K['trian
 # V, T = scale_diameter(X), del_tri.simplices
 # project_v = lambda X, v: (X @ np.array(v)[:,np.newaxis]).flatten()
 # project_v(X, V[0,:])
+
+
+
 

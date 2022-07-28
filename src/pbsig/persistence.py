@@ -13,13 +13,12 @@ from scipy.sparse import coo_matrix, csc_matrix, lil_matrix, isspmatrix
 from array import array
 from itertools import combinations
 from scipy.special import binom
-from scipy.spatial.distance import pdist
-from .apparent_pairs import *
+from scipy.spatial.distance import pdist, cdist, squareform
 
-## temporary cpp hooks
-# import cppimport.import_hook
-# import boundary
+## Relative package imports
 from . import boundary
+from .apparent_pairs import *
+from .utility import *
 
 _perf = {
   "n_col_adds" : 0,
@@ -669,3 +668,28 @@ def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
     X = np.array([delay_coord(t) for t in T])
     return(X)
   return(sw)
+
+
+def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
+  """
+  Compute the p=(0,1) persistence diagrams of the lower-star filtration with vertex values 'f' and triangles 'T'
+  """
+  import dionysus as d
+  #n = len(f)
+  vertices = [([i], w) for i,w in enumerate(f)]
+  edges = [(list(e), np.max(f[e])) for e in E]
+  triangles = [(list(t), np.max(f[t])) for t in T]
+  F = []
+  for v in vertices: F.append(v)
+  for e in edges: F.append(e) 
+  for t in triangles: F.append(t)
+
+  
+  filtration = d.Filtration()
+  for vertices, time in F: filtration.append(d.Simplex(vertices, time))
+  filtration.sort()
+  m = d.homology_persistence(filtration)
+  dgms = d.init_diagrams(m, filtration)
+  DGM0 = np.array([[pt.birth, pt.death] for pt in dgms[0]])
+  DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
+  return([DGM0, DGM1])

@@ -25,6 +25,7 @@ setup(
   python_requires=">=3.8",
   packages=['pbsig'],
   package_dir={'': 'src'},
+  package_data={'pbsig': ['data/*.bsp', 'data/*.txt', 'data/*.csv']},
   cmake_install_dir='src/pbsig'
   #cmake_args=['-DSOME_FEATURE:BOOL=OFF']
 )

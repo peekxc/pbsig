@@ -7,60 +7,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import pdist, cdist, squareform
 
-import betti
+# import betti
 
-def expand_triangles(nv: int, E: ArrayLike):
-  from gudhi import SimplexTree
-  st = SimplexTree()
-  for v in range(nv): st.insert([int(v)], 0.0)
-  for e in E: st.insert(e)
-  st.expansion(2)
-  triangles = np.array([s[0] for s in st.get_simplices() if len(s[0]) == 3])
-  return(triangles)
+
 
 LETTERS = list(string.ascii_uppercase)
-
-def gen_letter(text, font_path):
-  nwide = 51
-  image = Image.new("RGBA", (nwide,nwide), (255,255,255))
-  draw = ImageDraw.Draw(image)
-  path = Path(font_path).resolve()
-  font = ImageFont.truetype(str(path), 40)
-
-  #w,h = draw.textsize(text, font=font)
-  w,h = draw.textbbox(xy=(0,0), text=text, font=font)[2:4]
-  wo = int((nwide-w)/2)
-  ho = int((nwide-h)/2)-int(11/2)
-  draw.text((wo, ho), text, fill="black", font=font)
-
-  #image.save("A.gif")
-
-  pixels = np.asarray(image.convert('L'))
-  v_pos = np.column_stack(np.where(pixels < 200))
-  v_pos = np.fliplr(v_pos)
-  v_pos[:,1] = nwide-v_pos[:,1]
-  e_ind = np.where(pdist(v_pos, 'chebychev') == 1)[0]
-  from apparent_pairs import unrank_C2
-  def is_freundenthal(e):
-    i,j = unrank_C2(e, v_pos.shape[0])
-    x1, x2 = v_pos[i,0], v_pos[j,0]
-    y1, y2 = v_pos[i,1], v_pos[j,1]
-    return(((x1 < x2) and (y1 == y2)) or ((x1 == x2) and (y1 < y2)) or ((x1 < x2) and (y1 > y2)) or ((x1 == x2) and (y1 > y2)))
-  e_fr = np.array(list(filter(is_freundenthal, e_ind)))
-  E = np.array([unrank_C2(e, v_pos.shape[0]) for e in e_fr])
-  T = expand_triangles(v_pos.shape[0], E)
-  center = np.array([
-    np.min(v_pos[:,0]) + (np.max(v_pos[:,0])-np.min(v_pos[:,0]))/2,
-    np.min(v_pos[:,1]) + (np.max(v_pos[:,1])-np.min(v_pos[:,1]))/2
-  ])
-  def scale_diameter(X):
-    vnorms = np.linalg.norm(X, axis=1)
-    vnorms = np.repeat(np.max(vnorms), X.shape[0])
-    X = X / np.reshape(np.repeat(vnorms, X.shape[1]), X.shape)
-    return(X)
-  V = scale_diameter(v_pos - center) 
-  return(V, T)
-
 import matplotlib.pyplot as plt
 from betti import *
 fonts = ['Lato-Bold.ttf', 'Oswald-Bold.ttf', 'OpenSans-Bold.ttf', 'Roboto-Bold.ttf']
@@ -74,27 +25,6 @@ for t in T: plt.gca().fill(V[t,0], V[t,1], c='#c8c8c8b3')
 plt.gca().set_xlim(-1, 1)
 plt.gca().set_ylim(-1, 1)
 
-
-def lower_star_ph_dionysus(V, W, T):
-  # from betti import edges_from_triangles
-  E = edges_from_triangles(T, V.shape[0])
-  vertices = [([i], w) for i,w in enumerate(W)]
-  edges = [(list(e), np.max(W[e])) for e in E]
-  triangles = [(list(t), np.max(W[t])) for t in T]
-  F = []
-  for v in vertices: F.append(v)
-  for e in edges: F.append(e) 
-  for t in triangles: F.append(t)
-
-  import dionysus as d
-  f = d.Filtration()
-  for vertices, time in F: f.append(d.Simplex(vertices, time))
-  f.sort()
-  m = d.homology_persistence(f)
-  dgms = d.init_diagrams(m, f)
-  DGM0 = np.array([[pt.birth, pt.death] for pt in dgms[0]])
-  DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
-  return([DGM0, DGM1])
 
 project_v = lambda V, v: (V @ np.array(v)[:,np.newaxis]).flatten()
 W = project_v(V, [1/np.sqrt(2), 1/np.sqrt(2)])
