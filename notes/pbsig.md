@@ -31,7 +31,7 @@ code{
 section{
 	font-size: 1.75em;
   letter-spacing: .020rem;
-  text-align: left;
+  text-align: center;
   padding: 0.125rem 1.0rem 0.125rem 1.0rem;
 }
 section img {
@@ -308,13 +308,14 @@ $$
 \begin{align*}
 	\beta_p^{i,j} &= \mathrm{dim}(H_p^{i,j}) \\
   &= \mathrm{dim} \left( Z_p(K_i) / B_p(K_j) \right) \\
-	&= \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
-	&= \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )
+	&\underset{(1)}{=} \mathrm{dim} \big( Z_p(K_i) / ( Z_p(K_i) \cap B_p(K_j)) \big) \\
+	&\underset{(2)}{=} \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) \\
+  &\underset{(3)}{=} \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )
+  % &= \lvert K_i \rvert - \mathrm{rank}(\partial_p(K_i)) - \mathrm{rank}(`` \; \partial_p^{i,j} \; ")
 \end{align*}
 $$
-By rank-nullity, we have:
-
-$$ \beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )   $$
+<!-- $$ \beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )   $$ -->
+<!-- where $(1)$ is due to $Z_p(K_i) \leq B_p(K_j)$, $(2)$ follows by def. of quotient a space, and $(3)$ by rank-nullity -->
 
 Q1: How to compute $\beta_p^{i,j}$ algorithically? 
 
@@ -447,5 +448,16 @@ Consider replacing the elementary chain values as follows:
 
 <!-- boundary replacement -->
 
+---
+
+$$
+\def\arraystretch{1.5}
+  \underset{\begin{array}{|c:c:c|}
+    \hline
+    a & b & c \\ \hdashline
+    d & e & f \\ \hdashline
+    g & h & i \\ \hline
+  \end{array}}{\huge \raisebox{0.25em}{\huge $A$}}
+$$
 
 ---

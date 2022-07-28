@@ -1,10 +1,13 @@
 import numpy as np 
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+
 from pbsig import * 
+from pbsig.datasets import letter_image, freundenthal_image
+from scipy.sparse import coo_matrix
 
 ## Load the letters images
-from pbsig.datasets import letter_image, freundenthal_image
+
 A_img = letter_image('A')
 
 ## Plot the letter 
@@ -30,7 +33,6 @@ ax.plot([-1.0, 1.0], [-1.0, 1.0], color='gray',linewidth=0.5, linestyle='-')
 for (dgm0, dgm1) in dgms:
   ax.scatter(*dgm0.T, c='red', s=0.15)
 
-
 ## Build the sparse set cover representation
 from array import array 
 dgm0_all = np.concatenate([dgm0 for (dgm0, dgm1) in dgms])
@@ -43,7 +45,6 @@ for i, (a,b) in enumerate(dgm0_all):
   W.append(ab_weight)
 
 ## Approximate the geometric set cover via LP 
-from scipy.sparse import coo_matrix
 cover = coo_matrix((np.ones(shape=(len(r_ind))), (r_ind, c_ind)), shape=(dgm0_all.shape[0], dgm0_all.shape[0]))
 
 ## Assert 
@@ -62,12 +63,9 @@ ax.set_aspect('equal')
 ax.set_xlim(-1.0, 1.0)
 ax.set_ylim(-1.0, 1.0)
 ax.plot([-1.0, 1.0], [-1.0, 1.0], color='gray',linewidth=0.5, linestyle='-')
-for (dgm0, dgm1) in dgms:
-  ax.scatter(*dgm0.T, c='red', s=0.15)
+for (dgm0, dgm1) in dgms: ax.scatter(*dgm0.T, c='red', s=0.15)
 
-## Show best k-assignments
 best_ind = np.flatnonzero(assignment)[np.argsort(-np.asarray(W)[assignment])]
-
 for (a,b) in dgm0_all[best_ind[:1],:]:
   ax.plot([-1.0, a], [b, b], color='black', linewidth=0.75)
   ax.plot([a, a], [b, 1.0], color='black', linewidth=0.75)
@@ -76,13 +74,16 @@ for (a,b) in dgm0_all[best_ind[:1],:]:
 ## --- PARAMETER SELECTION --- 
 ## Use the parameters to choose the chain relaxation
 a, b = dgm0_all[best_ind[0],:] # birth, death box 
-w = 0.10 # size of the window around the birth/death indices
-
+w = 0.0000001         # size of the window around the birth/death indices
+epsilon = 0.00001     # how close the rank approximation should be
 
 ## Make the smooth step functions centered at (a,b)
 from pbsig.utility import smoothstep
+machine_eps = np.finfo(float).eps
 ss_a = smoothstep(lb = a - w/2, ub = a + w/2, reverse = True)
+ss_ac = smoothstep(lb = a - w/2, ub = a + w/2, reverse = False)
 ss_b = smoothstep(lb = b - w/2, ub = b + w/2, reverse = True)
+# ss_ae = smoothstep(lb = (a + machine_eps) - w/2, ub = (a + machine_eps) + w/2, reverse = True)
 # plt.plot(np.linspace(a - w, a + w, 100), ss_a(np.linspace(a - w, a + w, 100)))
 
 ## Now actually compute the betti relaxation
@@ -91,9 +92,40 @@ nv = X.shape[0]
 D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
 D2, tw = lower_star_boundary(np.repeat(1.0, nv), simplices=T)
 D1_nz_pattern, D2_nz_pattern = np.sign(D1.data), np.sign(D2.data)
+
+shape_sig = array('d')
 for fv, v in rotate_S1(X, 100):
-  D1.data = D1_nz_pattern * np.repeat(fv[E].max(axis=1), 2)
-  D2.data = D2_nz_pattern * np.repeat(fv[T].max(axis=1), 3)
+  
+  ## Term 1
+  T1 = ss_a(fv[E].max(axis=1))
+
+  ## Term 2 
+  D1.data = D1_nz_pattern * ss_a(np.repeat(fv[E].max(axis=1), 2))
+  T2 = eigsh(D1.T @ D1, return_eigenvectors=False, k=min(D1.shape)-1)
+  
+  ## Term 3
+  t_chain_val = ss_b(fv[T].max(axis=1))
+  D2.data = D2_nz_pattern * np.repeat(t_chain_val, 3)
+  D2.data[D2.data == 0.0] = 0.0 # fixes sign issues ? 
+  T3 = eigsh(D2.T @ D2, return_eigenvectors=False, k=min(D2.shape)-1)
+  T3[T3 < 1e-13] = 0.0
+
+  ## Term 4
+  d2_01, d2_02, d2_12 = fv[T[:,[0,1]]].max(axis=1), fv[T[:,[0,2]]].max(axis=1), fv[T[:,[1,2]]].max(axis=1)
+  sa = ss_ac(np.ravel(np.vstack((d2_01, d2_02, d2_12)).T))
+  sb = np.repeat(t_chain_val, 3)
+  D2.data = D2_nz_pattern * (sa * sb)
+  D2.data[D2.data == 0.0] = 0.0
+  T4 = eigsh(D2.T @ D2, return_eigenvectors=False, k=min(D2.shape)-1)
+  T4[abs(T4) < 1e-13] = 0.0
+
+  ## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps
+  terms = (np.sum(T1/(T1 + epsilon)), np.sum(T2/(T2 + epsilon)), np.sum(T3/(T3 + epsilon)), np.sum(T4/(T4 + epsilon)))
+  shape_sig.append(np.sum(terms))
+
+# lower_star_pb(X, T, fv, a, b, "rank", terms = True)
+
+
 
 from scipy.sparse.linalg import eigsh, LinearOperator, aslinearoperator
 
