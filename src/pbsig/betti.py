@@ -1,7 +1,8 @@
 from typing import *
 import numpy as np 
 
-from scipy.sparse.linalg import eigh
+from scipy.sparse.linalg import eigsh
+from scipy.sparse.csgraph import structural_rank
 from .persistence import * 
 from .apparent_pairs import *
 
@@ -388,13 +389,12 @@ def lower_star_pb(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float, 
 
 
 ## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps
-def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv: int, a: float, b: float, w: float = 0.001, epsilon: float = 0.001):
+def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, w: float = 0.001, epsilon: float = 0.001):
   from .betti import lower_star_boundary
   from .utility import smoothstep
   from scipy.sparse.csgraph import structural_rank
-  assert isinstance(faces, ArrayLike) and isinstance(simplices, ArrayLike)
-  fd, sd = faces.shape[1], simplices.shape[1]
-  assert fd == (sd - 1), "Invalid faces/simplices"
+  assert isinstance(p_simplices, np.ndarray), "simplices must be a numpy matrix for now"
+  p_dim = p_simplices.shape[1]
 
   ## Parameterize the smoothstep functions
   ss_a = smoothstep(lb = a - w/2, ub = a + w/2, reverse = True)
@@ -403,8 +403,8 @@ def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv
 
   ## Compute the terms 
   shape_sig, terms = array('d'), np.zeros(4)
-  if sd == 2: ## Betti-1
-    E, T = faces, simplices
+  if p_dim == 3: ## Betti-1
+    E, T = edges_from_triangles(p_simplices, nv), p_simplices
     D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
     D2, tw = lower_star_boundary(np.repeat(1.0, nv), simplices=T)
     D1_nz_pattern, D2_nz_pattern = np.sign(D1.data), np.sign(D2.data)
@@ -420,15 +420,15 @@ def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv
         D1.data = D1_nz_pattern * np.repeat(T1, 2)
         L = D1 @ D1.T
         T2 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[1] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T2])
+        terms[1] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T2])
 
       ## Term 3
-      t_chain_val = ss_b(fv[T].max(axis=1))
+      t_chain_val = ss_b(f[T].max(axis=1))
       if np.any(t_chain_val):
         D2.data = np.array([x if x != 0 else 0.0 for x in D2_nz_pattern * np.repeat(t_chain_val, 3)])
         L = D2 @ D2.T
         T3 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[2] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
+        terms[2] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
 
       ## Term 4
       d2_01, d2_02, d2_12 = f[T[:,[0,1]]].max(axis=1), f[T[:,[0,2]]].max(axis=1), f[T[:,[1,2]]].max(axis=1)
@@ -442,7 +442,8 @@ def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv
 
       ## Append to shape signature and continue
       shape_sig.append(np.sum(terms))
-  elif fd == 0: # Betti-0
+  elif p_dim == 2: # Betti-0
+    E = p_simplices
     D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
     D1_nz_pattern = np.sign(D1.data)
     
@@ -454,11 +455,12 @@ def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv
       
       ## Term 3
       edge_f = f[E].max(axis=1)
-      if np.any((chain_vals := ss_b(edge_f)) > 0):
+      chain_vals = ss_b(edge_f)
+      if np.any(chain_vals > 0):
         D1.data = np.array([x if x != 0 else 0.0 for x in D1_nz_pattern * np.repeat(chain_vals, 2)])
         L = D1 @ D1.T
         T3 = eigsh(D1.T @ D1, return_eigenvectors=False, k=structural_rank(L))
-        terms[2] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
+        terms[2] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
 
       ## Term 4
       chain_vals = ss_b(edge_f) * ss_ac(edge_f)
@@ -466,10 +468,10 @@ def lower_star_betti_sig(F: Iterable, faces: ArrayLike, simplices: ArrayLike, nv
         D1.data = D1_nz_pattern * np.repeat(np.array([x if x != 0 else 0.0 for x in chain_vals]), 2)
         L = D1 @ D1.T
         T4 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[2] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
+        terms[3] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T4])
       
       ## Append to shape signature and continue
       shape_sig.append(np.sum(terms)) 
   else: 
     raise ValueError("Not supported yet")
-  
+  return(np.asarray(shape_sig))

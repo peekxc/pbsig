@@ -15,17 +15,14 @@ def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich"
   Generates a letter image 
   
   """
+  from pbsig import data as package_data_mod
+  data_path = package_data_mod.__path__._path[0]
+  fonts = ['lato-bold','opensans','ostrich', 'oswald','roboto']
+  fonts_fn = ["Lato-Bold", "OpenSans-Bold", "ostrich-regular", "Oswald-Bold", "Roboto-Bold"]
   if font == ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"]:
-    from pbsig import data as package_data_mod
-    data_path = package_data_mod.__path__._path[0]
     font_path = data_path + '/Lato-Bold.ttf'
-  elif isinstance(font, str):
-    #font.to
-    font_path = data_path + '/Lato-Bold.ttf' if font.lower() == 'lato-bold' else font
-    font_path = data_path + '/OpenSans-Bold.ttf' if font.lower() == 'opensans' else font
-    font_path = data_path + '/ostrich-regular.ttf' if font.lower() == 'ostrich' else font
-    font_path = data_path + '/Oswald-Bold.ttf' if font.lower() == 'oswald' else font
-    font_path = data_path + '/Roboto-Bold.ttf' if font.lower() == 'roboto' else font
+  elif isinstance(font, str) and font.lower() in fonts:
+    font_path = data_path +'/' + fonts_fn[fonts.index(font.lower())] + '.ttf'
   else:
     # TODO: allow font paths 
     raise ValueError("invalid font given")

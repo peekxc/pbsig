@@ -32,13 +32,17 @@ def wset_cover_LP(subsets: ArrayLike, weights: ArrayLike, maxiter: int = "defaul
 	'''
 	assert issparse(subsets), "cover must be sparse matrix"
 	assert len(weights) == subsets.shape[1], "Number of weights must match number of subsets"
-	W = weights.reshape((1, len(weights))) # ensure W is a column vector
+	W = np.asarray(weights) if not(isinstance(weights, np.ndarray)) else weights
+	assert all(W >= 0.0), "All W must be non-negative" #maybe postive?
+	assert isinstance(W, np.ndarray), "Invalid weight vector given"
+	subsets = subsets.tocsc() if not(isinstance(subsets, csc_matrix)) else subsets
+	W = W.reshape((1, len(W))) # ensure W is a row vector TODO: 
 	if subsets.dtype != int:
 		subsets = subsets.astype(int)
 
 	# linprog(c, A_ub=None, b_ub=None, A_eq=None, b_eq=None, bounds=None, method='interior-point', callback=None, options=None, x0=None)
 	# Since A_ub @ x <= b_ub, negate A_ub to enable constraint A_ub @ x >= 1
-	soln = linprog(c=W, b_ub=np.repeat(-1.0, subsets.shape[0]), A_ub=-subsets, bounds=(0.0, 1.0), options={"sparse": True})
+	soln = linprog(c=W, b_ub=np.repeat(-1.0, subsets.shape[0]), A_ub=-subsets, bounds=(0.0, 1.0), options={"sparse": True, "presolve": True})
 	assert soln.success
 
 	## Change maxiter to default solution
@@ -77,7 +81,14 @@ def wset_cover_greedy(subsets: csc_matrix, weights: ArrayLike):
 	"""
 	assert issparse(subsets), "cover must be sparse matrix"
 	assert len(weights) == subsets.shape[1], "Number of weights must match number of subsets"
-	S, W = subsets, weights
+	W = np.asanyarray(weights).flatten() if not(isinstance(weights, np.ndarray)) else weights
+	assert all(W >= 0.0), "All W must be non-negative" #maybe postive?
+	assert isinstance(W, np.ndarray), "Invalid weight vector given"
+	subsets = subsets.tocsc() if not(isinstance(subsets, csc_matrix)) else subsets
+	#W = W.reshape((1, len(W))) # ensure W is a row vector TODO: 
+	S = subsets.tocsc() if not(isinstance(subsets, csc_matrix)) else subsets
+	
+	## fnctions
 	n, J = S.shape
 	elements, sets, point_cover, set_cover = set(range(n)), set(range(J)), set(), array('I')
 	slice_col = lambda j: S.indices[S.indptr[j]:S.indptr[j+1]] # provides efficient cloumn slicing

@@ -1,9 +1,23 @@
+import sys
 import numpy as np 
-from itertools import combinations
 
+from itertools import combinations
 from typing import * 
 from numpy.typing import ArrayLike
 from math import comb
+
+
+## From: https://stackoverflow.com/questions/3160699/python-progress-bar
+def progressbar(it, count=None, prefix="", size=60, out=sys.stdout): # Python3.6+
+  count = len(it) if count == None else count 
+  def show(j):
+    x = int(size*j/count)
+    print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count}", end='\r', file=out, flush=True)
+  show(0)
+  for i, item in enumerate(it):
+    yield item
+    show(i+1)
+  print("\n", flush=True, file=out)
 
 def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, reverse: bool = False):
   """
