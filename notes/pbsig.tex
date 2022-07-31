@@ -11,6 +11,8 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
+\DeclareMathSymbol{\shortminus}{\mathbin}{AMSa}{"39}
+
 \usepackage{dsfont}
 
 \newtheorem{definition}{Definition}
@@ -32,6 +34,11 @@
 
 \section{Motivation}
 $<$ insert motivating examples, etc $>$
+
+\begin{definition}
+The $p$-th persistence diagram $dgm_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$, where: 
+  $$\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1 $$
+\end{definition}
 
 In what follows, we illicit connections back to spectral graph theory. 
 
@@ -413,6 +420,8 @@ We consider the problem of maximizing the $p$-th \emph{persistent} Betti number 
 \end{equation}
 As an illustrative example, see Figure. 
 $<$ insert SW1Pers vineyards plot $>$
+
+
 
 %Since Betti numbers are integer-valued invariants, direct optimization is difficult. Moreover, the space of persistence diagrams is [banach space statement]....
 %Nonetheless, the differentiability of persistence has been studied extensively in [show chain rule paper on persistence diagrams]...

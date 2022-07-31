@@ -31,8 +31,9 @@ code{
 section{
 	font-size: 1.75em;
   letter-spacing: .020rem;
-  text-align: center;
-  padding: 0.125rem 1.0rem 0.125rem 1.0rem;
+  text-align: left;
+  padding: 0.125rem 2.0rem 0.125rem 2.0rem; /* t r b l */
+  line-height: 1.75em;
 }
 section img {
 	text-align: center !important;
@@ -45,8 +46,21 @@ footer {
 	text-align: center;
   bottom: 0.75rem !important;
 }
+footer > ol {
+  list-style: decimal !important;
+}
 footer > ol > li > p{
 	margin: 0;
+}
+ol {
+  list-style: decimal !important;
+}
+
+menu > ol {
+  list-style: decimal !important;
+}
+menu > ul {
+  list-style: decimal !important;
 }
 .columns {
   display: grid;
@@ -70,16 +84,231 @@ sub { bottom: -0.25em; vertical-align: sub;}
 
 ---
 
+# Persistent Homology is an _intrinsic invariant_
+
+<div style="text-align: left !important;">
+
+- Persistent Homology (PH) is a well-established tool in the sciences<sup>[1,2]</sup>
+  
+- PH has many attractive properties beyond homology:
+   
+</div>
+
+1. _General_ : Any function-equipped poset admits a $\mathrm{dgm}$ _via rank functions_ <sup>[5,6]</sup>
+2. _Descriptive_ : $d_{B}(\mathrm{dgm}_p(X), \mathrm{dgm}_p(Y))$ lower-bounds $d_{GH}(X, Y)$<sup>[7]</sup>
+3. _Geometric_ :  distributed $\mathrm{dgm}$'s interpolate local geometry $\leftrightarrow$ global topology<sup>[4]</sup>
+4. _Stable_ : $d_B(\mathrm{dgm}(f), \mathrm{dgm}(g)) \leq \lVert f - g \rVert_\infty$ between function $f,g$<sup>[3]</sup>
+
+<!-- Indeed, the $\mathrm{PH}$-transform is _injective_ on the space of simplicial complexes embedded in $\mathbb{R}^d$ -->
+_Collections_ of $\mathrm{dgm}$'s <u>uniquely</u> characterize simplicial complexes in $\mathbb{R}^d$<sup>[7]</sup>
+
+$$ 
+\fbox{
+  { \large $\mathrm{PH}$ is more then just a homology inference tool! }
+}
+$$
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+
+1. Wigner, Eugene P. "The unreasonable effectiveness of mathematics in the natural sciences." Mathematics and Science. 1990. 291-306.
+
+2. Turkeš, Renata, Guido Montúfar, and Nina Otter. "On the effectiveness of persistent homology." arXiv preprint arXiv:2206.10551 (2022). 
+   
+3. Cohen-Steiner, David, Herbert Edelsbrunner, and John Harer. "Stability of persistence diagrams." Discrete & computational geometry 37.1 (2007): 103-120.
+   
+4. Solomon, Elchanan, Alexander Wagner, and Paul Bendich. "From geometry to topology: Inverse theorems for distributed persistence." arXiv preprint arXiv:2101.12288 (2021).
+  
+5. Zomorodian, Afra, and Gunnar Carlsson. "Computing persistent homology." Discrete & Computational Geometry 33.2 (2005): 249-274.
+
+6. Bergomi, Mattia G., and Pietro Vertechi. "Rank-based persistence." arXiv preprint arXiv:1905.09151 (2019).
+   
+7. Turner, Katharine, Sayan Mukherjee, and Doug M. Boyer. "Persistent homology transform for modeling shapes and surfaces." Information and Inference: A Journal of the IMA 3.4 (2014): 310-344.
+ 
+   
+</footer>
+
+--- 
+
+# Persistent Homology is a <span class="line-through">intrinsic</span> _difficult invariant_
+
+The persistence computation scales $\sim O(m^3)$ over $K$ with $m = \lvert K \rvert$ simplices
+
+Morozov gave an counter-example<sup>[1]</sup> showing this bound to be tight (i.e. $\Omega(m^3)$)
+
+$$ \implies \text{computing } \mathrm{dgm}_p(K) \sim \Theta(m^3) = \Theta(n^{3(p+2)}) \text{ over an } n \text{-point set,} \text{ for } p \geq 1$$
+
+<div style="text-align: left !important;">
+
+_Simple algorithm_ $\neq$ _simple implementation_ 
+
+</div>
+
+1. Computing $R = \partial V$ is _memory intensive_: $\lvert V \rvert \sim O(n^2)$
+2. $K$'s structure affects complexity (e.g. 2-manifolds $\sim O(n \alpha(n))$<sup>[2]</sup>)
+3. Theory is extensive: _clearing_<sup>[3]</sup>, _apparent pairs_<sup>[4]</sup>, _cohomology_<sup>[5]</sup>, ...
+4. $\mathbb{F}$ matters: $\mathbb{Z}_2$ columns $\leftrightarrow$ 64-arity bit-trees w/ cached DeBruijin "magic" tables<sup>[6]</sup>
+
+<span class="text-4xl text-center"> 
+
+__Q__: Can we leverage PH theory w/o computing $\mathrm{dgm}$'s? 
+
+</span>
+
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+
+1. Morozov, Dmitriy. "Persistence algorithm takes cubic time in worst case." BioGeometry News, Dept. Comput. Sci., Duke Univ 2 (2005).
+
+2. Dey, Tamal Krishna, and Yusu Wang. Computational topology for data analysis. Cambridge University Press, 2022.
+  
+3. Chen, Chao, and Michael Kerber. "Persistent homology computation with a twist." Proceedings 27th European workshop on computational geometry. Vol. 11. 2011.
+
+4. Bauer, Ulrich. "Ripser: efficient computation of Vietoris–Rips persistence barcodes." Journal of Applied and Computational Topology 5.3 (2021): 391-423.
+
+5. De Silva, Vin, Dmitriy Morozov, and Mikael Vejdemo-Johansson. "Dualities in persistent (co) homology." Inverse Problems 27.12 (2011): 124003.
+
+6. See PHAT's source: https://github.com/blazs/phat/blob/master/include/phat/representations/bit_tree_pivot_column.h
+   
+</footer>
+
+---
+<style scoped> p { margin: 0.15em; } </style>
+
+# This Talk: Persistent Betti numbers _over time_ 
+
+The persistent Betti number is a "weaker" invariant than persistent homology 
+
+$$ \beta_p^{i,j}: K_\bullet \to \mathbb{Z}_{+} = \mathrm{dim}(H_p(K_i) \to H_p(K_j)) $$
+
+<!-- The persistence diagram is _defined_ by it's persistent Betti numbers -->
+
+![dgm_defintion.png](dgm_defintion.png)
+
+<!-- Thus, time-varying extensions to $\beta_{p}^{i,j}$ $\approx$ properties $\mathrm{dgm}_p$ over time -->
+
+_Betti curves_ are integer-valued functions over a fixed filtration + index set $I$ (say $\mathbb{R}$)
+
+$$ \beta_p: K_\bullet \times \mathbb{R} \to \mathbb{Z}_{+} \quad \Leftrightarrow \quad  \beta_p(\epsilon) \in \mathbb{Z}_+ $$
+
+_Time-varying setting_ $\implies$ 1-parameter families of _Betti_ curves over a set $X$
+
+$$ \beta_p: \mathcal{P}(X) \times \mathbb{R} \times \mathbb{R} \to \mathbb{Z}_{+}  \quad \Leftrightarrow \quad \beta_p(\epsilon, t) \in \mathbb{Z}_+$$
+
+In this talk, we will focus on _persistent Betti curves_ for _fixed_ $i,j \in I$:
+
+$$ \beta_p^{i,j}: \mathcal{P}(X) \times \mathbb{R} \to \mathbb{Z}_{+}  \quad \Leftrightarrow \quad  \beta_p^{i,j}(t) \in \mathbb{Z}_+$$
+
+---
+
+# Outline 
+
+- Background 
+  - Simplicial Complexes + Filtrations 
+- Deriving a relaxation
+  - Looking at $\beta_p^{i,j}$'s definition
+  - A Clever Trick
+  - Revisiting chains in $\mathbb{R}$ 
+  - The relaxation and its properties 
+- Applications
+  - Computation + $(1+\epsilon)$-approximation
+  - "Signatures" of time-varying systems
+  - Leveraging PHT theory
+---
 # Preliminaries
 
 A _simplicial complex_ $K = \{\sigma : \sigma \in \mathcal{P}(V)\}$ over set $V = \{v_1, \dots, v_n\}$ satisfies: 
 
-$$ \text{(vertex)  } v \in V \Longrightarrow \{v\} \in K, \quad\quad \textcolor{blue}{\text{(face)}}\quad \tau \subseteq \sigma \in K \Longrightarrow \tau \in K $$
+$$ \text{(vertex)} \quad v \in V \Longrightarrow \{v\} \in K $$
+$$ \text{(face)  }  \quad \tau \subseteq \sigma \in K \Longrightarrow \tau \in K $$
 
-<br>
+
+All homology computations here will be with _finite simplicial complexes_
+
+--- 
+
+# Boundaries 
+
+Given an _oriented_ $p$-simplex $\sigma \in K$, define its $p$-boundary as the alternating sum:
+
+$$ \partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p] $$
+
+We will make heavy use of _boundary matrices_
+
+---
+
+# The Groups  
+
+Given a pair $(\, K, \, \mathbb{F} \, )$, a $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$ 
+
+$$ c = \sum_{i=1}^{m_p} \alpha_i \sigma_i , \quad c + c' = \sum_{i=1}^{m_p} (\alpha_i + \alpha_i') \sigma_i $$
+
+<div class="grid text-center place-content-center">
+
+The operator $\partial_p$ extends linearly to $p$-chains via their constitutive simplices 
+
+</div>
+
+<div class="grid grid-cols-9 gap-1 pt-5 m-0">
+
+<div class="grid justify-items-end float-right col-span-4 m-0">
+
+&nbsp; $C_p(K) = (\, K \, , \, + \, , \, \times \,, \, \mathbb{F} \,)$ 
+
+&nbsp; $B_p(K) = (\mathrm{Im} \circ \partial_{p+1})(K)$ 
+
+&nbsp; $Z_p(K) = (\mathrm{Ker} \circ \partial_{p})(K)$ 
+
+&nbsp; $H_p(K) = Z_p(K) / B_{p}(K)$
+
+</div>
+
+<div class="col-span-1">
+
+&nbsp; &nbsp; $\Longleftrightarrow$
+
+&nbsp; &nbsp; $\Longleftrightarrow$
+
+&nbsp; &nbsp; $\Longleftrightarrow$
+
+&nbsp; &nbsp; $\Longleftrightarrow$
+
+</div>
+
+<div class="grid justify-items-start float-left col-span-4">
+
+_vector space_ of $p$-chains
+
+_boundary group_
+
+_cycle group_
+
+_homology group_
+
+</div>
+</div>
+
+<!-- _footer: Eades, Peter. "A heuristic for graph drawing." Congressus numerantium 42 (1984): 149-160. -->
+
+---
+
+# Homology 
+
+The $p$-th homology of $K$ is the quotient group $H_p(K) = Z_p(K) / B_{p}(K)$
+
+
+![center w:575px](homology.png)
+
+
+$\beta_p = \mathrm{dim}(H_p(K)) \leftrightarrow$ the dimension of the $p$-th homology group
+
+<!-- Note: $H_p(K)$ depends on the choice of $\mathbb{F}$ ! -->
+
+---
+
+
+# Filtrations
 
 A _filtration_ $K_\bullet$ is a family $\{ \, K_i \, \}_{i\in I}$  indexed over a totally ordered index set $I$:
-
 
 <div class="grid justify-items-start float-left align-left">
 
@@ -137,172 +366,49 @@ Note here that $I$ may be $\mathbb{R}_+$ or $[m] = \{\, 1, 2, \dots, m\, \}$, de
 
 --- 
 
-# The Three Groups  
-
-Given a pair $(\, K, \, \mathbb{F} \, )$, a $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$ 
-
-Given an _oriented_ $p$-simplex $\sigma \in K$, define its $p$-boundary as the alternating sum:
-
-$$ \partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p] $$
-
-<div class="grid text-center place-content-center">
-
-The operator $\partial_p$ extends linearly to $p$-chains via their constitutive simplices 
-
-</div>
-
-<div class="grid grid-cols-9 gap-1 pt-5 m-0">
-
-<div class="grid justify-items-end float-right col-span-4 m-0">
-
-&nbsp; $C_p(K) = (\, K \, , \, + \, , \, \times \,, \, \mathbb{F} \,)$ 
-
-&nbsp; $B_p(K) = (\mathrm{Im} \circ \partial_{p+1})(K)$ 
-
-&nbsp; $Z_p(K) = (\mathrm{Ker} \circ \partial_{p})(K)$ 
-
-</div>
-
-<div class="col-span-1">
-
-&nbsp; &nbsp; $\Longleftrightarrow$
-
-&nbsp; &nbsp; $\Longleftrightarrow$
-
-&nbsp; &nbsp; $\Longleftrightarrow$
-
-</div>
-
-<div class="grid justify-items-start float-left col-span-4">
-
-_vector space_ of $p$-chains
-
-_boundary group_
-
-_cycle group_
-
-</div>
-</div>
-
-<!-- _footer: Eades, Peter. "A heuristic for graph drawing." Congressus numerantium 42 (1984): 149-160. -->
-
----
-
-# Homology 
-
-The $p$-th homology of $K$ is the quotient group $H_p(K) = Z_p(K) / B_{p}(K)$
-
-
-![center w:575px](homology.png)
-
-Related topogical invariant: $\beta_p = \mathrm{dim}(H_p(K))$
-
-<!-- Note: $H_p(K)$ depends on the choice of $\mathbb{F}$ ! -->
-
----
-
 # Persistent Homology 
 
 Inclusions $K_i \subsetneq K_j$ induce linear transformations $h_p^{i,j}$ between homology groups 
 
 $$ H_p(K_0) \to \dots \to H_p(K_i) \underbrace{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) $$
 
-  1. $H_p^{i,j}(K) = \mathrm{Im}(h_p^{i,j}) \Leftrightarrow$  _persistent_ homology groups
-  2. $H_p(K_\bullet)$ admits a _pair decomposition_ $\mathrm{dgm}(K) \subseteq \bar{\mathbb{R}}^2$
-  3. $\mathrm{dgm}(K) = \{(b_1,d_1), \dots, (b_p,d_p)\}$ is _unique_ iff $\mathbb{F}$ is a field
-  4.  $(\sigma_i, \sigma_j)$ = birth/death pair, $\lvert i - j \rvert$ = persistence of the pair 
-  5. $\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j})$ the _persistent_ Betti number
+Important facts and jargon: 
+  1. $H_p(K_\bullet)$ admits a _pair decomposition_ $\mathrm{dgm}(K) \subseteq \bar{\mathbb{R}}^2$
+  2. $\mathrm{dgm}(K)$ is _unique_ iff $\mathbb{F}$ is a field
+  3. $\beta_p^{i,j}$ can be read-off directly for any $i,j$ from $\mathrm{dgm}_p(K)$
+  4. Computed via matrix decomposition $R = \partial V$
 
- <!-- $R = \partial V$ --> 
+For simplicity, we will use $\partial_p^i = \partial_p(K_i)$, $Z_p^i = Z_p(K^i)$, $B_p^i = B_p(K^i)$, etc.
 
----
-
-So far, we have two invariants of $K$: $H_{p}^{i,j} = \mathrm{Im}\,h_p^{i,j}$ and $\beta_p^{i,j} = \mathrm{dim}(H_{p}^{i,j})$
-
-...but we only need $\beta_p^{i,j}$ to define $\mathrm{dgm}_p(K)$
-
-To see this, define the _multiplicity_ $\mu_p^{i,j}$, for all $0 < i < j \leq m + 1$: 
-
-$$
-\mu_p^{i,j} = (\beta_p^{i,j-1} - \beta_p^{i,j}) - (\beta_p^{i-1,j-1} - \beta_p^{i-1,j})
-$$
-
-An alternative definition for $\mathrm{dgm}_p(K)$: 
-$$ 
-\fbox{
-  \textbf{Definition} The $p$-th persistence diagram $\mathrm{dgm}_p(K) \subset \mathbb{\bar{R}}^2$ of $K$ is the set of points $(i,j)$ 
-}
-$$
+<!-- 3. $(\sigma_i, \sigma_j)$ = birth/death pair, $\lvert i - j \rvert$ = persistence of the pair  -->
+<!-- Computation: 
+  1. Collect the boundary chains of $K$ into a $m \times m$ matrix $\partial$
+  2. Compute a specific decomposition $R = \partial V$ using left-to-right column operations -->
 <!-- https://iuricichf.github.io/ICT/index.html -->
 
-
---- 
-
-The question: Suppose you wanted a continuous version of $\beta_p^{i,j}$
-
 ---
 
-# Properties of the rank function
+# Outline 
 
-The _rank_ of a linear map $\Phi$ is given as the dimension of its image: 
-$$ \mathrm{r}(\Phi) = \mathrm{rank}(\Phi) = \mathrm{dim}(\mathrm{Im}(\Phi)) $$ 
-
-When $A, B \in \mathcal{M}_{(n \times n)}(\mathbb{R})$,  the _rank function_ has many convenient properties:
-
-
-<div class="grid justify-items-start float-right align-left">
-
-<div>
-
-<div class="grid grid-cols-10 gap-1 pt-5">
-
-<div class="grid justify-items-end float-right col-span-3 ">
-
-*rank-nullity* 
-
-*subadditive* 
-
-*transposition invariance* 
-
-*orthogonal invariance*
-
-*permutation invariance*
-   
-</div>
-
-<div class="col-span-1">
-
-&nbsp;&nbsp; $\Longleftrightarrow$
-
-&nbsp;&nbsp; $\Longleftrightarrow$
-
-&nbsp;&nbsp; $\Longleftrightarrow$
-
-&nbsp;&nbsp; $\Longleftrightarrow$
-
-&nbsp;&nbsp; $\Longleftrightarrow$
-
-</div> 
-
-<div class="grid justify-items-start float-left col-span-6 whitespace-nowrap">
-
-&nbsp; $\mathrm{r}(A) = \lvert A \rvert - \mathrm{null}(A)$
-
-&nbsp; $\mathrm{r}(A + B) \leq \mathrm{r}(A) + \mathrm{r}(B)$
-
-&nbsp; $\mathrm{r}(A) = \mathrm{r}(A^T) = \mathrm{r}(A^T A) = \mathrm{r}(A A^T)$
-
-&nbsp; $\mathrm{r}(A) = \mathrm{r}(QA) = \mathrm{r}(AQ^T)$ &nbsp;&nbsp; $\big(Q$ := orthogonal $\big)$
-
-&nbsp; $\mathrm{r}(A) = \mathrm{r}(P^{-1}A P)$  &nbsp;&nbsp; $\big(P$ := permutation matrix $\big)$
-
-</div>
-
-</div>
-
-Let's see if we can apply some of these. 
-
+- Background 
+  - Simplicial Complexes + Filtrations 
+- Deriving a relaxation
+  - Looking at $\beta_p^{i,j}$'s definition
+  - A Clever Trick
+  - Revisiting chains in $\mathbb{R}$ 
+  - The relaxation and its properties 
+- Applications
+  - Computation + $(1+\epsilon)$-approximation
+  - "Signatures" of time-varying systems
+  - Leveraging PHT theory
+  
 ---
+
+# Recalling the definition
+
+Before extending $\beta_p^{i,j}$ to the time-varying setting, first consider its definition:
+
+<!-- <br class="h-0">  -->
 
 $$
 \begin{align*}
@@ -317,12 +423,13 @@ $$
 <!-- $$ \beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )   $$ -->
 <!-- where $(1)$ is due to $Z_p(K_i) \leq B_p(K_j)$, $(2)$ follows by def. of quotient a space, and $(3)$ by rank-nullity -->
 
-Q1: How to compute $\beta_p^{i,j}$ algorithically? 
+Replacing the groups above with appropriate matrices / constants, we have: 
 
-Q2: Is the solution to (Q1) amenable to the time-varying setting?
+$$ \beta_p^{i,j} = \lvert K_i^{(p)} \rvert  - \mathrm{rank}(\partial_p^i) - \mathrm{rank}(\partial_p^{i,j})$$
 
+where $\partial_p^{i,j}$ is _some matrix_ whose columns span $Z_p(K_i) \cap B_p(K_j)$...
 
----
+--- 
 
 # Computing the _persistent_ Betti number $\beta_p^{i,j}$
 
@@ -406,38 +513,80 @@ _All of these rely on <u>explicit reductions</u> or <u>expensive projectors</u>.
 
 ---
 
-# A clever trick
+# A clever observation
 
-Given $A \in \mathcal{M}_{(m \times m)}(\mathbb{R})$, let $A^{i,j}$ denote the lower-left submatrix of $A$:
+Given $A \in \mathcal{M}_{(m \times m)}(\mathbb{R})$, let $A^{i,j}$, $A^{\bar{i},j}$ denote the following submatrices of $A$:
 
 ![center w:150px h:150px](lower_left.png)
 
-$$ \text{Define } r_A(i,j) := \mathrm{rank}(A^{i, j}) - \mathrm{rank}(A^{i+1, j}) + \mathrm{rank}(A^{i+1, j-1}) - \mathrm{rank}(A^{i, j-1})$$
+Define $r_A(i,j)$ := $\mathrm{rank}(A^{\overline{i-1}, j}) - \mathrm{rank}(A^{\bar{i}, j}) + \mathrm{rank}(A^{\bar{i}, j-1}) - \mathrm{rank}(A^{\overline{i-1}, j-1})$
 
 Let $R = \partial V$ be the boundary matrix decomposition. The following can be shown<sup>[2]</sup>:
 
-$$ \mathrm{low}_R[j] = i \iff r_R(i,j) \neq 0 \iff r_\partial(i,j) \neq 0 \iff \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j}) $$
-
-<br> 
+$$ \mathrm{low}_R[j] = i \iff r_R(i,j) \neq 0 \iff r_\partial(i,j) \neq 0 \iff \mathrm{rank}(R^{\overline{i},j}) = \mathrm{rank}(\partial^{\overline{i}, j}) $$
 
 $$
 \fbox {
-  \textbf{The trick}: $\mathrm{rank}(R^{i,j})$ can be deduced from $\mathrm{rank}(\partial^{i, j})$, for any $1 \leq i < j \leq m$
+  $\implies$ $\mathrm{rank}(R^{\bar{i},j})$ can be deduced from $\mathrm{rank}(\partial^{\bar{i}, j})$, for any $1 \leq i < j < m$
 }$$
 
-This observation has been used before (see [1,2]), but seems to not be well-known 
+This was exploited in first ouput-sensitive persistence algorithm<sup>[1,2]</sup> 
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+
+1. Chen, Chao, and Michael Kerber. "An output-sensitive algorithm for persistent homology." Computational Geometry 46.4 (2013): 435-447.
+
+2. Dey, Tamal Krishna, and Yusu Wang. Computational topology for data analysis. Cambridge University Press, 2022.
+   
+
+</footer>
+
+--- 
+
+# A clever trick
+
+Pairing uniqueness $\implies \mathrm{rank}(R^{\bar{i},j}) = \mathrm{rank}(\partial^{\bar{i}, j})$, for any $1 \leq i < j < m$
+
+Dey & Wang show<sup>[1]</sup> have shown the following:
+$$
+\begin{align*}
+  \mathrm{dim}(Z_p^i \cap B_p^j) &= \mathrm{dim}(B_p^j) - \#(\mathrm{col}_{R_{p+1}}[k] \neq 0 \mid k \in [j], \; \mathrm{low}_{R_{p+1}}[k] > i) \\
+  &= \mathrm{rank}(R_{p+1}^{j,j}) - \mathrm{rank}(R_{p+1}^{\overline{i},j}) \\
+  &= \mathrm{rank}(\partial_{p+1}^{j,j}) - \mathrm{rank}(\partial_{p+1}^{\overline{i},j})
+\end{align*}
+$$
+Let $I_p^{i}$ be the diagonal matrix with whose first $i$ entries are $1$. We can now write: 
+$$ \beta_p^{i,j} = \mathrm{rank}(\mathrm{I}_p^i) - \mathrm{rank}(\partial_{p}^{i,i}) - \mathrm{rank}(\partial_{p+1}^{j,j}) + \mathrm{rank}(\partial_{p+1}^{\overline{i},j})$$
+Thus, we may write $\beta_p^{i,j}$ completely in terms of _unfactored matrices_
 
 ---
 
-# The relaxation (I)
+# Parameterizing elementary $p$-chains 
 
+Suppose we fix $\mathbb{F} = \mathbb{R}$ and replace chain values with _smoothstep_ functions $S_\epsilon(x)$
 
-This sub-matrix trick enables $\beta_p^{i,j}$ to be expressed a sum of ranks of _unfactored_ matrices
+![center h:8em](boundary_relax.png)
 
-To see this
+Moreover, replace $\mathrm{rank}(A)$ with $\Phi_\epsilon(A)$, defined for some fixed $\epsilon > 0$ as:
 
+$$ \Phi_\epsilon(A) = \mathrm{tr}\left[A^T(AA^T + \epsilon I)^{-1}A\right] = \sum\limits_{i}^{n} \frac{\sigma_i^2}{\sigma_i^2 + \epsilon}, \quad \text{where }\sigma_i^2 := \lambda_i(A A^T)$$
 
-This is the first key observation of our relaxation
+<!-- Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality obtained when $\epsilon = 0$.  -->
+$$ 
+\fbox{
+  Final relaxation: $\quad \hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
+}
+$$
+
+--- 
+# Properties of $\hat{\beta}_p^{i,j}$
+
+$$ 
+\fbox{$\hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
+}
+$$
+
+Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality obtained when $\epsilon = 0$.
 
 --- 
 
@@ -450,14 +599,93 @@ Consider replacing the elementary chain values as follows:
 
 ---
 
-$$
+<!-- $$
 \def\arraystretch{1.5}
-  \underset{\begin{array}{|c:c:c|}
+  \underset{\begin{array}{c|c:c:c|}
+     & \phantom{}^{a}_{b} & \phantom{}^{a}_{c} & \phantom{}^{b}_{c} \\
     \hline
-    a & b & c \\ \hdashline
-    d & e & f \\ \hdashline
-    g & h & i \\ \hline
+    a & {\footnotesize \phantom{+} c(\sigma) } & {\footnotesize \phantom{+} c(\sigma)} &   \\ \hdashline
+    b & {\footnotesize -c(\sigma)}             &                                       &  {\footnotesize \phantom{+} c(\sigma)} \\ \hdashline
+    c &                                        & {\footnotesize -c(\sigma)}            & {\footnotesize -c(\sigma)} \\ \hline
   \end{array}}{\huge \raisebox{0.25em}{\huge $A$}}
+$$ -->
+
 $$
+\def\arraystretch{1.1}
+\begin{array}{rcl} &
+\begin{array}{ccc} \phantom{aa} a\ & \phantom{aa} b\ & \phantom{aa} c\ & \phantom{aa} \end{array} \\ 
+\color{black}\begin{matrix}u\\v\\w\end{matrix}\hspace{-1.0em} & 
+\begin{bmatrix}
+{\footnotesize \phantom{+}c(\sigma)} & {\footnotesize \phantom{+}c(\sigma)}  &                                       &  \\
+{\footnotesize -c(\sigma)}           &                                       &  {\footnotesize \phantom{+}c(\sigma)} &  \\
+                                     & {\footnotesize -c(\sigma)}            &  {\footnotesize -c(\sigma)}           &  
+\end{bmatrix}
+\end{array}
+$$
+
+---
+
+
+
+# Properties of the rank function
+
+The _rank_ of a linear map $\Phi$ is given as the dimension of its image: 
+$$ \mathrm{r}(\Phi) = \mathrm{rank}(\Phi) = \mathrm{dim}(\mathrm{Im}(\Phi)) $$ 
+
+When $A, B \in \mathcal{M}_{(n \times n)}(\mathbb{R})$,  the _rank function_ has many convenient properties:
+
+
+<div class="grid justify-items-start float-right align-left">
+
+<div>
+
+<div class="grid grid-cols-10 gap-1 pt-5">
+
+<div class="grid justify-items-end float-right col-span-3 ">
+
+*rank-nullity* 
+
+*subadditive* 
+
+*transposition invariance* 
+
+*orthogonal invariance*
+
+*permutation invariance*
+   
+</div>
+
+<div class="col-span-1">
+
+&nbsp;&nbsp; $\Longleftrightarrow$
+
+&nbsp;&nbsp; $\Longleftrightarrow$
+
+&nbsp;&nbsp; $\Longleftrightarrow$
+
+&nbsp;&nbsp; $\Longleftrightarrow$
+
+&nbsp;&nbsp; $\Longleftrightarrow$
+
+</div> 
+
+<div class="grid justify-items-start float-left col-span-6 whitespace-nowrap">
+
+&nbsp; $\mathrm{r}(A) = \lvert A \rvert - \mathrm{null}(A)$
+
+&nbsp; $\mathrm{r}(A + B) \leq \mathrm{r}(A) + \mathrm{r}(B)$
+
+&nbsp; $\mathrm{r}(A) = \mathrm{r}(A^T) = \mathrm{r}(A^T A) = \mathrm{r}(A A^T)$
+
+&nbsp; $\mathrm{r}(A) = \mathrm{r}(QA) = \mathrm{r}(AQ^T)$ &nbsp;&nbsp; $\big(Q$ := orthogonal $\big)$
+
+&nbsp; $\mathrm{r}(A) = \mathrm{r}(P^{-1}A P)$  &nbsp;&nbsp; $\big(P$ := permutation matrix $\big)$
+
+</div>
+
+</div>
+
+Let's see if we can apply some of these. 
+
 
 ---

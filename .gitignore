@@ -5,6 +5,8 @@ _skbuild/
 build
 dist
 **/**.egg-info
+js/node_modules
+*/node*/**
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

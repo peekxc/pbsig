@@ -21,10 +21,21 @@ middle = interpolate(T, R, 0.5, closed=False)
 import js2py
 res, flubber = js2py.run_file("../js/flubber.min.js")
 
-result= tempfile.sayHello("Stack Vidhya Reader");
-var triangle = "M1,0 L2,2 L0,2 Z",
-    pentagon = [[0, 0], [2, 0], [2, 1], [1, 2], [0, 1]];
+js2py.eval_js('p = 10')
+js2py.eval_js('p')
 
-var interpolator = flubber.interpolate(triangle, pentagon);
+from javascript import require
+flubber.toPathString.valueOf()
+flubber = require("flubber")
+
+# flubber.interpolateAll([[0, 0], [2, 0], [2, 1], [1, 2], [0, 1]], [[0, 0], [2, 0], [2, 1], [1, 2], [0, 1]])
+flubber.interpolateAll("M10,30 A20,20 0,0,1 50,30 A20,20 0,0,1 90,30 Q90,60 50,90 Q10,60 10,30 z M5,5 L90,90")
+flubber.toPathString('[[1, 1], [2, 1], [1.5, 2]]')
+
+# result= tempfile.sayHello("Stack Vidhya Reader");
+# var triangle = "M1,0 L2,2 L0,2 Z",
+#     pentagon = [[0, 0], [2, 0], [2, 1], [1, 2], [0, 1]];
+
+# var interpolator = flubber.interpolate(triangle, pentagon)
 
 
