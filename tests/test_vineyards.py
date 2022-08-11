@@ -1,5 +1,5 @@
 import numpy as np
-from vineyards import linear_homotopy, line_intersection
+from pbsig.vineyards import linear_homotopy, line_intersection
 
 n = 500
 f0 = np.sort(np.random.uniform(size=n))
@@ -44,7 +44,7 @@ dgm = persistence_pairs(R1, R2, collapse=False)
 from persim import plot_diagrams
 plot_diagrams(dgm)
 
-from vineyards import transpose_dgm, permute_tr
+from pbsig.vineyards import transpose_dgm, permute_tr
 for i in range(e-1):
   D1_copy, R1_copy, V1_copy, D2_copy, R2_copy, V2_copy = D1.copy(), R1.copy(), V1.copy(), D2.copy(), R2.copy(), V2.copy()
   # D1, R1, V1, D2, R2, V2 = D1_copy.copy(), R1_copy.copy(), V1_copy.copy(), D2.copy(), R2_copy.copy(), V2_copy.copy()

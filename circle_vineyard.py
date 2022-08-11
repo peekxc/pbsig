@@ -1,5 +1,5 @@
 # %% 
-from vineyards import permute_tr, transpose_dgm
+from pbsig.vineyards import permute_tr, transpose_dgm
 from persistence import * 
 C, params = circle_family(12, sd=0.05)
 X = C(0.50)
@@ -40,7 +40,7 @@ for i in range(e-1):
 
 
 # %% 
-from vineyards import permute_tr, transpose_dgm
+from pbsig.vineyards import permute_tr, transpose_dgm
 from persistence import * 
 C, params = circle_family(8, sd=0.10)
 

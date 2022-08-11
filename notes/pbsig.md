@@ -83,6 +83,17 @@ sub { bottom: -0.25em; vertical-align: sub;}
 ### Theory, computation, and applications
 
 ---
+# "Murmurations"
+
+![center w:36em](flock.gif)
+
+---
+<!-- 
+![center w:18em](stability.gif)
+
+_Stable_ : $d_B(\mathrm{dgm}(f), \mathrm{dgm}(g)) \leq \lVert f - g \rVert_\infty$ between function $f,g$<sup>[3]</sup>
+
+--- -->
 
 # Persistent Homology is an _intrinsic invariant_
 
@@ -94,12 +105,11 @@ sub { bottom: -0.25em; vertical-align: sub;}
    
 </div>
 
-1. _General_ : Any function-equipped poset admits a $\mathrm{dgm}$ _via rank functions_ <sup>[5,6]</sup>
+1. _General_ : Persistence can be generalized _via rank functions_ <sup>[5,6]</sup>
 2. _Descriptive_ : $d_{B}(\mathrm{dgm}_p(X), \mathrm{dgm}_p(Y))$ lower-bounds $d_{GH}(X, Y)$<sup>[7]</sup>
 3. _Geometric_ :  distributed $\mathrm{dgm}$'s interpolate local geometry $\leftrightarrow$ global topology<sup>[4]</sup>
 4. _Stable_ : $d_B(\mathrm{dgm}(f), \mathrm{dgm}(g)) \leq \lVert f - g \rVert_\infty$ between function $f,g$<sup>[3]</sup>
 
-<!-- Indeed, the $\mathrm{PH}$-transform is _injective_ on the space of simplicial complexes embedded in $\mathbb{R}^d$ -->
 _Collections_ of $\mathrm{dgm}$'s <u>uniquely</u> characterize simplicial complexes in $\mathbb{R}^d$<sup>[7]</sup>
 
 $$ 
@@ -108,7 +118,7 @@ $$
 }
 $$
 
-<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap " style="font-size: 0.60rem; line-height: 0.65rem;text-align: center;"> 
 
 1. Wigner, Eugene P. "The unreasonable effectiveness of mathematics in the natural sciences." Mathematics and Science. 1990. 291-306.
 
@@ -125,9 +135,10 @@ $$
 7. Turner, Katharine, Sayan Mukherjee, and Doug M. Boyer. "Persistent homology transform for modeling shapes and surfaces." Information and Inference: A Journal of the IMA 3.4 (2014): 310-344.
  
    
-</footer>
+</footer> 
 
---- 
+---
+
 
 # Persistent Homology is a <span class="line-through">intrinsic</span> _difficult invariant_
 
@@ -143,17 +154,10 @@ _Simple algorithm_ $\neq$ _simple implementation_
 
 </div>
 
-1. Computing $R = \partial V$ is _memory intensive_: $\lvert V \rvert \sim O(n^2)$
+1. Computing $R = \partial V$ is _memory intensive_: $\lvert V \rvert \sim O(m^2)$
 2. $K$'s structure affects complexity (e.g. 2-manifolds $\sim O(n \alpha(n))$<sup>[2]</sup>)
 3. Theory is extensive: _clearing_<sup>[3]</sup>, _apparent pairs_<sup>[4]</sup>, _cohomology_<sup>[5]</sup>, ...
-4. $\mathbb{F}$ matters: $\mathbb{Z}_2$ columns $\leftrightarrow$ 64-arity bit-trees w/ cached DeBruijin "magic" tables<sup>[6]</sup>
-
-<span class="text-4xl text-center"> 
-
-__Q__: Can we leverage PH theory w/o computing $\mathrm{dgm}$'s? 
-
-</span>
-
+4. $\mathbb{F}$ matters: $\mathbb{Z}_2$ columns $\leftrightarrow$ 64-arity bit-trees + DeBruijin "magic" tables<sup>[6]</sup>
 
 <footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
 
@@ -176,45 +180,105 @@ __Q__: Can we leverage PH theory w/o computing $\mathrm{dgm}$'s?
 
 # This Talk: Persistent Betti numbers _over time_ 
 
-The persistent Betti number is a "weaker" invariant than persistent homology 
+<!-- The persistent Betti number is a "weaker" invariant than persistent homology 
 
-$$ \beta_p^{i,j}: K_\bullet \to \mathbb{Z}_{+} = \mathrm{dim}(H_p(K_i) \to H_p(K_j)) $$
+$$ \beta_p^{i,j}: K_\bullet \to \mathbb{Z}_{+} = \mathrm{dim}(H_p(K_i) \to H_p(K_j)) $$ -->
 
 <!-- The persistence diagram is _defined_ by it's persistent Betti numbers -->
+The persistence $\mathrm{dgm}$ of function $f$ is _defined_ by persistent Betti numbers (PBNs)
+$$ \mathrm{dgm}_p(f) \subset \overline{\mathbb{R}}^2 \Leftrightarrow (i,j) \text{ such that } \mu_p^{i,j} \neq 0$$
+<!-- ![dgm_defintion.png](dgm_defintion.png) -->
+where $\mu_p^{i,j}$ is called the _multiplicity function_, defined as: 
 
-![dgm_defintion.png](dgm_defintion.png)
+$$\mu_p^{i,j} = (\beta_p^{i,j\text{-}1} - \beta_p^{i,j}) - (\beta_p^{i\text{-}1,j\text{-}1} - \beta_p^{i\text{-}1,j})$$
 
 <!-- Thus, time-varying extensions to $\beta_{p}^{i,j}$ $\approx$ properties $\mathrm{dgm}_p$ over time -->
+<div class="grid grid-cols-10 gap-1 pt-2">
 
-_Betti curves_ are integer-valued functions over a fixed filtration + index set $I$ (say $\mathbb{R}$)
+<div class="grid justify-items-end float-right col-span-4 ">
 
-$$ \beta_p: K_\bullet \times \mathbb{R} \to \mathbb{Z}_{+} \quad \Leftrightarrow \quad  \beta_p(\epsilon) \in \mathbb{Z}_+ $$
+$\beta_p: K_\bullet \times \mathbb{R} \to \mathbb{Z}_{+}$&nbsp;&nbsp;
 
-_Time-varying setting_ $\implies$ 1-parameter families of _Betti_ curves over a set $X$
+$\beta_p: \mathcal{P}(X) \times \mathbb{R} \times \mathbb{R} \to \mathbb{Z}_{+}$&nbsp;&nbsp;
 
-$$ \beta_p: \mathcal{P}(X) \times \mathbb{R} \times \mathbb{R} \to \mathbb{Z}_{+}  \quad \Leftrightarrow \quad \beta_p(\epsilon, t) \in \mathbb{Z}_+$$
+$\beta_p^{i,j}: \mathcal{P}(X) \times \mathbb{R} \to \mathbb{Z}_{+}$&nbsp;&nbsp;
 
-In this talk, we will focus on _persistent Betti curves_ for _fixed_ $i,j \in I$:
+</div>
 
-$$ \beta_p^{i,j}: \mathcal{P}(X) \times \mathbb{R} \to \mathbb{Z}_{+}  \quad \Leftrightarrow \quad  \beta_p^{i,j}(t) \in \mathbb{Z}_+$$
+<div class="grid justify-items-start float-left col-span-1 ">
+
+$\Longrightarrow$
+
+$\Longrightarrow$
+
+$\Longrightarrow$
+
+</div>
+
+<div class="grid justify-items-start float-left col-span-5 ">
+
+_Betti curve_ over filtration
+
+_Betti curve_<u>_s_</u> over 1-parameter family
+
+_Persistent Betti curves_ for _fixed_ $i,j \in I$
+
+</div>
+
+</div>
+
+<span class="text-center text-3xl pt-4"> 
+
+This talk will focus on relaxing $\beta_p^{i,j}$ for <i style="color: orange;"> time-varying settings </i>
+
+</span>
+<!-- _Betti curves_ are integer-valued functions over a fixed filtration + index set $I$ (say $\mathbb{R}$)
+ -->
+
+---
+
+![center w:15em](dgm.png)
+
+$$\beta_p^{i,j} = \mathrm{dim}(H_p(K_i) \to H_p(K_j))$$ 
 
 ---
 
 # Outline 
 
-- Background 
-  - Simplicial Complexes + Filtrations 
-- Deriving a relaxation
-  - Looking at $\beta_p^{i,j}$'s definition
-  - A Clever Trick
-  - Revisiting chains in $\mathbb{R}$ 
-  - The relaxation and its properties 
-- Applications
-  - Computation + $(1+\epsilon)$-approximation
-  - "Signatures" of time-varying systems
-  - Leveraging PHT theory
+<style scoped> 
+section { 
+  line-height: 1.5em !important; 
+} 
+</style>
+
+<div class="grid grid-cols-12 gap-1 pt-2">
+
+<div class="grid col-span-3"> </div>
+
+<div class="grid justify-items-start float-left col-span-8">
+
+$\large \rightarrow$ <u>Background</u> $\large \leftarrow$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Simplicial Complexes
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cyle, Boundary, and Chain Groups
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filtrations and Persistent Homology
+The Main Result
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\beta_p^{i,j}$'s definition + computation
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A clever observation + trick
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Re-thinking chains and ranks w/ coefficients in $\mathbb{R}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Relaxation: definition and properties
+Applications
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A $(1-\epsilon)$-approximation of $\beta_{p}^{i,j}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Signatures of time-varying systems
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Leveraging PHT theory
+
+<div class="grid col-span-2"> </div>
+
+</div>
+
+</div>
+
 ---
-# Preliminaries
+# Background: Simplicial Complexes
 
 A _simplicial complex_ $K = \{\sigma : \sigma \in \mathcal{P}(V)\}$ over set $V = \{v_1, \dots, v_n\}$ satisfies: 
 
@@ -222,33 +286,67 @@ $$ \text{(vertex)} \quad v \in V \Longrightarrow \{v\} \in K $$
 $$ \text{(face)  }  \quad \tau \subseteq \sigma \in K \Longrightarrow \tau \in K $$
 
 
-All homology computations here will be with _finite simplicial complexes_
+<!-- ![center w:6em](simplices.png) -->
+
+<div class="grid grid-cols-10 gap-1 pt-2">
+
+<div class="grid justify-items-end float-right col-span-5 ">
+
+![h:9em](sc.png)
+
+</div>
+
+<div class="grid justify-items-start float-left col-span-5 ">
+
+![h:9em](skeleton.png)
+
+</div>
+
+</div>
+
+<br> 
+
+<span class="text-center">
+
+All computations here will be with _finite simplicial complexes_
+
+</span>
 
 --- 
 
-# Boundaries 
+# Background: Boundaries 
 
 Given an _oriented_ $p$-simplex $\sigma \in K$, define its $p$-boundary as the alternating sum:
 
 $$ \partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p] $$
 
-We will make heavy use of _boundary matrices_
+We will make heavy use of _oriented boundary matrices_
+
+![center w:18em](boundary.png)
+
+By default, we will work generically with the simplex-wise lexicographical order
 
 ---
 
-# The Groups  
+# Background: The Groups  
 
 Given a pair $(\, K, \, \mathbb{F} \, )$, a $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$ 
 
-$$ c = \sum_{i=1}^{m_p} \alpha_i \sigma_i , \quad c + c' = \sum_{i=1}^{m_p} (\alpha_i + \alpha_i') \sigma_i $$
-
-<div class="grid text-center place-content-center">
+<div class="grid text-center place-content-center mb-4">
 
 The operator $\partial_p$ extends linearly to $p$-chains via their constitutive simplices 
 
 </div>
 
-<div class="grid grid-cols-9 gap-1 pt-5 m-0">
+$$ c = \sum_{i=1}^{m_p} \alpha_i \sigma_i , \quad\quad\quad  c + c' = \sum_{i=1}^{m_p} (\alpha_i + \alpha_i') \sigma_i $$
+
+<div class="text-center place-content-center">
+
+Given $\mathbb{F}$ a field and $K$ a simplicial complex, the following groups are defined<sup>[1]</sup>
+
+</div>
+
+<div class="grid grid-cols-9 gap-1 pt-1 m-0">
 
 <div class="grid justify-items-end float-right col-span-4 m-0">
 
@@ -287,10 +385,10 @@ _homology group_
 </div>
 </div>
 
-<!-- _footer: Eades, Peter. "A heuristic for graph drawing." Congressus numerantium 42 (1984): 149-160. -->
+<!-- _footer: Munkres, James R. Elements of algebraic topology. CRC press, 2018. -->
 
 ---
-
+<!-- 
 # Homology 
 
 The $p$-th homology of $K$ is the quotient group $H_p(K) = Z_p(K) / B_{p}(K)$
@@ -303,10 +401,7 @@ $\beta_p = \mathrm{dim}(H_p(K)) \leftrightarrow$ the dimension of the $p$-th hom
 
 <!-- Note: $H_p(K)$ depends on the choice of $\mathbb{F}$ ! -->
 
----
-
-
-# Filtrations
+# Background: Filtrations
 
 A _filtration_ $K_\bullet$ is a family $\{ \, K_i \, \}_{i\in I}$  indexed over a totally ordered index set $I$:
 
@@ -354,7 +449,7 @@ Any $K_\bullet \mapsto$ essential & simplexwise via _condensing_ + _refining_ + 
 
 </div>
 
-<br>
+![center w:32em](filtration.png)
 
 <div class="grid text-center place-content-center">
 
@@ -362,21 +457,39 @@ Note here that $I$ may be $\mathbb{R}_+$ or $[m] = \{\, 1, 2, \dots, m\, \}$, de
 
 </div>
 
+
+
 <!-- _footer: Bauer, Ulrich. "Ripser: efficient computation of Vietoris–Rips persistence barcodes." Journal of Applied and Computational Topology 5.3 (2021): 391-423. -->
 
 --- 
 
-# Persistent Homology 
+# Background: Persistent Homology 
 
-Inclusions $K_i \subsetneq K_j$ induce linear transformations $h_p^{i,j}$ between homology groups 
+Inclusions $K_i \hookrightarrow K_j$ induce linear transformations $h_p^{i,j}$ between homology groups 
 
 $$ H_p(K_0) \to \dots \to H_p(K_i) \underbrace{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) $$
 
-Important facts and jargon: 
-  1. $H_p(K_\bullet)$ admits a _pair decomposition_ $\mathrm{dgm}(K) \subseteq \bar{\mathbb{R}}^2$
-  2. $\mathrm{dgm}(K)$ is _unique_ iff $\mathbb{F}$ is a field
-  3. $\beta_p^{i,j}$ can be read-off directly for any $i,j$ from $\mathrm{dgm}_p(K)$
-  4. Computed via matrix decomposition $R = \partial V$
+<div class="grid grid-cols-10 gap-1 pt-0 m-0">
+
+<div class="grid justify-items-start float-left col-span-8 m-0">
+Properties of persistent homology groups:
+
+&nbsp;&nbsp;   1. $H_p(K_\bullet)$ admits a _pair decomposition_ $\mathrm{dgm}(K) \subseteq \bar{\mathbb{R}}^2$
+&nbsp;&nbsp;   2. $\mathrm{dgm}(K)$ is _unique_ iff $\mathbb{F}$ is a field
+&nbsp;&nbsp;   3. $\beta_p^{i,j}$ can be read-off directly for any $i,j$ from $\mathrm{dgm}_p(K)$
+&nbsp;&nbsp;   4. Computed via matrix decomposition $R = \partial V$
+
+</div> 
+
+<div class="grid col-span-2 m-0">
+
+![center h:8.5em](dgm_unmarked.png)
+
+</div>
+
+</div>
+
+<br> 
 
 For simplicity, we will use $\partial_p^i = \partial_p(K_i)$, $Z_p^i = Z_p(K^i)$, $B_p^i = B_p(K^i)$, etc.
 
@@ -390,21 +503,41 @@ For simplicity, we will use $\partial_p^i = \partial_p(K_i)$, $Z_p^i = Z_p(K^i)$
 
 # Outline 
 
-- Background 
-  - Simplicial Complexes + Filtrations 
-- Deriving a relaxation
-  - Looking at $\beta_p^{i,j}$'s definition
-  - A Clever Trick
-  - Revisiting chains in $\mathbb{R}$ 
-  - The relaxation and its properties 
-- Applications
-  - Computation + $(1+\epsilon)$-approximation
-  - "Signatures" of time-varying systems
-  - Leveraging PHT theory
-  
+<style scoped> 
+section { 
+  line-height: 1.5em !important; 
+} 
+</style>
+
+<div class="grid grid-cols-12 gap-1 pt-2">
+
+<div class="grid col-span-3"> </div>
+
+<div class="grid justify-items-start float-left col-span-8">
+
+Background 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Simplicial Complexes
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cyle, Boundary, and Chain Groups
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filtrations and Persistent Homology
+$\large \rightarrow$ <u>The Main Result</u> $\large \leftarrow$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\beta_p^{i,j}$'s definition + computation
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A clever observation + trick
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Re-thinking chains and ranks w/ coefficients in $\mathbb{R}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Relaxation: definition and properties
+Applications
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A $(1-\epsilon)$-approximation of $\beta_{p}^{i,j}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Signatures of time-varying systems
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Leveraging PHT theory
+
+<div class="grid col-span-2"> </div>
+
+</div>
+
+</div>
+
 ---
 
-# Recalling the definition
+# $\beta_p^{i,j}$: starting with the definition
 
 Before extending $\beta_p^{i,j}$ to the time-varying setting, first consider its definition:
 
@@ -412,11 +545,11 @@ Before extending $\beta_p^{i,j}$ to the time-varying setting, first consider its
 
 $$
 \begin{align*}
-	\beta_p^{i,j} &= \mathrm{dim}(H_p^{i,j}) \\
-  &= \mathrm{dim} \left( Z_p(K_i) / B_p(K_j) \right) \\
-	&\underset{(1)}{=} \mathrm{dim} \big( Z_p(K_i) / ( Z_p(K_i) \cap B_p(K_j)) \big) \\
-	&\underset{(2)}{=} \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) \\
-  &\underset{(3)}{=} \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )
+	\beta_p^{i,j} &= \mathrm{dim}(H_p(K_i) \to H_p(K_j)) \\
+  &= \mathrm{dim} \left( Z_p(K_i) \, / \, B_p(K_j) \right) \\
+	&= \mathrm{dim} \left( Z_p(K_i) \, / \, ( Z_p(K_i) \cap B_p(K_j)) \right) \\
+	&= \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) \\
+  &= \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )
   % &= \lvert K_i \rvert - \mathrm{rank}(\partial_p(K_i)) - \mathrm{rank}(`` \; \partial_p^{i,j} \; ")
 \end{align*}
 $$
@@ -427,9 +560,10 @@ Replacing the groups above with appropriate matrices / constants, we have:
 
 $$ \beta_p^{i,j} = \lvert K_i^{(p)} \rvert  - \mathrm{rank}(\partial_p^i) - \mathrm{rank}(\partial_p^{i,j})$$
 
-where $\partial_p^{i,j}$ is _some matrix_ whose columns span $Z_p(K_i) \cap B_p(K_j)$...
+where $\partial_p^{i,j}$ is <i style="color: orange;">some matrix</i> whose columns span $Z_p(K_i) \cap B_p(K_j)$...
 
---- 
+
+---
 
 # Computing the _persistent_ Betti number $\beta_p^{i,j}$
 
@@ -460,7 +594,7 @@ Both $(1)$ are $(2)$ easy to obtain. Computing $(3)$ is more subtle:
 
 &nbsp;&nbsp; Anderson-Duffin formula<sup>[2]</sup>
 
-&nbsp;&nbsp; Von-Neumann's theorem<sup>[3]</sup>
+<!-- &nbsp;&nbsp; Von-Neumann's theorem<sup>[3]</sup> -->
    
 </div>
 
@@ -472,7 +606,7 @@ $\implies$
 
 $\implies$
 
-$\implies$
+<!-- $\implies$ -->
 
 </div>
 
@@ -484,7 +618,7 @@ $\implies$
 
 &nbsp; $P_{\mathbf{Z} \cap \mathbf{B}} = 2 P_{\mathbf{Z}}(P_{\mathbf{Z}} + P_{\mathbf{B}})^\dagger P_{\mathbf{B}}$
 
-&nbsp; $P_{\mathbf{Z} \cap \mathbf{B}} = \lim\limits_{n\to \infty}\left( P_\mathbf{Z} P_\mathbf{B}\right)^n$
+<!-- &nbsp; $P_{\mathbf{Z} \cap \mathbf{B}} = \lim\limits_{n\to \infty}\left( P_\mathbf{Z} P_\mathbf{B}\right)^n$ -->
 
 </div>
 
@@ -515,22 +649,33 @@ _All of these rely on <u>explicit reductions</u> or <u>expensive projectors</u>.
 
 # A clever observation
 
-Given $A \in \mathcal{M}_{(m \times m)}(\mathbb{R})$, let $A^{i,j}$, $A^{\bar{i},j}$ denote the following submatrices of $A$:
+<!-- Given $A \in \mathcal{M}_{(m \times m)}(\mathbb{R})$, let $A^{i,j}$, $A^{\bar{i},j}$ denote the following submatrices of $A$: -->
+Let $R = \partial V$, where $V$ is full-rank. Define the sub-matrices $R^{i,j}$, $R^{\bar{i},j}, \partial^{i,j}$, $\partial^{\bar{i},j}$ as: 
 
-![center w:150px h:150px](lower_left.png)
+![center h:8em](r_dv.png)
 
-Define $r_A(i,j)$ := $\mathrm{rank}(A^{\overline{i-1}, j}) - \mathrm{rank}(A^{\bar{i}, j}) + \mathrm{rank}(A^{\bar{i}, j-1}) - \mathrm{rank}(A^{\overline{i-1}, j-1})$
+<div class="text-center">  
 
-Let $R = \partial V$ be the boundary matrix decomposition. The following can be shown<sup>[2]</sup>:
+The Pairing Uniqueness Lemma<sup>[2]</sup> can be used to show, for any $1 \leq i < j < m$, that:
 
-$$ \mathrm{low}_R[j] = i \iff r_R(i,j) \neq 0 \iff r_\partial(i,j) \neq 0 \iff \mathrm{rank}(R^{\overline{i},j}) = \mathrm{rank}(\partial^{\overline{i}, j}) $$
+</div>
 
-$$
-\fbox {
-  $\implies$ $\mathrm{rank}(R^{\bar{i},j})$ can be deduced from $\mathrm{rank}(\partial^{\bar{i}, j})$, for any $1 \leq i < j < m$
+$$ \fbox{ 
+  $\mathrm{low}_R[j] = i \iff \mathrm{rank}(R^{\overline{i},j}) = \mathrm{rank}(\partial^{\overline{i}, j}) $
 }$$
+<!-- 
+<div class="text-center"> 
 
-This was exploited in first ouput-sensitive persistence algorithm<sup>[1,2]</sup> 
+where $\small r_A(i,j)$ := $\small \mathrm{rank}(A^{\overline{i-1}, j}) - \mathrm{rank}(A^{\bar{i}, j}) + \mathrm{rank}(A^{\bar{i}, j-1}) - \mathrm{rank}(A^{\overline{i-1}, j-1})$
+
+</div> -->
+
+<div class="text-center"> 
+
+This was _the_ motivating exploit in the first output-sensitive PH algorithm<sup>[1,2]</sup> 
+
+</div>
+
 
 <footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
 
@@ -545,9 +690,9 @@ This was exploited in first ouput-sensitive persistence algorithm<sup>[1,2]</sup
 
 # A clever trick
 
-Pairing uniqueness $\implies \mathrm{rank}(R^{\bar{i},j}) = \mathrm{rank}(\partial^{\bar{i}, j})$, for any $1 \leq i < j < m$
+Pairing uniqueness<sup>[1]</sup> $\implies \mathrm{rank}(R^{\bar{i},j}) = \mathrm{rank}(\partial^{\bar{i}, j})$, for any $1 \leq i < j < m$
 
-Dey & Wang show<sup>[1]</sup> have shown the following:
+Dey & Wang show<sup>[2]</sup> have shown the following:
 $$
 \begin{align*}
   \mathrm{dim}(Z_p^i \cap B_p^j) &= \mathrm{dim}(B_p^j) - \#(\mathrm{col}_{R_{p+1}}[k] \neq 0 \mid k \in [j], \; \mathrm{low}_{R_{p+1}}[k] > i) \\
@@ -557,7 +702,15 @@ $$
 $$
 Let $I_p^{i}$ be the diagonal matrix with whose first $i$ entries are $1$. We can now write: 
 $$ \beta_p^{i,j} = \mathrm{rank}(\mathrm{I}_p^i) - \mathrm{rank}(\partial_{p}^{i,i}) - \mathrm{rank}(\partial_{p+1}^{j,j}) + \mathrm{rank}(\partial_{p+1}^{\overline{i},j})$$
-Thus, we may write $\beta_p^{i,j}$ completely in terms of _unfactored matrices_
+Thus, we may write $\beta_p^{i,j}$ completely in terms of <i style="color: orange;">unfactored matrices</i>
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+
+1. Edelsbrunner, Herbert, and John L. Harer. Computational topology: an introduction. American Mathematical Society, 2022.
+
+2. Dey, Tamal Krishna, and Yusu Wang. Computational topology for data analysis. Cambridge University Press, 2022.
+
+</footer>
 
 ---
 
@@ -565,37 +718,258 @@ Thus, we may write $\beta_p^{i,j}$ completely in terms of _unfactored matrices_
 
 Suppose we fix $\mathbb{F} = \mathbb{R}$ and replace chain values with _smoothstep_ functions $S_\epsilon(x)$
 
-![center h:8em](boundary_relax.png)
+![center h:12em](boundary_relax.png)
+
+
+$$\hat{\partial}_p[i,j] = \pm (S_{\epsilon_j} \circ f )(\sigma_j) \quad \text{if } \sigma_i \in \partial(\sigma_j), \quad \text{where } \epsilon_j = f(\sigma_j)$$
+
+Advantage: If $f$ varies continuous one-parameter family, $\hat{\partial}_p$ also varies continuously 
+
+--- 
+
+# A generic approximation of rank
 
 Moreover, replace $\mathrm{rank}(A)$ with $\Phi_\epsilon(A)$, defined for some fixed $\epsilon > 0$ as:
 
-$$ \Phi_\epsilon(A) = \mathrm{tr}\left[A^T(AA^T + \epsilon I)^{-1}A\right] = \sum\limits_{i}^{n} \frac{\sigma_i^2}{\sigma_i^2 + \epsilon}, \quad \text{where }\sigma_i^2 := \lambda_i(A A^T)$$
+$$ \Phi_\epsilon(A) = \sum\limits_{i}^{n} \frac{\sigma_i^2}{\sigma_i^2 + \epsilon}, \quad \text{where }\sigma_i^2 := \lambda_i(A A^T)$$
 
-<!-- Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality obtained when $\epsilon = 0$.  -->
-$$ 
-\fbox{
-  Final relaxation: $\quad \hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
+Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality when $\epsilon = 0$
+
+--- 
+
+In summary: 
+
+- $\beta_p^{i,j} \mapsto$ $\pm \, \mathrm{rank}(\partial_p^{\ast})^\ast$ 
+- $\partial \mapsto \hat{\partial}$
+- $\mathrm{rank}(\cdot) \mapsto \Phi_\epsilon(\cdot)$
+
+$$ \fbox{ 
+  $\large \hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
 }
 $$
 
---- 
-# Properties of $\hat{\beta}_p^{i,j}$
+Interpretation: spectrum of $\hat{\partial}_p^{\ast}$ encodes geometric information from $f$
 
+
+--- 
+
+
+<!-- <div class="bg-white border-4 p-1 m-1">
+
+__Ex__: Let $\delta_X = (X, d_X(\cdot))$, $d_X : X \times X \times \mathbb{R}$ be a _dynamic metric space_, and let:
+$$ \hat{\beta}_p^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)$$ 
+Observe that $\hat{\beta}_p^{i,j}(t) \in \mathbb{R}$ varies _continuously_ with $t$&mdash;a time-varying relaxation!
+
+</div> -->
+
+---
+
+# Basic properties of $\hat{\beta}_p^{i,j}$
+<!-- We now show some properties of relaxing $\beta_p^{i,j} \mapsto \hat{\beta}_p^{i,j}$
 $$ 
 \fbox{$\hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
 }
-$$
+$$ -->
 
-Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality obtained when $\epsilon = 0$.
+Observe $\Phi_\epsilon(A) = \sum_{i=1}^n \sigma_i^2 / (\sigma_i^2 + \epsilon) \leq \mathrm{rank}(A)$, with equality obtained when $\epsilon = 0$
+
+   1. $\hat{\beta}_p^{i,j} \to \beta_p^{i,j} \quad \text{ as } \quad \epsilon \to 0, \, \omega \to 0$
+   2. There $\exists$ an $\epsilon^\ast > 0$ such that $\lceil \hat{\beta}_p^{i,j} \rceil = \beta_p^{i,j}$ for all $\epsilon \in (0, \epsilon^\ast]$ 
+
+$\hat{\beta}_p^{i,j}$ respects several of $\beta_p^{i,j}$ monotonicity properties <i style="color: orange;">approximately</i>
+ 
+<div class="grid grid-cols-12 gap-0 pt-2">
+
+<div class="grid justify-items-end float-right col-span-4">
+
+$\forall \; i < k, \,  \beta_p^{i,j} \leq \beta_p^{k,j} \implies$
+
+$\forall \; j < l, \, \beta_p^{i,j} \geq \beta_p^{i,l} \implies$
+   
+</div>
+
+<div class="grid justify-items-start float-left col-span-4 ">
+
+$\hat{\beta}_p^{i,j} + \delta_\epsilon(k-i) \leq \hat{\beta}_p^{k,j}$
+
+$\hat{\beta}_p^{i,j} + \delta_\epsilon(l - j) \leq \hat{\beta}_p^{i,l}$
+
+</div>
+
+<div class="flex justify-start col-span-4 ">
+
+<img style="display: inline !important; height: 7.5em;" src="approx_a.png"> </img>
+
+<img style="display: inline !important; height: 7.5em;" src="approx_b.png"> </img>
+
+</div>
+
+</div>
+ 
+$\hat{\beta}_p^{i,j}$ also satisfies and $\epsilon$-approximate version of _jump monotonicity_<sup>[1]</sup>
 
 --- 
 
-# The relaxation (II)
+# Persistence measures
 
-Consider replacing the elementary chain values as follows:
+Pairs $(i,j)$ in $\mathrm{dgm}$'s can also be defined as limiting points w/ non-zero multiplicity
 
+$$ \mu_p^{i,j} = \min_{\epsilon > 0} \left \{ \beta_p^{i+\epsilon, j - \epsilon}- \beta_p^{i-\epsilon, j - \epsilon}  - \beta_p^{i+\epsilon, j+\epsilon}  + \beta_p^{i-\epsilon, j + \epsilon} \right \} $$
+
+PBN's also yield "counting measures" in $\overline{\mathbb{R}}^2$, due to their additivity under splitting:
+
+![center h:7em](additivity_box.png)
+
+$$\mu(R) = \mu(A) + \mu(B) =  \mu(C) + \mu(D)$$
+
+$\hat{\mu}_{\epsilon}$ also obeys inclusion/exclusion&mdash;can be interpreted as a <u> _persistence measure_ </u>
 
 <!-- boundary replacement -->
+
+---
+
+# Outline 
+
+<style scoped> 
+section { 
+  line-height: 1.5em !important; 
+} 
+</style>
+
+<div class="grid grid-cols-12 gap-1 pt-2">
+
+<div class="grid col-span-3"> </div>
+
+<div class="grid justify-items-start float-left col-span-8">
+
+Background 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Simplicial Complexes
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Cyle, Boundary, and Chain Groups
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Filtrations and Persistent Homology
+The Main Result
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;$\beta_p^{i,j}$'s definition + computation
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A clever observation + trick
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Re-thinking chains and ranks w/ coefficients in $\mathbb{R}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Relaxation: definition and properties
+$\large \rightarrow$ <u>Applications</u> $\large \leftarrow$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;A $(1-\epsilon)$-approximation of $\beta_{p}^{i,j}$
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Signatures of time-varying systems
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;Leveraging PHT theory
+
+<div class="grid col-span-2"> </div>
+
+</div>
+
+</div>
+
+---
+
+# $(1 - \delta)$-approximation scheme for $\hat{\beta}_p^{i,j}$
+
+<!-- Q: Can we approximate $\beta_p^{i,j}$ (over $\mathbb{R}$) by computing $\hat{\beta}_p^{i,j}$? -->
+
+The fixed parameters $(\omega, \epsilon)$ completely determine the closeness of $\lvert \hat{\beta}_p^{i,j} - \beta_p^{i,j} \rvert$
+
+The _Lanczos_ method<sup>[1,2]</sup> computes $q$-largest $\sigma^2(A)$ of a sparse $m \times m$ matrix $A$ in: 
+
+$$ O(m \cdot T_m(A) + q^2 \cdot m ) $$
+
+where $T_m(A)$ is complexity of $v \mapsto A v$ &nbsp;. Note $\partial_\ast$ is highly structured, namely: 
+- $\mathrm{nnz}(\partial_p) \leq (p+1) m_p \sim O(m_p \log(m_p))$
+- $v \mapsto \langle \partial_p, v \rangle$ takes $\sim O(\kappa_p)$ time where $\kappa_p = \sum \mathrm{deg}_p(\sigma_p)$
+- $\Delta_p = \mathrm{tr}(\partial_p \partial_p^T) = \sum \sigma_i^2(\partial_p)$ can be determined in $O(m_p)$ time 
+
+We deduce a $(1 - \delta)$-approximation by computing the $q$-largest $\sigma^2_i$'s such that: 
+
+$$\big\lceil \Delta_p^{q}/\Delta_p^{m_p} \big\rceil \geq (1 - \delta)$$ 
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem; text-align: center;"> 
+
+1. Golub, Gene H., and Charles F. Van Loan. Matrix computations. JHU press, 2013.
+2. Trefethen, Lloyd N., and David Bau III. Numerical linear algebra. Vol. 50. Siam, 1997.
+
+</footer>
+
+--- 
+# The Persistent Homology Transform 
+
+The _PHT_ characterizes the set of embeddeable s.c.'s in $\mathbb{R}^d$ via a collection of $\mathrm{dgm}$'s
+
+$$ 
+\begin{aligned}
+\operatorname{PHT}(M): S^{d-1} & \rightarrow \mathcal{D}^{d} \\
+v & \mapsto\left(X_{0}(M, v), X_{1}(M, v), \ldots, X_{d-1}(M, v)\right)
+\end{aligned} 
+$$
+
+where $\mathcal{D}^d$ is the space of $\mathrm{dgm}_p$'s up to dimension $p=d-1$
+
+![center w:7.5em](pht_better.png)
+
+The PHT is _injective_ $\implies$ $\mathrm{dgm}$-distances (e.g. integrated $d_B$) are  _metrics_
+
+The injectivity PHT theory allows for comparison of <i style="color: orange;">non-diffeomorphic</i> shapes
+
+<footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
+
+1. Turner, Katharine, Sayan Mukherjee, and Doug M. Boyer. "Persistent homology transform for modeling shapes and surfaces." Information and Inference: A Journal of the IMA 3.4 (2014): 310-344. 
+
+</footer>
+
+--- 
+
+# Applications: Leveraging PHT
+
+<style scoped>
+section p {
+  margin: 0;
+}
+</style>
+
+<span style="color: green;"> Pro: </span> PHT + it's associated distance metrics tend to do well at shape discrimination<sup>[1]</sup>
+
+<span style="color: red;"> Con: </span> Many $\mathrm{dgm}$'s + $\int d_B(\dots)$ are highly non-trivial to compute
+
+<div class="grid grid-cols-10 gap-1 pt-5">
+
+<div class="grid justify-items-end float-right col-span-4">
+
+![center h:6.5em](rect_features2.png)
+
+</div>
+
+<div class="grid col-span-2 align-middle pt-10">
+
+
+$$\Huge\mapsto$$
+
+</div>
+
+
+<div class="grid justify-items-start float-left col-span-4">
+
+![h:6.2em](gh_dist.png)
+
+</div>
+
+</div>
+
+<br> 
+
+- (1) Choose a set rectangles $\mathcal{R} = \{r_1, r_2, \dots, r_k\}$ in $\mathbb{R}^2$ representing "features"
+- (2) Compute multiplicities $\mathbf{u}_p(X) = \{ \hat{\mu}_p^\epsilon(r_1), \hat{\mu}_p^\epsilon(r_2), \dots, \hat{\mu}_p^\epsilon(r_k) \}$ for shapes $X$, $Y$
+- (3) Define $\hat{d}_\mathcal{R}(X, Y) = \lVert \mathbf{u}_p(X) - \mathbf{u}_p(Y)\rVert$, up to an optimal rotation<sup>[1]</sup>
+
+<span class="text-center">
+
+We hope to do have more comparisons in the future 
+
+</span>
+
+---
+
+
+# Thank you 
 
 ---
 
@@ -610,7 +984,7 @@ Consider replacing the elementary chain values as follows:
   \end{array}}{\huge \raisebox{0.25em}{\huge $A$}}
 $$ -->
 
-$$
+<!-- $$
 \def\arraystretch{1.1}
 \begin{array}{rcl} &
 \begin{array}{ccc} \phantom{aa} a\ & \phantom{aa} b\ & \phantom{aa} c\ & \phantom{aa} \end{array} \\ 
@@ -621,7 +995,7 @@ $$
                                      & {\footnotesize -c(\sigma)}            &  {\footnotesize -c(\sigma)}           &  
 \end{bmatrix}
 \end{array}
-$$
+$$ -->
 
 ---
 
@@ -689,3 +1063,4 @@ Let's see if we can apply some of these.
 
 
 ---
+

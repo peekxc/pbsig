@@ -1,23 +1,56 @@
+from __future__ import annotations
+
 import numpy as np
+from numpy.typing import ArrayLike
 from . import boundary
 from .persistence import *
 from .betti import *
 
-def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, **kwargs):
+
+autodoc_type_aliases = {
+    'Iterable': 'Iterable',
+    'ArrayLike': 'ArrayLike'
+}
+
+def plot_dgm(dgm: ArrayLike):
+  import matplotlib
+  import matplotlib.pyplot as plt
+  from matplotlib.patches import Polygon
+  from matplotlib.collections import PatchCollection
+  fig = plt.figure(figsize=(2,2), dpi=220)
+  ax = fig.gca()
+  ymax = max(filter(lambda x: x != np.inf, dgm.flatten()))
+  dgm[dgm[:,1] == np.inf, 1] = ymax*1.05
+  ax.scatter(*dgm.T, s=0.55, c='red')
+  ax.set_xlim(0.0, 1.10*ymax)
+  ax.set_ylim(0.0, 1.10*ymax)
+  ax.set_aspect('equal')
+  p = Polygon(np.array([[0,0], [1.10*ymax, 0], [1.10*ymax, 1.10*ymax]]), True, color="#808080")
+  P = PatchCollection([p], alpha=0.4, color="#808080")
+  formatter = "{:.2f}".format
+  tick_loc = np.linspace(0.0, ymax, 6, endpoint=False)
+  ax.add_collection(P)
+  ax.set_yticks(np.append(tick_loc, 1.05*ymax), [formatter(x) for x in tick_loc]+['inf'])
+  ax.tick_params(axis='both', which='major', labelsize=3)
+  ax.plot([0.0, 1.05*ymax], [1.05*ymax, 1.05*ymax], color='gray', linestyle='dashed', linewidth=0.50)
+
+def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bool = False, **kwargs):
   import matplotlib.pyplot as plt 
   fig_kwargs = kwargs.get('figure', dict(figsize=(4,4), dpi=150))
   fig = plt.figure(**fig_kwargs)
   ax = fig.gca()
-  ax.scatter(*X.T, s=4.30, c='black')
   ax.set_aspect('equal')
   for e in edges: ax.plot(X[e,0], X[e,1], c='black', linewidth=0.80)
   for t in triangles: ax.fill(X[t,0], X[t,1], c='#c8c8c8b3')
+  ax.scatter(*X.T, s=4.30, c='black')
+  if labels:
+    for i, xy in enumerate(X): ax.annotate(i, xy)
   return(fig, ax)
 
 def rotate_S1(X: ArrayLike, n: int = 10, include_direction: bool = True):
   """ 
-  Create an generator that returns the inner product of points in 'X' along 'n' different directions on the unit circle. 
-  This is a key subroutine to the PHT. 
+  Create an generator that returns the inner product of points in 'X' along 'n' different directions on the unit circle, 
+  starting from the vector point up (v = (0, 1))
 
   Params: 
     X := (m x 2) ndarray of points 
@@ -28,8 +61,8 @@ def rotate_S1(X: ArrayLike, n: int = 10, include_direction: bool = True):
     fv := m-length ndarray of inner products of X with unit vector 'v' 
     v := the unit vector 'X' was projected onto
   """
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)
-  for x,y in zip(np.sin(theta), np.cos(theta)):
+  theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
+  for x,y in zip(np.cos(theta), np.sin(theta)):
     v = np.array([x,y])[:,np.newaxis]
     if include_direction:
       yield ((X @ v).flatten(), v)

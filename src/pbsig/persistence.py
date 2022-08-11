@@ -63,13 +63,31 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
     D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
-def boundary_matrix(K: Union[List, ArrayLike], p: int, sorted: bool = False):
-  assert p == 1 or p == 2, "invalid p"
-  if p == 1: 
-    D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
-  elif p == 2:
-    D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
-  return(D)
+def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
+  from collections.abc import Sized
+  if isinstance(p, Iterable):
+    if f is None: 
+      f = [None]*len(p)
+    return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
+  else:
+    if p == 0:
+      nv = len(K['vertices'])
+      D = csc_matrix((0, nv), dtype=np.float64)
+    elif p == 1: 
+      D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
+    elif p == 2:
+      D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
+    elif p == 3:
+      nt = len(K['triangles'])
+      assert not('quads' in K)
+      D = csc_matrix((nt, 0), dtype=np.float64)
+    else: 
+      raise ValueError(f"Invalid p={p} for boundary matrix")
+    if not(f is None): # isinstance(f, Sized)
+      assert isinstance(f, Tuple)
+      ind0, ind1 = np.argsort(f[0]), np.argsort(f[1])
+      D = D[np.ix_(ind0,ind1)]
+    return(D)
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
 #   pw_dist = pdist(X)
@@ -397,16 +415,19 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
     return(D, (fw, cw)) # face, coface weights
 
 def low_entry(D: csc_matrix, j: Optional[int] = None):
-  """ Provides O(1) access to low entries of D """
-  assert isinstance(D, csc_matrix)
+  """ Provides O(1) access to all the low entries of D """
+  #assert isinstance(D, csc_matrix)
   if j is None: 
     return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
   else: 
-    nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
-    return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
+    if isinstance(D, csc_matrix):
+      nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
+      return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
+    else: 
+      return(-1 if D[:,j].getnnz() == 0 else max(D[:,j].nonzero()[0]))
 
 def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
-  assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
+  # assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
   assert R.shape[1] == V.shape[0], "Must be matching boundary matrices"
   m = R.shape[1]
   I = range(1, m) if I is None else I
@@ -419,14 +440,16 @@ def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
       V[:,j] -= c*V[:,i] 
       _perf['n_col_adds'] += 2
       # print(np.max(np.linalg.svd(R.A)[1]))
-      R.eliminate_zeros() # needed to changes the indices
-      piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
+      if isinstance(R, csc_matrix): 
+        R.eliminate_zeros() # needed to changes the indices
+      # piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
+      piv[j] = -1 if R[:,j].getnnz() == 0 else max(R[:,j].nonzero()[0]) # update pivot array
   return(None)
 
 def reduction_pHcol(D1: csc_matrix, D2: csc_matrix, clearing: bool = False):
-  assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
+  # assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
   assert D1.shape[1] == D2.shape[0], "Must be matching boundary matrices"
-  V1, V2 = sps.identity(D1.shape[1]).tocsc(), sps.identity(D2.shape[1]).tocsc()
+  V1, V2 = sps.identity(D1.shape[1]).tolil(), sps.identity(D2.shape[1]).tolil()
   R1, R2 = D1.copy(), D2.copy()
   if not(clearing):
     pHcol(R1, V1)
@@ -437,7 +460,7 @@ def reduction_pHcol(D1: csc_matrix, D2: csc_matrix, clearing: bool = False):
     uncleared = np.setdiff1d(np.array(list(range(R1.shape[1]))), cleared)
     pHcol(R1, V1, uncleared)
     R1[:,cleared] = 0
-    R1.eliminate_zeros()
+    #R1.eliminate_zeros()
     cleared_domain = np.flatnonzero(low_entry(R2) != -1)
     V1[:,cleared] = R2[:,cleared_domain] # set Vi = Rj
   return((R1, R2, V1, V2))
@@ -460,8 +483,9 @@ def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
 
 def is_reduced(R: csc_matrix) -> bool:
   """ Checks if a matrix R is indeed reduced. """
-  assert isinstance(R, csc_matrix), "R must be a CSC sparse matrix."
-  R.eliminate_zeros() # fix indices if need be
+  # assert isinstance(R, csc_matrix), "R must be a CSC sparse matrix."
+  if isinstance(R, csc_matrix): 
+    R.eliminate_zeros() # fix indices if need be
   low_ind = np.array([low_entry(R, j) for j in range(R.shape[1])], dtype=int)
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
@@ -534,33 +558,115 @@ def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_o
   ax.set_aspect('equal')
 
 
-def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, collapse: bool = True):
+def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, collapse: bool = True, names: Tuple = None):
+  assert is_reduced(R1), "Passed in matrix is not in reduced form"
   births_index = np.flatnonzero(low_entry(R1) == -1)
   deaths_index = low_entry(R2)
+  
+  ## Handle non-essential pairs 
   ew, tw = f if not(f is None) else (np.array(range(R1.shape[1])), np.array(range(R2.shape[1])))
-  births = ew[deaths_index[deaths_index != -1]]
-  deaths = tw[np.flatnonzero(deaths_index != -1)]
+  b_ind = deaths_index[deaths_index != -1]
+  d_ind = np.flatnonzero(deaths_index != -1)
+  births, deaths = ew[b_ind], tw[d_ind]
+  # if not(f is None):
+  #   assert all(births <= deaths), "Invalid persistence pairs detected: not all births <= deaths"
   dgm = np.c_[births, deaths]
+  
+  ## Retrieve birth/death names
+  if not(names is None):
+    b_names, d_names = names
+    b_names, d_names = np.array(b_names), np.array(d_names)
+    assert len(ew) == len(b_names) and len(tw) == len(d_names)
+    s_names = np.c_[b_names[b_ind], d_names[d_ind]]
+
+  ## Handle essential pairs 
   essential_ind = np.setdiff1d(births_index, deaths_index[deaths_index != -1])
   dgm = np.vstack((dgm, np.c_[ew[essential_ind], np.repeat(np.inf, len(essential_ind))]))
-  dgm = dgm[np.lexsort(np.rot90(dgm)),:]
+  if not(names is None):
+    s_names = np.vstack((s_names, np.c_[b_names[essential_ind], np.repeat('inf', len(essential_ind))]))
+
+  ## Sort birth birth/death
+  lex_ind = np.lexsort(np.rot90(dgm))
+  dgm = dgm[lex_ind,:]
+  if not(names is None):
+    s_names = s_names[lex_ind,:]
+
+  ## collapse zero-persistence pairs if required
   if collapse: 
     pos_pers = abs(dgm[:,1] - dgm[:,0]) >= 10*np.finfo(float).eps
     valid_ind = np.logical_or(dgm[:,1] == np.inf, pos_pers)
-    dgm = dgm[valid_ind,:]
-  return(dgm)
+  else: 
+    valid_ind = np.fromiter(range(dgm.shape[0]), dtype=int)
+  
+  ## Tack on names if requested
+  if not(names is None):
+    # dgm = np.hstack((s_names, dgm))
+    return({ 'creators' : s_names[valid_ind,0], 'destroyers': s_names[valid_ind,1], 'dgm': dgm[valid_ind,:] })
+  else: 
+    return(dgm[valid_ind,:])
 
 from scipy.sparse import triu
 
 def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float = 10*np.finfo(float).eps):
   valid = is_reduced(R1)
-  valid &= np.isclose(abs(np.sum((D1 @ V1) - R1)), 0.0)
+  valid &= np.isclose(sum(abs(((D1 @ V1) - R1).data).flatten()), 0.0)
   valid &= np.isclose(np.sum(V1 - triu(V1)), 0.0)
   if not(D2 is None):
     valid &= is_reduced(R2)
-    valid &= np.isclose(np.sum((D2 @ V2) - R2), 0.0)
+    valid &= np.isclose(sum(abs(((D2 @ V2) - R2).data).flatten()), 0.0) #np.isclose(np.sum((D2 @ V2) - R2), 0.0)
     valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
   return(valid)
+
+## TODO: redo with filtration class at some point
+def barcodes(K: Dict, p: int, f: Tuple, **kwargs):
+  return(0)
+  # if p == 0:
+  #   f_names = np.array([str(v) for v in K['vertices']])
+  #   s_names = np.array([str(e) for e in K['edges']])
+  #   D1 = boundary_matrix(K, p=0)
+  #   D2 = boundary_matrix(K, p=1, f=(f1,f2))
+
+
+  # res = []
+  # fv0 = F[:,0]
+  # fe0 = fv0[E].max(axis=1)
+  # ft0 = fv0[T].max(axis=1)
+  # vi, ei, ti = np.argsort(fv0), np.argsort(fe0), np.argsort(ft0)
+
+  # Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+  # Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+  # Tf = dict(sorted(zip(to_str(T), ft0), key=index(1)))
+
+  # D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
+  # D1, D2 = D1.tolil(), D2.tolil()
+  # R1, R2, V1, V2 = reduction_pHcol(D1, D2)
+
+  # ## Handle deficient cases
+  # R0, V0 = sps.lil_matrix((0,len(V))), sps.lil_matrix(np.eye(len(V)))
+  # R3, V3 = sps.lil_matrix((len(T), 0)), sps.lil_matrix((0,0))
+  # D0, D3 = R0, R3
+
+  # assert validate_decomp(D0, R0, V0, D1, R1, V1)
+  # assert validate_decomp(D1, R1, V1, D2, R2, V2)
+
+  # v_names = np.array(list(Vf.keys()))
+  # e_names = np.array(list(Ef.keys()))
+  # P = persistence_pairs(R0, R1, f=(fv0[vi], fe0[ei]), names=(v_names, e_names))
+
+  # elif p == 1: 
+  #   f_names = np.array([str(e) for e in K['edges']])
+  #   s_names = np.array([str(t) for t in K['triangles']])
+  #   f1, f2 = f if not(f is None) else (np.array(range(len(f_names))), np.array(range(len(s_names))))
+  #   D1, D2 = boundary_matrix(K, p=(1,2), f=f)
+  # else:
+  #   raise ValueError(f"invalid p={p}")
+  # # D1 = boundary_matrix(K, p=p, f=f1)
+  # # D2 = boundary_matrix(K, p=p+1, f=f2)
+  # D1, D2 = D1.tolil(), D2.tolil()
+  # R1, R2, V1, V2 = reduction_pHcol(D1, D2)
+  # assert validate_decomp(D1, R1, V1, D2, R2, V2)
+  # P = persistence_pairs(R1, R2, f=f, names=(f_names, s_names), **kwargs)
+  # return(P)
 
 
 # def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):

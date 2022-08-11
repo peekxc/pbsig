@@ -210,3 +210,114 @@ plot_mesh2D(*freundenthal_image(letter_im))
 # # from persim import plot_diagrams
 # # for dgm_pair in dgms:
 # #   plot_diagrams(dgm_pair)
+
+
+## Animation with PHT 
+v = np.array([0.0, 1.0])
+project_v = lambda x,v: np.ravel((x @ np.array(v).flatten()[:,np.newaxis]).flatten())
+
+dgms = [lower_star_ph_dionysus(f=fv, E=E, T=T) for fv, v in rotate_S1(X, 100)]
+
+## Plot the filtration
+from matplotlib.animation import FuncAnimation, FFMpegWriter
+import matplotlib.pyplot as plt 
+fig = plt.figure(**dict(figsize=(4,4), dpi=150))
+ax = fig.gca()
+ax.set_aspect('equal')
+# for e in E: ax.plot(X[e,0], X[e,1], c='black', linewidth=0.80)
+for t in T: ax.fill(X[t,0], X[t,1], c='#c8c8c8b3')
+# ax.scatter(*X.T, s=4.30, c=project_v(X, v=v))
+
+pt_col = bin_color(project_v(X, v=[0.0, 1.0]))#xmin=-1.0, xmax=1.0
+points = ax.scatter(*X.T, s=4.30, c=pt_col)
+
+## Plot outer circle 
+theta = np.linspace(0, 2*np.pi, 1000)
+plt.plot(np.cos(theta)*1.2, np.sin(theta)*1.2)
+
+## Turn off axis 
+plt.axis('off')
+
+# fig = plt.figure(figsize=(3,3), dpi=200)
+# ax = fig.gca()
+# ax.set_aspect('equal')
+# ax.set_xlim(-1.0, 1.0)
+# ax.set_ylim(-1.0, 1.0)
+# ax.plot([-1.0, 1.0], [-1.0, 1.0], color='gray',linewidth=0.5, linestyle='-')
+# for (dgm0, dgm1) in dgms:
+#   ax.scatter(*dgm0.T, c='red', s=0.15)
+
+
+
+V = [v for (fv, v) in rotate_S1(X, 100)]
+
+def update(i):
+  # ax.scatter(*X.T, s=4.30, c=project_v(X, v=V[i]))
+  points.set_color(c=bin_color(project_v(X, v=V[i])))
+  print(i)
+
+ani = FuncAnimation(fig, update, frames=range(100), interval=400, blit=False)
+plt.show()
+
+writervideo = FFMpegWriter(fps=15) 
+
+ani.save("testing.mp4", writer=writervideo)
+
+from pbsig.color import bin_color, colors_to_hex
+
+
+
+
+
+
+bin_color(range(10))
+
+bin_color(range(10))
+
+
+f = project_v(X, [0,1])
+D1, ew = lower_star_boundary(project_v(X, [0,1]), 0.70, E)
+x = np.random.uniform(size=D1.shape[1], low=-1.0, high=1.0)[:,np.newaxis]
+
+
+## How to accelerate 
+D1.data = np.sign(D1.data) * np.repeat(np.abs(0.70 - ew)**2, 2)
+
+
+D1 @ x
+
+xv = np.random.uniform(size=D1.shape[0], low=-1.0, high=1.0)[:,np.newaxis]
+
+## This matches 
+(xv.T @ (D1 @ D1.T) @ xv)
+
+## With this
+W = np.vstack([D1[i,:].A * xi for i, xi in enumerate(xv)])
+np.linalg.norm(W.sum(axis=0))**2
+
+## coboundary matvec operator (vertex/edge)
+n = X.shape[0]
+x = np.random.uniform(size=D1.shape[0], low=-1.0, high=1.0)[:,np.newaxis]
+coboundary = lambda i: np.ravel(D1[i,:].A.flatten())
+
+def matvec(x):
+  v = np.zeros(len(x))
+  for i in range(n):
+    ci = coboundary(i)
+    for j in range(n):
+      v[i] += x[j]*np.dot(ci, coboundary(j))
+  return(v)
+v = matvec(x)
+
+w = ((D1 @ D1.T) @ x)
+
+L = (D1 @ D1.T)
+D = np.diagonal(L.A)
+
+C = np.array([np.dot(coboundary(i), coboundary(j)) for (i,j) in combinations(range(n), 2)])
+
+np.sum([(x[j]*C[rank_C2(0, j, n=n)]).item() for j in np.flatnonzero(f <= f[0])])
+
+(D1 @ D1.T) @ xv
+
+np.sum([(x[j]*C[rank_C2(0, j, n=n)]).item() for j in filter(lambda x: x != 0, np.flatnonzero(f <= f[0]))])
