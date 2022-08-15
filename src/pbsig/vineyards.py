@@ -1,4 +1,3 @@
-from multiprocessing.dummy import Array
 import numpy as np
 import scipy.sparse as ss
 from scipy.sparse import *
@@ -296,6 +295,29 @@ def schedule(f0: ArrayLike, f1: ArrayLike):
     return(r_tr)
   else:
     return(np.zeros((0, 2)))
+
+
+def line(p1, p2):
+  A, B, C = (p1[1] - p2[1]), (p2[0] - p1[0]), (p1[0]*p2[1] - p2[0]*p1[1]) 
+  return A, B, -C
+
+def intersection(L1, L2):
+  D  = L1[0] * L2[1] - L1[1] * L2[0]
+  Dx = L1[2] * L2[1] - L1[1] * L2[2]
+  Dy = L1[0] * L2[2] - L1[2] * L2[0]
+  if D != 0:
+    x = Dx / D
+    y = Dy / D
+    return x,y
+  else:
+    return False
+    
+## Swaps elements at positions [i,i+1]. Returns a new array
+def swap(p, i):
+  assert i < (len(p)-1)
+  pp = p.copy()
+  pp[[i,i+1]] = pp[[i+1,i]]
+  return(pp)
 
 # def schedule_inversion():
 #   inversions(a,b)

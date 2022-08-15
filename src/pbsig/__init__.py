@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import numpy as np
 from numpy.typing import ArrayLike
-from . import boundary
+#from . import boundary
+
+# from .ext import boundary
+# from . import _boundary
+# from . import _boundary
 from .persistence import *
 from .betti import *
 
@@ -33,6 +37,7 @@ def plot_dgm(dgm: ArrayLike):
   ax.set_yticks(np.append(tick_loc, 1.05*ymax), [formatter(x) for x in tick_loc]+['inf'])
   ax.tick_params(axis='both', which='major', labelsize=3)
   ax.plot([0.0, 1.05*ymax], [1.05*ymax, 1.05*ymax], color='gray', linestyle='dashed', linewidth=0.50)
+  return(fig, ax)
 
 def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bool = False, **kwargs):
   import matplotlib.pyplot as plt 

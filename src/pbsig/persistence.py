@@ -16,7 +16,7 @@ from scipy.special import binom
 from scipy.spatial.distance import pdist, cdist, squareform
 
 ## Relative package imports
-from . import boundary
+import _boundary as boundary
 from .apparent_pairs import *
 from .utility import *
 

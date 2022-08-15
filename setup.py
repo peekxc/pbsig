@@ -1,10 +1,35 @@
 # -*- coding: utf-8 -*-
 # Install with: python setup.py install
 # Build with: python setup.py bdist_wheel
-from skbuild import setup
+# from skbuild import setup
 # from setuptools import find_packages
 #from glob import glob
 #from pybind11.setup_helpers import Pybind11Extension, build_ext
+import os 
+import sysconfig
+import distutils.sysconfig
+from typing import Any, Dict
+from setuptools import setup, Extension, find_packages
+from pybind11.setup_helpers import Pybind11Extension, build_ext
+
+base_path = os.path.dirname(__file__)
+extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+extra_compile_args += ["-std=c++17", "-Wall", "-Wextra", "-O2"]
+
+flags = distutils.sysconfig.get_config_var("CFLAGS")
+print(f"COMPILER FLAGS: { str(flags) }")
+
+ext_modules = [
+  Pybind11Extension(
+    '_boundary', 
+    sources = ['src/pbsig/boundary.cpp'], 
+    # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
+    extra_compile_args=extra_compile_args,
+    language='c++17', 
+    cxx_std=1
+  )
+]
+
 
 # ext_modules = [
 # 	Pybind11Extension(
@@ -19,14 +44,14 @@ setup(
   author_email="matt.piekenbrock@gmail.com",
   description="Persistent Betti Signatures",
   long_description="",
-  #ext_modules=ext_modules,
-  #cmdclass={'build_ext': build_ext},
-  zip_safe=False,
+  ext_modules=ext_modules,
+  cmdclass={'build_ext': build_ext},
+  zip_safe=False, # needed for platform-specific wheel 
   python_requires=">=3.8",
+  package_dir={'': 'src'}, # < root >/src/* contains packages
   packages=['pbsig'],
-  package_dir={'': 'src'},
   package_data={'pbsig': ['data/*.bsp', 'data/*.txt', 'data/*.csv']},
-  cmake_install_dir='src/pbsig'
+  # cmake_install_dir='src/pbsig'
   #cmake_args=['-DSOME_FEATURE:BOOL=OFF']
 )
 # package_dir = \

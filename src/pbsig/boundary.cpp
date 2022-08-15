@@ -274,9 +274,9 @@ py::tuple rips_boundary_2(const py::array_t< double >& D, const size_t n, const 
   return(py::make_tuple(CD, CI, CO, W));
 }
 
-
-PYBIND11_MODULE(boundary, m) {
-  m.doc() = "boundary";
+// For naming convention, see: https://github.com/pybind/pybind11/issues/1004
+PYBIND11_MODULE(_boundary, m) {
+  m.doc() = "_boundary";
   m.def("rips_boundary_1", &rips_boundary_1);
   m.def("rips_boundary_2", &rips_boundary_2);
   m.def("lower_star_boundary_1", &lower_star_boundary_1);
