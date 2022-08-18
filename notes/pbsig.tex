@@ -8,6 +8,16 @@
 \usepackage{titlesec}
 \titlelabel{\thetitle.\quad}
 
+\usepackage{mdframed}
+\mdfdefinestyle{bframe}{%
+    outerlinewidth=1pt,
+    innertopmargin=0,
+    innerbottommargin=5pt,
+    innerrightmargin=8pt,
+    innerleftmargin=8pt,
+    backgroundcolor=white
+   }
+    
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
@@ -15,8 +25,10 @@
 
 \usepackage{dsfont}
 
+\newtheorem{proposition}{Proposition}
 \newtheorem{definition}{Definition}
 \newtheorem{remark}{Remark}
+\newtheorem{lemma}{Lemma}
 %\let\oldref\ref
 %\renewcommand{\ref}[1]{((\oldref{#1}))}
 \newcommand{\inv}{^{\raisebox{.2ex}{$\scriptscriptstyle-1$}}}
@@ -32,15 +44,34 @@
 \begin{document}
 \noindent
 
+
+
 \section{Motivation}
-$<$ insert motivating examples, etc $>$
+Persistent homology is, as of this time of writing, a well-studied mathematical structure. From its unassuming history starting with postniov towers, the body of research created over the past two decades have established perisstence as not only an intrinsic quantity, but a useful tool. 
+From **, ** , to **, applications abound with persistence; see for an survey. PH is more than just a homology inference tool.  
 
-\begin{definition}
-The $p$-th persistence diagram $dgm_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$, where: 
-  $$\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1 $$
-\end{definition}
+Since its inception, a popular application of persistence in data analysis is its use as a featurization tool. 
+In machine learning, featurization is a means of converting various data representations to a vector format amenable for learning and enhanced training. Classical examples include word2vec in natural language processing, Scale-Invariant Feature Transform (SIFT) in computer vision, Extended-connectivity fingerprints in used in chemical informatics and molecular modeling, etc. 
+More recent results include transformers... 
+Through no small feat of engineering, many of these techniques have been incrementally improved and adapted throughout the past decades, and tend to do quite well in terms of their efficiency. As such, they have seen widespread-adoption from more scientific fields trying to harness their power. 
+While certainly useful, one of the pitfalls with such featurizations if the difficulty that comes with interpretation. 
+% However, grasping the interplay between input features and their local contribution to NNP is growingly evasive due to heavy featurization
+Difficulty in heavy featurization has lead to qualitative comparisons in scientific fields of the featurization outputs. Many are lead by the same equation: exactly what isa featurization tool capturing that is so useful for training?
 
-In what follows, we illicit connections back to spectral graph theory. 
+Persistent homology is, in some sense, a natural tool for featurization. persistence is a stable invariant that comes equipped mathematical guarentees; thus featurization of diagrams can be interpreted as mapping persistence diagrams to Euclidean space in such a way that maximally preserves the topological information conveyed by the diagram. 
+Moreover, we also know persistence diagrams retain some amount of geometry, such as those of curvature sets and the quasi-isometry theorems in distributed persistence. These results suggest an inverse theory related to persistence. 
+Indeed, a recent injectivity result shows that collections of persistence diagrams are sufficient to uniquely characterize data sets in 2- and 3-dimensions\footnote{}, establishes persistence as truly an intrinsic description of shape. 
+
+In what follows, we introduce a relaxation of the persistent Betti number (PBN) invariant that has certain advantages. Namely, we showing that a simple augmentation of traditional PBN computation leads to a continuous relaxation that $(1+\epsilon)$-approximates the PBN that is permutation invariant, a property useful to have in time-varying settings. Moreover, we show our relaxation satisfies certain basic properties, and we illicit its connections back to spectral graph theory. 
+
+
+%One of the 
+%$<$ insert motivating examples, etc $>$
+
+
+
+
+
 
 % Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
 % Towards understanding its dynamic, one may ask whether one can infer properties of the underlying evolving system
@@ -54,7 +85,25 @@ A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes ind
 \end{equation} 
 Filtrations may be equivalently defined as functions $f : K \to I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$. Here, we consider two index sets for $I$: $\mathbb{R}$ and $[n] = \{ 1, \dots, n\}$. 
 Any finite filtration may be trivially converted into an essential, simplexwise filtration via a set of \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. Thus, without loss of generality, we exclusively consider essential simplexwise filtrations and for brevity refer to them as filtrations.
-
+%\begin{mdframed}[style=bframe]
+%\begin{remark}
+\\
+\\
+\noindent
+\textbf{Remark 1:}
+\normalfont In practice, filtrations often arise from triangulations parameterized by geometric scaling parameters. 
+%and references to the ``persistence'' of a given homology class are with respect to these parameterizations.
+For example, given a finite metric space $\mathcal{X} = (X, d_X)$, the \emph{Rips complex} at scale $\epsilon \in \mathbb{R}_{+}$ is the complex given by: 
+\begin{equation}
+	\mathrm{Rips_{\epsilon}}(\mathcal{X}) := \{ \sigma \subseteq X : d_X(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \} 
+\end{equation}
+\noindent Connecting successive complexes via inclusions $\mathrm{Rips_{\epsilon}}(\mathcal{X}) \hookrightarrow \mathrm{Rips_{\epsilon'}}(\mathcal{X})$ for $\epsilon < \epsilon'$ yields a family of complexes $\mathrm{Rips}_{\alpha} := \{ \, \mathrm{Rips}_\epsilon(\mathcal{X}) \, \}_{\epsilon \leq \alpha}$ called the \emph{Rips filtration}. 
+We keep the notation general by letting $K_\bullet$ denote any filtration. 
+%\end{remark} 
+%\end{mdframed}
+\\
+\\
+%As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level of homology. Though we consider primarily Rips filtrations in this effort, we will at times keep the notation simple and general by letting $K_\bullet$ denote any simplicial filtration. 
 For $K$ a simplicial complex and $\mathbb{F}$ a field, a $p$-chain is a formal $\mathbb{F}$-linear combination of $p$-simplices of $K$. The collection of $p$-chains under addition yields an $\mathbb{F}$-vector space denoted $C_p(K)$. 
 The $p$-boundary $\partial_p(\sigma)$ of an oriented $p$-simplex $\sigma\in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
 \begin{equation}\label{eq:alt_sum}
@@ -80,23 +129,31 @@ The $p$-th persistent homology groups are the images of these transformations an
  	\mathrm{dim}(H_{p}^{i,j}) & i < j
  \end{cases}
 \end{equation}
-For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}.
-
-Although the persistence diagram $\mathrm{dgm}_p(K_\bullet)$ characterizes elements of $H_p^{i,j}$, one may define $\mathrm{dgm}_p(K_\bullet)$ through $\beta_p^{i,j}$ alone. To see this, let $f: K \to \mathbb{R}$ be a tame function and $(\tau_i)$
-
-\begin{definition}[Persistence diagram]
-	Given a finite filtration $K_\bullet$ of , the $p$-th persistence diagram for some $p \geq 0$ is the set of points $(i,j)$ counted with multiplicity $\mu_p^{i,j}$ for all $0 < i < j < m+1$, union all the points on the diagonal, counted with infinite .  
-\end{definition}
-
-
-\begin{remark}
-\normalfont In practice, filtrations often arise from triangulations parameterized by geometric scaling parameters, and references to the ``persistence'' of a given homology class are with respect to these parameterizations. For example, given a finite metric space $\mathcal{X} = (X, d_X)$, the \emph{Rips complex} at scale $\epsilon \in \mathbb{R}_{+}$ is the complex given by: 
+For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}. Note that the persistent Betti numbers can be read off directly given $\mathrm{dgm}_p(K_\bullet)$; conceptually, $\beta_p^{i,j}$ simply counts the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$ (see Figure~\ref{})---the number of persistent homology groups born at or before $i$ that died sometime after $j$. 
+\\
+\\
+%\begin{remark}
+\textbf{Remark 2:} Persistence has been viewed from many different perspectives, and may be defined in a variety of ways. For example, Carlsson et al.~\cite{} observed persistence is simply a graded module under a particular polynomial ring. More recently, Baur studied persistence in a form a matching. Use follow the presentation from Cohen-Steiner et al~\cite{}: given a tame function $f: K \to \mathbb{R}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $i$, the $p$-th persistence diagram $\mathrm{dgm}_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is defined as: 
 \begin{equation}
-	\mathrm{Rips_{\epsilon}}(\mathcal{X}) := \{ \sigma \subseteq X : d_X(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \} 
+\mathrm{dgm}_p(K_\bullet) = \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \mathcal{L}	
 \end{equation}
-\noindent Connecting successive complexes via inclusions $\mathrm{Rips_{\epsilon}}(\mathcal{X}) \hookrightarrow \mathrm{Rips_{\epsilon'}}(\mathcal{X})$ for $\epsilon < \epsilon'$ yields a family of complexes $\mathrm{Rips}_{\alpha} := \{ \, \mathrm{Rips}_\epsilon(\mathcal{X}) \, \}_{\epsilon \leq \alpha}$ called the \emph{Rips filtration}. 
-As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level of homology. Though we consider primarily Rips filtrations in this effort, we will at times keep the notation simple and general by letting $K_\bullet$ denote any simplicial filtration. 
-\end{remark} 
+%the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
+where $\mathcal{L}$ denotes the points on the diagonal, counted with infinite multiplicity, and $\mu_p^{i,j}$ is defined as: 
+  $$\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1 $$
+where $\beta_p^{i,j}$ is the persistent Betti number defined at the values of the interleaved sequence, i.e. $\beta_p^{i,j} = \mathrm{dim}(\mathrm{Im}(h_p^{b_i, b_j}))$. More generally, by interpreting $\mu_p^\ast$ as function defined over $\bar{\mathbb{R}}$, Chazal~\cite{} view the multiplicity $\mu$ as a counting measure. This interpretation (as well as Cohen-Steiners) is perhaps the most relvent to the work we present here. 
+%\end{remark}
+%Although the persistence diagram $\mathrm{dgm}_p(K_\bullet)$ characterizes elements of $H_p^{i,j}$, one may define $\mathrm{dgm}_p(K_\bullet)$ through $\beta_p^{i,j}$ alone. To see this, let $f: K \to \mathbb{R}$ be a tame function and $(\tau_i)$
+%\begin{definition}
+%The $p$-th persistence diagram $dgm_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$, where: 
+%  $$\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1 $$
+%\end{definition}
+
+
+
+%\begin{definition}[Persistence diagram]
+%	Given a finite filtration $K_\bullet$ of , the $p$-th persistence diagram for some $p \geq 0$ is the set of points $(i,j)$ counted with multiplicity $\mu_p^{i,j}$ for all $0 < i < j < m+1$, union all the points on the diagonal, counted with infinite .  
+%\end{definition}
+
 
 %Note that if $i = j$, then $H_{p}^{i,j} = H_{p}(K_i) = H_{p}(K_i)$ is   just the ``standard'' homology. 
 % Simplices whose inclusion in the filtration creates a new homology class are called \emph{creators}, and simplices that destroy homology classes are   called \emph{destroyers}. 
@@ -115,26 +172,62 @@ As in section~\ref{sec:background_notation}, let $B_p(K_\ast) \subseteq Z_p(K_\a
 Given a simplicial filtration $K_{\bullet}$, let $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
 With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
 The $p$-th persistent Betti number between scales $(i,j)$ is defined as: 
-\begin{align*}
+\begin{align*} %\label{eq:pbn}
 	\beta_p^{i,j} &= \mathrm{dim}(H_p^{i,j}) \\
 	&= \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) \label{eq:pb2}
 \end{align*}
-Note that $\mathrm{dim}(C_p(K_\ast)) = \mathrm{dim}(B_{p-1}(K_\ast)) + \mathrm{dim}(Z_p(K_\ast))$ by the rank-nullity theorem, so we may rewrite~\eqref{eq:pb2} as:
-\begin{equation} \label{eq:pb3}
-\beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )  
-\end{equation}
-The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. To express the intersection term, we require more notation. If $A$ is a $m \times m$ matrix, then let $A^{i,j}$ denote the lower-left submatrix of $A$ given by the first $j$ columns and last $m - i + 1$ rows (rows $i$ through $m$, inclusive). For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$:
+%Note that $\mathrm{dim}(C_p(K_\ast)) = \mathrm{dim}(B_{p-1}(K_\ast)) + \mathrm{dim}(Z_p(K_\ast))$ by the rank-nullity theorem, so we may rewrite~\eqref{eq:pb2} as:
+%\begin{equation} \label{eq:pb3}
+%\beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right )  
+%\end{equation}
+%The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
+The dimension of $Z_p(K_i)$ is given by the dimension of the kernel of $\partial_p(K_i)$.
+To express the intersection term, we require more notation. If $A$ is a $m \times m$ matrix, then let $A^{i,j}$ denote the upper-left submatrix of $A$ given by the first $i$ rows ($j$ columns, resp.) and let $A^{\bar{i}, j}$ denote the lower-left submatrix defined by last $m - i$ rows (rows $i+1$ through $m$, inclusive). For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$:
 \begin{equation}
-	r_A(i,j) = \mathrm{rank}(A^{i, j}) - \mathrm{rank}(A^{i+1, j}) + \mathrm{rank}(A^{i+1, j-1}) - \mathrm{rank}(A^{i, j-1})
+	r_A(i,j) = \mathrm{rank}(A^{\overline{i-1}, j}) - \mathrm{rank}(A^{\bar{i}, j}) + \mathrm{rank}(A^{\bar{i}, j-1}) - \mathrm{rank}(A^{\overline{i-1}, j-1})
 \end{equation}
-One of the seminal results from the Pairing Uniqueness lemma~\cite{} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then for any $1 \leq i < j \leq m$, we have (todo: elaborate more): 
-$$ \mathrm{low}_R[j] = i \iff r_\partial(i,j) = 1 \iff \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})$$
-Thus, all lower-left submatrices of the filtered boundary matrix $\partial$ have the same rank as their corresponding submatrices in $R$. Thus, we may write $\beta_p^{i,j}$ as: 
-\begin{equation}\label{eq:betti_four}
-	\beta_p^{i,j} = \mathrm{rank}(I_p^i) - \mathrm{rank}(\partial_p^{\ast,i}) - \mathrm{rank}(\partial_p^{i,j}) + \mathrm{rank}(\partial_p^{i+1,j})
-\end{equation}
-where $I_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes the order of the matrix. In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
+%\begin{equation}
+%	r_A(i,j) = \mathrm{rank}(A^{i, j}) - \mathrm{rank}(A^{i+1, j}) + \mathrm{rank}(A^{i+1, j-1}) - \mathrm{rank}(A^{i, j-1})
+%\end{equation}
+The Pairing Uniqueness Lemma~\cite{} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then $\mathrm{low}_R[j] = i$ if and only if $r_\partial(i,j) = 1$. Moreover, from the algebraic perspective, the structure theorem from~\cite{} shows that 1-parameter persistence modules can be decomposed in an \emph{essentially unique} way~\cite{}. As a result, for $1 \leq i < j \leq m$, we have:
+\begin{equation}
+	\mathrm{low}_R[j] = i \iff r_R(i,j) = 1 \iff r_\partial(i,j) = 1 
+\end{equation} 
+As a result, we have our first lemma: 
+\begin{lemma}\label{lemma:rank}
+Let $R = \partial V$ denote the full matrix decomposition of a given filtered boundary matrix $\partial$ derived from the associated filtration $K_\bullet$. For any pair $(i,j)$ satisfying $1 \leq i < j \leq m$, we have:
+	\begin{equation}
+		\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})
+	\end{equation}
+Equivalently, all lower-left submatrices of $\partial$ have the same rank as their corresponding submatrices in $R$. 
+\end{lemma}
+Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{} in their rank-based persistence algorithm, which was the first output-sensitive algorithm. We show that this result allows us to write the persistent Betti number as a sum of rank functions defined over \emph{unfactored} matrices. 
+\begin{proposition}
+For some fixed $p \geq 0$, let $R_p = \partial_p V_p$ denote the reduced decomposition of the $p$-dimension boundary matrix $\partial_p$ of some filtration $K_\bullet$.  
+%	\begin{equation}\label{eq:betti_four}
+%	\beta_p^{i,j} = \mathrm{rank}(I_p^i) - \mathrm{rank}(\partial_p^{\ast,i}) - \mathrm{rank}(\partial_p^{i,j}) + \mathrm{rank}(\partial_p^{i+1,j})
+%	\end{equation}
+	\begin{equation}\label{eq:betti_four}
+	\beta_p^{i,j} = \mathrm{rank}(I_p[i,i]) - \mathrm{rank}(\partial_p[i,i]) - \mathrm{rank}(\partial_{p+1}^{i,j}) + \mathrm{rank}(\partial_{p+1}[m_p, j] \otimes\partial_{p+1}(i, j] )
+	\end{equation}
+where $I_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes the order of the matrix.
+\begin{proof}
+We first need to show that $\beta_p^{i,j}$ can be expressed as a sum of rank functions. Recall equation~\ref{eq:pbn}, . Note that $\mathrm{dim}(C_p(K_\ast)) = \mathrm{dim}(B_{p-1}(K_\ast)) + \mathrm{dim}(Z_p(K_\ast))$ by the rank-nullity theorem, so we may rewrite~\eqref{eq:pb2} as:
+$$ \beta_p^{i,j} = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) $$
+Now, by rank-nullity theorem, we may re-write the first term as: 
+$$ \beta_p^{i,j} = \mathrm{dim} \left( C_p(K_i) \right) - \mathrm{dim} \left( B_{p-1}(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) $$
+From the definitions in~\ref{}, $B_p(K_i) = (\mathrm{Im} \circ \partial_{p+1})(K_i)$, thus we can rewrite as:  
+$$ \beta_p^{i,j} = \mathrm{rank}(I_p^i) - \mathrm{rank}(\partial_p(K_i)) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) $$
+Dey and Wang have shown that:
+\begin{align*}
+	\mathrm{dim}(Z_p(K_i) \cap B_p(K_j))  &= \mathrm{dim}(B_p(K_i)) - \mathrm{rank}(\Gamma()) \\
+	&= \mathrm{rank}(\partial_p(K_i)) - \mathrm{rank}(\partial_p(K_i))
+\end{align*}
+\end{proof}
+\end{proposition}
+
+ In conclusion, we may write the persistent Betti number as a combination of rank computations performed directly on the dimension $p$ and $(p+1)$ boundary matrices. 
 % DONT ERASE
 %Let $\partial_p^{b}$ and $\partial_p^{b, d}$ denote matrices whose columns span the subspaces $B_{p-1}(K_b)$ and $Z_p(K_b) \cap B_p(K_d)$, respectively. We address their computation in section~\ref{sec:computation}. Substituting these matrices appropriately, equation~\eqref{eq:pb3} can be written as: 
 %\begin{equation}\label{eq:pb_rank}
@@ -145,18 +238,6 @@ where $I_p^i = \mathrm{diag}(\mathds{1}(\mathrm{diam}(\sigma) \leq i))$ denotes 
 
 
 \subsubsection*{A Time-varying Boundary Matrix Relaxation}
-Let $\delta_\mathcal{X}$ denote an $\mathrm{T}$-parameterized metric space $\delta_\mathcal{X}(\cdot) = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x')$ is continuous for every pair $x, x' \in X$ and $\delta_\mathcal{X}(t) = (X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
-For a fixed $t \in \mathrm{T}$, the Rips complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
-\begin{equation}
-	\mathrm{Rips_{\epsilon}}(\delta_\mathcal{X}(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \}
-\end{equation}
-\noindent As before, the family of Rips complexes for varying $\epsilon > 0$ yields a filtration whose inclusion maps induce linear maps at the level of homology. The time-varying counterpart is analogous.  
-In this context, we write the $p$-th persistent Betti number with respect to fixed values $i,j \in I$ as a function of $t \in \mathrm{T}$: 
-\begin{equation}
-\beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
-\end{equation}
-This quantity can be readily visualized as the number of persistent pairs lying inside the box $[0, i] \times (j, \infty)$, representing the persistent homology groups which were born at or before $i$ and died sometime after $j$. 
-
 As integer-valued invariants, Betti numbers pose several difficulties to vectorization. 
 Thus, we require alternative expressions for each of the terms in equation~\eqref{eq:betti_four} to extend its applicability to the time-varying setting. Towards deriving these expression, we first require a replacement of the standard boundary matrix formulation. 
 % Give example of optimal homologus cycle 
@@ -175,7 +256,10 @@ Recall that the boundary operator $\partial_p$ for a finite simplicial filtratio
 	0 & \text{otherwise}
    \end{cases}
 \end{equation}
-where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we propose an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
+where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$.  Towards relaxing the persistent Betti computation in dynamic setting, we seek an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
+
+Observe that one of the consequence of the formulation~\ref{} with unfactored matrices is that no operations are needed to represent any of the terms. Now, one of the many properties of the $\mathrm{rank}$ function is permutation invariance, i.e. $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$. Thus, we need not represent the boundary matrices $\partial_p$ in the filtration order. (and we need not maintain the filtration order, as is the case with vineyards). 
+
 \begin{definition}[Time-varying boundary matrix]\label{def:time_boundary_matrix}
 Let $\mathbb{F} = \mathbb{R}$ denote the field, $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$, and let $(\mathcal{P}(X), \preceq^\ast)$ be a linear extension of the face poset of the $(n-1)$-simplex $\Delta_n$. For some constant $\epsilon > 0$, a time-varying $p$-th boundary matrix $\partial_p^t$ is an $\binom{n}{p} \times \binom{n}{p+1}$ matrix whose entries $c(\sigma)$ satisfy:
 $$
@@ -229,18 +313,27 @@ Property (3) follows from the construction of $\partial_p$ and from the inequali
 % Insert rank/convex envelope statement
 
 % Revisit the conditions on the four matrices making the PB computation; express their conditions via chain conditions/min
-We now re-write equation using this relaxation. Fix persistence parameters $a,b \in \mathbb{R}^+$. Since our boundary matrices now follow a constant order, we write $\partial_p^{}$.
-
+%We now re-write equation using this relaxation. Fix persistence parameters $a,b \in \mathbb{R}^+$. Since our boundary matrices now follow a constant order, we write $\hat{\partial_p}$.
 
 \subsubsection*{Rank Relaxation (TODO)}
 In light of expression~\eqref{eq:betti_four}, we may interpret many of the terms of $\beta_p^{i,j}$ from a function composition perspective: 
 $$ t \stackrel{f}{\mapsto} \partial_\ast^t \stackrel{g}{\mapsto} \mathrm{rank}(\partial_\ast^t ) $$
 In this sense, by modifying the entries of $\partial_p^\ast$ via~\ref{def:time_boundary_matrix}, we ensure that $f$ is both continuous and inherits the the smoothness of $\partial_\mathcal{X}(\cdot)$. We now address $g$.
 
-A common relaxation of the $\mathrm{rank}$ function found in the literature is the nuclear norm, $\lVert A \rVert_\ast = \mathrm{tr}(S)$, where $A = U S V^T$. This is due to the fact that the nuclear norm is the tightest convex envelope of the $\mathrm{rank}$ function over the set of matrices whose spectral norm is less than $m > 0$:
-$$ \mathcal{A} = \{ A \in \mathbb{R}^{n_1 \times n_2} \,:\, \lVert A \rVert_2 \leq m \}$$
-Equivalently, $\mathcal{A}$ may be thought of as the set of matrices $A \in \mathbb{R}^{n_1 \times n_2}$ such that $\lVert \frac{1}{m}A\rVert_2 \leq 1$, for some appropriate choice of $m > 0$. 
- 
+A common relaxation of the $\mathrm{rank}$ function found in the literature is the nuclear norm, $\lVert A \rVert_\ast = \mathrm{tr}(S)$, where $A = U S V^T$. 
+
+
+\subsubsection*{Interpretation}
+
+
+\section{Applications}
+
+
+
+%This is due to the fact that the nuclear norm is the tightest convex envelope of the $\mathrm{rank}$ function over the set of matrices whose spectral norm is less than $m > 0$:
+%$$ \mathcal{A} = \{ A \in \mathbb{R}^{n_1 \times n_2} \,:\, \lVert A \rVert_2 \leq m \}$$
+%Equivalently, $\mathcal{A}$ may be thought of as the set of matrices $A \in \mathbb{R}^{n_1 \times n_2}$ such that $\lVert \frac{1}{m}A\rVert_2 \leq 1$, for some appropriate choice of $m > 0$. 
+% 
 \subsection*{Smoothness}
 %In this section we introduce the notion of the Moreau envelope as means of smoothing our objective function. The study of the Moreau envelope and proximal operators has a long history related to infimal convolution and the Fenchel conjugate, see~\cite{}.
 Given a function $f: \mathbb{R} \to (-\infty, \infty]$ and a fixed $\mu > 0$, the \emph{proximal operator} or \emph{prox} of $f$ is given by:
@@ -457,6 +550,19 @@ $<$ insert SW1Pers vineyards plot $>$
 %\end{equation}
 
 %Given a Rips complex, 	$H_p(K_1) \to H_p(K_2) \to \dots \to H_p(K_m)$
+
+
+\subsection{Application: Time-varying }
+Let $\delta_\mathcal{X}$ denote an $\mathrm{T}$-parameterized metric space $\delta_\mathcal{X}(\cdot) = ( X, d_X(\cdot) )$, where $d_X: \mathrm{T} \times X \times X \to \mathbb{R}_+$ is called a \emph{time-varying metric}  and $X$ is a finite set with fixed cardinality $\lvert X \rvert = n$. $\delta_X$ as called a \emph{dynamic metric space} (DMS) iff $d_X(\cdot)(x, x')$ is continuous for every pair $x, x' \in X$ and $\delta_\mathcal{X}(t) = (X, d_X(t))$ is a pseudo-metric space for every $t \in \mathrm{T}$. 
+For a fixed $t \in \mathrm{T}$, the Rips complex at scale $\epsilon \in \mathbb{R}$ is the abstract simplicial complex given by 
+\begin{equation}
+	\mathrm{Rips_{\epsilon}}(\delta_\mathcal{X}(t)) := \{ \sigma \subset X : d_X(t)(x, x') \leq \epsilon \text{ for all } x, x' \in \sigma \}
+\end{equation}
+\noindent As before, the family of Rips complexes for varying $\epsilon > 0$ yields a filtration whose inclusion maps induce linear maps at the level of homology. The time-varying counterpart is analogous.  
+In this context, we write the $p$-th persistent Betti number with respect to fixed values $i,j \in I$ as a function of $t \in \mathrm{T}$: 
+\begin{equation}
+\beta_{p}^{i,j}(t) = \left(\mathrm{dim} \circ \mathrm{H}_p^{i,j} \circ \mathrm{Rips} \circ \delta_\mathcal{X} \right)(t)
+\end{equation}
 
 
 \end{document}

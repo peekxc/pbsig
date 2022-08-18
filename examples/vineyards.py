@@ -1,7 +1,7 @@
 import numpy as np
 import scipy.sparse as sps
-
 from pbsig.persistence import pHcol, boundary_matrix, reduction_pHcol, persistence_pairs
+from pbsig.vineyards import permute_tr, transpose_dgm, linear_homotopy
 
 ## Toy simplicial complex
 V = [0,1,2,3,4,5,6,7]
@@ -21,20 +21,18 @@ R0, V0 = sps.csc_matrix((0,len(V))), np.eye(len(V))
 dgm0_index = persistence_pairs(R0, R1, collapse=False)
 dgm1_index = persistence_pairs(R1, R2, collapse=False)
 
-
-from pbsig.vineyards import permute_tr, transpose_dgm, linear_homotopy
 R1, R2, V1, V2 = R1.tolil(), R2.tolil(), V1.tolil(), V2.tolil()
 transpose_dgm(R1, V1, R2, V2, 0)
 
 
 from pbsig import * 
 from pbsig.simplicial import delaunay_complex
-from pbsig.vineyards import line_intersection, inversion_dist, schedule, transpose_dgm
+from pbsig.vineyards import line_intersection, inversion_dist, transpose_dgm
 from operator import itemgetter
 index = lambda i: itemgetter(i)
 to_str = lambda X: [str(x) for x in X]
 
-X = np.random.uniform(size=(16,2))
+X = np.random.uniform(size=(8,2))
 X = scale_diameter(X, 2.0)
 X = X - (X.sum(axis=0)/X.shape[0])
 K = delaunay_complex(X)
@@ -44,7 +42,7 @@ ax.set_xlim(-1, 1)
 ax.set_ylim(-1, 1)
 
 ## Choose filtration directions
-F = np.hstack([f[:,np.newaxis] for (f, v) in rotate_S1(X, n=40)])
+F = np.hstack([f[:,np.newaxis] for (f, v) in rotate_S1(X, n=8)])
 V,E,T = K.values()
 
 res = []
@@ -73,7 +71,60 @@ v_names = np.array(list(Vf.keys()))
 e_names = np.array(list(Ef.keys()))
 P = persistence_pairs(R0, R1, f=(fv0[vi], fe0[ei]), names=(v_names, e_names))
 
-P2 = barcodes(K, p=0, f=(np.sort(fv0), np.sort(fe0)))
+S1_V = np.hstack([v for (f,v) in rotate_S1(X, n=8)])
+
+# P2 = barcodes(K, p=0, f=(np.sort(fv0), np.sort(fe0)))
+
+i = 1
+Vf_next = dict(sorted(zip(to_str(V), F[:,i]), key=index(1)))
+Ef_next = dict(sorted(zip(to_str(E), F[:,i][E].max(axis=1)), key=index(1)))
+
+tr_v = linear_homotopy(Vf, Vf_next, plot=False)
+tr_e = linear_homotopy(Ef, Ef_next, plot=False)
+
+linear_homotopy(Vf, Vf_next, plot=True)
+linear_homotopy(Ef, Ef_next, plot=True)
+
+## Double-check
+vn0 = list(Vf.keys())
+for i in tr_v: vn0 = swap(vn0, i)
+assert vn0 == list(Vf_next.keys())
+
+en0 = list(Ef.keys())
+for i in tr_e: en0 = swap(en0, i)
+assert en0 == list(Ef_next.keys())
+
+## Permute all the boundary matrices 
+for j in tr_v:
+  transpose_dgm(R0, V0, R1, V1, j)
+  permute_tr(D0, j, 'cols') 
+  permute_tr(D1, j, 'rows')
+  v_names[[j,j+1]] = v_names[[j+1,j]]
+  assert validate_decomp(D0, R0, V0, D1, R1, V1)
+assert all(v_names == np.array(list(dict(sorted(Vf_next.items(), key=lambda kv: kv[1])).keys())))
+
+for j in tr_e:
+  transpose_dgm(R1, V1, R2, V2, j)
+  permute_tr(D1, j, 'cols') 
+  permute_tr(D2, j, 'rows')
+  e_names[[j,j+1]] = e_names[[j+1,j]]
+  assert validate_decomp(D1, R1, V1, D2, R2, V2)
+assert all(e_names == np.array(list(dict(sorted(Ef_next.items(), key=lambda kv: kv[1])).keys())))
+
+## Final assertions
+assert validate_decomp(D0, R0, V0, D1, R1, V1)
+assert validate_decomp(D1, R1, V1, D2, R2, V2)
+
+## Collect the persistence diagrams
+v_names = np.array(list(dict(sorted(Vf_next.items(), key=lambda kv: kv[1])).keys()))
+e_names = np.array(list(dict(sorted(Ef_next.items(), key=lambda kv: kv[1])).keys()))
+fv_new = np.array(sorted(np.fromiter(Vf_next.values(), float)))
+fe_new = np.array(sorted(np.fromiter(Ef_next.values(), float)))
+P = persistence_pairs(R0, R1, f=(fv_new,fe_new), names=(v_names, e_names))
+
+fig, ax = plot_mesh2D(X, K['edges'], K['triangles'], labels=True)
+ax.set_xlim(-1, 1)
+ax.set_ylim(-1, 1)
 
 
 for i in range(F.shape[1]):

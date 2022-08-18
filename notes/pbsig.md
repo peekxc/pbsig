@@ -102,7 +102,8 @@ _Stable_ : $d_B(\mathrm{dgm}(f), \mathrm{dgm}(g)) \leq \lVert f - g \rVert_\inft
 - Persistent Homology (PH) is a well-established tool in the sciences<sup>[1,2]</sup>
   
 - PH has many attractive properties beyond homology:
-   
+  
+
 </div>
 
 1. _General_ : Persistence can be generalized _via rank functions_ <sup>[5,6]</sup>
@@ -112,7 +113,7 @@ _Stable_ : $d_B(\mathrm{dgm}(f), \mathrm{dgm}(g)) \leq \lVert f - g \rVert_\inft
 
 _Collections_ of $\mathrm{dgm}$'s <u>uniquely</u> characterize simplicial complexes in $\mathbb{R}^d$<sup>[7]</sup>
 
-$$ 
+$$
 \fbox{
   { \large $\mathrm{PH}$ is more then just a homology inference tool! }
 }
@@ -123,18 +124,19 @@ $$
 1. Wigner, Eugene P. "The unreasonable effectiveness of mathematics in the natural sciences." Mathematics and Science. 1990. 291-306.
 
 2. Turkeš, Renata, Guido Montúfar, and Nina Otter. "On the effectiveness of persistent homology." arXiv preprint arXiv:2206.10551 (2022). 
-   
+  
 3. Cohen-Steiner, David, Herbert Edelsbrunner, and John Harer. "Stability of persistence diagrams." Discrete & computational geometry 37.1 (2007): 103-120.
-   
+  
 4. Solomon, Elchanan, Alexander Wagner, and Paul Bendich. "From geometry to topology: Inverse theorems for distributed persistence." arXiv preprint arXiv:2101.12288 (2021).
   
 5. Zomorodian, Afra, and Gunnar Carlsson. "Computing persistent homology." Discrete & Computational Geometry 33.2 (2005): 249-274.
 
 6. Bergomi, Mattia G., and Pietro Vertechi. "Rank-based persistence." arXiv preprint arXiv:1905.09151 (2019).
-   
+  
 7. Turner, Katharine, Sayan Mukherjee, and Doug M. Boyer. "Persistent homology transform for modeling shapes and surfaces." Information and Inference: A Journal of the IMA 3.4 (2014): 310-344.
- 
+
    
+
 </footer> 
 
 ---
@@ -172,7 +174,8 @@ _Simple algorithm_ $\neq$ _simple implementation_
 5. De Silva, Vin, Dmitriy Morozov, and Mikael Vejdemo-Johansson. "Dualities in persistent (co) homology." Inverse Problems 27.12 (2011): 124003.
 
 6. See PHAT's source: https://github.com/blazs/phat/blob/master/include/phat/representations/bit_tree_pivot_column.h
-   
+  
+
 </footer>
 
 ---
@@ -312,7 +315,7 @@ All computations here will be with _finite simplicial complexes_
 
 </span>
 
---- 
+---
 
 # Background: Boundaries 
 
@@ -418,7 +421,7 @@ A _filtration_ $K_\bullet$ is a family $\{ \, K_i \, \}_{i\in I}$  indexed over 
 *Essential* 
 
 *Simplexwise*
-   
+
 </div>
 
 <div class="col-span-1">
@@ -461,7 +464,7 @@ Note here that $I$ may be $\mathbb{R}_+$ or $[m] = \{\, 1, 2, \dots, m\, \}$, de
 
 <!-- _footer: Bauer, Ulrich. "Ripser: efficient computation of Vietoris–Rips persistence barcodes." Journal of Applied and Computational Topology 5.3 (2021): 391-423. -->
 
---- 
+---
 
 # Background: Persistent Homology 
 
@@ -595,7 +598,7 @@ Both $(1)$ are $(2)$ easy to obtain. Computing $(3)$ is more subtle:
 &nbsp;&nbsp; Anderson-Duffin formula<sup>[2]</sup>
 
 <!-- &nbsp;&nbsp; Von-Neumann's theorem<sup>[3]</sup> -->
-   
+
 </div>
 
 <div class="col-span-1">
@@ -613,7 +616,7 @@ $\implies$
 <div class="grid justify-items-start float-left col-span-5 ">
 
 &nbsp;  $\sum_{k=1}^j \textbf{1}(\mathrm{low}_{R_{p+1}}[k] \leq i)$
-   
+
 &nbsp; ( see Zomorodian & Carlsson [1] )
 
 &nbsp; $P_{\mathbf{Z} \cap \mathbf{B}} = 2 P_{\mathbf{Z}}(P_{\mathbf{Z}} + P_{\mathbf{B}})^\dagger P_{\mathbf{B}}$
@@ -635,13 +638,13 @@ _All of these rely on <u>explicit reductions</u> or <u>expensive projectors</u>.
 <footer class="fixed float-bottom bottom-0 whitespace-nowrap" style="font-size: 0.60rem; line-height: 0.65rem;"> 
 
 1. Zomorodian, Afra, and Gunnar Carlsson. "Computing persistent homology." Discrete & Computational Geometry 33.2 (2005): 249-274. 
-   
+  
 2. Ben-Israel, A., and A. Charnes. "On the intersections of cones and subspaces." Bulletin of the American Mathematical Society 74.3 (1968): 541-544.
-   
+  
 3. Neumann, J. Von. "Functional Operators, Vol. II. The Geometry of Orthogonal Spaces. Annals of Math." Studies Nr. 22 Princeton Univ. Press (1950).
   
 4. Mémoli, Facundo, Zhengchao Wan, and Yusu Wang. "Persistent Laplacians: Properties, algorithms and implications." SIAM Journal on Mathematics of Data Science 4.2 (2022): 858-884.
-   
+  
 
 </footer>
 
@@ -682,11 +685,11 @@ This was _the_ motivating exploit in the first output-sensitive PH algorithm<sup
 1. Chen, Chao, and Michael Kerber. "An output-sensitive algorithm for persistent homology." Computational Geometry 46.4 (2013): 435-447.
 
 2. Dey, Tamal Krishna, and Yusu Wang. Computational topology for data analysis. Cambridge University Press, 2022.
-   
+  
 
 </footer>
 
---- 
+---
 
 # A clever trick
 
@@ -725,7 +728,7 @@ $$\hat{\partial}_p[i,j] = \pm (S_{\epsilon_j} \circ f )(\sigma_j) \quad \text{if
 
 Advantage: If $f$ varies continuous one-parameter family, $\hat{\partial}_p$ also varies continuously 
 
---- 
+---
 
 # A generic approximation of rank
 
@@ -735,7 +738,7 @@ $$ \Phi_\epsilon(A) = \sum\limits_{i}^{n} \frac{\sigma_i^2}{\sigma_i^2 + \epsilo
 
 Observe $\Phi_\epsilon(A) \leq \mathrm{rank}(A)$, with equality when $\epsilon = 0$
 
---- 
+---
 
 In summary: 
 
@@ -747,7 +750,6 @@ $$ \fbox{
   $\large \hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
 }
 $$
-
 Interpretation: spectrum of $\hat{\partial}_p^{\ast}$ encodes geometric information from $f$
 
 
@@ -766,7 +768,7 @@ Observe that $\hat{\beta}_p^{i,j}(t) \in \mathbb{R}$ varies _continuously_ with 
 
 # Basic properties of $\hat{\beta}_p^{i,j}$
 <!-- We now show some properties of relaxing $\beta_p^{i,j} \mapsto \hat{\beta}_p^{i,j}$
-$$ 
+$$
 \fbox{$\hat{\beta}_p^{i,j} = \Phi_\epsilon(\mathrm{I}_p^i) - \Phi_\epsilon(\hat{\partial}_{p}^{i,i}) - \Phi_\epsilon(\hat{\partial}_{p+1}^{j,j}) + \Phi_\epsilon(\hat{\partial}_{p+1}^{\overline{i},j})$
 }
 $$ -->
@@ -777,7 +779,7 @@ Observe $\Phi_\epsilon(A) = \sum_{i=1}^n \sigma_i^2 / (\sigma_i^2 + \epsilon) \l
    2. There $\exists$ an $\epsilon^\ast > 0$ such that $\lceil \hat{\beta}_p^{i,j} \rceil = \beta_p^{i,j}$ for all $\epsilon \in (0, \epsilon^\ast]$ 
 
 $\hat{\beta}_p^{i,j}$ respects several of $\beta_p^{i,j}$ monotonicity properties <i style="color: orange;">approximately</i>
- 
+
 <div class="grid grid-cols-12 gap-0 pt-2">
 
 <div class="grid justify-items-end float-right col-span-4">
@@ -785,7 +787,7 @@ $\hat{\beta}_p^{i,j}$ respects several of $\beta_p^{i,j}$ monotonicity propertie
 $\forall \; i < k, \,  \beta_p^{i,j} \leq \beta_p^{k,j} \implies$
 
 $\forall \; j < l, \, \beta_p^{i,j} \geq \beta_p^{i,l} \implies$
-   
+
 </div>
 
 <div class="grid justify-items-start float-left col-span-4 ">
@@ -805,10 +807,10 @@ $\hat{\beta}_p^{i,j} + \delta_\epsilon(l - j) \leq \hat{\beta}_p^{i,l}$
 </div>
 
 </div>
- 
+
 $\hat{\beta}_p^{i,j}$ also satisfies and $\epsilon$-approximate version of _jump monotonicity_<sup>[1]</sup>
 
---- 
+---
 
 # Persistence measures
 
@@ -890,12 +892,12 @@ $$\big\lceil \Delta_p^{q}/\Delta_p^{m_p} \big\rceil \geq (1 - \delta)$$
 
 </footer>
 
---- 
+---
 # The Persistent Homology Transform 
 
 The _PHT_ characterizes the set of embeddeable s.c.'s in $\mathbb{R}^d$ via a collection of $\mathrm{dgm}$'s
 
-$$ 
+$$
 \begin{aligned}
 \operatorname{PHT}(M): S^{d-1} & \rightarrow \mathcal{D}^{d} \\
 v & \mapsto\left(X_{0}(M, v), X_{1}(M, v), \ldots, X_{d-1}(M, v)\right)
@@ -916,7 +918,7 @@ The injectivity PHT theory allows for comparison of <i style="color: orange;">no
 
 </footer>
 
---- 
+---
 
 # Applications: Leveraging PHT
 
@@ -1026,7 +1028,7 @@ When $A, B \in \mathcal{M}_{(n \times n)}(\mathbb{R})$,  the _rank function_ has
 *orthogonal invariance*
 
 *permutation invariance*
-   
+
 </div>
 
 <div class="col-span-1">
@@ -1064,3 +1066,4 @@ Let's see if we can apply some of these.
 
 ---
 
+ 

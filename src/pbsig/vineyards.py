@@ -1,7 +1,9 @@
 import numpy as np
 import scipy.sparse as ss
+import copy
 from scipy.sparse import *
 from typing import * 
+from array import array 
 
 from .persistence import * 
 
@@ -197,17 +199,17 @@ def schedule_transpositions(p: ArrayLike, transpositions: ArrayLike):
   assert all(p_inv == np.fromiter(range(n), dtype=int))
   return(rtransp)
 
-def merge_sort(A):
+def _merge_sort(A: MutableSequence) -> Tuple[MutableSequence, int]:
   if len(A) <= 1:
-      return A, 0    
+    return A, 0    
   else:
-      middle = (len(A)//2)
-      left, count_left = merge_sort(A[:middle])
-      right, count_right = merge_sort(A[middle:])
-      result, count_result = merge(left,right)
-      return result, (count_left + count_right + count_result)
+    middle = (len(A) // 2)
+    left, count_left = _merge_sort(A[:middle])
+    right, count_right = _merge_sort(A[middle:])
+    result, count_result = _merge(left,right)
+    return result, (count_left + count_right + count_result)
 
-def merge(a,b):
+def _merge(a: MutableSequence, b: MutableSequence) -> Tuple[MutableSequence, int]:
   result = []
   count = 0
   while len(a) > 0 and len(b) > 0:
@@ -218,52 +220,118 @@ def merge(a,b):
       result.append(b[0])
       b.remove(b[0])
       count += len(a)
-  if len(a) == 0:
-    result = result + b
-  else:
-    result = result + a
+  result = result + b if len(a) == 0 else result + a
   return result, count
 
-# From: https://jamesmccaffrey.wordpress.com/2021/11/22/the-kendall-tau-distance-for-permutations-example-python-code/
-def inversion_dist(a,b):
-  assert all(np.unique(a) == np.fromiter(range(len(a)), int))
-  # from scipy.stats import kendalltau
-  # # w = kendalltau(np.array(a),np.array(b)).correlation*(len(a)*(len(a)-1))/2
-  # # return(int(np.ceil(w/2)))
-  # w = 1.0 - (kendalltau(np.array(a),np.array(b)).correlation + 1.0)/2
-  # w *= (len(a)*(len(a)-1))/2
-  # return(int(np.ceil(w/2)))
-  # p1, p2 are 0-based lists or np.arrays permutations
-  n = len(a)
-  index_of = [None] * n  # lookup into p2
-  for i in range(n):
-    v = b[i]; index_of[v] = i
+def inversion_dist(a: MutableSequence, b: Optional[MutableSequence] = None, method: str = ["merge_sort", "pairwise"]):
+  ## First convert to 0-index integer arrays
+  a = list(np.argsort(np.argsort(a)))
+  b = list(np.argsort(np.argsort(b))) if b is not None else None
 
-  d = 0  # raw distance = number pair mis-orderings
-  for i in range(n):  # scan thru p1
-    for j in range(i+1, n):
-      if index_of[a[i]] > index_of[a[j]]: 
-        d += 1
-  normer = n * (n - 1) / 2.0  # total num pairs 
-  nd = d / normer  # normalized distance
-  return int(np.ceil(d))
+  if b is not None and method == "merge_sort" or method == ["merge_sort", "pairwise"]: 
+    assert all(np.unique(a) == np.unique(b))  
+    b_map = { sb : i for i, sb in enumerate(b) }
+    a = [b_map[sa] for sa in a]
+    sa, d = _merge_sort(a)
+  elif b is not None and method == "pairwise": 
+    assert all(np.unique(a) == np.unique(b))
+    IB = np.argsort(b)
+    d = sum([IB[a[i]] > IB[a[j]] for i,j in combinations(range(len(a)), 2)])
+  elif b is None: 
+    sa, d = _merge_sort(a)
+  else: 
+    raise ValueError("unknown input")
+  return(d)
 
+def is_discordant(pairs: Iterable, p: Sequence, q: Sequence):
+  p_inv, q_inv = np.argsort(p), np.argsort(q)
+  c1 = lambda a,b: (p_inv[a] == q_inv[a]) and (p_inv[b] == q_inv[b])
+  c2 = lambda a,b: np.sign(p_inv[a] - p_inv[b]) == -np.sign(q_inv[a] - q_inv[b])
+  return([c2(a,b) and not(c1(a,b)) for a,b in pairs])
 
-# def inversions(a,b):
-#   assert all(np.unique(a) == np.fromiter(range(len(a)), int))
-#   n = len(a)
-#   index_of = [None] * n  # lookup into p2
-#   for i in range(n):
-#     v = b[i]; index_of[v] = i
+def pair_is_discordant(a: int, b: int, p: Sequence, q: Sequence) -> bool:
+  ap, bp = p.index(a), p.index(b)
+  aq, bq = q.index(a), q.index(b)
+  return(False if ap == aq and bp == bq else np.sign(ap - bp) == -np.sign(aq - bq))
 
-#   inv = []
-#   for i in range(n):  # scan thru p1
-#     for j in range(i+1, n):
-#       if index_of[a[i]] > index_of[a[j]]: 
-#         inv.append([a[i], a[j]])
+def plot_linear_homotopy(F0: Dict, F1: Dict):
+  assert F0.keys() == F1.keys(), "Invalid dictionaries"
+  import matplotlib.pyplot as plt
+  n = len(F0)
+  f0 = np.fromiter(F0.values(), dtype=float)
+  f1 = np.fromiter(F1.values(), dtype=float)
+  fig = plt.figure(figsize=(8,4), dpi=320)
+  ax = fig.gca()
+  ax.set_xlim(-0.1, 1.1)
+  ax.set_ylim(min([min(f0), min(f1)]), max([max(f0), max(f1)]))
+  ax.scatter(np.repeat(0, n), f0, s=3.5)
+  ax.scatter(np.repeat(1, n), f1, s=3.5)
+  all((ax.text(-0.025, y, s=c, ha='center', va='center') for c, y in F0.items()))
+  all((ax.text(1.025, y, s=c, ha='center', va='center') for c, y in F1.items()))
+  for i in F0.keys():
+    pp, qq = (0, F0[i]), (1, F1[i])
+    ax.plot(*np.vstack((pp, qq)).T, c='blue', linewidth=0.5)
 
-#   return inv
+def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interval: Tuple = (0, 1), plot: bool = False):
+  """
+  Decomposes a linear homotopy h: R x [0,1] -> R between two sequences 'f' and 'g' into an ordered set of adjacent transpositions. 
+  
+  That is, given two real-valued sequences 'f' and 'g' of equal size, this function first construct 'h' such that:
 
+  h(i,t) = (1-t)*f[i] + t*g[i], for t in 'interval'
+
+  then, by varying all values of 't' in the given interval, adjacent transposition are found as 'crossings' in the homotopy.  
+  These crossings are ordered and reported, such that 'f' is _sorted_ into 'g'.
+  """
+  pairwise = lambda C: zip(C, C[1:])
+  if isinstance(f, np.ndarray) and isinstance(g, np.ndarray):
+    assert len(f) == len(g), "Invalid inputs; should be equal size"
+    f = { c : f for c, f in enumerate(f) }
+    g = { c : f for c, f in enumerate(g) }
+  elif isinstance(f, Dict) and isinstance(g, Dict):
+    assert f.keys() == g.keys(), "f and g should have the same key-sets"
+  else: 
+    raise ValueError("Unknown input detected")
+  
+  ## Sort the map to line up the filtration values
+  F0 = dict(sorted(f.items(), key=lambda kv: kv[1]))
+  F1 = dict(sorted(g.items(), key=lambda kv: kv[1]))
+  
+  ## Create permutations representing the symbols of each filtration value
+  n = len(f)
+  p, q = list(F0.keys()), list(F1.keys())
+  f0 = np.fromiter(F0.values(), dtype=float)
+  f1 = np.fromiter(F1.values(), dtype=float)
+  assert is_sorted(f0) and is_sorted(f1)
+  
+  ## Usually for debugging
+  if plot: plot_linear_homotopy(F0, F1)
+
+  ## Compute the adjacent transpositions in a valid order following a linear homotopy
+  s, e = interval
+  tr = array('I')
+  eps = 10*np.finfo(float).resolution
+  while p != q:
+    cross_f = np.zeros(n-1) ## how early does a pair cross
+    # tau_dist = inversion_dist(p, q)
+    for i, (sa, sb) in enumerate(pairwise(p)):
+      # pair_dc = pair_is_discordant(sa,sb,p,q)
+      if pair_is_discordant(sa,sb,p,q): # and inversion_dist(swap(p, i),q) < tau_dist: # discordant pair
+        int_pt = intersection(line((s, F0[sa]), (e, F1[sa])), line((s, F0[sb]), (e, F1[sb])))
+        assert int_pt[0] >= (s-eps) and int_pt[0] <= (e+eps)
+        cross_f[i] = int_pt[0]
+      else: 
+        cross_f[i] = np.inf
+    assert not(all(cross_f == np.inf))
+    ci = np.argmin(cross_f)
+    if ci != np.inf:
+      tr.append(ci)
+      # tr_s.append((p[ci], p[ci+1]))
+    else: 
+      raise ValueError("invalid transposition case sencountered")
+    p = swap(p, ci)
+  assert p == q, "Failed to sort permutations"
+  return(np.asarray(tr, dtype=int))
 
 def inversions(elements):
   A = np.fromiter(iter(elements), dtype=np.int32)
@@ -279,24 +347,6 @@ def inversions(elements):
       break
   return(inv)
 
-
-def schedule(f0: ArrayLike, f1: ArrayLike):
-  if not(all(np.argsort(f0) == np.argsort(f1))):
-    F0 = dict(zip(range(len(f0)), f0))
-    F1 = dict(zip(range(len(f1)), f1))
-    a = np.fromiter(dict(sorted(F0.items(), key=lambda kv: (kv[1], kv[0]))).keys(), int)
-    b = np.fromiter(dict(sorted(F1.items(), key=lambda kv: (kv[1], kv[0]))).keys(), int)
-
-    ## New method: just use bubble sort and forget about forming the homotopy
-    b_to_id = dict(zip(b, range(len(b)))) # mapp symbols in b to identity 
-    p = np.array([b_to_id[s] for s in a])
-    r_tr = schedule_transpositions(p, np.array(inversions(p))) # relative transpositions
-    assert (r_tr.shape[0] == inversion_dist(a,b))
-    return(r_tr)
-  else:
-    return(np.zeros((0, 2)))
-
-
 def line(p1, p2):
   A, B, C = (p1[1] - p2[1]), (p2[0] - p1[0]), (p1[0]*p2[1] - p2[0]*p1[1]) 
   return A, B, -C
@@ -311,13 +361,69 @@ def intersection(L1, L2):
     return x,y
   else:
     return False
-    
+
 ## Swaps elements at positions [i,i+1]. Returns a new array
 def swap(p, i):
   assert i < (len(p)-1)
-  pp = p.copy()
-  pp[[i,i+1]] = pp[[i+1,i]]
+  pp = copy.deepcopy(p)
+  pp[i], pp[i+1] = pp[i+1], pp[i]
   return(pp)
 
 # def schedule_inversion():
 #   inversions(a,b)
+
+# From: https://jamesmccaffrey.wordpress.com/2021/11/22/the-kendall-tau-distance-for-permutations-example-python-code/
+# def inversion_dist(a,b):
+#   assert all(np.unique(a) == np.fromiter(range(len(a)), int))
+#   # from scipy.stats import kendalltau
+#   # # w = kendalltau(np.array(a),np.array(b)).correlation*(len(a)*(len(a)-1))/2
+#   # # return(int(np.ceil(w/2)))
+#   # w = 1.0 - (kendalltau(np.array(a),np.array(b)).correlation + 1.0)/2
+#   # w *= (len(a)*(len(a)-1))/2
+#   # return(int(np.ceil(w/2)))
+#   # p1, p2 are 0-based lists or np.arrays permutations
+#   n = len(a)
+#   index_of = [None] * n  # lookup into p2
+#   for i in range(n):
+#     v = b[i]; index_of[v] = i
+
+#   d = 0  # raw distance = number pair mis-orderings
+#   for i in range(n):  # scan thru p1
+#     for j in range(i+1, n):
+#       if index_of[a[i]] > index_of[a[j]]: 
+#         d += 1
+#   normer = n * (n - 1) / 2.0  # total num pairs 
+#   nd = d / normer  # normalized distance
+#   return int(np.ceil(d))
+# normer = n * (n - 1) / 2.0  # total num pairs 
+# nd = d / normer  # normalized distance
+# return int(np.ceil(d))
+# def inversions(a,b):
+#   assert all(np.unique(a) == np.fromiter(range(len(a)), int))
+#   n = len(a)
+#   index_of = [None] * n  # lookup into p2
+#   for i in range(n):
+#     v = b[i]; index_of[v] = i
+
+#   inv = []
+#   for i in range(n):  # scan thru p1
+#     for j in range(i+1, n):
+#       if index_of[a[i]] > index_of[a[j]]: 
+#         inv.append([a[i], a[j]])
+
+#   return inv
+# def schedule(f0: ArrayLike, f1: ArrayLike):
+#   if not(all(np.argsort(f0) == np.argsort(f1))):
+#     F0 = dict(zip(range(len(f0)), f0))
+#     F1 = dict(zip(range(len(f1)), f1))
+#     a = np.fromiter(dict(sorted(F0.items(), key=lambda kv: (kv[1], kv[0]))).keys(), int)
+#     b = np.fromiter(dict(sorted(F1.items(), key=lambda kv: (kv[1], kv[0]))).keys(), int)
+
+#     ## New method: just use bubble sort and forget about forming the homotopy
+#     b_to_id = dict(zip(b, range(len(b)))) # mapp symbols in b to identity 
+#     p = np.array([b_to_id[s] for s in a])
+#     r_tr = schedule_transpositions(p, np.array(inversions(p))) # relative transpositions
+#     assert (r_tr.shape[0] == inversion_dist(a,b))
+#     return(r_tr)
+#   else:
+#     return(np.zeros((0, 2)))

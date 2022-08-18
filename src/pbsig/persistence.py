@@ -558,6 +558,7 @@ def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_o
   ax.set_aspect('equal')
 
 
+# TODO: Remove names, include in f. That is, f is either a tuple of ArrayLike's or a tuple of Dict's 
 def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, collapse: bool = True, names: Tuple = None):
   assert is_reduced(R1), "Passed in matrix is not in reduced form"
   births_index = np.flatnonzero(low_entry(R1) == -1)
