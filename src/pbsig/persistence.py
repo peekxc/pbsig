@@ -793,7 +793,7 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
 
   
   filtration = d.Filtration()
-  for vertices, time in F: filtration.append(d.Simplex(vertices, time))
+  for v_ind, time in F: filtration.append(d.Simplex(v_ind, time))
   filtration.sort()
   m = d.homology_persistence(filtration)
   dgms = d.init_diagrams(m, filtration)

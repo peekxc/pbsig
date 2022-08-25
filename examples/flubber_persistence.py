@@ -9,43 +9,73 @@ from svgpathtools import svg2paths
 
 complex2points = lambda x: np.c_[np.real(x), np.imag(x)]
 
-P = np.array(list((i,j) for i,j in product(range(3), range(3))))
-
-
-pyflubber.interpolate()
-
-
-
-
 fish1 = Image.open("/Users/mpiekenbrock/Downloads/fish1.png")
 fish2 = Image.open("/Users/mpiekenbrock/Downloads/fish2.png")
 
 fish1_outline = fish1.filter(ImageFilter.FIND_EDGES)
 
-
-
-
-
 folder = "/Users/mpiekenbrock/Downloads/"
 SVGs = ["shark.svg", "fish1.svg"]
 
+
+from typing import * 
+from numpy.typing import ArrayLike
+
+def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox", "hull"], V: Optional[ArrayLike] = None):
+  """
+  Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
+  """
+  n, d = X.shape[0], X.shape[1]
+  if V is not None: method = "directions"
+  if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
+    return(X.mean(axis=0))
+  elif method == "hull":
+    from scipy.spatial import ConvexHull
+    return(X[ConvexHull(X).vertices,:].mean(axis=0))
+  elif method == "directions":
+    assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
+    old_center = X.mean(axis=0)
+    cost = [np.inf] 
+    while sum(cost) > 1e-12:
+      Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
+      U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
+      X = X - U.mean(axis=0)
+      cost = np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)
+    return(old_center - X.mean(axis=0))
+  elif method == "bbox":
+    min_x, max_x = X.min(axis=0), X.max(axis=0)
+    return((min_x + (max_x-min_x)/2))
+  else: 
+    raise ValueError("Invalid method supplied")
+
+
+from pbsig import uniform_S1
+V_dir = np.array(list(uniform_S1(10)))
 SVG_pts = []
 for svg in SVGs: 
   paths, attributes = svg2paths(folder + svg)
   C = offset_curve(paths[0], 0.01, steps = 3)
   P = complex2points([c.start for c in C])
+  u = shape_center(P, method="directions", V=V_dir)
+  P = P - u 
+  L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
+  P = (1/L)*P
   SVG_pts.append(P)
 
-plt.plot(*SVG_pts[0].T)
+for S in SVG_pts:
+  plt.plot(*S.T)
+plt.gca().set_xlim(-0.5,0.5)
+plt.gca().set_ylim(-0.5,0.5)
+plt.gca().set_aspect('equal')
 
 from easing_functions import *
-E = ExponentialEaseOut(start=0, end=1.0, duration=1.0)
-F = pyflubber.interpolator(SVG_pts[0], SVG_pts[1])
-T = np.linspace(0, 1, 4*8, endpoint=True)
+Ease = ExponentialEaseOut(start=0, end=1.0, duration=1.0)
+F_interp = pyflubber.interpolator(SVG_pts[0], SVG_pts[1])
+time = np.linspace(0, 1, 4*8, endpoint=True)
 
 fig, axs = plt.subplots(4, 8, figsize=(12,4))
-for t, (i, j) in zip(T, product(range(4), range(8))):
-  Pt = F(E(t))
+for t, (i, j) in zip(time, product(range(4), range(8))):
+  Pt = F_interp(Ease(t))
   axs[i,j].plot(*Pt.T)
   axs[i,j].axis('off')
 
@@ -82,7 +112,7 @@ dgms0 = [lower_star_ph_dionysus(fv, E, [])[0] for fv in rotate_S1(Pt, n=100, inc
 ## Filtration values
 F = [fv for fv in rotate_S1(Pt, n=100, include_direction=False)]
 
-import ot as ot
+import ot
 from gudhi.wasserstein import wasserstein_distance
 
 from pbsig import plot_dgm
@@ -108,10 +138,20 @@ for i,j in wm:
 
 ## time / lifetime plot
 X = [abs(dgm[:,1]-dgm[:,0]) for dgm in dgms0]
-for i, t in enumerate(T):
+for i, t in enumerate(time):
   xi = list(filter(lambda x: x != np.inf, X[i]))
   plt.scatter(np.repeat(t, len(xi)), xi, s=0.45)
 plt.gca().set_ylim(-1, 25)
+
+
+## TODO: 
+## 1. make a signature set of vines for each shape
+## 2. Compute minimum integrated wasserstein distance controlling for rotation 
+## 3. Fprm a distance matrix of the IWD for each pair of outlines 
+
+## (1) Form a signature set of vines for each shape
+linear_homotopy()
+
 
 
 
