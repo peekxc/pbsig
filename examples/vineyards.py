@@ -69,7 +69,7 @@ assert validate_decomp(D1, R1, V1, D2, R2, V2)
 
 v_names = np.array(list(Vf.keys()))
 e_names = np.array(list(Ef.keys()))
-P = persistence_pairs(R0, R1, f=(fv0[vi], fe0[ei]), names=(v_names, e_names))
+P = persistence_pairs(R0, R1, f=(Vf, Ef))
 
 S1_V = np.hstack([v for (f,v) in rotate_S1(X, n=8)])
 

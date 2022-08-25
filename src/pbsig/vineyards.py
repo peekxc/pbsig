@@ -282,6 +282,17 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
 
   then, by varying all values of 't' in the given interval, adjacent transposition are found as 'crossings' in the homotopy.  
   These crossings are ordered and reported, such that 'f' is _sorted_ into 'g'.
+
+  Parameters: 
+    f := simplex function values, given as numpy array or dict[Any, float], starting at interval[0]
+    g := simplex function values, given as numpy array or dict[Any, float], ending at interval[1]
+    interval := the interval to simulate the homotopy across. Defaults to [0,1].
+    plot := whether to plot the the homotopy. Useful for debugging/visualizing small cases. 
+
+  Returns: 
+    tr := array of integers (a, b, ...) giving the adjacent transposition (a, a+1), (b, b+1), ... which sort f -> g
+
+  If f,g are arrays, then the homotopy occurs between (f[i], g[i]) for all i. Otherwise the key of f are matched with those of g.  
   """
   pairwise = lambda C: zip(C, C[1:])
   if isinstance(f, np.ndarray) and isinstance(g, np.ndarray):
@@ -291,7 +302,7 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
   elif isinstance(f, Dict) and isinstance(g, Dict):
     assert f.keys() == g.keys(), "f and g should have the same key-sets"
   else: 
-    raise ValueError("Unknown input detected")
+    raise ValueError("Unknown input for f,g detected")
   
   ## Sort the map to line up the filtration values
   F0 = dict(sorted(f.items(), key=lambda kv: kv[1]))
@@ -328,7 +339,7 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
       tr.append(ci)
       # tr_s.append((p[ci], p[ci+1]))
     else: 
-      raise ValueError("invalid transposition case sencountered")
+      raise ValueError("invalid transposition case encountered")
     p = swap(p, ci)
   assert p == q, "Failed to sort permutations"
   return(np.asarray(tr, dtype=int))

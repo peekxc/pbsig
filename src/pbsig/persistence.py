@@ -559,40 +559,44 @@ def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_o
 
 
 # TODO: Remove names, include in f. That is, f is either a tuple of ArrayLike's or a tuple of Dict's 
-def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, collapse: bool = True, names: Tuple = None):
+def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Sequence[Union[ArrayLike, Dict]] = None, collapse: bool = True):
   assert is_reduced(R1), "Passed in matrix is not in reduced form"
   births_index = np.flatnonzero(low_entry(R1) == -1)
   deaths_index = low_entry(R2)
   
+  ## Handle f, deduce simplex names, etc
+  if f is None: 
+    f = (np.array(range(R1.shape[1])), np.array(range(R2.shape[1])))
+  assert len(f) == 2, "f must be tuple of function values"
+  if isinstance(f[0], dict) and isinstance(f[1], dict):
+    ew, tw = np.array(list(f[0].values())), np.array(list(f[1].values()))
+    b_names, d_names = np.array(list(f[0].keys())), np.array(list(f[1].keys()))
+    names = True
+  else: 
+    assert isinstance(f[0], np.ndarray) and isinstance(f[1], np.ndarray)
+    ew, tw = f
+    names = False
+
   ## Handle non-essential pairs 
-  ew, tw = f if not(f is None) else (np.array(range(R1.shape[1])), np.array(range(R2.shape[1])))
   b_ind = deaths_index[deaths_index != -1]
   d_ind = np.flatnonzero(deaths_index != -1)
   births, deaths = ew[b_ind], tw[d_ind]
-  # if not(f is None):
-  #   assert all(births <= deaths), "Invalid persistence pairs detected: not all births <= deaths"
   dgm = np.c_[births, deaths]
   
-  ## Retrieve birth/death names
-  if not(names is None):
-    b_names, d_names = names
-    b_names, d_names = np.array(b_names), np.array(d_names)
-    assert len(ew) == len(b_names) and len(tw) == len(d_names)
-    s_names = np.c_[b_names[b_ind], d_names[d_ind]]
+  ## Retrieve birth/death names, if names given
+  if names: s_names = np.c_[b_names[b_ind], d_names[d_ind]]
 
   ## Handle essential pairs 
   essential_ind = np.setdiff1d(births_index, deaths_index[deaths_index != -1])
   dgm = np.vstack((dgm, np.c_[ew[essential_ind], np.repeat(np.inf, len(essential_ind))]))
-  if not(names is None):
-    s_names = np.vstack((s_names, np.c_[b_names[essential_ind], np.repeat('inf', len(essential_ind))]))
+  if names: s_names = np.vstack((s_names, np.c_[b_names[essential_ind], np.repeat(type(b_names[0])(), len(essential_ind))]))
 
-  ## Sort birth birth/death
+  ## Sort birth birth/death pairs + names for reproducibility
   lex_ind = np.lexsort(np.rot90(dgm))
   dgm = dgm[lex_ind,:]
-  if not(names is None):
-    s_names = s_names[lex_ind,:]
+  if names: s_names = s_names[lex_ind,:]
 
-  ## collapse zero-persistence pairs if required
+  ## Collapse zero-persistence pairs if required
   if collapse: 
     pos_pers = abs(dgm[:,1] - dgm[:,0]) >= 10*np.finfo(float).eps
     valid_ind = np.logical_or(dgm[:,1] == np.inf, pos_pers)
@@ -600,8 +604,7 @@ def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Tuple = None, coll
     valid_ind = np.fromiter(range(dgm.shape[0]), dtype=int)
   
   ## Tack on names if requested
-  if not(names is None):
-    # dgm = np.hstack((s_names, dgm))
+  if names:
     return({ 'creators' : s_names[valid_ind,0], 'destroyers': s_names[valid_ind,1], 'dgm': dgm[valid_ind,:] })
   else: 
     return(dgm[valid_ind,:])
@@ -800,3 +803,16 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
   DGM0 = np.array([[pt.birth, pt.death] for pt in dgms[0]])
   DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
   return([DGM0, DGM1])
+
+
+def ph(K: Dict):
+  """
+  Returns the 
+  """
+  D0, D1 = boundary_matrix(K, p=(0,1))
+  R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+  Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+  Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+
+  D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
+  D1, D2 = D1.tolil(), D2.tolil()

@@ -34,14 +34,19 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
     return(X[ConvexHull(X).vertices,:].mean(axis=0))
   elif method == "directions":
     assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
-    old_center = X.mean(axis=0)
-    cost = [np.inf] 
-    while sum(cost) > 1e-12:
+    original_center = X.mean(axis=0)
+    cost: float = np.inf
+    while cost > 1e-12:
       Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
       U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
-      X = X - U.mean(axis=0)
-      cost = np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)
-    return(old_center - X.mean(axis=0))
+      center_diff = U.mean(axis=0)
+      X = X - center_diff
+      cost = min([
+        np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
+        np.linalg.norm(center_diff)
+      ])
+      #print(cost)
+    return(original_center - X.mean(axis=0))
   elif method == "bbox":
     min_x, max_x = X.min(axis=0), X.max(axis=0)
     return((min_x + (max_x-min_x)/2))
@@ -54,7 +59,8 @@ V_dir = np.array(list(uniform_S1(10)))
 SVG_pts = []
 for svg in SVGs: 
   paths, attributes = svg2paths(folder + svg)
-  C = offset_curve(paths[0], 0.01, steps = 3)
+  #C = offset_curve(paths[0], 0.01, steps = 3)
+  C = PL_path(paths[0], k=16)
   P = complex2points([c.start for c in C])
   u = shape_center(P, method="directions", V=V_dir)
   P = P - u 
@@ -70,7 +76,7 @@ plt.gca().set_aspect('equal')
 
 from easing_functions import *
 Ease = ExponentialEaseOut(start=0, end=1.0, duration=1.0)
-F_interp = pyflubber.interpolator(SVG_pts[0], SVG_pts[1])
+F_interp = pyflubber.interpolator(SVG_pts[0], SVG_pts[1], closed=False)
 time = np.linspace(0, 1, 4*8, endpoint=True)
 
 fig, axs = plt.subplots(4, 8, figsize=(12,4))
@@ -79,12 +85,30 @@ for t, (i, j) in zip(time, product(range(4), range(8))):
   axs[i,j].plot(*Pt.T)
   axs[i,j].axis('off')
 
+def PL_path(path, k: int): 
+  arc_lengths = np.array([seg.length() for seg in path])
+  A = np.cumsum(arc_lengths)
+  p_cc = np.linspace(0, max(A), k)
+  idx = np.digitize(p_cc, A+np.sqrt(np.finfo(float).resolution))
+  L_points = []
+  for i, pp in zip(idx, p_cc):
+    t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
+    L_points.append(path[i].point(t))
+  connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
+  if path.isclosed():
+    #connect_the_dots.append(Line(L_points[-1], L_points[0]))
+    connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
+  new_path = Path(*connect_the_dots)
+  return(new_path)
+
+# new_path = PL_path(paths[0], 16)
+# disvg(new_path)
 
 from svgpathtools import parse_path, Line, Path, wsvg
 def offset_curve(path, offset_distance, steps=1000):
-  """Takes in a Path object, `path`, and a distance,
-  `offset_distance`, and outputs an piecewise-linear approximation 
-  of the 'parallel' offset curve."""
+  """
+  Takes in a Path object, `path`, and a distance, `offset_distance`, and outputs an piecewise-linear approximation of the 'parallel' offset curve.
+  """
   nls = []
   for seg in path:
     ct = 1
@@ -147,10 +171,41 @@ plt.gca().set_ylim(-1, 25)
 ## TODO: 
 ## 1. make a signature set of vines for each shape
 ## 2. Compute minimum integrated wasserstein distance controlling for rotation 
-## 3. Fprm a distance matrix of the IWD for each pair of outlines 
+## 3. Form a distance matrix of the IWD for each pair of outlines 
+from pbsig.persistence import boundary_matrix
+
+## (0) Acquire shape information 
+shape1 = SVG_pts[0]
+V = np.fromiter(range(shape1.shape[0]),dtype=int)
+E = np.array(list(chain(pairwise(range(shape1.shape[0])), iter([(shape1.shape[0]-1, 0)])))) # edges
+K = { 'vertices': V, 'edges': E }
 
 ## (1) Form a signature set of vines for each shape
-linear_homotopy()
+# np.arccos(np.dot(Dir_vectors[:,2], Dir_vectors[:,1]))
+Filt_values = np.vstack([fv for fv, vi in rotate_S1(shape1, n=16)])
+Dir_vectors = np.hstack([vi for fv, vi in rotate_S1(shape1, n=16)])
+for i, (fv0, fv1) in enumerate(pairwise(Filt_values)):
+  if i == 0: 
+    D0, D1 = boundary_matrix(K, p=(0,1))
+    R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+    Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+    Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+
+    D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
+    D1, D2 = D1.tolil(), D2.tolil()
+    
+
+    ## Handle deficient cases
+    R0, V0 = sps.lil_matrix((0,len(V))), sps.lil_matrix(np.eye(len(V)))
+    R3, V3 = sps.lil_matrix((len(T), 0)), sps.lil_matrix((0,0))
+    D0, D3 = R0, R3
+  else: 
+    fe0 = fv0[E].max(axis=1)
+    fe1 = fv1[E].max(axis=1)
+    tr = linear_homotopy(fe0, fe1, plot=False, interval=[0, 0.392])
+
+shape2 = SVG_pts[1]
+
 
 
 
