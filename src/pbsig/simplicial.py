@@ -15,10 +15,10 @@ def delaunay_complex(X: ArrayLike):
     'triangles' : T
   }
   return(K)
-  
+
 @runtime_checkable
-class Simplex(Collection, Protocol):
-  def boundary(self) -> Iterable['Simplex']: 
+class SimplexLike(Collection, Protocol):
+  def boundary(self) -> Iterable['SimplexLike']: 
     raise NotImplementedError 
   def dimension(self) -> int: 
     raise NotImplementedError
@@ -32,12 +32,37 @@ class MutableSequence(Sequence, Protocol):
   def __delitem__(self, index): raise NotImplementedError
   def __setitem__(self, key, newvalue): raise NotImplementedError
 
+## Filtrations need not have delitem / be MutableSequences to match dionysus...
+
 @runtime_checkable
-class Filtration(MutableSequence, Protocol):
-  def sort(self, key: Callable[[Simplex, Simplex], bool]) -> None: raise NotImplementedError 
-  def rearrange(self, indices: Collection) -> None: raise NotImplementedError
+class FiltrationLike(MutableSequence[SimplexLike], Protocol):
+  """ """
+  # def sort(self, key: Callable[[Simplex, Simplex], bool]) -> None: raise NotImplementedError 
+  # def rearrange(self, indices: Collection) -> None: raise NotImplementedError
 
 
+def as_simplex(vertices: Collection) -> SimplexLike:
+  class _simplex(Collection):
+    def __init__(self, v: Collection) -> None:
+      self.vertices = v
+    def __len__(self):
+      return len(self.vertices)
+    def __contains__(self, __x: object) -> bool:
+      return self.vertices.__contains__(__x)
+    def __iter__(self) -> Iterator:
+      return iter(self.vertices)
+    def boundary(self) -> Iterable['SimplexLike']: 
+      raise NotImplementedError 
+    def dimension(self) -> int: 
+      return len(vertices)
+    def __repr__(self):
+      return str(self.vertices)
+  return(_simplex(vertices))
+    
 
-def lower_star_filtration():
+def lower_star_filtration(simplices: Collection[SimplexLike], heights: Collection[float]) -> FiltrationLike:
+  """
+  Returns a Filtration 
+  """
+  S = [np.fromiter(s, dtype=int) for s in simplices]
   return(0)

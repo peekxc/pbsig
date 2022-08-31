@@ -9,8 +9,8 @@
 \usepackage{setspace}
 \usepackage{scalefnt}
 
-\usepackage{titlesec}
-\titlelabel{\thetitle.\quad}
+%\usepackage{titlesec}
+
 
 \RequirePackage{fix-cm}
 
@@ -28,6 +28,17 @@
   
 \usepackage{scalerel}
 %\newcommand\plus{\scaleobj{0.5}{+}}
+
+% \titleformat{<command>}[<shape>]{<format>}{<label>}{<sep>}{<before-code>}[<after-code>]
+\usepackage[small]{titlesec}
+%\titlelabel{\thetitle.\;}
+\titleformat{\subsection}[runin]{\normalfont\bfseries}{}{1pt}{}[]
+
+%\titleformat*{\section}{\large\bfseries}
+%\titleformat*{\subsection}{\normal\bfseries}
+%\titleformat*{\subsubsection}{}
+%\titleformat*{\paragraph}{\large\bfseries}
+%\titleformat*{\subparagraph}{\large\bfseries}
 
 
 \newcommand{\+}{%
@@ -77,9 +88,36 @@ While certainly useful, one of the pitfalls with such featurizations if the diff
 % However, grasping the interplay between input features and their local contribution to NNP is growingly evasive due to heavy featurization
 Difficulty in heavy featurization has lead to qualitative comparisons in scientific fields of the featurization outputs. Many are lead by the same equation: exactly what isa featurization tool capturing that is so useful for training?
 
-Persistent homology is, in some sense, a natural tool for featurization. persistence is a stable invariant that comes equipped mathematical guarentees; thus featurization of diagrams can be interpreted as mapping persistence diagrams to Euclidean space in such a way that maximally preserves the topological information conveyed by the diagram. 
+Persistent homology is, in some sense, a natural tool for featurization. persistence is a stable invariant that comes equipped mathematical guarantees; thus featurization of diagrams can be interpreted as mapping persistence diagrams to Euclidean space in such a way that maximally preserves the topological information conveyed by the diagram. 
 Moreover, we also know persistence diagrams retain some amount of geometry, such as those of curvature sets and the quasi-isometry theorems in distributed persistence. These results suggest an inverse theory related to persistence. 
 Indeed, a recent injectivity result shows that collections of persistence diagrams are sufficient to uniquely characterize data sets in 2- and 3-dimensions\footnote{}, establishes persistence as truly an intrinsic description of shape. 
+
+\subsection{Our Contribution:}
+A few of the drawbacks with persistence-related featurization tools, such as persistence images~\cite{} or persistence landscapes~\cite{}, is that they require as input the persistence diagram to produce the featurization. As a $O(m^3)$ operation, the traditional reduction computation can become infeasible, a property exacerbating greatly in the time-varying setting. 
+
+\subsection{The Relaxation \& Main Results}
+We give below the the relaxation proposed in the paper. The rest of the paper is devoted to its properties and use cases. 
+
+Given an input data set $X$ that varies along a 1-parameter family $\{X_{(t)}\}_{t \in T}$, for each $t \in T$, do the following:
+\begin{enumerate}
+	\item Choose a geometric realization $\mathcal{K}$ of $X$. This could be a simple Rips filtration, or a Delaunay complex, a simplicial mesh, a neighborhood graph, etc. 
+	\item Fix a set of coordinates $\mathcal{I} = \{(a_1,b_1), (a_2,b_2), \dots, (a_k,b_k)\}$ from the upper-half plane $\Delta_+$ representing areas where significant topological changes are expected to occur. 
+	\item Compute our relaxation of the PBNs at each $(a,b) \in \mathcal{I}$, 
+	$$ \beta_{p}^{i,j} = f(\hat{\partial}_p) -  f(\hat{\partial}_p) $$
+	where 
+	a) $A^{i,j}$ denotes the lower-left submatrix and
+	b) $\hat{\partial}_p^{\ast}$ represents the $p$-th boundary matrix of $K$ whose elementary chains $c(\sigma)$ take on values from a relaxation of the step function. 
+	and c) $f: K \to \mathbb{R}$ is a a function that approximates $\mathrm{rank}(A)$ using the spectrum $\sigma(A)$ of $A$. 
+	We give a few examples of suitable functions in section~\ref{}. 
+
+\end{enumerate}
+
+The main observations our relaxation is based on is that the (1) PBNs $\beta_p^{i,j}$ can be written as sum of ranks of boundary matrices, (2) by working with real-valued coefficients, we can parameterize the non-zero entries of $\partial_\ast$ with smoothly varying values whose signs match (or approximate) the signs of $\partial$, and (3) there exist a myriad of spectrum-based relaxations of the \emph{rank} function that are easier to compute. 
+
+That $\beta_p^{i,j}$ is estimated using the spectrum(s) of $\hat{\partial}_\ast$ is the primary step to reducing the complexity of our relaxation; the special forms of the matrices involved in our relaxation have connections back to spectral graph theory. 
+
+
+\subsection{Organization}
 
 In what follows, we introduce a relaxation of the persistent Betti number (PBN) invariant that has certain advantages. Namely, we showing that a simple augmentation of traditional PBN computation leads to a continuous relaxation that $(1+\epsilon)$-approximates the PBN. Moreover, we show that this relaxation is permutation invariant, obeys and inclusion-exclusion principles, and admits a notion of stability in a certain sense---all properties useful in time-varying settings. 
 Moreover, we show our relaxation is \emph{interpetretable} as it satisfies certain basic ``Betti-like'' properties and we illicit its connections back to spectral graph theory. 
@@ -87,11 +125,6 @@ Moreover, we show our relaxation is \emph{interpetretable} as it satisfies certa
 
 %One of the 
 %$<$ insert motivating examples, etc $>$
-
-\subsection*{Related Work}
-
-
-
 
 
 % Suppose one observes points in a geometric space whose position is driven by some unknown continuous-time system. 
@@ -186,13 +219,13 @@ where $\beta_p^{i,j}$ is the persistent Betti number defined at the values of th
 %If a homology class is born at time $i$ and dies entering time $j$, the difference $\lvert i - j \rvert$ is called the \emph{persistence} of that class.
 
 
-\section{Methodology}
+\section{Main Result}
 %We begin with a motivating application: suppose one has a dynamic point cloud that varies continuously with respect to some set of parameters and one expects this point cloud to have non-trivial topology as it changes. 
 %Moreover, suppose one is interested in finding an a specific setting of parameter values wherein the $p$-th persistence diagram contains many highly persistent pairs; equivalently, one is interested in finding the parameter values where topological features are the most pronounced in the system's corresponding persistence diagram. in what follows, we make this problem statement and corresponding objective more precise towards developing an efficient tool for finding these parameter values. 
 In what follows, we briefly outline the computation of the 
 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
-%\subsubsection*{Persistent Betti Numbers:} 
+\subsubsection*{Derivation:} 
 As in section~\ref{sec:background_notation}, let $B_p(K_\ast) \subseteq Z_p(K_\ast) \subseteq C_p(K_\ast)$ denote the $p$-th boundary, cycle, and chain groups of $K_\ast$, respectively. 
 Given a simplicial filtration $K_{\bullet}$, let $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
 With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
@@ -358,7 +391,24 @@ Moreover, we immediately have the following Corollary:
 	For any filtration $K_\bullet$, there exists an $\epsilon^\ast > 0$ such that $\beta_p^{i,j} = \lceil \hat{\beta}_p^{i,j} \rceil$ for all $\epsilon \in (0, \epsilon^\ast]$. 
 \end{corollary}
 
-\subsubsection*{Properties of $\hat{\beta}_p^{i,j}$}
+\textbf{Basic properties}
+\begin{corollary}[Approximately monotone]
+	Let $\beta_p^{i,j}$ denote the persistent Betti number, and let $\hat{\beta}_p^{i,j}$ denote our relaxation. It is known that the PBN satisfies~\cite{}: 
+	$$ \beta_p^{i,j} \leq \beta_p^{i',j}  \text{ for all } i \leq i' $$
+	Given fixed non-negative constants $(\epsilon, \omega)$, the relaxation in equation~\ref{} satisfies: 
+	$$ \hat{\beta}_p^{i,j} \leq f_{\epsilon, \omega}(i' - i)^k  + \hat{\beta}_p^{i',j} \text{ for all } i \leq i'$$
+\end{corollary}
+
+It is known that PBNs satisfy a certain inclusion/exclusion property related to the fact they are subadditive. Namely, for any $0 < a < b \leq c < d$, it is known that: 
+$$\mu_p^{} $$
+As discussed in section~\ref{}, this leads naturally to the interpretation of PBNs as \emph{counting measures} defined over the upper half-plane. We show that the induced multiplicity function:
+
+\begin{corollary}[Subadditivity]
+	For any $0 < a < b \leq c < d$, the relaxed multiplicity $\hat{\mu}_p$ function satisfies:
+ $$\hat{\mu}_p^{} $$
+\end{corollary}
+
+%i.e. $\hat{\mu}_p$  is subadditive
 
 %In light of expression~\eqref{eq:betti_four}, we may interpret many of the terms of $\beta_p^{i,j}$ from a function composition perspective: 
 %$$ t \stackrel{f}{\mapsto} \partial_\ast^t \stackrel{g}{\mapsto} \mathrm{rank}(\partial_\ast^t ) $$

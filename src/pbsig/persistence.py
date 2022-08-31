@@ -24,7 +24,7 @@ _perf = {
   "n_col_adds" : 0,
   "n_field_ops": 0
 }
-def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = False, dtype = int):
+def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = False, dtype = int, sign_pattern: tuple = (1, -1)):
   p = np.argsort(vertices)        ## inverse permutation 
   v_sort = np.array(vertices)[p]  ## use p for log(n) lookup 
   V, E = len(vertices), len(edges)
@@ -32,7 +32,7 @@ def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = 
   data_val, row_ind, col_ind = np.zeros(2*E, dtype=dtype), np.zeros(2*E, dtype=int), np.zeros(2*E, dtype=int)
   for i, (u,v) in enumerate(edges):
     u_ind, v_ind = np.searchsorted(v_sort, [u, v])
-    data_val[2*i], data_val[2*i+1] = -1, 1
+    data_val[2*i], data_val[2*i+1] = sign_pattern
     row_ind[2*i], row_ind[2*i+1] = int(p[u_ind]), int(p[v_ind])
     col_ind[2*i], col_ind[2*i+1] = int(i), int(i)
   D = csc_matrix((data_val, (row_ind, col_ind)), shape=(V, E), dtype=dtype)
@@ -42,7 +42,7 @@ def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = 
     D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
-def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = False, N = "max", dtype = int):
+def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = False, N = "max", dtype = int, sign_pattern: tuple = (1, -1, 1)):
   if N == "max": N = np.max(np.array(edges).flatten())
 
   E_ranks = np.array([rank_C2(u, v, N) for (u,v) in edges], dtype=int)
@@ -53,7 +53,7 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
   data_val, row_ind, col_ind = np.zeros(3*T, dtype=dtype), np.zeros(3*T, dtype=int), np.zeros(3*T, dtype=int)
   for i, (u,v,w) in enumerate(triangles):
     uv_ind, uw_ind, vw_ind = np.searchsorted(E_sort, [rank_C2(u, v, N), rank_C2(u, w, N), rank_C2(v, w, N)])
-    data_val[3*i], data_val[3*i+1], data_val[3*i+2] = 1, -1, 1
+    data_val[3*i], data_val[3*i+1], data_val[3*i+2] = sign_pattern
     row_ind[3*i], row_ind[3*i+1], row_ind[3*i+2] = int(p[uv_ind]), int(p[uw_ind]), int(p[vw_ind])
     col_ind[3*i], col_ind[3*i+1], col_ind[3*i+2] = int(i), int(i), int(i)
   D = csc_matrix((data_val, (row_ind, col_ind)), shape=(E, T), dtype=dtype)
@@ -804,15 +804,16 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
   DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
   return([DGM0, DGM1])
 
+from pbsig.simplicial import FiltrationLike 
 
-def ph(K: Dict):
+def ph(K: FiltrationLike):
   """
   Returns the 
   """
-  D0, D1 = boundary_matrix(K, p=(0,1))
-  R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-  Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
-  Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+  # D0, D1 = boundary_matrix(K, p=(0,1))
+  # R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+  # Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+  # Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
 
-  D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
-  D1, D2 = D1.tolil(), D2.tolil()
+  # D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
+  # D1, D2 = D1.tolil(), D2.tolil()
