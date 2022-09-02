@@ -14,8 +14,9 @@ from pbsig.persistence import boundary_matrix
 
 ## Replace elementary chains 
 D = boundary_matrix(K, p = 1)
-f_sigma = np.random.uniform(size=D.shape[1], low=0, high=1)
-D.data = np.sign(D.data)*np.repeat(f_sigma, 2)
+fv = np.random.uniform(size=D.shape[0], low=0, high=1)
+fe = np.array([max(fv[u],fv[v]) for u,v in K['edges']])
+D.data = np.sign(D.data)*np.repeat(fe, 2)
 
 ## O(n) matrix-vec multiplication example 
 x = np.random.uniform(size=D.shape[0])[:,np.newaxis] # V
@@ -24,12 +25,19 @@ z = D @ y # V
 
 r = np.zeros(len(y))
 for cc, (i,j) in enumerate(K['edges']):
-  r[cc] = f_sigma[cc]*x[i] - f_sigma[cc]*x[j]
+  r[cc] = fe[cc]*x[i] - fe[cc]*x[j]
 
 rz = np.zeros(D.shape[0])
 for cc, (i,j) in enumerate(K['edges']):
-  rz[i] += f_sigma[cc]*r[cc]
-  rz[j] -= f_sigma[cc]*r[cc]
+  rz[i] += fe[cc]*r[cc]
+  rz[j] -= fe[cc]*r[cc]
+
+## Graph laplacian formulation 
+# W = [max(f_sigma[e]) for e in K['edges']]
+# y = np.array([w_uv*(x[u] - x[v])**2 for (u,v), w_uv in zip(K['edges'], W)])
+
+#Z @ x
+
 
 ## Mat-vec on (n x m) matrix with n < m takes O(m) time for boundary matrices! 
 ## w/ O(m + n) storage, 
@@ -56,7 +64,7 @@ def boundary1_matvec(shape: Tuple, E: List, fe: ArrayLike):
     return(rz)
   return(_mat_vec)
 
-matvec = boundary1_matvec(D.shape, K['edges'], f_sigma)
+matvec = boundary1_matvec(D.shape, K['edges'], fe)
 A = LinearOperator((D.shape[0], D.shape[0]), matvec)
 
 ((D @ D.T) @ x) - A(x)
@@ -64,6 +72,8 @@ A = LinearOperator((D.shape[0], D.shape[0]), matvec)
 ev_D = eigsh(D @ D.T, k=min(D.shape)-1, return_eigenvectors=False)
 ev_A = eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
 
+
+eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
 
 
 ## For general sparse egdes, need  
@@ -110,5 +120,5 @@ A = LinearOperator((D.shape[0], D.shape[0]), matvec)
 #x = np.random.uniform(size=D.shape[0])[:,np.newaxis] # V
 ((D @ D.T) @ x) - A(x)
 
-ev_D = eigsh(D @ D.T, k=min(D.shape)-1, return_eigenvectors=False)
-ev_A = eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
+ev_D = eigsh(D @ D.T, k=min(D.shape), return_eigenvectors=False)
+ev_A = eigsh(A, k=min(D.shape), return_eigenvectors=False)
