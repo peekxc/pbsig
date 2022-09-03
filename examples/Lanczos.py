@@ -9,13 +9,13 @@ K = {
   'triangles' : [[0,1,2],[2,3,4]]
 }
 
-
-from pbsig.persistence import boundary_matrix
-
-## Replace elementary chains 
-D = boundary_matrix(K, p = 1)
-fv = np.random.uniform(size=D.shape[0], low=0, high=1)
+## Random vertex height values
+fv = np.random.uniform(size=len(K['vertices']), low=0, high=1)
 fe = np.array([max(fv[u],fv[v]) for u,v in K['edges']])
+
+## Replace elementary chains
+from pbsig.persistence import boundary_matrix
+D = boundary_matrix(K, p = 1)
 D.data = np.sign(D.data)*np.repeat(fe, 2)
 
 ## O(n) matrix-vec multiplication example 
@@ -75,6 +75,29 @@ ev_A = eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
 
 eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
 
+def boundary1_lowerstar_lex(shape: Tuple, E: List, fv: ArrayLike):
+  nv, ne = shape
+  r, rz = np.zeros(ne), np.zeros(nv)
+  def _mat_vec(x: ArrayLike): # x ~ O(V)
+    r.fill(0) # r = Ax ~ O(E)
+    rz.fill(0)# rz = Ar ~ O(V)
+    for cc, (i,j) in enumerate(E):
+      ew = fv[i] if fv[i] >= fv[j] else fv[j]
+      r[cc] = ew*x[i] - ew*x[j]
+    for cc, (i,j) in enumerate(E):
+      ew = fv[i] if fv[i] >= fv[j] else fv[j]
+      rz[i] += ew*r[cc]
+      rz[j] -= ew*r[cc]
+    return(rz)
+  return(_mat_vec)
+
+matvec = boundary1_lowerstar_lex(D.shape, K['edges'], fv)
+A = LinearOperator((D.shape[0], D.shape[0]), matvec)
+((D @ D.T) @ x) - A(x)
+
+ev_D = eigsh(D @ D.T, k=min(D.shape)-1, return_eigenvectors=False)
+ev_A = eigsh(A, k=min(D.shape)-1, return_eigenvectors=False)
+
 
 ## For general sparse egdes, need  
 # rank_C2(i,j, n=len(K['vertices']))
@@ -122,3 +145,16 @@ A = LinearOperator((D.shape[0], D.shape[0]), matvec)
 
 ev_D = eigsh(D @ D.T, k=min(D.shape), return_eigenvectors=False)
 ev_A = eigsh(A, k=min(D.shape), return_eigenvectors=False)
+
+
+## Custom 
+from pbsig.linalg import lanczos
+E = np.array(K['edges'], dtype=np.float32)
+x = np.random.uniform(size=len(K['vertices'])).astype(np.float32)[:,np.newaxis]
+
+z1 = ((D @ D.T) @ x).flatten()
+z2 = lanczos.UL1_LS_matvec(x, fv, E[:,0], E[:,1])
+abs(z1-z2)
+
+
+lanczos.UL1_LS_lanczos(fv, E[:,0], E[:,1], 1, 9)

@@ -9,12 +9,8 @@ from numpy.typing import ArrayLike
 # from . import _boundary
 from .persistence import *
 from .betti import *
+from .linalg import *
 
-
-autodoc_type_aliases = {
-    'Iterable': 'Iterable',
-    'ArrayLike': 'ArrayLike'
-}
 
 def plot_dgm(dgm: ArrayLike):
   import matplotlib
