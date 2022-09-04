@@ -157,4 +157,12 @@ z2 = lanczos.UL1_LS_matvec(x, fv, E[:,0], E[:,1])
 abs(z1-z2)
 
 
-lanczos.UL1_LS_lanczos(fv, E[:,0], E[:,1], 1, 9)
+lanczos.UL1_LS_lanczos(fv, E[:,0], E[:,1], 8, 9)
+
+
+
+np.array(sorted(np.linalg.eigh((D @ D.T).A)[0][1:], reverse=True))
+
+from scipy.sparse.linalg import eigsh
+v0 = np.random.uniform(size=D.shape[0])[:,np.newaxis]
+eigsh(D @ D.T, k=3, return_eigenvectors=False, maxiter=1, ncv=4, v0=v0,tol=np.inf)
