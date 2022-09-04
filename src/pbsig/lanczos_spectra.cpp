@@ -38,6 +38,7 @@ struct UpLaplacian1_lowerstar {
   void perform_op(const Scalar* x, Scalar* y) const {
     // Ensure workplace vectors are zero'ed
     std::fill(r.begin(), r.end(), 0);
+    std::fill(y, y+nv, 0);
     // std::fill(rz.begin(), rz.end(), 0);
     
     // r = D1.T @ x 

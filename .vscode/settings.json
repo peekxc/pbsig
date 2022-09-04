@@ -63,7 +63,8 @@
     "numericaldiff": "cpp",
     "openglsupport": "cpp",
     "specialfunctions": "cpp",
-    "splines": "cpp"
+    "splines": "cpp",
+    "ios": "cpp"
   },
   "python.linting.flake8Enabled": true,
   "python.linting.enabled": false,
