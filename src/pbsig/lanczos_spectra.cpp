@@ -5,6 +5,7 @@
 #include <Eigen/Core>
 #include <pybind11/eigen.h>
 #include <Spectra/SymEigsSolver.h>
+#include <Spectra/DavidsonSymEigsSolver.h>
 
 #include <cinttypes>
 using namespace Spectra;
@@ -26,14 +27,12 @@ struct UpLaplacian1_lowerstar {
   VectorXf fv;
   VectorXu I;
   VectorXu J; 
-  // vector< uint_32 > I; 
-  // vector< uint_32 > J;
   UpLaplacian1_lowerstar(VectorXf fv_, VectorXu I_, VectorXu J_) : nv(fv_.size()), ne(I_.size()), fv(fv_), I(I_), J(J_) {
     r = vector< Scalar >(ne, 0.0);
     rz = vector< Scalar >(nv, 0.0);
   }
   size_t rows() const { return nv; }
-  size_t cols() const { return nv; }
+  size_t cols() const { return nv; } 
   // Matvec operation: Lx |-> y for any vector x
   void perform_op(const Scalar* x, Scalar* y) const {
     // Ensure workplace vectors are zero'ed
@@ -76,7 +75,24 @@ auto UpLaplacian1_Lanczos(VectorXf fv, VectorXu I, VectorXu J, int nev, int ncv)
   // https://spectralib.org/doc/classspectra_1_1symeigssolver
   SymEigsSolver< UpLaplacian1_lowerstar< true > > eigs(op, nev, ncv); // nev, ncv
   eigs.init();
-  eigs.compute(SortRule::LargestAlge);
+  eigs.compute(SortRule::LargestMagn);
+  if(eigs.info() == CompInfo::Successful){
+    Eigen::VectorXf evalues = eigs.eigenvalues();
+    return(evalues); 
+  }
+  Eigen::VectorXf Z(fv.size());
+  return(Z);
+}
+
+
+auto UpLaplacian1_JacobiDavidson(VectorXf fv, VectorXu I, VectorXu J, int nev, int nvec_init, int nvec_max) -> Eigen::VectorXf {
+  UpLaplacian1_lowerstar< true > op(fv, I, J);
+  
+  // https://spectralib.org/doc/classspectra_1_1symeigssolver
+  Spectra::DavidsonSymEigsSolver< UpLaplacian1_lowerstar< true > > eigs(op, nev, nvec_init, nvec_max); // nev, ncv
+  eigs.init();
+  
+  eigs.compute(SortRule::LargestMagn);
   if(eigs.info() == CompInfo::Successful){
     Eigen::VectorXf evalues = eigs.eigenvalues();
     return(evalues); 
@@ -90,4 +106,5 @@ PYBIND11_MODULE(_lanczos, m) {
   m.doc() = "Lanczos multiplication module";
   m.def("UL1_LS_matvec", &UpLaplacian1_matvec, "A function that adds two numbers");
   m.def("UL1_LS_lanczos", &UpLaplacian1_Lanczos, "A function that adds two numbers");
+  m.def("UL1_LS_jacobi_davidson", &UpLaplacian1_JacobiDavidson, "A function that adds two numbers");
 }

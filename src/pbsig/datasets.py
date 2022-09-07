@@ -1,6 +1,7 @@
+import os
 import numpy as np
 import importlib.resources as pkg_resources
-
+ 
 from scipy.spatial.distance import pdist, cdist, squareform
 from PIL import Image, ImageDraw, ImageFont
 from typing import * 
@@ -9,6 +10,20 @@ from pathlib import Path
 
 # Package relative imports 
 from .utility import *
+
+def animal_svgs():
+  """
+  Loads a list of animal svgs
+  """
+  from svgpathtools import svg2paths
+  from svgpathtools.path import Path
+  from pbsig import data as package_data_mod
+  data_path = package_data_mod.__path__._path[0] + "/animal_svgs"
+  SVG_fns = [file for file in os.listdir(data_path) if file.endswith('.svg')]
+  SVG_paths = [svg2paths(data_path + "/" + svg)[0][0] for svg in SVG_fns]
+  assert all(isinstance(p, Path) for p in SVG_paths), "Invalid set of SVGs"
+  # SVG_paths[6][3]
+  return(dict(zip([os.path.splitext(fn)[0] for fn in SVG_fns], SVG_paths)))
 
 def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"], nwide=51):
   """

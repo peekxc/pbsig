@@ -806,7 +806,7 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
 
 from pbsig.simplicial import FiltrationLike 
 
-def ph(K: FiltrationLike):
+def ph(K: FiltrationLike, p: int = 0, ):
   """
   Returns the 
   """

@@ -7,6 +7,8 @@ from typing import *
 from numpy.typing import ArrayLike
 from math import comb
 
+def pairwise(C): 
+  return(zip(C, C[1:]))
 
 def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), lower: bool = False):
   """
@@ -164,3 +166,118 @@ def scale_diameter(X: ArrayLike, diam: float = 1.0):
   VM = np.reshape(np.repeat(vec_mag, X.shape[1]), (len(vec_mag), X.shape[1]))
   Xs = (X / VM) * diam*(VM/(np.max(vec_mag)))
   return(Xs)
+
+
+def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox", "hull"], V: Optional[ArrayLike] = None):
+  """
+  Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
+  """
+  n, d = X.shape[0], X.shape[1]
+  if V is not None: method = "directions"
+  if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
+    return(X.mean(axis=0))
+  elif method == "hull":
+    from scipy.spatial import ConvexHull
+    return(X[ConvexHull(X).vertices,:].mean(axis=0))
+  elif method == "directions":
+    assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
+    original_center = X.mean(axis=0)
+    cost: float = np.inf
+    while cost > 1e-12:
+      Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
+      U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
+      center_diff = U.mean(axis=0)
+      X = X - center_diff
+      cost = min([
+        np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
+        np.linalg.norm(center_diff)
+      ])
+      #print(cost)
+    return(original_center - X.mean(axis=0))
+  elif method == "bbox":
+    min_x, max_x = X.min(axis=0), X.max(axis=0)
+    return((min_x + (max_x-min_x)/2))
+  else: 
+    raise ValueError("Invalid method supplied")
+
+def PL_path(path, k: int): 
+  from svgpathtools import parse_path, Line, Path, wsvg
+  arc_lengths = np.array([seg.length() for seg in path])
+  if any(arc_lengths == 0):
+    path = list(filter(lambda p: p.length() > 0.0, path))
+    for j in range(len(path)-1):
+      if path[j].end != path[j+1].start:
+        path[j].end = path[j+1].start
+    path = Path(*path)
+  arc_lengths = np.array([seg.length() for seg in path])
+  assert(all(arc_lengths > 0)), "Invalid shape detected: lines with 0-length found and not handled"
+  A = np.cumsum(arc_lengths)
+  p_cc = np.linspace(0, max(A), k)
+  idx = np.digitize(p_cc, A+np.sqrt(np.finfo(float).resolution))
+  L_points = []
+  for i, pp in zip(idx, p_cc):
+    t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
+    L_points.append(path[i].point(t))
+  connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
+  if not(path.iscontinuous()) or path.isclosed():
+    #connect_the_dots.append(Line(L_points[-1], L_points[0]))
+    connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
+  new_path = Path(*connect_the_dots)
+  return(new_path)
+
+def offset_curve(path, offset_distance, steps=1000):
+  """
+  Takes in a Path object, `path`, and a distance, `offset_distance`, and outputs an piecewise-linear approximation of the 'parallel' offset curve.
+  """
+  from svgpathtools import parse_path, Line, Path, wsvg
+  nls = []
+  for seg in path:
+    ct = 1
+    for k in range(steps):
+      t = k / steps
+      offset_vector = offset_distance * seg.normal(t)
+      nl = Line(seg.point(t), seg.point(t) + offset_vector)
+      nls.append(nl)
+  connect_the_dots = [Line(nls[k].end, nls[k+1].end) for k in range(len(nls)-1)]
+  if path.isclosed():
+    connect_the_dots.append(Line(nls[-1].end, nls[0].end))
+  offset_path = Path(*connect_the_dots)
+  return offset_path
+
+import heapq
+import numpy as np
+
+# From: https://stats.stackexchange.com/questions/459601/are-these-any-existing-implementation-of-l1-isotonic-regression-in-python
+def isotonic_regress(y: ArrayLike, w: Optional[ArrayLike] = None):
+  """Finds a non-decreasing fit for the specified `y` under L1 norm.
+
+  The O(n log n) algorithm is described in:
+  "Isotonic Regression by Dynamic Programming", Gunter Rote, SOSA@SODA 2019.
+
+  Args:
+    y: The values to be fitted, 1d-numpy array.
+    w: The loss weights vector, 1d-numpy array.
+
+  Returns:
+    An isotonic fit for the specified `y` which minimizies the weighted
+    L1 norm of the fit's residual.
+  """
+  if w is None: 
+    w = np.ones(len(y))
+  h = []  # max heap of values
+  p = np.zeros_like(y)  # breaking position
+  for i in range(y.size):
+    a_i = y[i]
+    w_i = w[i]
+    heapq.heappush(h, (-a_i, 2 * w_i))
+    s = -w_i
+    b_position, b_value = h[0]
+    while s + b_value <= 0:
+      s += b_value
+      heapq.heappop(h)
+      b_position, b_value = h[0]
+    b_value += s
+    h[0] = (b_position, b_value)
+    p[i] = -b_position
+  z = np.flip(np.minimum.accumulate(np.flip(p)))  # right_to_left_cumulative_min
+  return z
