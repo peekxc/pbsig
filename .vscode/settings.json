@@ -64,7 +64,9 @@
     "openglsupport": "cpp",
     "specialfunctions": "cpp",
     "splines": "cpp",
-    "ios": "cpp"
+    "ios": "cpp",
+    "chrono": "cpp",
+    "filesystem": "cpp"
   },
   "python.linting.flake8Enabled": true,
   "python.linting.enabled": false,

@@ -166,3 +166,23 @@ np.array(sorted(np.linalg.eigh((D @ D.T).A)[0][1:], reverse=True))
 from scipy.sparse.linalg import eigsh
 v0 = np.random.uniform(size=D.shape[0])[:,np.newaxis]
 eigsh(D @ D.T, k=3, return_eigenvectors=False, maxiter=1, ncv=4, v0=v0,tol=np.inf)
+
+
+
+## Generic testing of spectra's lanczos 
+import numpy as np
+X = np.random.uniform(size=(15,15))
+X = X.T @ X
+
+from pbsig.linalg import lanczos
+from scipy.sparse import csc_matrix
+
+A = csc_matrix(X)
+v0 = np.random.uniform(A.shape[1])
+
+wut = lanczos.sparse_lanczos(A, 4, 5, 10, 1e-10)
+
+lanczos.sparse_lanczos(A, 3, 4, 1, 0.10)['eigenvalues'] - lanczos.sparse_lanczos(A, 3, 4, 1000, 1e-12)['eigenvalues']
+
+# lanczos.sparse_lanczos(A, 1, 2, 10, 1e-10)
+lanczos.UL1_LS_lanczos()
