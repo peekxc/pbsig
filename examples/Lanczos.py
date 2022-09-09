@@ -180,9 +180,32 @@ from scipy.sparse import csc_matrix
 A = csc_matrix(X)
 v0 = np.random.uniform(A.shape[1])
 
-wut = lanczos.sparse_lanczos(A, 4, 5, 10, 1e-10)
+wut = lanczos.sparse_lanczos(A, 4, 5, 19, 1e-10)
+
+
+ev = np.array(sorted(np.linalg.eigh(A.A)[0], reverse=True))
+shift = ev[1]
+ev_shifted = np.array(sorted(np.linalg.eigh(A.A - shift*np.eye(A.shape[0]))[0], reverse=True))
+ev_shifted+shift
+
+
+from scipy.sparse.linalg import eigsh
+# eigsh(A, k=A.shape[0]-1,return_eigenvectors=False, which="LM")
+
+ev = eigsh(A, k=3, ncv=5, return_eigenvectors=False, which="LM")
+shift = max(ev)
+B = csc_matrix(A - shift*np.eye(A.shape[0]))
+eigsh(B, k=3, return_eigenvectors=False, which="LM")+shift
+
+#
+# for i in range(1, 100):
+
+
 
 lanczos.sparse_lanczos(A, 3, 4, 1, 0.10)['eigenvalues'] - lanczos.sparse_lanczos(A, 3, 4, 1000, 1e-12)['eigenvalues']
+
+# wut = lanczos.sparse_lanczos(A, 4, 5, 19, 1e-10)
+
 
 # lanczos.sparse_lanczos(A, 1, 2, 10, 1e-10)
 lanczos.UL1_LS_lanczos()

@@ -137,6 +137,7 @@ auto SparseLanczosInit(Eigen::SparseMatrix< double > M, const Index nev, const I
   res["nev"] = nev;
   res["ncv"] = ncv;
   res["ritz_values"] = eigs.ritz_values();
+  res["ritz_converged"] = eigs.ritz_converged();
   res["status"] = status; 
   return(res);
 }
@@ -183,5 +184,6 @@ PYBIND11_MODULE(_lanczos, m) {
   m.def("UL1_LS_matvec", &UpLaplacian1_matvec, "Up-Laplacian1 lower-star matrix-vector multiplication");
   m.def("UL1_LS_lanczos", &UpLaplacian1_Lanczos, "Up-Laplacian1 lower-star Lanczos (implicit restart)");
   m.def("sparse_lanczos", &SparseLanczos, "Implicitly restarted Lanczos on sparse matrix");
+  m.def("sparse_lanczos_init", &SparseLanczosInit, "Implicitly restarted Lanczos on sparse matrix");
   // m.def("UL1_LS_jacobi_davidson", &UpLaplacian1_JacobiDavidson, "A function that adds two numbers");
 }
