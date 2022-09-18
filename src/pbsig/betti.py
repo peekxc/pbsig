@@ -388,7 +388,7 @@ def lower_star_pb(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float, 
   return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, beta=beta))
 
 
-## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps
+## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps to make small epsilons match rank 
 def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, w: float = 0.001, epsilon: float = 0.001):
   """
   F := Iterable of (nv)-sized arrays representing vertex filtration heights

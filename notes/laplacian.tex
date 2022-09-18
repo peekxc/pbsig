@@ -1,0 +1,30 @@
+\documentclass[10pt]{article}
+\usepackage[margin=0.5in]{geometry}
+\usepackage{amsmath, amsthm, amssymb}
+\usepackage{mathtools}
+\usepackage{hyperref}
+\usepackage{url}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+
+\title{\vspace{-2.0em} Interpreting the spectrum of the Graph Laplacian\vspace{-0.5em}}
+\author{Matt Piekenbrock}
+\date{}
+
+\begin{document} \vspace{-2em} \maketitle \vspace{-1em}
+Let $G = (V, E)$ denote a graph with vertex set $V = \{v_1, v_2, \dots, v_n\}$ and edge set $E \subseteq V \times V$. A weighted graph is a pair $(G, \mu)$ where $\mu: V \times V \to \mathbb{R}_+$ is an weight function satisfying $\mu_{v,v'} = \mu_{v', v}$, $\mu_{v,v'} > 0$ iff $(v,v') \in E$. Note that the last condition implies $\mu$ completely characterizes the connectivity of $G$, i.e. positive values of $\mu$ indicate the presence of edges. 
+
+We recall the Spectral Theorem, which characterizes the eiegnvlaues of a linear operator in terms of \emph{Rayleigh quotients}. If $U$ is a finite dimensional vector space and $A$ a linear operator on $U$, then for any non-zero $u \in U$, the Rayleigh quotient of $u$ is defined as: 
+$$ \mathcal{R}(u) = \frac{\langle Au, u \rangle}{\langle u, u\rangle}$$
+
+Any Laplacian operator $\mathcal{L} = A - D$ has a spectrum of $\lambda \in [0,2]$ for any $\lambda \in \Lambda(L)$.
+
+Let $(\lambda, f)$ denote a eigenvalue/eigenfunction pair of $L$, respectively. 
+$$\langle L f, f \rangle = \frac{1}{2} \sum\limits_{v \in V} \sum\limits_{v' \in V} \mu(v,v') \cdot \left(f(v) - f(v')\right)^2$$
+
+
+% From: Eigenvalues of the Laplacian on inhomogeneous membranes
+One can interpret the eigenvalues of the Laplacian physically as the frequencies of vibration of a membrane, as energy levels of a Hamiltonian in an infinite potential well, as rates of decay for the heat (or mass diffusion) equation, and as cut-off frequencies for waveguides.
+
+\end{document}

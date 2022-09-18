@@ -88,29 +88,55 @@ def hist_equalize(x, number_bins=100000):
 	cdf = np.max(x) * cdf / cdf[-1] # normalize
 	return(np.interp(x.flatten(), bins[:-1], cdf))
 
-def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', min_x = "default", max_x = "default", scaling="linear", **kwargs):
+## What should this do? 
+def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] = None, max_x: Optional[float] = None, **kwargs):
+	"""
+	Scales 
+	Re-scales the values of an input iterable 'x' using the rule 'scaling' in such a way that: 
+		1.  
+	"""
+	
+	## Convert to numpy array 
+	x = np.asarray(list(x))
+
+	## Detect if scaled output interval is desired; if not use existing range
+	out_min = float(np.min(x)) if min_x is None else float(min_x)
+	out_max = float(np.max(x)) if max_x is None else float(max_x)
+	assert isinstance(out_min, float) and isinstance(out_max, float)
+	
+	## Normalize to unit interval
+	x = (x-np.min(x))/(np.max(x)-np.min(x))
+	
+	## Scale the values based on selected scaling
+	if scaling == "linear":
+		x = x
+	elif scaling == "logarithmic":
+		# x = scale_interval(np.log(x + 1.0), "linear", min_x=0.0, max_x=np.log(2))
+		x = np.log((x*1000)+1)/np.log(1001)
+		# (x-np.log(1))/(np.log(2000)-np.log(1))
+		# np.log((np.linspace(0,1,10,endpoint=True)+1)*1000)/np.log(2000)
+		# (np.log((x+1)*1000)-np.log(1000))/np.log(2000)
+	elif scaling == "equalize":
+		x = hist_equalize(x, **kwargs)
+	else:
+		raise ValueError(f"Unknown scaling option '{scaling}' passed. Must be one of 'linear', 'logarithmic', or 'equalize'. ")
+	
+	## Finally, re-translate and scale entries x to [min_x, max_x]. 
+	## If not supplied, this re-scales input values to their original range
+	out = (out_min + x*(out_max-out_min)) if scaling == "linear" else scale_interval(x, "linear", out_min, out_max)
+	return(out)
+
+def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
 	from matplotlib import cm
 	if isinstance(color_pal, str) and color_pal in list(cm.cmaps_listed.keys()):
 		color_pal = cm.get_cmap(color_pal).colors
 	else: 
 		raise ValueError("Unknown color map")
-	x = np.asarray(list(x))
-	x_min = float(np.min(x)) if min_x == "default" else min_x
-	x_max = float(np.max(x)) if max_x == "default" else max_x
-	assert isinstance(x_min, float) and isinstance(x_max, float)
-	if scaling == "linear":
-		x = x
-	elif scaling == "logarithmic":
-		x = np.log(x + x_min + 1.0)
-		x_min = np.log(x_min + 1.0)
-		x_max = np.log(x_max + 1.0)
-	elif scaling == "equalize":
-		x = hist_equalize(x, **kwargs)
-		x_min, x_max = np.min(x), np.max(x)
-	else:
-		raise ValueError(f"Unknown scaling option '{scaling}' passed. Must be one of 'linear', 'logarithmic', or 'equalize'. ")
-	ind = np.digitize(x, bins=np.linspace(x_min, x_max, len(color_pal)))
+	x = scale_interval(x, **kwargs)
+	lb = float(np.min(x)) if lb is None else float(lb)
+	ub = float(np.max(x)) if ub is None else float(ub)
+	ind = np.digitize(np.clip(x, a_min=lb, a_max=ub), bins=np.linspace(lb, ub, len(color_pal)))
 	ind = np.minimum(ind, len(color_pal)-1) ## bound from above
 	ind = np.maximum(ind, 0)								## bound from below
 	return(np.asarray(color_pal)[ind])

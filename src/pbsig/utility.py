@@ -281,3 +281,64 @@ def isotonic_regress(y: ArrayLike, w: Optional[ArrayLike] = None):
     p[i] = -b_position
   z = np.flip(np.minimum.accumulate(np.flip(p)))  # right_to_left_cumulative_min
   return z
+
+def complex2points(x): 
+  return(np.c_[np.real(x), np.imag(x)])
+
+def uniform_S1(n: int = 10):
+  theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
+  for x,y in zip(np.cos(theta), np.sin(theta)):
+    yield np.array([x,y])
+  
+def pht_proprocess_pc(P: ArrayLike, n_directions: int = 32, transform: bool = False):
+  V_dir = np.array(list(uniform_S1(n_directions)))
+  u = shape_center(P, method="directions", V=V_dir)
+  L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
+  if transform:
+    P -= u
+    P = (1/L)*P
+    return(P)
+  def _preprocess(A):
+    A = A - u 
+    A = (1/L)*A
+    return(A)
+  return(_preprocess)
+
+def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
+  """
+  Params: 
+    n_directions := number of directions around S1 to use to center shape 
+    n_segments := number of linear segments to discretize path by
+  Return: 
+    preprocess := function that takes as input a path and returns a set of 2d points centered at 0 / scaled barycentrically
+  """
+  V_dir = np.array(list(uniform_S1(n_directions)))
+  def _preprocess(path):
+    C = PL_path(path, k=n_segments) 
+    P = complex2points([c.start for c in C])
+    u = shape_center(P, method="directions", V=V_dir)
+    P = P - u 
+    L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
+    P = (1/L)*P
+    return(P)
+  return _preprocess
+
+
+def spectral_bound(V, E, type: str = ["graph", "laplacian"]):
+  """
+  Returns bounds on the spectral radius of either the Graph G = (V, E) or the Graph Laplacian L = D(G) - A(G)
+  Based on the simple bounds from: "Bounds on the (Laplacian) spectral radius of graphs"
+  """
+  import networkx as nx
+  G = nx.Graph()
+  G.add_nodes_from(V)
+  G.add_edges_from(E)
+  bound = 0
+  if (isinstance(type, list) and type == ["graph", "laplacian"]) or type == "graph":
+    bound = np.sqrt(max([sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()]))
+  elif type == "laplacian":
+    bound = np.sqrt(2)*np.sqrt(max([G.degree(v)**2 + sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()])) 
+  else: 
+    raise ValueError("invalid graph type")
+  return(bound)
+

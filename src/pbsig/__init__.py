@@ -16,6 +16,8 @@ def plot_dgm(dgm: ArrayLike):
   import matplotlib.pyplot as plt
   from matplotlib.patches import Polygon
   from matplotlib.collections import PatchCollection
+  import copy 
+  dgm = copy.deepcopy(dgm)
   fig = plt.figure(figsize=(2,2), dpi=320)
   ax = fig.gca()
   fmax = max(filter(lambda x: x != np.inf, dgm.flatten()))
@@ -49,12 +51,6 @@ def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bo
   if labels:
     for i, xy in enumerate(X): ax.annotate(i, xy)
   return(fig, ax)
-
-def uniform_S1(n: int = 10):
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
-  for x,y in zip(np.cos(theta), np.sin(theta)):
-    yield np.array([x,y])
-
 
 def rotate_S1(X: ArrayLike, n: int = 10, include_direction: bool = True):
   """ 

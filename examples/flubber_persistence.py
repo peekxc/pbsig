@@ -131,36 +131,255 @@ import matplotlib.pyplot as plt
 plt.imshow(squareform(pht_dist))
 
 
-## Now try with many SVG images
+
+
+
+
+
+
+
+
+# %% Toeplitz idea
 from pbsig.datasets import animal_svgs
-dataset = animal_svgs()
-
-# from svgpathtools import wsvg
-# wsvg(dataset['cooki'], filename="../src/pbsig/data/animal_svgs/cooki.svg")
-
-def pht_preprocess(nd: int = 32, resolution: int = 100):
-  complex2points = lambda x: np.c_[np.real(x), np.imag(x)]
-  V_dir = np.array(list(uniform_S1(nd)))
-  def _preprocess(path):
-    C = PL_path(path, k=resolution) 
-    P = complex2points([c.start for c in C])
-    u = shape_center(P, method="directions", V=V_dir)
-    P = P - u 
-    L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
-    P = (1/L)*P
-    return(P)
-  return _preprocess
-
-PHT_pre = pht_preprocess(nd=50, resolution=300)
+from pbsig.utility import pht_preprocess_path_2d
+animal_paths = animal_svgs()
+PHT_pre = pht_preprocess_path_2d(n_directions=50, n_segments=50)
 
 ## Preprocess via translation, scaling, PL-outline simplification, etc
-shapes = [PHT_pre(d) for d in dataset.values()]
+shapes = [PHT_pre(p) for p in animal_paths.values()]
+nv = shapes[0].shape[0]
+E = np.array(list(chain(pairwise(range(nv)), iter([(nv-1, 0)])))) # edges for all shapes are identical
 
-## Visualize shapes
+# %% Visualize shapes
 fig, axs = plt.subplots(2,4, figsize=(8,4), dpi=320)
 for (i,j),S in zip(product(range(2),range(4)), shapes):
   axs[i,j].plot(*S.T, linewidth=0.92)
   axs[i,j].axis('off')
+
+# %% Get effective bounds on all the parameters 
+
+## Bounds on birth/death: since shape is centered at origin, smallest/largest projection 
+## onto any unit vector 'v' occurs when 'v' is parallel with the point w/ largest norm
+max_f = np.max(np.linalg.norm(shapes[0], axis=1))
+a_min, b_max = -max_f, max_f
+
+## Effective bounds on epsilon/omega
+## omega could be infinite in principle; effective bound (where no values are clamped) is [0, 2|b-a|]
+## same principle applies to epsilon; effective bound is where phi_eps(M) \in [rank(M), 1] [0, max_spectral_norm(A)]
+from pbsig.utility import spectral_bound
+omega_min, omega_max = np.finfo(float).eps, abs(b_max-a_min)
+epsilon_min, epsilon_max = np.finfo(float).eps, spectral_bound(range(nv), E, "laplacian")
+# D1 = boundary_matrix({'vertices': range(nv), 'edges':E}, p=1)
+# np.max(np.linalg.eigh(D1.A @ D1.T)[0])
+
+
+# %% Do a parameter space search 
+
+## Persistent betti transform for n directions
+def pbt_outline(S: ArrayLike, n_dir: int, **kwargs):
+  m = S.shape[0]
+  E = np.array(list(chain(pairwise(range(m)), iter([(m-1, 0)])))) # edges
+  F = rotate_S1(S, n=n_dir, include_direction=False)
+  return(lower_star_betti_sig(F, p_simplices=E, nv=m, **kwargs))
+
+## Choose the two shapes to look at 
+S1, S2 = shapes[0], shapes[1]
+F_interp = pyflubber.interpolator(S1, S2, closed=True)
+
+## Visualize 
+time = np.linspace(0, 1, 4*8, endpoint=True)
+fig, axs = plt.subplots(4, 8, figsize=(12,4))
+for t, (i, j) in zip(time, product(range(4), range(8))):
+  Pt = F_interp(t)
+  axs[i,j].plot(*Pt.T)
+  axs[i,j].axis('off')
+
+## 
+from itertools import product
+n_params = 10
+rng = lambda a,b: np.linspace(a,b,n_params)
+
+R = {}
+for t in np.linspace(0, 1, 10):
+  S = F_interp(t)
+  for cc, (a,b,w,eps) in progressbar(enumerate(product(rng(a_min, b_max), rng(a_min, b_max), rng(omega_min, omega_max), rng(epsilon_min, epsilon_max))), count=n_params**4):
+    if a < b:
+      R[(t, cc)] = {
+        'params' : (a,b,w,eps), 
+        'signature' : pbt_outline(S, n_dir=15, a=a, b=b, w=w, epsilon=eps)
+      }
+
+# def save_object(obj, filename):
+#   import pickle
+#   with open(filename, 'wb') as outp:  # Overwrites any existing file.
+#     pickle.dump(obj, outp, pickle.HIGHEST_PROTOCOL)
+# save_object(R, "shape_signatures.pickle")
+## Get parameter ranges
+a_rng = rng(a_min, b_max)
+b_rng = rng(a_min, b_max)
+w_rng = rng(omega_min, omega_max)
+e_rng = rng(epsilon_min, epsilon_max)
+
+def extract_pbn(x0:int, x1:int, x2:int, x3:int):
+  assert x0 < x1, "invalid"
+  a = a_rng[x0]
+  b = b_rng[x1]
+  w = w_rng[x2]
+  e = e_rng[x3]
+  vals = list(filter(lambda kv: kv[1]['params'] == (a,b,w,e), R.items()))
+  return({ k[0]: v['signature'] for k,v in vals})
+    
+#   s0_keys = list(filter(lambda k: k[1] > 0 and k[0] == 0.0, R.keys()))
+
+# s0_keys = list(filter(lambda k: k[1] > 0 and k[0] == 0.0, R.keys()))
+# S0_betti0 = list(filter(lambda v: v['params'][2] == w_rng[0] and v['params'][3] == e_rng[0], [R[k] for k in s0_keys]))
+# S0_sigs = [b['signature'] for b in S0_betti0]
+
+# s1_keys = list(filter(lambda k: k[1] > 0 and k[0] == 1.0, R.keys()))
+# S1_betti0 = list(filter(lambda v: v['params'][2] == w_rng[0] and v['params'][3] == e_rng[0], [R[k] for k in s1_keys]))
+# S1_sigs = [b['signature'] for b in S1_betti0]
+
+
+extract_pbn(0,1,0,0).values()
+
+def pbn_dist(sigs):
+  from scipy.spatial.distance import squareform
+  from itertools import combinations
+  min_rot_euc = lambda s0, s1: min([sum(abs(np.roll(s0, i) - s1)) for i in range(len(s0))])
+  pbn_sig_dm = squareform([min_rot_euc(s0, s1) for (s0, s1) in combinations(sigs, 2)])
+  return(pbn_sig_dm)
+
+fig, axs = plt.subplots(4,4, figsize=(8,8),dpi=320)
+for (i,j),(w,e) in zip(product(range(4), range(4)), product(w_rng[[0,2,4,6]], e_rng[[0,2,4,6]])):
+  axs[i,j].imshow(pbn_dist(extract_pbn(6,8,i,j).values()))
+  axs[i,j].axis('off')
+  axs[i,j].title.set_text(f"(w:{w:.2f}, e:{e:.2f}) --- (a:{6}, b:{8})")
+  axs[i,j].title.set_size(5)
+  #plt.title("eps")
+
+
+from pbsig.color import bin_color
+
+
+# min_util, max_util = np.inf, -np.inf
+max_util = np.max(list(all_toeplitz_dists.values()))
+min_util = np.min(list(all_toeplitz_dists.values()))
+
+fig, axs = plt.subplots(4,4, figsize=(8,8),dpi=320)
+for (i,j),(w,e) in zip(product(range(4), range(4)), product(w_rng[[0,2,4,6]], e_rng[[0,2,4,6]])):
+  k,l = list(w_rng).index(w), list(e_rng).index(e)
+  AB_toeplitz = {}
+  for a,b in combinations(a_rng, 2):
+    if a < b:
+      ai,bj = list(a_rng).index(a), list(b_rng).index(b)
+      dm = pbn_dist(extract_pbn(ai,bj,k,l).values())
+      TA = toeplitz(isotonic_regress(project_toeplitz(dm)))
+      AB_toeplitz[(a,b)] = np.linalg.norm(dm-TA)
+  utility_metric = np.array(list(AB_toeplitz.values()))
+  # min_util, max_util = min(utility_metric), max(utility_metric)
+  # min_util = min(min_util, min(utility_metric))
+  # max_util = max(max_util, max(utility_metric))
+  for (a,b), u in AB_toeplitz.items():
+    axs[i,j].scatter(a,b,color=bin_color([u], min_x=min_util, max_x=max_util, scaling="logarithmic"))
+  axs[i,j].axis('off')
+  axs[i,j].title.set_text(f"Toeplitz global utility --- w:{w:.2f}({k}), e:{l:.2f}({l})")
+  axs[i,j].title.set_size(5)
+
+# fig = plt.figure(figsize=(8,8), dpi=320)
+# ax = plt.gca()
+  
+## Look at persistenc ediagrams of interolation 
+fig = plt.figure(figsize=(8,8), dpi=320)
+# fig, axs = plt.subplots(2,5, figsize=(8,4),dpi=320)
+ax = fig.gca()
+ax.set_xlim(min(a_rng)*0.95, max(a_rng)*1.05)
+ax.set_ylim(min(a_rng)*0.95, max(a_rng)*1.05)
+T = np.linspace(0, 1, 10)
+for t, (i,j) in zip(T, product(range(2), range(5))):
+  S = F_interp(t)
+  E = np.array(list(chain(pairwise(range(S.shape[0])), iter([(S.shape[0]-1, 0)])))) # outline
+  dgms0 = [lower_star_ph_dionysus(fv, E, [])[0] for fv in rotate_S1(S, n=15, include_direction=False)]
+  for dgm in dgms0:
+    ax.scatter(*dgm.T, color=bin_color([t],min_x=0.0, max_x=1.0), s=0.65)
+  #   axs[i,j].scatter(*dgm.T, color=bin_color([t],min_x=0.0, max_x=1.0), s=0.45)
+  # axs[i,j].set_xlim(min(a_rng)*0.95, max(a_rng)*1.05)
+  # axs[i,j].set_ylim(min(a_rng)*0.95, max(a_rng)*1.05)
+  # axs[i,j].axis('off')
+plt.title("All PHT-dgm0s, color == time / interpolation")
+
+all_toeplitz_dists = {}
+for i,j,k,l in progressbar(product(range(10), range(10), range(10), range(10)), 10**4):
+  if i < j:
+    dm = pbn_dist(extract_pbn(i,j,k,l).values())
+    TA = toeplitz(isotonic_regress(project_toeplitz(dm)))
+    all_toeplitz_dists[(i,j,k,l)] = np.linalg.norm(dm-TA)
+
+
+best_ind = list(all_toeplitz_dists.keys())[np.argmax(list(all_toeplitz_dists.values()))]
+
+
+plt.hist(all_toeplitz_dists.values())
+plt.title("all toeplitz distances")
+
+time = np.linspace(0, 1, 4*8, endpoint=True)
+
+  
+# for i, t in progressbar(enumerate(T), len(T)): 
+#   S = F_interp(t)
+#   F = rotate_S1(S, n=25, include_direction=False)
+#   sigs.append()
+
+# from scipy.spatial.distance import squareform
+# pbn_sig_dm = squareform([min_rot_euc(s0, s1) for (s0, s1) in combinations(sigs, 2)])
+
+
+
+
+# from sympy import FunctionMatrix, symbols, Lambda, MatPow
+# from sympy import Function
+# i, j, n, m = symbols('i,j,n,m')
+# X = FunctionMatrix(3, 3, 'lambda i,j: i+j')
+
+# import sympy as sp
+# a, b, c, d = sp.symbols("a b c d")
+# B = sp.Matrix([
+#   [(a*c),(b**2)],[(b*d),(d*a)]
+# ])
+
+
+# %% 
+## Get initial "iterate" for a pair of shapes 
+from math import comb
+F_interp = pyflubber.interpolator(shapes[0], shapes[1], closed=True)
+T = np.linspace(0, 1, 10)
+sigs = []
+E = np.array(list(chain(pairwise(range(shapes[0].shape[0])), iter([(shapes[0].shape[0]-1, 0)])))) # edges
+
+for i, t in progressbar(enumerate(T), len(T)): 
+  S = F_interp(t)
+  F = rotate_S1(S, n=25, include_direction=False)
+  sigs.append(lower_star_betti_sig(F, p_simplices=E, nv=S.shape[0], a=a,b=b,w=1.15,epsilon=1.50))
+
+from scipy.spatial.distance import squareform
+pbn_sig_dm = squareform([min_rot_euc(s0, s1) for (s0, s1) in combinations(sigs, 2)])
+plt.imshow(pbn_sig_dm)
+
+
+
+from scipy.spatial.distance import pdist
+from pbsig.utility import unrank_C2
+D = pdist(shapes[0])
+i,j = unrank_C2(np.argmax(D), shapes[0].shape[0])
+a_min, b_max = D[i], D[j]
+
+
+
+
+
+
+
+
+
 
 ## Get 2-wasserstein to compare
 D = [] # space of persistence diagrams
@@ -235,7 +454,6 @@ d0, d1 = dgms0[0], dgms0[1]
 # ## Matching is *not* invariant under rank-preserving transformations! 
 # wm_a = wasserstein_distance(d0, d1, matching=True, order=1.0, keep_essential_parts=True)[1]
 # wm_b = wasserstein_distance(d0_I, d1_I, matching=True, order=1.0, keep_essential_parts=True)[1]
-
 
 
 
@@ -349,3 +567,5 @@ plt.imshow(TA)
 
 
 
+
+# %%

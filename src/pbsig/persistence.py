@@ -569,7 +569,9 @@ def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Sequence[Union[Arr
     f = (np.array(range(R1.shape[1])), np.array(range(R2.shape[1])))
   assert len(f) == 2, "f must be tuple of function values"
   if isinstance(f[0], dict) and isinstance(f[1], dict):
+    from pbsig.utility import is_sorted
     ew, tw = np.array(list(f[0].values())), np.array(list(f[1].values()))
+    assert is_sorted(ew) and is_sorted(tw)
     b_names, d_names = np.array(list(f[0].keys())), np.array(list(f[1].keys()))
     names = True
   else: 

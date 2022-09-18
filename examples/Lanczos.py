@@ -18,6 +18,15 @@ from pbsig.persistence import boundary_matrix
 D = boundary_matrix(K, p = 1)
 D.data = np.sign(D.data)*np.repeat(fe, 2)
 
+import networkx as nx
+G = nx.Graph()
+G.add_nodes_from(K['vertices'])
+G.add_edges_from(K['edges'])
+max_spectral = np.sqrt(max([sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()]))
+
+max_laplacian_spectral = np.sqrt(2)*np.sqrt(max([G.degree(v)**2 + sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()])) 
+#max(np.linalg.eigh(L)[0])
+
 ## O(n) matrix-vec multiplication example 
 x = np.random.uniform(size=D.shape[0])[:,np.newaxis] # V
 y = D.T @ x # E 
