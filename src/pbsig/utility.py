@@ -96,13 +96,20 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, reverse: bool =
   """
   Maps [lb, ub] -> [0, 1] via a smoother version of a step function
   """
-  assert ub > lb, "Invalid input"
-  d = (ub-lb)
-  def _ss(x: float):
-    y = (x-lb)/d if not(reverse) else 1.0 - (x-lb)/d
-    if (y <= 0.0): return(0.0)
-    if (y >= 1.0): return(1.0)
-    return(3*y**2 - 2*y**3)
+  assert ub >= lb, "Invalid input"
+  if lb == ub:
+    def _ss(x: float):
+      if reverse: 
+        return(1.0 if x < lb else 0.0)
+      else: 
+        return(0.0 if x < lb else 1.0)
+  else: 
+    d = (ub-lb)
+    def _ss(x: float):
+      y = (x-lb)/d if not(reverse) else 1.0 - (x-lb)/d
+      if (y <= 0.0): return(0.0)
+      if (y >= 1.0): return(1.0)
+      return(3*y**2 - 2*y**3)
   return(np.vectorize(_ss))
 
 def rank_C2(i: int, j: int, n: int):
@@ -202,14 +209,14 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
 
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg
-  arc_lengths = np.array([seg.length() for seg in path])
+  arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
   if any(arc_lengths == 0):
     path = list(filter(lambda p: p.length() > 0.0, path))
     for j in range(len(path)-1):
       if path[j].end != path[j+1].start:
         path[j].end = path[j+1].start
     path = Path(*path)
-  arc_lengths = np.array([seg.length() for seg in path])
+  arc_lengths = np.array([np.linalg.norm(seg.length())for seg in path])
   assert(all(arc_lengths > 0)), "Invalid shape detected: lines with 0-length found and not handled"
   A = np.cumsum(arc_lengths)
   p_cc = np.linspace(0, max(A), k)
@@ -219,11 +226,17 @@ def PL_path(path, k: int):
     t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
     L_points.append(path[i].point(t))
   connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
-  if not(path.iscontinuous()) or path.isclosed():
+  if any(connect_the_dots[-1].end != connect_the_dots[0].start): #not(path.iscontinuous()) or path.isclosed():
     #connect_the_dots.append(Line(L_points[-1], L_points[0]))
     connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
   new_path = Path(*connect_the_dots)
   return(new_path)
+
+def simplify_outline(S: ArrayLike, k: int):
+  from svgpathtools import parse_path, Line, Path, wsvg
+  Lines = [Line(p, q) for p,q in pairwise(S)]
+  Lines.append(Line(Lines[-1].end, Lines[0].start))
+  return(PL_path(Path(*Lines), k))
 
 def offset_curve(path, offset_distance, steps=1000):
   """

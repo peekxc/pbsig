@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.spatial.distance import pdist 
 from pbsig.PHT import pht_0
+from pbsig.betti import lower_star_betti_sig
 
 ## Circle example 
 def make_circle(n: int):
@@ -32,11 +33,113 @@ cycle_outline = lambda X: np.vstack([X, X[[-1,0],:]])
 #   plt.plot(*cycle_outline(make_n_gon(n)).T)
 
 #S = make_triangle(10)
-S = make_n_gon(10)
+S = make_n_gon(3)
 E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
 
+## smallest birth == minimal projected vertex height
+outline = []
+theta = np.linspace(0, 2*np.pi, 250, endpoint=True)+(np.pi/2)
+for x,y in zip(np.cos(theta), np.sin(theta)):
+  v = np.array([x,y])[:,np.newaxis]
+  outline.append(min((S @ v).flatten()))
+# np.array(outline) - np.array(D).flatten().reshape(len(D), 2)[:,0]
+
+## Deduce the exact integrated PBC distance 
+from scipy.integrate import quad
+# quad(lambda x: abs(-1.0), 0, 2*np.pi)[0]
+birth_pbc = lambda t: min((S @ np.array([np.cos(t),np.sin(t)])[:,np.newaxis]).flatten())
+plt.plot(np.linspace(0, 2*np.pi, 1000), [birth_pbc(t) for t in np.linspace(0, 2*np.pi, 1000)])
+quad(lambda t: abs(-1.0 - birth_pbc(t)), 0, 2*np.pi)
+
+i = -0.78 
+results = {}
+for n in range(3, 100, 1):
+  S = make_n_gon(n)
+  E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
+  birth_pbc = lambda t: min((S @ np.array([np.cos(t),np.sin(t)])[:,np.newaxis]).flatten())
+  pbc = lambda t: 1.0 if birth_pbc(t) <= i else 0.0
+  bottleneck_dist = quad(lambda t: abs(-1.0 - birth_pbc(t)), 0, 2*np.pi)[0]
+  pbn_dist = quad(lambda t: abs(1.0 - pbc(t)), 0, 2*np.pi)[0]
+  results[n] = { 'bottleneck':  bottleneck_dist, 'pbn': pbn_dist }
+
+normalize = lambda x: (x - min(x))/(max(x) - min(x))
+# plt.plot(np.array([v['bottleneck'] for k,v in results.items()]), c='blue')
+# plt.plot(np.array([v['pbn'] for k,v in results.items()]), c='red')
+# plt.plot(normalize(np.array([v['bottleneck'] for k,v in results.items()])), c='blue')
+# plt.plot(normalize(np.array([v['pbn'] for k,v in results.items()])), c='red')
+
+#n = 5
+
+
+
+plt.plot([1.0 if birth_pbc(t) <= -0.98 else 0.0 for t in np.linspace(0, 2*np.pi, 1000)])
+
+# def animate(i):
+from pbsig.betti import lower_star_betti_sig
+S = make_n_gon(3)
+S = np.array([s.start for s in simplify_outline(S, 50)])
+E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
+F = list(rotate_S1(S, n=200, include_direction=False))
+birth_ub = max([min(f) for f in F])
+fig, axs = plt.subplots(5,3, figsize=(8,4), dpi=180)
+#fig.suptitle(f'Triangle PBT: Rank')
+#fig.suptitle(f'Triangle PBT: Generic, w: {0.35}, eps: {1.50}')
+# fig.suptitle(f'Hexagon PBT: Nuclear, w: {0.15}')
+eps = np.sqrt(np.finfo(float).eps)
+B = np.append(np.linspace(-1.0 - eps, birth_ub+eps, 4), birth_ub*0.75)
+for cc, i in enumerate(B):
+  axs[cc,0].plot([birth_pbc(t) for t in np.linspace(0, 2*np.pi, 100)])
+  axs[cc,0].axhline(y=i, color='r', linestyle='-', linewidth=0.90)
+  axs[cc,0].tick_params(axis='both', which='major', labelsize=5)
+  # plt.tick_params(axis='both', which='major', labelsize=5)
+
+  birth_pbc = lambda t: min((S @ np.array([np.cos(t+np.pi/2),np.sin(t+np.pi/2)])[:,np.newaxis]).flatten())
+  pbc = lambda t: 1.0 if birth_pbc(t) <= i else 0.0
+  axs[cc,1].plot([pbc(t) for t in np.linspace(0, 2*np.pi, 1000)], c='orange')
+  axs[cc,1].tick_params(axis='both', which='major', labelsize=5)
+  # plt.tick_params(axis='both', which='major', labelsize=5)
+  ## Show the conjecture!
+  
+  #sig = lower_star_betti_sig(F, E, nv=S.shape[0], a=i, b=i+0.01, method = "nuclear", w=0.0) # omegaaaaa
+  #sig = lower_star_betti_sig(F, E, nv=S.shape[0], a=i, b=i+0.01, method = "rank")
+  sig = lower_star_betti_sig(F, E, nv=S.shape[0], a=i, b=i+0.01, method = "generic", w=0.0025, epsilon=0.01) 
+  axs[cc,2].plot(sig, c='red')
+  axs[cc,2].tick_params(axis='both', which='major', labelsize=5)
+  yl1, yl2 = axs[cc,2].get_ylim(),axs[cc,1].get_ylim()
+  axs[cc,2].set_ylim(min(yl1[0], yl2[0]), max(yl1[1], yl2[1]))
+
+
+
+fig = plt.figure()
+ani = FuncAnimation(fig, animate, interval=700)
+
+
+
+## Testing nuclear norm equivalence with rank
+from pbsig import *
+from pbsig.simplicial import delaunay_complex
+from pbsig.utility import pht_proprocess_pc
+X = pht_proprocess_pc(np.random.uniform(size=(20, 2)), transform=True)
+K = delaunay_complex(X)
+F = list(rotate_S1(X, n=1000, include_direction=False))
+birth_ub = max([min(f) for f in F])
+birth_lb = min([min(f) for f in F])
+# plot_mesh2D(X, K['edges'], K['triangles'])
+## Why are these equivalent when w = 0???? and only for some (a,b)
+## TODO: give back option to return terms instead
+delta = abs(birth_ub-birth_lb)
+sig = lower_star_betti_sig(F, K['edges'], nv=X.shape[0], a=birth_ub, b=birth_ub+delta*0.001, method = "rank")
+sig = lower_star_betti_sig(F, K['edges'], nv=X.shape[0], a=birth_ub, b=birth_ub, method = "nuclear")
+plt.plot(sig)
+
+
+# plt.xticks([])
+# plt.yticks([])
+
+plt.plot([1.0 if birth_pbc(t) <= -0.95 else 0.0 for t in np.linspace(0, 2*np.pi, 1000)])
+
 from pbsig import plot_dgm
-D = pht_0(S, E, 100)
+D = pht_0(S, E, 20)
 
 diam = max(pdist(S))
 for i in range(len(D)):
@@ -88,9 +191,11 @@ for n in range(3, 1000):
 # E = np.array([[0,1], [1,2], [0,2]])
 # u = np.array([0,1])
 # u = S[1,:] / np.linalg.norm(S[1,:])
-S = make_n_gon(n)
+S = make_n_gon(1000)
 E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
-D = np.array([lower_star_ph_dionysus(fu, E,[]) for fu in rotate_S1(S, n=100, include_direction=False)])
+D = np.array([lower_star_ph_dionysus(fu, E,[]) for fu in rotate_S1(S, n=1500, include_direction=False)])
+
+# plt.plot([min(d.flatten()) for d in D]) sums to number of directions, i.e. it's always -1! 
 
 from pbsig.persistence import boundary_matrix
 n = 5

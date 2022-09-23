@@ -13,8 +13,30 @@
 \date{}
 
 \begin{document} \vspace{-2em} \maketitle \vspace{-1em}
-Let $X_n$ denote an embedding of the regular polygon with $n$ vertices in $\mathbb{R}^2$ whose circumscribed circle is centered at the origin and has radius $1$. Consider the persistent homology transform (PHT) of [the lower-star filtration of] $X_n$: 
-$$ $$
-The main result of the PHT is that it is injective on the space of PL-embedded complexes in $\mathbb{R}^d$\footnote{It has only been proven for $d \leq 3$, although there is no specific reason to suspect the PHT to not generalize beyond $d = 3$. Indeed, there is [insert work].}. This justifies the use of 
+\noindent
+Let $\mathcal{X} = \{ X_1, X_2, \dots, X_n \}$ denote a class of embeddings of regular $n$-sided polygon in $\mathbb{R}^2$, wherein each $X_\ast$ is centered at the origin and scaled such that it inscribes the unit circle. Consider the problem of creating a \emph{discriminator function}:
+$$ \mathcal{D}: \mathcal{X} \to [n] $$
+which is capable of distinguishing $X \in \mathcal{X}$. For this particular family, there is a trivial solution given by counting the number of sides of each $X_\ast$, however for full generality we consider an alternative solution. 
 
+The persistent homology transform (PHT) of [the lower-star filtration of] $X_n$: 
+$$ $$
+The main result of the PHT is that it is injective on the space of PL-embedded complexes in $\mathbb{R}^d$, for $d \leq 3$\footnote{It has only been proven for $d \leq 3$, although there is no specific reason to suspect the PHT to not generalize beyond $d = 3$. Indeed, there is [insert work].}. 
+This justifies the use of the PHT to use a discriminator. 
+
+What is the PHT of $X_n$? Since each $X_n$ is homeomorphic to $S^1$, it is sufficient to consider only the $0$-dimensional PHT for injectivity. Moreover, since each polygon is convex and connected, the persistence diagram $\mathrm{dgm}_0(X_n, v)$ consists a single essential class, represented as a the pair: 
+$$ \mathrm{dgm}_0(X_n, v(\theta)) = \{ \; [\,b_n(\theta), \infty \,) \; \}$$
+where $\theta \in [0, 2 \pi )$ denotes the angular parameter of the PHT. Due to the scaling of each $X_n$, note that we have:
+$$
+-1 \leq b_n(\theta) \leq -1 + c_n
+$$
+where $0 \leq c_n \leq 1$ is some positive constant that depends on $X_n$. For each $n$, the function $b_n(\theta)$ acts a periodic function about the unit circle with $n$ local minima/maxima. As $n$ increases, the number of oscillations $b_n(\theta)$ exhibits increases each period while simultaneously $c_n$ decreases. As $n \to \infty$, $X_\infty$ recovers $S^1$, and $b_n(\theta)$ converges to the constant function $f(\theta) = -1$.   
+
+Consider creating a discriminator over $\mathcal{X}$ using any number of persistent Betti numbers (PBNs). The $p$-th dimensional PBN at index $(i,j)$ may be interpreted as counting the number of points in $\mathrm{dgm}_p(X_n)$ that occur before or at birth index $i$ and after death index $j$. Without loss of generality, suppose we wish to create a discriminator function for the class of shapes $\mathcal{X}_k = \{X_2, \dots, X_k \}$ for some finite choice of $k$ using a single PBN calculation. Since each $\mathrm{dgm}_p(X_\ast)$ contains a single essential class, the choice of $j$ is irrelevant and we may focus solely on the birth index $i$. Observe if $i < -1$, $\beta_p^{i,j}(X) = 0$ is trivial for all $X \in \mathcal{X}_k$ and thus fails to discriminate any shapes. Similarly, if $i > -1 + c_2$ then $\beta_p^{i,j}(X) = 1$ for all $X \in \mathcal{X}_k$ and the PBN fails to discriminate amongst any polygon in $\mathcal{X}_k$. Thus, in order to discriminate all $X$ in $\mathcal{X}_k$, we must choose $i$ in the range: 
+$$
+-1 \leq i \leq -1 + c_k
+$$
+Note that $c_k$ is strictly decreasing as a function of $k$. Thus, choosing an appropriate birth index $i$ such that 
+$$ \mathrm{dist}_{\beta}^{i,j}(X, X') = \int\limits_{\theta=0}^{2\pi} \lVert \, \beta(X, v(\theta)) - \beta(X, v(\theta)) \, \rVert \; d\theta $$
+We wish to choose $\mathrm{dist}_{\beta}^{i,j}(X, X')$.
+ 
 \end{document}

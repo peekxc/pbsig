@@ -117,7 +117,8 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 		# np.log((np.linspace(0,1,10,endpoint=True)+1)*1000)/np.log(2000)
 		# (np.log((x+1)*1000)-np.log(1000))/np.log(2000)
 	elif scaling == "equalize":
-		x = hist_equalize(x, **kwargs)
+		sh = x.shape
+		x = hist_equalize(x, **kwargs).reshape(sh)
 	else:
 		raise ValueError(f"Unknown scaling option '{scaling}' passed. Must be one of 'linear', 'logarithmic', or 'equalize'. ")
 	

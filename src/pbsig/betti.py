@@ -1,3 +1,4 @@
+from multiprocessing.sharedctypes import Value
 from typing import *
 import numpy as np 
 
@@ -387,15 +388,21 @@ def lower_star_pb(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float, 
   H = D2_g.multiply(D2_h)
   return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, beta=beta))
 
+def tolerance(m: int, n: int, dtype: type = float):
+  _machine_eps, _min_res = np.finfo(dtype).eps, np.finfo(dtype).resolution*100
+  def _tol(spectral_radius):
+    return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
+  return _tol
 
 ## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps to make small epsilons match rank 
-def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, w: float = 0.001, epsilon: float = 0.001):
+def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, method: Optional[str] = None, w: float = 0.0, epsilon: float = 0.0):
   """
   F := Iterable of (nv)-sized arrays representing vertex filtration heights
   p_simplices := (m x p) numpy matrix of (p+1)-simplices
   nv := number of vertices 
   a := birth
   b := death 
+  method := one of ["rank", "nuclear", "generic", "frobenius"]
   w := +/- width around chain value 
   epsilon := rank approximation constant
   """
@@ -404,11 +411,35 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   from scipy.sparse.csgraph import structural_rank
   assert isinstance(p_simplices, np.ndarray), "simplices must be a numpy matrix for now"
   p_dim = p_simplices.shape[1]
+  
+  if p_dim == 3: # betti-0
+    E, T = edges_from_triangles(p_simplices, nv), p_simplices
+    tol = tolerance(T.shape[0], E.shape[0])
+  elif p_dim == 2: # betti-0
+    tol = tolerance(p_simplices.shape[0], nv)
+  else: 
+    raise ValueError("invalid simplices")
+
+  if method is None or method == "rank":
+    relax_f = lambda x: sum(abs(x) > tol(max(x)))
+    w = 0.0
+  elif method == "nuclear":
+    relax_f = lambda x: sum([np.sqrt(xi) if xi > tol(max(x)) else 0.0 for xi in x])
+  elif method == "generic":
+    relax_f = lambda x: sum([abs(xi/(xi+epsilon)) if abs(xi) > tol(max(x)) else 0.0 for xi in x])
+  elif method == "fro" or method == "frobenius":
+    relax_f = lambda x: np.sqrt(sum(T3))
+  else: 
+    raise ValueError("Invalid method")
 
   ## Parameterize the smoothstep functions
-  ss_a = smoothstep(lb = a - w/2, ub = a + w/2, reverse = True)
-  ss_b = smoothstep(lb = b - w/2, ub = b + w/2, reverse = True)
-  ss_ac = smoothstep(lb = a - w/2, ub = a + w/2, reverse = False)
+  # ss_a = smoothstep(lb = a - w/2, ub = a + w/2, reverse = True)
+  # ss_b = smoothstep(lb = b - w/2, ub = b + w/2, reverse = True)
+  # ss_ac = smoothstep(lb = a - w/2, ub = a + w/2, reverse = False)
+  ss_a = smoothstep(lb = a - w, ub = a, reverse = True) #   0 (a-w) -> 1 (a)
+  ss_b = smoothstep(lb = b - w, ub = b, reverse = True) #   0 (b-w) -> 1 (b)
+  ss_ac = smoothstep(lb = a - w, ub = a, reverse = False) # 1 (a-w) -> 0 (a)
+
 
   ## Compute the terms 
   shape_sig, terms = array('d'), np.zeros(4)
@@ -422,14 +453,14 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
       terms.fill(0) ## reset
       ## Term 1
       T1 = ss_a(f[E].max(axis=1))
-      terms[0] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T1])
+      terms[0] = relax_f(np.array(T1))
 
       ## Term 2 
       if np.any(T1):
         D1.data = D1_nz_pattern * np.repeat(T1, 2)
         L = D1 @ D1.T
         T2 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[1] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T2])
+        terms[1] = -relax_f(np.array(T2))
 
       ## Term 3
       t_chain_val = ss_b(f[T].max(axis=1))
@@ -437,7 +468,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
         D2.data = np.array([x if x != 0 else 0.0 for x in D2_nz_pattern * np.repeat(t_chain_val, 3)])
         L = D2 @ D2.T
         T3 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[2] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
+        terms[2] = -relax_f(np.array(T3))
 
       ## Term 4
       d2_01, d2_02, d2_12 = f[T[:,[0,1]]].max(axis=1), f[T[:,[0,2]]].max(axis=1), f[T[:,[1,2]]].max(axis=1)
@@ -447,43 +478,46 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
         D2.data = np.array([x if x != 0 else 0.0 for x in D2_nz_pattern * (sa * sb)])
         L = D2 @ D2.T
         T4 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[3] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T4])
+        terms[3] = relax_f(np.array(T4))
 
       ## Append to shape signature and continue
       shape_sig.append(np.sum(terms))
   elif p_dim == 2: # Betti-0
     E = p_simplices
     D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
+    assert D1.has_sorted_indices
     D1_nz_pattern = np.sign(D1.data)
     
     for f in F:
       terms.fill(0)
       
       ## Term 1
-      terms[0] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in ss_a(f)])
+      terms[0] = relax_f(np.array([t for t in ss_a(f)]))
       #terms[0] = sum([t if abs(t) > 1e-13 else 0 for t in ss_a(f)])
       
       ## Term 3
       edge_f = f[E].max(axis=1)
       chain_vals = ss_b(edge_f)
       if np.any(chain_vals > 0):
+        assert D1.has_sorted_indices
         D1.data = np.array([x if x != 0 else 0.0 for x in D1_nz_pattern * np.repeat(chain_vals, 2)])
         L = D1 @ D1.T
         k = structural_rank(L)
         k = k - 1 if k == min(D1.shape) else k
         T3 = eigsh(L, return_eigenvectors=False, k=k)
-        terms[2] = -sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T3])
+        terms[2] = -relax_f(np.array(T3))
         #terms[2] = -sum([t if abs(t) > 1e-13 else 0 for t in T3])
 
       ## Term 4
       chain_vals = ss_b(edge_f) * ss_ac(edge_f)
       if np.any(chain_vals > 0):
+        assert D1.has_sorted_indices
         D1.data = D1_nz_pattern * np.repeat(np.array([x if x != 0 else 0.0 for x in chain_vals]), 2)
         L = D1 @ D1.T
         k = structural_rank(L)
         k = k - 1 if k == min(D1.shape) else k
         T4 = eigsh(L, return_eigenvectors=False, k=k)
-        terms[3] = sum([t/(t + epsilon) if abs(t) > 1e-13 else 0 for t in T4])
+        terms[3] = relax_f(np.array(T4))
         #terms[3] = sum([t if abs(t) > 1e-13 else 0 for t in T4])
       
       ## Append to shape signature and continue
