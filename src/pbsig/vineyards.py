@@ -34,7 +34,7 @@ def cancel_pivot(A, i, j, piv: Optional[int] = None):
   if (c == 0):
     return(0.0)
   s = -(d/c)
-  A[:,j] += s*A[:,i]
+  A[:,[j]] += s*A[:,[i]]
   return(s)
 
 def transpose_dgm(R1, V1, R2, V2, i: int):
@@ -56,7 +56,7 @@ def transpose_dgm(R1, V1, R2, V2, i: int):
         permute_tr(R2, i, "rows")
         permute_tr(V1, i, "both")
         s = cancel_pivot(R2, k, l)
-        V2[:,l] += s*V2[:,k] if s != 0 else V2[:,k]
+        V2[:,[l]] += s*V2[:,[k]] if s != 0 else V2[:,[k]]
         #V2[:,l] += s*V2[:,k]
         #R2[:,l] = R2[:,k] + R2[:,l]
         #V2[:,l] = V2[:,k] + V2[:,l]
@@ -78,7 +78,7 @@ def transpose_dgm(R1, V1, R2, V2, i: int):
         # s = cancel_pivot(R1, i, i+1)
         s = cancel_pivot(V1, i, i+1, piv=i) ## V1[:,i+1] |-> s*V1[:,i] + V1[:,i+1], where s := ()
         #assert s != 0
-        R1[:,i+1] += s*R1[:,i] if s != 0 else R1[:,i]
+        R1[:,[i+1]] += s*R1[:,[i]] if s != 0 else R1[:,[i]]
         #R1[:,i+1] = R1[:,i+1] + R1[:,i]
         #V1[:,i+1] = V1[:,i+1] + V1[:,i]
         permute_tr(R1, i, "cols")
@@ -89,14 +89,14 @@ def transpose_dgm(R1, V1, R2, V2, i: int):
         # s = cancel_pivot(R1, i, i+1)
         s = cancel_pivot(V1, i, i+1, piv=i)
         # R1[:,i+1] += s*R1[:,i]
-        R1[:,i+1] += s*R1[:,i] if s != 0 else R1[:,i]
+        R1[:,[i+1]] += s*R1[:,[i]] if s != 0 else R1[:,[i]]
         # R1[:,i+1] = R1[:,i+1] + R1[:,i]
         # V1[:,i+1] = V1[:,i+1] + V1[:,i]
         permute_tr(R1, i, "cols")
         permute_tr(V1, i, "both")
         permute_tr(R2, i, "rows")
         s = cancel_pivot(R1, i, i+1)
-        V1[:,i+1] += s*V1[:,i] if s != 0 else V1[:,i]
+        V1[:,[i+1]] += s*V1[:,[i]] if s != 0 else V1[:,[i]]
         return(5)
     else: # Case 2.2
       permute_tr(R1, i, "cols")
@@ -107,12 +107,12 @@ def transpose_dgm(R1, V1, R2, V2, i: int):
     if V1[i,i+1] != 0:
       ## Case 3.1
       s = cancel_pivot(V1, i, i+1, piv=i)
-      R1[:,i+1] += s*R1[:,i] if s != 0 else R1[:,i]
+      R1[:,[i+1]] += s*R1[:,[i]] if s != 0 else R1[:,[i]]
       permute_tr(R1, i, "cols")
       permute_tr(V1, i, "both")
       permute_tr(R2, i, "rows")
       s = cancel_pivot(R1, i, i+1)
-      V1[:,i+1] += s*V1[:,i] if s != 0 else V1[:,i]
+      V1[:,[i+1]] += s*V1[:,[i]] if s != 0 else V1[:,[i]]
       return(7)
     else:
       permute_tr(R1, i, "cols")
@@ -142,41 +142,41 @@ def line_intersection(line1, line2):
   return x, y
 
 
-def linear_homotopy(f0: ArrayLike, f1: ArrayLike, plot_lines: bool = False, schedule: bool = False):
-  assert len(f0) == len(f1)
-  ind = np.argsort(f0)
-  P, Q = np.c_[np.repeat(0.0, len(f0)),f0][ind,:], np.c_[np.repeat(1.0, len(f1)),f1][ind,:]
-  from itertools import combinations 
-  n = P.shape[0]
-  results = []
-  for i,j in combinations(range(n), 2):
-    pq = line_intersection((P[i,:], Q[i,:]), (P[j,:], Q[j,:]))
-    if not(pq is None):
-      results.append((i,j,pq[0],pq[1]))
-    # print((i,j))
-  results = np.array(results)
-  results = results[np.logical_and(results[:,2] >= 0.0, results[:,2] <= 1.0),:]
-  results = results[np.argsort(results[:,2]),:]
-  cross_points = results[:,[2,3]].astype(float)
-  transpositions = results[:,[0,1]].astype(int)
+# def linear_homotopy(f0: ArrayLike, f1: ArrayLike, plot_lines: bool = False, schedule: bool = False):
+#   assert len(f0) == len(f1)
+#   ind = np.argsort(f0)
+#   P, Q = np.c_[np.repeat(0.0, len(f0)),f0][ind,:], np.c_[np.repeat(1.0, len(f1)),f1][ind,:]
+#   from itertools import combinations 
+#   n = P.shape[0]
+#   results = []
+#   for i,j in combinations(range(n), 2):
+#     pq = line_intersection((P[i,:], Q[i,:]), (P[j,:], Q[j,:]))
+#     if not(pq is None):
+#       results.append((i,j,pq[0],pq[1]))
+#     # print((i,j))
+#   results = np.array(results)
+#   results = results[np.logical_and(results[:,2] >= 0.0, results[:,2] <= 1.0),:]
+#   results = results[np.argsort(results[:,2]),:]
+#   cross_points = results[:,[2,3]].astype(float)
+#   transpositions = results[:,[0,1]].astype(int)
 
-  if plot_lines: 
-    import matplotlib.pyplot as plt 
-    qp = np.argsort(Q[:,1])
-    plt.scatter(*P.T)
-    plt.scatter(*Q.T)
-    for i,j,k,l in zip(P[:,0],Q[:,0],P[:,1],Q[:,1]):
-      plt.plot((i,j), (k,l), c='black')
-    plt.scatter(*results[:,2:].T, zorder=30, s=5.5)
-    for x,y,label in zip(P[:,0],P[:,1],range(n)): plt.text(x, y, s=str(label),ha='left')
-    for x,y,label in zip(Q[qp,0],Q[qp,1],qp): plt.text(x, y, s=str(label),ha='right')
+#   if plot_lines: 
+#     import matplotlib.pyplot as plt 
+#     qp = np.argsort(Q[:,1])
+#     plt.scatter(*P.T)
+#     plt.scatter(*Q.T)
+#     for i,j,k,l in zip(P[:,0],Q[:,0],P[:,1],Q[:,1]):
+#       plt.plot((i,j), (k,l), c='black')
+#     plt.scatter(*results[:,2:].T, zorder=30, s=5.5)
+#     for x,y,label in zip(P[:,0],P[:,1],range(n)): plt.text(x, y, s=str(label),ha='left')
+#     for x,y,label in zip(Q[qp,0],Q[qp,1],qp): plt.text(x, y, s=str(label),ha='right')
 
-  if not(schedule):
-    return(transpositions, cross_points)
-  else:
-    q = np.argsort(f1[np.argsort(f0)])
-    S = schedule_transpositions(transpositions, q)
-    return(S, cross_points[:,0])
+#   if not(schedule):
+#     return(transpositions, cross_points)
+#   else:
+#     q = np.argsort(f1[np.argsort(f0)])
+#     S = schedule_transpositions(transpositions, q)
+#     return(S, cross_points[:,0])
   
 
 ## Convert id transpositions to relative position transpositions

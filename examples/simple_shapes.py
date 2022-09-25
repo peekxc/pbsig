@@ -110,8 +110,8 @@ for cc, i in enumerate(B):
 
 
 
-fig = plt.figure()
-ani = FuncAnimation(fig, animate, interval=700)
+# fig = plt.figure()
+# ani = FuncAnimation(fig, animate, interval=700)
 
 
 
@@ -283,3 +283,6 @@ for i, t in enumerate(np.linspace(0, 1, 50)):
 # plt.gca().set_aspect('equal')
 # fv = list(rotate_S1(S, n=100, include_direction=False))[32]
 # lower_star_ph_dionysus(fv, E, [])[0]
+
+
+from pbsig.simplicial import as_filtration

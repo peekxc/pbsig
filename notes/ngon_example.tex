@@ -14,9 +14,14 @@
 
 \begin{document} \vspace{-2em} \maketitle \vspace{-1em}
 \noindent
-Let $\mathcal{X} = \{ X_1, X_2, \dots, X_n \}$ denote a class of embeddings of regular $n$-sided polygon in $\mathbb{R}^2$, wherein each $X_\ast$ is centered at the origin and scaled such that it inscribes the unit circle. Consider the problem of creating a \emph{discriminator function}:
+Let $\mathcal{X} = \{ X_1, X_2, \dots, X_n \}$ denote a family of shapes in $\mathbb{R}^d$, each of which is centered at origin and scaled to unit scale under some domain-specific normalization.  Consider the problem of creating a \emph{discriminator function}:
 $$ \mathcal{D}: \mathcal{X} \to [n] $$
-which is capable of distinguishing $X \in \mathcal{X}$. For this particular family, there is a trivial solution given by counting the number of sides of each $X_\ast$, however for full generality we consider an alternative solution. 
+which is capable of distinguishing $X \in \mathcal{X}$, i.e. for any $X, X' \in \mathcal{X}$, we have $\mathcal{D}(X) = \mathcal{D}(X')$ if and only if $X = X'$. 
+
+% embeddings of regular $n$-sided polygon in $\mathbb{R}^2$, wherein each $X_\ast$ is centered at the origin and scaled such that it inscribes the unit circle. 
+For this particular family, there is a trivial solution given by counting the number of sides of each $X_\ast$, though this strategy clearly will not 
+%however for full generality we consider an alternative solution. 
+
 
 The persistent homology transform (PHT) of [the lower-star filtration of] $X_n$: 
 $$ $$
@@ -37,6 +42,6 @@ $$
 $$
 Note that $c_k$ is strictly decreasing as a function of $k$. Thus, choosing an appropriate birth index $i$ such that 
 $$ \mathrm{dist}_{\beta}^{i,j}(X, X') = \int\limits_{\theta=0}^{2\pi} \lVert \, \beta(X, v(\theta)) - \beta(X, v(\theta)) \, \rVert \; d\theta $$
-We wish to choose $\mathrm{dist}_{\beta}^{i,j}(X, X')$.
+We wish to choose $(i,j)$ in such a way that $\mathrm{dist}_{\beta}^{i,j}(X, X') >0$ for all $X \neq X'$.
  
 \end{document}

@@ -48,14 +48,16 @@ def as_simplex(vertices: Collection) -> SimplexLike:
     def __len__(self):
       return len(self.vertices)
     def __lt__(self, other: SimplexLike) -> bool:
+      ''' Returns whether self is a face of other '''
       if len(self) >= len(other): 
         return(False)
-      elif len(self) == len(other)-1: 
-        return(self in other.boundary())
+      # elif len(self) == len(other)-1: 
+      #   return(self in other.boundary())
       else:
-        return(any(self < face for face in other.boundary()))
-      #return self[0] < other[0]
-    def __contains__(self, __x: object) -> bool:
+        #return(any(self < face for face in other.boundary()))
+        return(all([v in other.vertices for v in self.vertices]))
+    def __contains__(self, __x: int) -> bool:
+      """ Reports vertex-wise inclusion """
       return self.vertices.__contains__(__x)
     def __iter__(self) -> Iterator:
       return iter(self.vertices)
@@ -67,34 +69,48 @@ def as_simplex(vertices: Collection) -> SimplexLike:
     def dimension(self) -> int: 
       return len(vertices)
     def __repr__(self):
-      return "S: "+str(self.vertices)
+      return str(self.vertices)
   return(_simplex(vertices))
     
 
-def as_filtration(simplices: Collection) -> SimplexLike:
+def as_filtration(simplices: Collection[SimplexLike]) -> SimplexLike:
+  ## Construct a mutable sequence (list in this case) of simplices
+  F = [as_simplex(s) for s in simplices]
+  assert isinstance(F, MutableSequence), "simplices must be a mutable sequence"
+
   class _filtration(Collection):
-    def __init__(self, simplices: MutableSequence[SimplexLike]) -> None:
+    def __init__(self, simplices: MutableSequence[SimplexLike], I: Optional[Collection] = None) -> None:
       # isinstance([0,1,2], MutableSequence)
+      assert all([isinstance(s, SimplexLike) for s in simplices]), "Must all be simplex-like"
       self.simplices = simplices
+      self.indices = I
     def __getitem__(self, index) -> SimplexLike:
       return(self.simplices[index])
     def __delitem__(self, index): 
-      raise NotImplementedError
+      # raise NotImplementedError
+      if index < len(self.simplices):
+        del self.simplices[index]
     def __setitem__(self, key, newvalue): 
-      raise NotImplementedError
+      #raise NotImplementedError
+      assert isinstance(newvalue, SimplexLike), "Value-type must be simplex-like"
+      self.simplices[key] = newvalue 
     def __len__(self):
       return len(self.simplices)
     def __contains__(self, __x: object) -> bool:
       return self.simplices.__contains__(__x)
     def __iter__(self) -> Iterator:
       return iter(self.simplices)
-    def sort(self, key: Callable[[SimplexLike, SimplexLike], bool]) -> None: 
-      raise NotImplementedError 
+    def sort(self, key: Optional[Callable[[SimplexLike, SimplexLike], bool]] = None) -> None: 
+      #raise NotImplementedError 
+      # if key is None: 
+      #   key = lambda s1, s2: 
+      self.simplices = sorted(self.simplices, key=key)
     def rearrange(self, indices: Collection) -> None:
+      #self.simplices = sorted(self.simplices, key=lambda s1, s2: )
       raise NotImplementedError
     def __repr__(self):
       return "F: "+str(self.simplices)
-  return(_filtration(simplices))
+  return(_filtration(F))
 
 def lower_star_filtration(simplices: Collection[SimplexLike], heights: Collection[float]) -> FiltrationLike:
   """

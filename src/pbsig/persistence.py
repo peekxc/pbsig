@@ -9,7 +9,7 @@ import numbers
 import scipy.sparse as sps
 
 ## Function/structure imports
-from scipy.sparse import coo_matrix, csc_matrix, lil_matrix, isspmatrix
+from scipy.sparse import coo_matrix, csc_matrix, lil_matrix, isspmatrix, coo_array, lil_array
 from array import array
 from itertools import combinations
 from scipy.special import binom
@@ -35,11 +35,14 @@ def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = 
     data_val[2*i], data_val[2*i+1] = sign_pattern
     row_ind[2*i], row_ind[2*i+1] = int(p[u_ind]), int(p[v_ind])
     col_ind[2*i], col_ind[2*i+1] = int(i), int(i)
-  D = csc_matrix((data_val, (row_ind, col_ind)), shape=(V, E), dtype=dtype)
+  if coboundary:
+    D = coo_array((data_val, (col_ind, row_ind)), shape=(E, V), dtype=dtype).tolil(copy=False)
+  else: 
+    D = coo_array((data_val, (row_ind, col_ind)), shape=(V, E), dtype=dtype).tolil(copy=False)
   
   ## TODO: make coboundary computation more efficient 
-  if coboundary:
-    D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
+  # if coboundary:
+  #   D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
 def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = False, N = "max", dtype = int, sign_pattern: tuple = (1, -1, 1)):
@@ -56,11 +59,15 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
     data_val[3*i], data_val[3*i+1], data_val[3*i+2] = sign_pattern
     row_ind[3*i], row_ind[3*i+1], row_ind[3*i+2] = int(p[uv_ind]), int(p[uw_ind]), int(p[vw_ind])
     col_ind[3*i], col_ind[3*i+1], col_ind[3*i+2] = int(i), int(i), int(i)
-  D = csc_matrix((data_val, (row_ind, col_ind)), shape=(E, T), dtype=dtype)
-  
-  ## TODO: make coboundary computation more efficient 
   if coboundary:
-    D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
+    D = coo_array((data_val, (col_ind, row_ind)), shape=(T, E), dtype=dtype).tolil(copy=False)
+  else: 
+    D = coo_array((data_val, (row_ind, col_ind)), shape=(E, T), dtype=dtype).tolil(copy=False)  
+  # D = csc_matrix((data_val, (row_ind, col_ind)), shape=(E, T), dtype=dtype)
+  
+  # ## TODO: make coboundary computation more efficient 
+  # if coboundary:
+  #   D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
 def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
@@ -72,7 +79,7 @@ def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Opti
   else:
     if p == 0:
       nv = len(K['vertices'])
-      D = csc_matrix((0, nv), dtype=np.float64)
+      D = csc_matrix((0, nv), dtype=np.float64).tolil()
     elif p == 1: 
       D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
     elif p == 2:
@@ -80,13 +87,18 @@ def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Opti
     elif p == 3:
       nt = len(K['triangles'])
       assert not('quads' in K)
-      D = csc_matrix((nt, 0), dtype=np.float64)
+      D = csc_matrix((nt, 0), dtype=np.float64).tolil()
     else: 
-      raise ValueError(f"Invalid p={p} for boundary matrix")
+      raise NotImplementedError
+      #raise ValueError(f"Invalid p={p} for boundary matrix")
     if not(f is None): # isinstance(f, Sized)
-      assert isinstance(f, Tuple)
-      ind0, ind1 = np.argsort(f[0]), np.argsort(f[1])
-      D = D[np.ix_(ind0,ind1)]
+      if isinstance(f, Tuple) and len(f) == 2:
+        ind0, ind1 = np.argsort(f[0]), np.argsort(f[1])
+        D = D[np.ix_(ind0,ind1)]
+      elif isinstance(f, Sequence):
+        raise NotImplementedError
+      else: 
+        raise NotImplementedError
     return(D)
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
@@ -414,7 +426,7 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
         fw, cw = ew, tw # face, coface weights
     return(D, (fw, cw)) # face, coface weights
 
-def low_entry(D: csc_matrix, j: Optional[int] = None):
+def low_entry(D: lil_array, j: Optional[int] = None):
   """ Provides O(1) access to all the low entries of D """
   #assert isinstance(D, csc_matrix)
   if j is None: 
@@ -424,9 +436,9 @@ def low_entry(D: csc_matrix, j: Optional[int] = None):
       nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
       return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
     else: 
-      return(-1 if D[:,j].getnnz() == 0 else max(D[:,j].nonzero()[0]))
+      return(-1 if D[:,[j]].getnnz() == 0 else max(D[:,[j]].nonzero()[0]))
 
-def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
+def pHcol(R: lil_array, V: lil_array, I: Optional[Iterable] = None):
   # assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"
   assert R.shape[1] == V.shape[0], "Must be matching boundary matrices"
   m = R.shape[1]
@@ -436,17 +448,19 @@ def pHcol(R: csc_matrix, V: csc_matrix, I: Optional[Iterable] = None):
     while( piv[j] != -1 and np.any(J := piv[:j] == piv[j]) ):
       i = np.flatnonzero(J)[0] # i < j
       c = R[piv[j],j] / R[piv[i],i]
-      R[:,j] -= c*R[:,i] 
-      V[:,j] -= c*V[:,i] 
+      R[:,[j]] -= c*R[:,[i]] 
+      V[:,[j]] -= c*V[:,[i]] 
       _perf['n_col_adds'] += 2
       # print(np.max(np.linalg.svd(R.A)[1]))
       if isinstance(R, csc_matrix): 
         R.eliminate_zeros() # needed to changes the indices
       # piv[j] = -1 if len(R[:,j].indices) == 0 else R[:,j].indices[-1] # update pivot array
-      piv[j] = -1 if R[:,j].getnnz() == 0 else max(R[:,j].nonzero()[0]) # update pivot array
+      piv[j] = -1 if R[:,[j]].getnnz() == 0 else max(R[:,[j]].nonzero()[0]) # update pivot array
   return(None)
 
-def reduction_pHcol(D1: csc_matrix, D2: csc_matrix, clearing: bool = False):
+
+
+def reduction_pHcol(D1: lil_array, D2: lil_array, clearing: bool = False):
   # assert isinstance(D1, csc_matrix) and isinstance(D2, csc_matrix), "Invalid boundary matrices"
   assert D1.shape[1] == D2.shape[0], "Must be matching boundary matrices"
   V1, V2 = sps.identity(D1.shape[1]).tolil(), sps.identity(D2.shape[1]).tolil()
@@ -465,7 +479,7 @@ def reduction_pHcol(D1: csc_matrix, D2: csc_matrix, clearing: bool = False):
     V1[:,cleared] = R2[:,cleared_domain] # set Vi = Rj
   return((R1, R2, V1, V2))
 
-def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
+def reduction_pHcol_clearing(D: Iterable[lil_array], implicit: bool = False):
   """ 
   D must be given as an iterable of boundary matrices given in decreasing dimensions
   """
@@ -481,7 +495,7 @@ def reduction_pHcol_clearing(D: Iterable[csc_matrix], implicit: bool = False):
     cleared = np.array(list(filter(lambda p: p != -1, low_entry(Rp))))
   return((R, V))
 
-def is_reduced(R: csc_matrix) -> bool:
+def is_reduced(R: lil_array) -> bool:
   """ Checks if a matrix R is indeed reduced. """
   # assert isinstance(R, csc_matrix), "R must be a CSC sparse matrix."
   if isinstance(R, csc_matrix): 
@@ -489,6 +503,22 @@ def is_reduced(R: csc_matrix) -> bool:
   low_ind = np.array([low_entry(R, j) for j in range(R.shape[1])], dtype=int)
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
+
+from pbsig.simplicial import FiltrationLike 
+
+def ph(K: FiltrationLike, p: int = 0, factor: bool = False):
+  """
+  Computes the p-th persistent homology a filtration 'K'. 
+
+  Returns: 
+    (1) (dgm: ArrayLike) := K's p-th persistence diagram (if factor == False), or
+    (2) (Dp, Dq, Rp, Rq, Vp, Vq) := The matrices used to compute the decomposition  
+  """
+  D0, D1 = boundary_matrix(K, p=(0,1))
+  R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+  Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+  Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+
 
 # from enum import Enum
 def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps: float = 100*np.finfo(float).resolution):
@@ -807,17 +837,3 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
   DGM0 = np.array([[pt.birth, pt.death] for pt in dgms[0]])
   DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
   return([DGM0, DGM1])
-
-from pbsig.simplicial import FiltrationLike 
-
-def ph(K: FiltrationLike, p: int = 0, ):
-  """
-  Returns the 
-  """
-  # D0, D1 = boundary_matrix(K, p=(0,1))
-  # R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-  # Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
-  # Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
-
-  # D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
-  # D1, D2 = D1.tolil(), D2.tolil()

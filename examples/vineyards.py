@@ -14,14 +14,13 @@ D1, D2 = boundary_matrix(K, p=1), boundary_matrix(K, p=2)
 
 ## Reduction
 # pHcol(D1)
-R1, R2, V1, V2 = reduction_pHcol(D1.tolil(), D2.tolil())
+R1, R2, V1, V2 = reduction_pHcol(D1, D2)
 validate_decomp(D1, R1, V1, D2, R2, V2)
 
 R0, V0 = sps.csc_matrix((0,len(V))), np.eye(len(V))
 dgm0_index = persistence_pairs(R0, R1, collapse=False)
 dgm1_index = persistence_pairs(R1, R2, collapse=False)
 
-R1, R2, V1, V2 = R1.tolil(), R2.tolil(), V1.tolil(), V2.tolil()
 transpose_dgm(R1, V1, R2, V2, 0)
 
 
@@ -56,12 +55,11 @@ Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
 Tf = dict(sorted(zip(to_str(T), ft0), key=index(1)))
 
 D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
-D1, D2 = D1.tolil(), D2.tolil()
 R1, R2, V1, V2 = reduction_pHcol(D1, D2)
 
 ## Handle deficient cases
-R0, V0 = sps.lil_matrix((0,len(V))), sps.lil_matrix(np.eye(len(V)))
-R3, V3 = sps.lil_matrix((len(T), 0)), sps.lil_matrix((0,0))
+R0, V0 = sps.lil_array((0,len(V))), sps.lil_array(np.eye(len(V)))
+R3, V3 = sps.lil_array((len(T), 0)), sps.lil_array((0,0))
 D0, D3 = R0, R3
 
 assert validate_decomp(D0, R0, V0, D1, R1, V1)
@@ -71,8 +69,8 @@ v_names = np.array(list(Vf.keys()))
 e_names = np.array(list(Ef.keys()))
 P = persistence_pairs(R0, R1, f=(Vf, Ef))
 
-S1_V = np.hstack([v for (f,v) in rotate_S1(X, n=8)])
 
+S1_V = np.hstack([v for (f,v) in rotate_S1(X, n=8)])
 # P2 = barcodes(K, p=0, f=(np.sort(fv0), np.sort(fe0)))
 
 i = 1
@@ -82,10 +80,11 @@ Ef_next = dict(sorted(zip(to_str(E), F[:,i][E].max(axis=1)), key=index(1)))
 tr_v = linear_homotopy(Vf, Vf_next, plot=False)
 tr_e = linear_homotopy(Ef, Ef_next, plot=False)
 
-linear_homotopy(Vf, Vf_next, plot=True)
-linear_homotopy(Ef, Ef_next, plot=True)
+# linear_homotopy(Vf, Vf_next, plot=True)
+# linear_homotopy(Ef, Ef_next, plot=True)
 
 ## Double-check
+from pbsig.vineyards import swap
 vn0 = list(Vf.keys())
 for i in tr_v: vn0 = swap(vn0, i)
 assert vn0 == list(Vf_next.keys())
@@ -116,11 +115,9 @@ assert validate_decomp(D0, R0, V0, D1, R1, V1)
 assert validate_decomp(D1, R1, V1, D2, R2, V2)
 
 ## Collect the persistence diagrams
-v_names = np.array(list(dict(sorted(Vf_next.items(), key=lambda kv: kv[1])).keys()))
-e_names = np.array(list(dict(sorted(Ef_next.items(), key=lambda kv: kv[1])).keys()))
-fv_new = np.array(sorted(np.fromiter(Vf_next.values(), float)))
-fe_new = np.array(sorted(np.fromiter(Ef_next.values(), float)))
-P = persistence_pairs(R0, R1, f=(fv_new,fe_new), names=(v_names, e_names))
+P = persistence_pairs(R0, R1, f=(Vf_next, Ef_next))
+
+
 
 fig, ax = plot_mesh2D(X, K['edges'], K['triangles'], labels=True)
 ax.set_xlim(-1, 1)
@@ -308,3 +305,84 @@ tr, cr = linear_homotopy(f0, f1, schedule=False)
 
 
 # a, b 
+
+## Choose filtration directions
+F = np.hstack([f[:,np.newaxis] for (f, v) in rotate_S1(X, n=8)])
+
+def lower_star_vineyards(K: Dict, F: ArrayLike, p: int = 0):
+  """
+  F := (n x t) matrix of filtration values for n-vertices over t-time points
+  """
+  ## Extract simplices from complex
+  V, E = K['vertices'], K['edges']
+
+  ## Form dictionary with simplex names + height values
+  fv0, fe0 = F[:,0], F[E,0].max(axis=1)
+  Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+  Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+  
+  ## Perform the initial reduction 
+  D1, D2 = boundary_matrix(K, p=(0,1), f=((fv0,fe0), (fe0,ft0)))
+  R1, R2, V1, V2 = reduction_pHcol(D1, D2)
+
+  ## Handle deficient cases
+  R0, V0 = sps.lil_array((0,len(V))), sps.lil_array(np.eye(len(V)))
+  R3, V3 = sps.lil_array((len(T), 0)), sps.lil_array((0,0))
+  D0, D3 = R0, R3
+
+  assert validate_decomp(D0, R0, V0, D1, R1, V1)
+  assert validate_decomp(D1, R1, V1, D2, R2, V2)
+
+  v_names = np.array(list(Vf.keys()))
+  e_names = np.array(list(Ef.keys()))
+  P = persistence_pairs(R0, R1, f=(Vf, Ef))
+
+
+S1_V = np.hstack([v for (f,v) in rotate_S1(X, n=8)])
+# P2 = barcodes(K, p=0, f=(np.sort(fv0), np.sort(fe0)))
+
+i = 1
+Vf_next = dict(sorted(zip(to_str(V), F[:,i]), key=index(1)))
+Ef_next = dict(sorted(zip(to_str(E), F[:,i][E].max(axis=1)), key=index(1)))
+
+tr_v = linear_homotopy(Vf, Vf_next, plot=False)
+tr_e = linear_homotopy(Ef, Ef_next, plot=False)
+
+# linear_homotopy(Vf, Vf_next, plot=True)
+# linear_homotopy(Ef, Ef_next, plot=True)
+
+## Double-check
+from pbsig.vineyards import swap
+vn0 = list(Vf.keys())
+for i in tr_v: vn0 = swap(vn0, i)
+assert vn0 == list(Vf_next.keys())
+
+en0 = list(Ef.keys())
+for i in tr_e: en0 = swap(en0, i)
+assert en0 == list(Ef_next.keys())
+
+## Permute all the boundary matrices 
+for j in tr_v:
+  transpose_dgm(R0, V0, R1, V1, j)
+  permute_tr(D0, j, 'cols') 
+  permute_tr(D1, j, 'rows')
+  v_names[[j,j+1]] = v_names[[j+1,j]]
+  assert validate_decomp(D0, R0, V0, D1, R1, V1)
+assert all(v_names == np.array(list(dict(sorted(Vf_next.items(), key=lambda kv: kv[1])).keys())))
+
+for j in tr_e:
+  transpose_dgm(R1, V1, R2, V2, j)
+  permute_tr(D1, j, 'cols') 
+  permute_tr(D2, j, 'rows')
+  e_names[[j,j+1]] = e_names[[j+1,j]]
+  assert validate_decomp(D1, R1, V1, D2, R2, V2)
+assert all(e_names == np.array(list(dict(sorted(Ef_next.items(), key=lambda kv: kv[1])).keys())))
+
+## Final assertions
+assert validate_decomp(D0, R0, V0, D1, R1, V1)
+assert validate_decomp(D1, R1, V1, D2, R2, V2)
+
+## Collect the persistence diagrams
+P = persistence_pairs(R0, R1, f=(Vf_next, Ef_next))
+
+
