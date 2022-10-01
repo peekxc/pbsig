@@ -8,25 +8,74 @@
 \DeclareMathOperator*{\argmax}{arg\,max}
 \DeclareMathOperator*{\argmin}{arg\,min}
 
-\title{\vspace{-2.0em} \vspace{-0.5em}}
-\author{Matt Piekenbrock}
+\title{\vspace{-2.0em} Persistence-based Metric Learning \vspace{-0.5em}}
+%\author{Matt Piekenbrock}
 \date{}
 
 \begin{document} \vspace{-2em} \maketitle \vspace{-1em}
 \noindent
-Let $\mathcal{X} = \{ X_1, X_2, \dots, X_n \}$ denote a family of shapes in $\mathbb{R}^d$, each of which is centered at origin and scaled to unit scale under some domain-specific normalization.  Consider the problem of creating a \emph{discriminator function}:
-$$ \mathcal{D}: \mathcal{X} \to [n] $$
-which is capable of distinguishing $X \in \mathcal{X}$, i.e. for any $X, X' \in \mathcal{X}$, we have $\mathcal{D}(X) = \mathcal{D}(X')$ if and only if $X = X'$. 
+Let $\mathcal{X}$ denote a data set of interest, given as family of objects $\mathcal{X} =\{ X_1, X_2, \dots, X_n \}$ which we wish to compare for some task; typical object types in $\mathcal{X}$ may include image data, point cloud data, or more structured inputs such as geometric meshes. 
+The goal of \emph{metric learning} is to learn a distance function $d: \mathcal{X} \times \mathcal{X} \to \mathbb{R}_{+}$ that reflects a useful notion of dissimilarity (or similarity) satisfying the following properties for any triple $X, X', X'' \in \mathcal{X}$: 
+\begin{align*}
+	\text{Non-negativity}: \quad & d(X, X') \geq 0  \hfill  \\
+	\text{Symmetry}: \quad & d(X, X') = d(X', X) \hfill  \\
+	\text{Triangle inequality}: \quad & d(X, X'') \leq  d(X, X') + d(X', X'') \quad \hfill 
+\end{align*}
+Distances satisfying the above are referred to as \emph{pseudo-metrics}. A final property---the uniqueness property---is needed to qualify $d$ as a metric and the pair $(\mathcal{X}, d)$ a metric space:
+\begin{equation}
+	\text{Uniqueness}: \quad d(X, X') = 0 \Leftrightarrow X = X'
+\end{equation}
+Despite the name ``metric-learning'', in practice it is enough to learn a pseudo-metric on the space $\mathcal{X}$, as showing the learned $d$ satisfies the identity of indiscernibles can be either analytically intractable or too restrictive for applications~\cite{}. 
+Indeed, the `optimal' distance function is often highly task-specific: typical goals include preserving geometrical information, satisfying certain constraints, or obtaining a certain loss. More important applications than the uniqueness property include features such as computational scalability, robustness to noise, generalizability to objects outside of the given family, notions of intuitiveness, and so on.
+
+Related notions of metric-learning include \emph{statistical shape analysis} and \emph{featurization}.
+
+What are we modding out?
+%One way to distinguish spaces is through the use of homology. 
+
+Suppose we had at our disposal topological summaries of each $X \in \mathcal{X}$---summaries which are invariant under continuous deformations---and we used such summaries for comparison.
+Differences in  
+
+A Morse-theoretic way to characterize topological aspects of $X$ is to observe the evolution of it's sub-level sets $X^{(-\infty, \alpha)} = \{\, x \in X : f(x) \leq \alpha \, \}$ with respect to some scalar-valued function. A natural discrete-analog to this is a filtration called the \emph{lower-star filtration}: given a simplicial complex $K$ whose vertices are equipped with a function $f: X \to \mathbb{R}$, the $f$-induced lower-star filtration $K_f$ is the filtration of $K$ whose contiguous subcomplexes represent the discrete sublevel sets of $f$, i.e.:
+$$ K_f: \quad \emptyset = K_0 \subseteq K_1 \subseteq \dots K_m = K $$
+whose face/coface pairs $(\sigma, \tau) \in K$ satisfying $\tau \subseteq \sigma$ also satisfy $f(\tau) \leq f(\sigma)$. Intuitively, imagine $f$ was a ``height'' function; then sweeping $K$ with a thresholding function which discards all simplices whose function values are less than $\alpha$. varying $\alpha$ in the direction of $f$ can be interpreted as ordering the subcomplexes of $K_f$ to match the sublevel sets of $f$. This is called the \emph{lower-star filtration} of $K$ induced by $f$.
+
+
+Suppose each $X \in \mathcal{X}$ is a subset of $\mathbb{R}^d$ that can be realized\footnote{Delaunay, Rips, etc.} as finite simplicial complex $K$. With some abuse of notation, we will continue referring to $X$ as the input data, with the understanding that $X$ is now equipped with a simplicial structure. 
+To better understand both the topological and geometric structure of $X$, one idea is to try to characterize $X$'s sublevel sets with respect to many directions. Consider defining a unit vector $v \in S^{d-1}$ and building a lower-star filtration over $X$ via projections onto this unit vector:
+\begin{equation}
+	X^{(-\infty, \alpha)}(v) = \{\, x \in X : \langle x, v \rangle \leq \alpha \,\}
+\end{equation} 
+By varying $v \in S^{d-1}$, one obtains a family of lower-stars which are homotopy equivalent to $X$.
+An analogy to this procedure is the process one performs when observing an abstract sculpture of art: rather than looking in just one direction, one walks around $X$ to see the subtle structures of the sculpture from multiple perspectives.
+
+The persistent homology transform (PHT) of $X$: 
+\begin{align}
+	\mathrm{PHT}(X) : S^{d-1} &\to \mathcal{D}^d \\
+	v &\mapsto \left(\mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v)\right)
+\end{align}
+The main result of~\cite{} is that the PHT is injective on the space of PL-embedded complexes in $\mathbb{R}^d$, for $d \leq 3$\footnote{It has only been proven for $d \leq 3$, although there is no specific reason to suspect the PHT to not generalize beyond $d = 3$. Indeed, there is [insert work].}.
+Thus, in theory, the PHT is invertible---the collection of persistence diagrams alone can be used to reconstruct the original $X$, geometry and all. 
+Moreover, this result implies the PHT may be used as a discriminator even for non-diffeomorphic sets of shapes, as the injectivity implies that the collection of diagrams generated by ``looking'' at the shape from all directions is unique. Each $X \in \mathcal{X}$ may be equipped with a unique signature given by $\mathrm{PHT}(X)$. 
+
+This justifies the use of the PHT to use a discriminator. 
+
+
+ 
+
+%in $\mathbb{R}^d$, each of which is centered at origin and scaled to unit scale under some domain-specific normalization.  
+
+%% Discriminator 
+%Consider the problem of creating a \emph{discriminator function}:
+%$$ \mathcal{D}: \mathcal{X} \to [n] $$
+%which is capable of distinguishing $X \in \mathcal{X}$, i.e. for any $X, X' \in \mathcal{X}$, we have $\mathcal{D}(X) = \mathcal{D}(X')$ if and only if $X = X'$. 
 
 % embeddings of regular $n$-sided polygon in $\mathbb{R}^2$, wherein each $X_\ast$ is centered at the origin and scaled such that it inscribes the unit circle. 
-For this particular family, there is a trivial solution given by counting the number of sides of each $X_\ast$, though this strategy clearly will not 
+%For this particular family, there is a trivial solution given by counting the number of sides of each $X_\ast$, though this strategy clearly will not 
 %however for full generality we consider an alternative solution. 
 
 
-The persistent homology transform (PHT) of [the lower-star filtration of] $X_n$: 
-$$ $$
-The main result of the PHT is that it is injective on the space of PL-embedded complexes in $\mathbb{R}^d$, for $d \leq 3$\footnote{It has only been proven for $d \leq 3$, although there is no specific reason to suspect the PHT to not generalize beyond $d = 3$. Indeed, there is [insert work].}. 
-This justifies the use of the PHT to use a discriminator. 
+
 
 What is the PHT of $X_n$? Since each $X_n$ is homeomorphic to $S^1$, it is sufficient to consider only the $0$-dimensional PHT for injectivity. Moreover, since each polygon is convex and connected, the persistence diagram $\mathrm{dgm}_0(X_n, v)$ consists a single essential class, represented as a the pair: 
 $$ \mathrm{dgm}_0(X_n, v(\theta)) = \{ \; [\,b_n(\theta), \infty \,) \; \}$$

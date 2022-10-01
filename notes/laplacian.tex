@@ -27,4 +27,18 @@ $$\langle L f, f \rangle = \frac{1}{2} \sum\limits_{v \in V} \sum\limits_{v' \in
 % From: Eigenvalues of the Laplacian on inhomogeneous membranes
 One can interpret the eigenvalues of the Laplacian physically as the frequencies of vibration of a membrane, as energy levels of a Hamiltonian in an infinite potential well, as rates of decay for the heat (or mass diffusion) equation, and as cut-off frequencies for waveguides.
 
+Two Laplacians $L_1$ and $L_2$ are cospectral if and only if $\alpha L_1 + \beta I + \gamma J$ and $\alpha L_2 + \beta I + \gamma J$ are (where $\alpha \neq 0$). 
+
+% Which graphs are determined by their spectrum?
+The following can be deduced from the spectrum of the adjacency matrix or Laplacian matrix of $G$: 
+\begin{enumerate}
+	\item The number of vertices
+	\item Number of edges
+	\item Whether $G$ is a regular 
+	\item Whether $G$ is regular with any fixed girth 
+\end{enumerate}
+Additional, the spectrum of the Laplacian contains information about 1. the number of connected components and 2. the number of unique spanning trees. The former is given by the algebraic multiplicity of the $0$ eigenvalue of $L$ (the corank of $L$), and the latter is given by---if $G$ is connected---$1/n$ times the product of $L$ non-zero eigenvalues. 
+
+There are many graphs which are determined by their spectrum (DS). 
+
 \end{document}

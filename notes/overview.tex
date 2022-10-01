@@ -1,0 +1,23 @@
+\subsection{Our Contribution:}
+A few of the drawbacks with persistence-related featurization tools, such as persistence images~\cite{} or persistence landscapes~\cite{}, is that they require as input the persistence diagram to produce the featurization. As a $O(m^3)$ operation, the traditional reduction computation can become infeasible, a property exacerbating greatly in the time-varying setting. 
+
+\subsection{The Relaxation \& Main Results}
+We give below the the relaxation proposed in the paper. The rest of the paper is devoted to its properties and use cases. 
+
+Given an input data set $X$ that varies along a 1-parameter family $\{X_{(t)}\}_{t \in T}$, for each $t \in T$, do the following:
+\begin{enumerate}
+	\item Choose a geometric realization $\mathcal{K}$ of $X$. This could be a simple Rips filtration, or a Delaunay complex, a simplicial mesh, a neighborhood graph, etc. 
+	\item Fix a set of coordinates $\mathcal{I} = \{(a_1,b_1), (a_2,b_2), \dots, (a_k,b_k)\}$ from the upper-half plane $\Delta_+$ representing areas where significant topological changes are expected to occur. 
+	\item Compute our relaxation of the PBNs at each $(a,b) \in \mathcal{I}$, 
+	$$ \beta_{p}^{i,j} = f(\hat{\partial}_p) -  f(\hat{\partial}_p) $$
+	where 
+	a) $A^{i,j}$ denotes the lower-left submatrix and
+	b) $\hat{\partial}_p^{\ast}$ represents the $p$-th boundary matrix of $K$ whose elementary chains $c(\sigma)$ take on values from a relaxation of the step function. 
+	and c) $f: K \to \mathbb{R}$ is a a function that approximates $\mathrm{rank}(A)$ using the spectrum $\sigma(A)$ of $A$. 
+	We give a few examples of suitable functions in section~\ref{}. 
+
+\end{enumerate}
+
+The main observations our relaxation is based on is that the (1) PBNs $\beta_p^{i,j}$ can be written as sum of ranks of boundary matrices, (2) by working with real-valued coefficients, we can parameterize the non-zero entries of $\partial_\ast$ with smoothly varying values whose signs match (or approximate) the signs of $\partial$, and (3) there exist a myriad of spectrum-based relaxations of the \emph{rank} function that are easier to compute. 
+
+That $\beta_p^{i,j}$ is estimated using the spectrum(s) of $\hat{\partial}_\ast$ is the primary step to reducing the complexity of our relaxation; the special forms of the matrices involved in our relaxation have connections back to spectral graph theory. 

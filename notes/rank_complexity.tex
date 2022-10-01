@@ -1,0 +1,28 @@
+Consider an $n \times m$ boundary matrix $\partial_p$ representing the boundary operator $C_p(K) \to C_{p-1}(K)$. 
+Our goal is to have the ability to compute the ranks of submatrices of $\partial_p$ as efficiently as possible, possibly in a parameterized stream.
+
+In general, the complexity of computing the rank of a $n \times m$ matrix $A$ depends heavily on both the structure of $A$ (e.g. it's sparsity) as well as the choice of coefficients $\mathbb{F}$. Typical persistence computations are carried out using coefficients in $\mathbb{Z}/2\mathbb{Z}$ as the computation is greatly simplified in this setting. 
+Indeed, the persistence computation is not invariant to the choice of field~\cite{}.
+
+Here, we consider the complexity of computing $\beta_p^{i,j}$ with real-valued coefficients. Since real numbers may not be representable explicitly in finite precision, we will consider the \emph{numerical rank}.
+\begin{definition}[Numerical Rank]
+Let $A \in \mathbb{R}^{m \times n}$ have singular values $\sigma_1(A) \geq \sigma_2(A) \geq \dots \geq \sigma_r(A) > 0$. For some $0 < \epsilon < 1$, the $\epsilon$-rank of $A$, denoted by $\mathrm{rank}_{\epsilon}(A)$, is the smallest integer $k$ such that: 
+\begin{equation}\label{eq:num_rank}
+	\mathrm{rank}_{\epsilon}(A) = %\min \big\{ 
+	\min_{k \geq 0} \{ \, k : \sigma_{k+1}(X) \leq \epsilon \cdot \lVert A \rVert_2 \, \} 
+	%, \min(m,n) \big \}
+\end{equation}
+\end{definition}
+\noindent
+The most direct way to compute~\eqref{eq:num_rank} is compute the singular values of a matrix up to working precision, however this requires $O(mn^2)$ complexity in general~\cite{}. 
+%https://arxiv.org/pdf/2105.07388.pdf
+
+It is instructive to consider 
+Observe that computation of $\beta_p^{\ast}$ involves rank computations on subsets of the $p, p+1$ boundary matrices. When $p = 0$, we have: 
+\begin{align*}
+	\beta_0^{i,j} &= \mathrm{rank}(I_p^{1,i}) - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} ) \\
+	&= \lvert C_0(K_i) \rvert - \mathrm{rank}_{\epsilon}((\partial_{1 }^{1,j}) (\partial_{1 }^{1,j})^T ) + \mathrm{rank}_\epsilon((\partial_{1}^{i \+ 1, j})(\partial_{1}^{i \+ 1, j})^T) \\
+	&= \lvert C_0(K_i) \rvert - \mathrm{rank}_{\epsilon}(L_1^{j}) + \mathrm{rank}_\epsilon((\partial_{1}^{i \+ 1, j})(\partial_{1}^{i \+ 1, j})^T)
+\end{align*}  
+Where $L_1^j$ is a graph Laplacian the subgraph of $K$ consisting of only edges $e \in K_1$ with $f(e) \leq j$.
+

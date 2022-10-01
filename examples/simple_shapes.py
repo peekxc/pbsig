@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.spatial.distance import pdist 
-from pbsig.PHT import pht_0
+from pbsig.pht import pht_0
 from pbsig.betti import lower_star_betti_sig
 
 ## Circle example 

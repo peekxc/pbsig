@@ -302,39 +302,6 @@ def uniform_S1(n: int = 10):
   theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
   for x,y in zip(np.cos(theta), np.sin(theta)):
     yield np.array([x,y])
-  
-def pht_proprocess_pc(P: ArrayLike, n_directions: int = 32, transform: bool = False):
-  V_dir = np.array(list(uniform_S1(n_directions)))
-  u = shape_center(P, method="directions", V=V_dir)
-  L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
-  if transform:
-    P -= u
-    P = (1/L)*P
-    return(P)
-  def _preprocess(A):
-    A = A - u 
-    A = (1/L)*A
-    return(A)
-  return(_preprocess)
-
-def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
-  """
-  Params: 
-    n_directions := number of directions around S1 to use to center shape 
-    n_segments := number of linear segments to discretize path by
-  Return: 
-    preprocess := function that takes as input a path and returns a set of 2d points centered at 0 / scaled barycentrically
-  """
-  V_dir = np.array(list(uniform_S1(n_directions)))
-  def _preprocess(path):
-    C = PL_path(path, k=n_segments) 
-    P = complex2points([c.start for c in C])
-    u = shape_center(P, method="directions", V=V_dir)
-    P = P - u 
-    L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
-    P = (1/L)*P
-    return(P)
-  return _preprocess
 
 
 def spectral_bound(V, E, type: str = ["graph", "laplacian"]):

@@ -1,0 +1,28 @@
+We opt for the generic rank approximation method proposed by~\cite{}; for any $n \times n$ matrix $A$ and some fixed $\alpha > 0$:
+$$ \Phi_\epsilon(A) = \mathrm{tr}\left(A(A^T A + \epsilon I)^{-1} A^T \right ) = \sum\limits_{i=1}^r \frac{\sigma_i^2(A)}{\sigma_i^2(A) + \epsilon} $$
+where $\sigma_i(A)$ are the singular values of $A$. This $\epsilon$-approximation scheme has a few advantages; namely, the smoothness of $\Phi_\epsilon(A)$ now depends on the spectrum of $A$, $0 \leq \Phi_\epsilon(A) \leq \mathrm{rank}(A)$ for all $\epsilon > 0$, and $\mathrm{rank}(A) - \Phi_\epsilon(A) \leq \epsilon \sum_{i=1}^r \sigma_i(A)^{-2}$. 
+Plugging this into equation, we have following relaxation:
+\begin{equation}\label{eq:final_relaxation}
+\hat{\beta}_p^{i,j} =  \Phi_\epsilon(\hat{I}_p^{\ast,i}) -  \Phi_\epsilon(\hat{\partial}_p^{\ast,i}) -  \Phi_\epsilon(\hat{\partial}_{p\+1 }^{\ast,j}) + \Phi_\epsilon(\hat{\partial}_{p\+1}^{i \+ 1, j} )
+\end{equation}
+Moreover, we immediately have the following Corollary:
+\begin{corollary}
+	For any filtration $K_\bullet$, there exists an $\epsilon^\ast > 0$ such that $\beta_p^{i,j} = \lceil \hat{\beta}_p^{i,j} \rceil$ for all $\epsilon \in (0, \epsilon^\ast]$. 
+\end{corollary}
+
+\textbf{Basic properties}
+\begin{corollary}[Approximately monotone]
+	Let $\beta_p^{i,j}$ denote the persistent Betti number, and let $\hat{\beta}_p^{i,j}$ denote our relaxation. It is known that the PBN satisfies~\cite{}: 
+	$$ \beta_p^{i,j} \leq \beta_p^{i',j}  \text{ for all } i \leq i' $$
+	Given fixed non-negative constants $(\epsilon, \omega)$, the relaxation in equation~\ref{} satisfies: 
+	$$ \hat{\beta}_p^{i,j} \leq f_{\epsilon, \omega}(i' - i)^k  + \hat{\beta}_p^{i',j} \text{ for all } i \leq i'$$
+\end{corollary}
+
+It is known that PBNs satisfy a certain inclusion/exclusion property related to the fact they are subadditive. Namely, for any $0 < a < b \leq c < d$, it is known that: 
+$$\mu_p^{} $$
+As discussed in section~\ref{}, this leads naturally to the interpretation of PBNs as \emph{counting measures} defined over the upper half-plane. We show that the induced multiplicity function:
+
+\begin{corollary}[Subadditivity]
+	For any $0 < a < b \leq c < d$, the relaxed multiplicity $\hat{\mu}_p$ function satisfies:
+ $$\hat{\mu}_{a, b}^{c,d}(	) $$
+\end{corollary}

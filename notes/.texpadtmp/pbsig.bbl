@@ -1,0 +1,37 @@
+\begin{thebibliography}{1}
+
+\bibitem{bauer2021ripser}
+Ulrich Bauer.
+\newblock Ripser: efficient computation of vietoris--rips persistence barcodes.
+\newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
+  2021.
+
+\bibitem{ben2015projectors}
+Adi Ben-Israel.
+\newblock Projectors on intersection of subspaces.
+\newblock {\em Contemporary Mathematics}, 636:41--50, 2015.
+
+\bibitem{chen2011output}
+Chao Chen and Michael Kerber.
+\newblock An output-sensitive algorithm for persistent homology.
+\newblock In {\em Proceedings of the twenty-seventh annual symposium on
+  Computational geometry}, pages 207--216, 2011.
+
+\bibitem{cohen2006vines}
+David Cohen-Steiner, Herbert Edelsbrunner, and Dmitriy Morozov.
+\newblock Vines and vineyards by updating persistence in linear time.
+\newblock In {\em Proceedings of the twenty-second annual symposium on
+  Computational geometry}, pages 119--126, 2006.
+
+\bibitem{dey2022computational}
+Tamal~Krishna Dey and Yusu Wang.
+\newblock {\em Computational topology for data analysis}.
+\newblock Cambridge University Press, 2022.
+
+\bibitem{zomorodian2004computing}
+Afra Zomorodian and Gunnar Carlsson.
+\newblock Computing persistent homology.
+\newblock In {\em Proceedings of the twentieth annual symposium on
+  Computational geometry}, pages 347--356, 2004.
+
+\end{thebibliography}
