@@ -11,10 +11,10 @@
 %\end{equation}
 %The multiplicity function is intimately linked with the persistence diagram. Indeed, the original definition of a persistence 
 
-Persistence has been viewed from multiple, equivalent perspectives; we recall a few which are illuminating in this effort.
-Among the first characterizations of the PBNs were given from an algebraic perspective---Carlsson et al.~\cite{zomorodian2004computing} observed that the persistent homology groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
+Both persistent homology (PH) and persistent Betti numbers (PBNs) have been studied from multiple, equivalent perspectives; we recall a few characterizations which are illuminating in this effort.
+From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the persistent homology groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. They also give a cubic-time algorithm to compute persistent homology of spaces in arbitrary dimensions, and over any field. 
 %More recently, Bauer studied persistence in a form a matching. 
-In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspective by defining the persistence diagram in terms of a \emph{multiplicities}: given a tame function $f: K \to \mathbb{R}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $i$, the $p$-th persistence diagram $\mathrm{dgm}_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is defined as: 
+In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspective by defining the persistence diagram in terms of a \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $i$, the $p$-th persistence diagram $\mathrm{dgm}_p(f) \subset \bar{\mathbb{R}}^2$ of a filtration induced by $f$ is given as: 
 \begin{equation}
 \mathrm{dgm}_p(K_\bullet) = \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta	
 \end{equation}
@@ -23,22 +23,25 @@ where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\m
 \begin{equation}\label{eq:multiplicity}
 	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1
 \end{equation}
-For $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal2016structure} redefine the multiplicity function by interpreting $\mu_p^\ast$ as a \emph{persistence measure}:
+For $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} by introducing several alternative notions of `tameness', and show that whenever a persistence diagram is sought, it is enough to construct its corresponding \emph{persistence measure}:
+%re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
 \begin{equation}\label{eq:measure}
 	\mu_p(R; M) = \mathrm{card}\left( \,
 	%\mathrm{dgm}_p(M)\restriction_R 
 	\restr{\mathrm{dgm}_p(M)}{R} \,
 	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
 \end{equation}
-The measure-theoretic perspective from~\eqref{eq:measure} views $\mu_p$ as a kind of integer-valued measure defined over rectangles in the plane. Since $\mu_p$ is also defined in terms of PBNs, this perspective gives an indirect way of interpreting [combinations of] PBNs in measure-theoretic terms. Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence. 
-Namely, they show that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
+The measure-theoretic perspective from~\eqref{eq:measure} re-interprets the multiplicity function $\mu^\ast_p$ as an integer-valued measure defined over rectangles in the plane. Since $\mu_p$ is also defined in terms of PBNs, this perspective gives an indirect way of interpreting [combinations of] PBNs in measure-theoretic terms. Indeed, Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
 %as limit points of the $\mu_p$, i.e. for every point $x = (i,j) \in \Delta_+$, define the number $\mu_p(x)$ as the minimum over all positive real numbers $\epsilon$ with $i + \epsilon < j - \epsilon$:
 \begin{equation}\label{eq:pbn_cont}
 	x = (i,j) \in \mathrm{dgm}_p(K_\bullet) \; \Longleftrightarrow \; \mu_p(x) > 0 \; \Longleftrightarrow \; \min_{\epsilon > 0} \left(\beta_p^{i \+ \epsilon, j \shortminus \epsilon} - \beta_p^{i \+ \epsilon, j \+ \epsilon} \right) - \left(\beta_p^{i \shortminus \epsilon, j \shortminus \epsilon} - \beta_p^{i \shortminus \epsilon, j \+ \epsilon} \right) > 0
 \end{equation}
-One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem expressing the persistent Betti number function as a sum of multiplicity functions. A consequence of this theorem is that any distance between persistence diagrams induces a distance between PBNs, a result which may be used to show that PBNs are stable functions on continuous filtering functions. 
-That is, small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions. 
-This stability justifies studying PBN functions in continuous, parameterized settings. 
+One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem expressing the persistent Betti number function as a sum of multiplicity functions. A consequence of this theorem is that any distance between persistence diagrams induces a distance between PBN functions---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:
+\begin{equation*}
+	d(\beta_f, \beta_g) = \inf\limits_{\phi} \; \sup\limits_{p \in \mathrm{dgm}(f)} \lVert p - \phi(p) \rVert_{\widetilde{\infty} }
+\end{equation*}
+is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
+Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings. 
 
 % TODO: move to computation section
 %\textbf{Computation:} Despite the stability of the PBNs in parameterized settings, a number of barriers prevent their application in real-world settings. For instance, the main stability theorem from~\cite{cohen2005stability} assumes that the underlying filtering function or persistence module is \emph{tame} and are defined over triangulable spaces. When the number of corner points is finite, the corresponding distance between PBNs reduces to the bottleneck distance from~\cite{cohen2005stability}. 

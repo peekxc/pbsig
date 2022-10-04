@@ -32,7 +32,7 @@
 % \titleformat{<command>}[<shape>]{<format>}{<label>}{<sep>}{<before-code>}[<after-code>]
 \usepackage[small]{titlesec}
 %\titlelabel{\thetitle.\;}
-\titleformat{\subsection}[runin]{\normalfont\bfseries}{}{1pt}{}[]
+\titleformat{\subsection}[runin]{\normalfont\bfseries}{}{1pt}{}[:]
 
 %\titleformat*{\section}{\large\bfseries}
 %\titleformat*{\subsection}{\normal\bfseries}
@@ -65,6 +65,7 @@
 \newcommand{\bigzero}{\mbox{\normalfont\Large\bfseries 0}}
 \newcommand{\rvline}{\hspace*{-\arraycolsep}\vline\hspace*{-\arraycolsep}}
 
+
 \title{\vspace{-2.0em} \vspace{-0.5em}}
 \author{Matt Piekenbrock}
 \date{}
@@ -77,13 +78,19 @@
 \section{Introduction}
 \subsection*{Motivation}
 
-\subfile{intro_feature}
+%\subfile{intro_feature}
 
 %\subfile{overview} % Contributions, Main result overview, etc. 
 
 \subsection{Organization}
 
-In what follows, we introduce a parameterized expression of the persistent Betti number (PBN) invariant that has certain computational advantages. Namely, we show that a simple augmentation of traditional PBN computation leads to a spectral relaxation that $(1-\epsilon)$-approximates the PBN. Moreover, we show that this relaxation is permutation invariant, obeys certain inclusion-exclusion principles, and admits a notion of stability in a certain sense---all properties useful in parameterized settings. 
+In what follows, we investigate how to formulate the persistent Betti number (PBN) computation on filtered simplicial complexes in parameterized settings. 
+In particular, in section~\ref{sec:betti_derivation}, we show how the PBN may be expressed as a sum of rank computations on unfactored boundary (sub)matrices. 
+By representing the boundary operators implicitly and exploiting a variety of properties of the rank function, we demonstrate how this PBN characterization admits certain computational advantages in both static and parameterized settings. 
+Namely we show the $p$-th PBN of a filtered simplicial complex $K_\bullet$ which may be computed in essentially quadratic time and linear storage, as opposed to the cubic time and quadratic storage complexity required by persistence. 
+%By exploiting a connection between the rank function and the spectrum of linear operators, we also introduce a spectral-based approach $(1-\epsilon)$-approximates the PBN. 
+
+We show that taking relaxation is permutation invariant, obeys certain inclusion-exclusion principles, and admits a notion of stability---all properties useful in parameterized settings. 
 %We illustrate a few applications of the relaxation in section. 
 %Moreover, we show our relaxation is \emph{interpetretable} as it satisfies certain basic ``Betti-like'' properties and we illicit its connections back to spectral graph theory. 
 
@@ -96,7 +103,7 @@ In what follows, we introduce a parameterized expression of the persistent Betti
 % --- Counting measure multiplicity interpretation --- 
 \subfile{counting_measure}
 
-\section{Main Result}
+\section{Motivating Derivation}\label{sec:betti_derivation}
 %In what follows, we briefly outline the computation of the 
 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
@@ -112,7 +119,7 @@ The $p$-th persistent Betti number $\beta_p^{i,j}$ at some index $(i,j) \in \Del
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
 While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and is thus easily obtained, efficient computation of the intersection term (the persistence part) is a bit more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, making the PBN computation no more efficient than the full persistence computation.
 
-Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
+%Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 
 In what follows, we outline a different approach to computing~\eqref{eq:pbn} that is both simpler and computationally more attractive. 
@@ -154,12 +161,12 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 In fact, Lemma~\ref{lemma:rank} may be further generalized to arbitrary rectangles in $\Delta_+$ via $\mu$\emph{-queries}~\cite{chen2011output}: box-parameterized rank-based queries that count the number of persistence pairs that intersect a fixed ``box'' placed in the upper half-plane. 
 Our first result of this effort we show is that this Lemma allows us to write the persistent Betti number as a sum of rank functions. 
 \begin{proposition}
-For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $m_p = \lvert K_{(p)} \rvert$. For any pair $(i,j) \in \left([m_p], [m_{p+1}] \right)$, the persistent Betti number $\beta_p^{i,j}$ at $(i,j)$ is given by:
+For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $n = \lvert K^{(p)} \rvert$, $m = \lvert K^{(p\+1)} \rvert$. For any pair $(i,j) \in \left([n], [m] \right)$, the persistent Betti number $\beta_p^{i,j}$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
 	\beta_p^{i,j} = \mathrm{rank}(I_p^{1,i}) - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
-where $I_p^{1,i}$ denotes the first $i$ columns of the $m_p \times m_p$ identity matrix.
+where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{proposition}
 \noindent A detailed proof using Lemma 1 is given in the appendix. The main utility this proposition provides is that it enables the persistent Betti number as a combination of rank computations performed directly on the \emph{unfactored} dimension $p$ and $(p+1)$ boundary matrices. We dedicate the rest of the paper to exploring the consequences of this fact. 
 
@@ -167,9 +174,9 @@ To get some intuition on what the structure and size of these matrices, we inclu
 \begin{figure}[!h]
 	\centering
 	\includegraphics[width=0.70\textwidth]{four_matrices}
-	\caption{The four matrices whose ranks yield $\beta_p^{i,j}$ in the same order as given in~\eqref{eq:betti_four}. Each solid portion represents (sparse) blocks of non-zero entries, while each white portion is zero. Observe $\partial_{p+1}^{i+1, j}$ can be obtained by intersecting the non-zero entries of $\partial_{p+1}^{1,j}$ with the non-zero entries in the complement of $\partial_p^{1,i}$.  }
+	\caption{The four matrices whose ranks yield $\beta_p^{i,j}$ in the same order as given in~\eqref{eq:betti_four}. Each solid portion represents (sparse) blocks of non-zero entries, while each white portion is zero. Observe $\partial_{p+1}^{i+1, j} \subseteq \partial_{p+1}^{1,j}$ can be obtained by intersecting the non-zero entries of $\partial_{p+1}^{1,j}$ with the non-zero entries in the complement of $\partial_p^{1,i}$.  }
 \end{figure}
-Consider a filtration $K_\bullet$ with $m$ simplices $\sigma_1, \sigma_2, \dots, \sigma_m$, constructed from a $p$-dimensional complex $K$. As a simplex $\sigma$ enters its filtration after it's boundary $\partial_p(\sigma)$, observe $\partial$ is upper-triangular. Moreover, the sparsity of $\partial$ (and all of its principle submatrices) has storage complexity: 
+Boundary matrices are highly structured: given $K_\bullet$ with $m$ simplices $\sigma_1, \sigma_2, \dots, \sigma_m$ constructed from a $p$-dimensional complex $K$, observe its corresponding full boundary matrix $\partial$ is upper-triangular, as by definition any chain included in $\partial$ du to $\sigma \in K$ must follow after its boundary $\partial_p(\sigma)$. Moreover, the sparsity of $\partial$ (and all of its principle submatrices) has storage complexity: 
 \begin{equation}
 	\mathrm{nnz}(\partial) \sim O(m \log m)
 \end{equation} 
@@ -177,19 +184,20 @@ This follows from the simple observation that since each column of $\partial_p^\
 Indeed, the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the largest number of non-zeros in any matrix in~\eqref{eq:betti_four} is $O(\max\{p\, i, (p+1)\,j\})$.
 As a result, we have the following corollary:
 \begin{corollary}
-	Given two indices $(i,j) \in \Delta_+^m$ and a filtration $K_\bullet$ with $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max\{R_\partial(n, p), R_\partial(m, p+1) \})$ where $R_\partial(a,b)$ is the complexity of computing the rank of a $b$-dimensional boundary matrix with $n \times $ 
+	Given two indices $(i,j) \in \Delta_+^m$ and a filtration $K_\bullet$ with $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot c$ non-zero $\mathbb{F}$ entries. 
+	%with $n < m$
 \end{corollary} 
 \noindent 
-In the next section, we extend these complexity statements to parameterized settings in a natural way. We address the storage and time complexity of $R_\partial(\cdot, \cdot)$ in section~\ref{sec:background_notation}.
+In the next section, we show how extend these complexity statements to parameterized settings. We address the storage and time complexity of $R_\partial(\cdot, \cdot)$ in section~\ref{sec:background_notation}.
 
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
-\subsubsection*{A Parameterized Boundary Matrix Relaxation}
+\subsection{A Parameterized Boundary Matrix Relaxation}
 One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the scalar-valued filter function and corresponding filtration belong to a parametric family.  
-One simple such property is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---the rank function is permutation invariant so long as the involved matrices have the same essential non-zero pattern. 
-Thus, unlike the vineyards algorithm~\cite{cohen2006vines}---which requires a $\approx O(m^2)$ maintenance procedure to simulate persistence across a homotopy\footnote{Strictly speaking, the bound $O(m^2)$ assumes the homotopy changes each filtration value in a monotone way throughout the homotopy. }---PBNs need no such procedure even in parameterized settings. 
+One simple such property of the rank function is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---one may permute the matrices in~\eqref{eq:betti_four} and obtain the same Betti number, so long as the matrices have the same essential non-zero pattern. 
+Notice this lies in stark contrast to e.g. the vineyards algorithm~\cite{cohen2006vines}---which requires a $\approx O(m^2)$ maintenance procedure\footnote{Strictly speaking, the bound $O(m^2)$ assumes the homotopy changes each filtration value in a monotone way throughout the homotopy. } to simulate persistence across a homotopy, the canonical continuous parameterized setting. PBNs need no such procedure even in parameterized settings. 
 We elaborate in the following section. 
 
-Recall that the boundary operator $\partial_p$ for a finite simplicial filtration $K_{\bullet}$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices, respectively. The entries of $\partial_p$ depend on the choice of $\mathbb{F}$; in general, after orientating the simplices of $K$ arbitrarily, they have the form: 
+Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
 %Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
 %\begin{equation}\label{eq:alt_sum}
 %	\partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum\limits_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p]
@@ -201,21 +209,17 @@ Recall that the boundary operator $\partial_p$ for a finite simplicial filtratio
 	0 & \text{otherwise}
    \end{cases}
 \end{equation}
-where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$.  
-%Towards relaxing the persistent Betti computation in dynamic setting, we seek an alternative choice for $c(\sigma)$ which endows continuity in the entries of $\partial_p$ in $T$.
+where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial(\sigma)$. 
 
 % Change index set
-The typical input to the persistence computation is a fixed complex/filter pair $(K_\bullet, f)$,  from which the corresponding boundary matrices are constructed. These filter functions typically have a particular geometrical interpretation. For example, a common scenario in practice is let $K_\bullet$ via a Rips filtration a metric space $(X, d_X)$; in this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
-In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
+%The typical input to the persistence computation is a fixed complex/filter pair $(K_\bullet, f)$,  from which the corresponding boundary matrices are constructed. These filter functions typically have a particular geometrical interpretation. For example, a common scenario in practice is let $K_\bullet$ via a Rips filtration a metric space $(X, d_X)$; in this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
+%In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 
-Suppose that instead of being given a fixed filtration $(K_\bullet, f)$, the filter was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and you wanted to compute $\beta_p^{i,j}$ over $\mathcal{H}$. We give several instantiations of this in section~\ref{}.
-
+Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter function was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and you wanted to compute $\beta_p^{i,j}$ over $\mathcal{H}$. We give several application settings where this kind of formulation occurs naturally in section~\ref{sec:applications}. To simplify this process, we introduce the notion of a \emph{parameterized boundary matrix}.
 % $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
-% $\mathbb{F} = \mathbb{R}$ field,
-%Let $K_\bullet$ denote a given a filtration constructed from a scalar-valued filter function $f : K \to \mathbb{R}$ over $n = \lvert K_0 \rvert$ vertices. 
 Let $X$ denote a data set of interest of size $\lvert X \rvert = n$, equipped with parameterized filtering function $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}$. 
-Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n\text{-} 1)$-simplex. For fixed $i,j \in \mathbb{F}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(t)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \mathbb{F}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	\pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -228,24 +232,24 @@ where $S_{i, j} : \mathcal{P}(X) \times \mathcal{P}(X) \to \{0, 1\}$ is a \emph{
 \end{definition}
 \noindent
 The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{1,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. 
-\begin{align}
+\begin{align*}\label{eq:pbn_parameterized}
 	\hat{\beta}_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
-	& h\mapsto \lvert K_i^{(p)}(h) \rvert  - (\mathrm{r} \circ \partial_{p}^{i})(h) - (\mathrm{r} \circ \partial_{q}^{j})(h) + (\mathrm{r} \circ \partial_{q}^{i \+ 1, j})(h)
-\end{align}
+	& h\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ 1, j})(h) \numberthis
+\end{align*}
 % deflation?
-One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{p\+1}$ matrix, implying a memory complexity of $O((p+1) n^{p+1})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$p+1$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
-Indeed, as we will show below, it is enough to have access to the simplices $K_j^{(p+1)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
+One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O((p+1) n^{p+1})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
+As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
 
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
-\subsection*{Laplacian Connection}
+\subsection{Laplacian Connection}
 We now show a few properties that $\hat{\partial}_p^{\ast}(t)$ exhibits which is advantageous for parameterized families. 
 The first such property is a simple parameterized relaxation of PBN:
-\begin{align}
+\begin{align*}
 	\hat{\beta}_p^{i,j} &= \lvert K_i^{(p)} \rvert - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} ) \\
 %	&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}(\underbrace{(\partial_{q}^{j})(\partial_{q}^{j})^T}_{\uparrow\mathcal{L}_1^i}) + \mathrm{rank}((\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)
 &= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}((\partial_{q}^{j})(\partial_{q}^{j})^T) + \mathrm{rank}( (\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)\\
-&= \lvert K_i^{(p)} \rvert - \mathrm{rank}(L_p^i) - \mathrm{rank}(L_q^j) + \mathrm{rank}(L_q^{i\+1,j})
-\end{align}
+&= \lvert K_i^{(p)} \rvert - \mathrm{rank}(L_p^i) - \mathrm{rank}(L_q^j) + \mathrm{rank}(L_q^{i\+1,j}) \numberthis
+\end{align*}
 
 % \hat{\beta}_p^{i,j} = \sum\limits_{\underset{\lvert \sigma \rvert = p+1}{\sigma \in \mathcal{P}(X)}} \mathrm{sgn}\left( \; \lvert i - f(\sigma) \rvert_{\+} \right)  - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} )
 
@@ -258,10 +262,10 @@ The first such property is a simple parameterized relaxation of PBN:
 %\end{enumerate}
 
 % Benefits of rank(A) = < non-zero eigenvalues >
-\subsection*{Computation}
-In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We will give analysis of certain aspects of it which we will need.
+\subsection{Rank Computation}
+In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show, where applicable, how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized}.
 
-The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying full orthogonal decompositon of system was too large to fit into memory. 
+%The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying full orthogonal decompositon of system was too large to fit into memory. 
  
 The means by which the Lanczos method estimates eigenvalues is by projecting onto successive Krylov subspaces. Given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v$, the order-$k$ Krylov subspaces are the spaces spanned by: 
 \begin{equation}
@@ -297,6 +301,7 @@ Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} yields a thre
 where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j-1} q_j$, and $q_{j+1} = r_j / \beta_j$. Thus, if $q_{k-1}, \beta_k$ and $q_k$ are known, then $\alpha_k$, $\beta_{k+1}$ and $q_{k+1}$ are completely determined.
 The sequential process by which~\eqref{eq:three_term_rec} is used to construct $T_k$ is called the \emph{Lanczos iteration}. 
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
+
 In principle, if the Lanczos iteration doesn't break down due to rounding errors ($T_k$ is full rank), then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
 \begin{equation}
 	\lVert p^k(A)b \rVert = {minimum}
@@ -323,7 +328,7 @@ To make this more precise, we start with a useful lemma:
 For any fixed $p \geq 0$, given simplicial complex $K$ with $m$ ($n$, respectively) simplices of dimension $p$ ($p - 1$, respectively) and an arbitrary vector $v$ of size $\lvert v \rvert = n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(\max \{m,n\})$ time and $O(\max \{m,n\})$ memory. 
 \end{lemma}
 From this lemma, we have the following result: 
-\begin{proposition}[~\cite{}]\label{prop:exact_arith_matvec}
+\begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{prop:exact_arith_matvec}
 	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
 	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
 	Then the Lanczos iteration from~\cite{} yields the quantity:
@@ -332,10 +337,10 @@ From this lemma, we have the following result:
 	\end{equation}
 	in $O(mr)$ time and $O(m)$ storage complexity. 
 \end{proposition}
-\noindent A proof of this proposition is given in the appendix. Extending from this, corollary~\ref{} implies $p$-th PBN at index $(i,j) \in \Delta_{+}^{m}$ can be computed in... note that for any $p \geq 1$, this is significant reduction in complexity compared to e.g. the $O(m^3)$ reduction algorithm.
-Indeed, if $K$ has $n$ vertices, the $\Theta(m^3)$ complexity of the reduction algorithm implies computing the $p$-th persistence diagram requires reducing $\partial_{p+1}$; one deduces loose though asymptotically accurate bounds as $O(n^3(p+2))$ operations, i.e. $O(n^9)$ for $p = 1$, $O(n^{12})$ for $p = 2$, etc. In contrast, combining proposition~\ref{prop:exact_arith_matvec} with corollary~\ref{}, we have that the PBN at index $i,j$ may be compute in... a substantial difference indeed. 
-
-Obviously, the assumption of exact arithmetic is too strong to be of any practical use. Round-off errors plague the simple Lanczos iteration.  
+\noindent A proof of this proposition is given in the appendix. 
+%Extending from this, corollary~\ref{} implies $p$-th PBN at index $(i,j) \in \Delta_{+}^{m}$ can be computed in... note that for any $p \geq 1$, this is significant reduction in complexity compared to e.g. the $O(m^3)$ reduction algorithm.
+%Indeed, if $K$ has $n$ vertices, the $\Theta(m^3)$ complexity of the reduction algorithm implies computing the $p$-th persistence diagram requires reducing $\partial_{p+1}$; one deduces loose though asymptotically accurate bounds as $O(n^3(p+2))$ operations, i.e. $O(n^9)$ for $p = 1$, $O(n^{12})$ for $p = 2$, etc. In contrast, combining proposition~\ref{prop:exact_arith_matvec} with corollary~\ref{}, we have that the PBN at index $i,j$ may be compute in... a substantial difference indeed. 
+%Obviously, the assumption of exact arithmetic is too strong to be of any practical use. Round-off errors plague the simple Lanczos iteration.  
 
 
 
@@ -347,7 +352,7 @@ The iteration typically converges geometrically and can be stopped as soon as th
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
 
-\section{Applications}
+\section{Applications}\label{sec:applications}
 
 \newpage 
 % --- APPLICATION 1: Continuous Persistent Betti Curves (PBCs) as Shape Signatures --- 
@@ -357,7 +362,7 @@ The iteration typically converges geometrically and can be stopped as soon as th
 
 % --- APPLICATION 2: ??? PHT ??? --- 
 %\subsection*{Complexity}
-%\subfile{rank_complexity} % include numerical rank definition
+\subfile{rank_complexity} % include numerical rank definition
 
 
 \appendix
