@@ -1,0 +1,15 @@
+Persistent homology is, as of this time of writing, a well-studied mathematical structure. From its unassuming history starting with postniov towers, the body of research created over the past two decades have established perisstence as not only an intrinsic quantity, but a useful tool. 
+From **, ** , to **, applications abound with persistence; see for an survey. PH is more than just a homology inference tool.  
+
+Since its inception, a popular application of persistence in data analysis is its use as a featurization tool. 
+In machine learning, featurization is a means of converting various data representations to a vector format amenable for learning and enhanced training. Classical examples include word2vec in natural language processing, Scale-Invariant Feature Transform (SIFT) in computer vision, extended-connectivity fingerprints (ECFs) in used in chemical informatics and molecular modeling, etc. 
+More recent results include transformers... 
+% Also mention size functions, matching distances..
+Through no small feat of engineering, many of these techniques have been incrementally improved and adapted throughout the past decades, and tend to do quite well in terms of their efficiency. As such, they have seen widespread-adoption from more scientific fields trying to harness their power. 
+While certainly useful, one of the pitfalls with such featurizations if the difficulty that comes with interpretation. 
+% However, grasping the interplay between input features and their local contribution to NNP is growingly evasive due to heavy featurization
+Difficulty in heavy featurization has lead to qualitative comparisons in scientific fields of the featurization outputs. Many are lead by the same equation: exactly what isa featurization tool capturing that is so useful for training?
+
+Persistent homology is, in some sense, a natural tool for featurization. persistence is a stable invariant that comes equipped mathematical guarantees; thus featurization of diagrams can be interpreted as mapping persistence diagrams to Euclidean space in such a way that maximally preserves the topological information conveyed by the diagram. 
+Moreover, we also know persistence diagrams retain some amount of geometry, such as those of curvature sets and the quasi-isometry theorems in distributed persistence. These results suggest an inverse theory related to persistence. 
+Indeed, a recent injectivity result shows that collections of persistence diagrams are sufficient to uniquely characterize data sets in 2- and 3-dimensions\footnote{}, establishes persistence as truly an intrinsic description of shape. 
