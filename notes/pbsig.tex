@@ -87,10 +87,11 @@
 In what follows, we investigate how to formulate the persistent Betti number (PBN) computation on filtered simplicial complexes in parameterized settings. 
 In particular, in section~\ref{sec:betti_derivation}, we show how the PBN may be expressed as a sum of rank computations on unfactored boundary (sub)matrices. 
 By representing the boundary operators implicitly and exploiting a variety of properties of the rank function, we demonstrate how this PBN characterization admits certain computational advantages in both static and parameterized settings. 
-Namely we show the $p$-th PBN of a filtered simplicial complex $K_\bullet$ which may be computed in essentially quadratic time and linear storage, as opposed to the cubic time and quadratic storage complexity required by persistence. 
+Namely we show the $p$-th PBN of a filtered simplicial complex $K_\bullet$ which may be computed in essentially quadratic time and linear storage, as opposed to the cubic time and quadratic storage complexity required by persistence.
+Finally, we illustrate both the computational and practical advantages our expression has with a few applications in section~\ref{sec:applications}. 
 %By exploiting a connection between the rank function and the spectrum of linear operators, we also introduce a spectral-based approach $(1-\epsilon)$-approximates the PBN. 
 
-We show that taking relaxation is permutation invariant, obeys certain inclusion-exclusion principles, and admits a notion of stability---all properties useful in parameterized settings. 
+%We show that taking relaxation is permutation invariant, obeys certain inclusion-exclusion principles, and admits a notion of stability---all properties useful in parameterized settings. 
 %We illustrate a few applications of the relaxation in section. 
 %Moreover, we show our relaxation is \emph{interpetretable} as it satisfies certain basic ``Betti-like'' properties and we illicit its connections back to spectral graph theory. 
 
@@ -217,6 +218,7 @@ where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\si
 
 Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter function was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and you wanted to compute $\beta_p^{i,j}$ over $\mathcal{H}$. We give several application settings where this kind of formulation occurs naturally in section~\ref{sec:applications}. To simplify this process, we introduce the notion of a \emph{parameterized boundary matrix}.
 % $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$
+% TODO: fix i,j to be [n], [m]... no need for upper half plane yet 
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
 Let $X$ denote a data set of interest of size $\lvert X \rvert = n$, equipped with parameterized filtering function $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}$. 
 Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \mathbb{F}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
