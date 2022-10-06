@@ -218,3 +218,60 @@ lanczos.sparse_lanczos(A, 3, 4, 1, 0.10)['eigenvalues'] - lanczos.sparse_lanczos
 
 # lanczos.sparse_lanczos(A, 1, 2, 10, 1e-10)
 lanczos.UL1_LS_lanczos()
+
+
+
+import matplot.pyplot as plt
+from numpy.polynomial.legendre import Legendre
+x,y = Legendre.fromroots([0.0, 0.5, 1.0, np.sqrt(2)], domain=[-1, 2]).linspace(1000)
+
+plt.plot(x,y)
+
+
+from pbsig.simplicial import delaunay_complex
+from pbsig.persistence import boundary_matrix
+
+X = np.random.uniform(size=(10,2))
+K = delaunay_complex(X)
+D1 = boundary_matrix(K, p = 1).tocsc()
+
+import networkx as nx
+G = nx.Graph()
+G.add_nodes_from(range(X.shape[0]))
+G.add_edges_from(K['edges'])
+
+A = nx.adjacency_matrix(G)
+D = np.diag([G.degree(i) for i in range(X.shape[0])])
+
+all(np.array((D - A) == (D1 @ D1.T).A).flatten())
+
+DN = np.diag(1/np.sqrt(np.diagonal(D)))
+
+## Normalized laplacian 
+LN = np.eye(X.shape[0]) - DN @ A @ DN
+max(np.linalg.eigh(LN)[0]) # should be in [0,2]
+
+## Spectrum + characteristic polynomial: http://web.stanford.edu/class/msande319/MatchingSpring19/lecture07.pdf
+sA = np.linalg.eigh(A.A)[0] ## should all be [-maxdeg(G), maxdeg(G)]
+cp = lambda x: np.prod(x - sA)
+supp = np.linspace(np.min(sA), np.max(sA), 1000)
+
+
+plt.plot(supp, [cp(x) for x in supp])
+plt.scatter(sA, np.repeat(0, len(sA)), c='red')
+plt.gca().set_ylim(-5, 5)
+
+
+## Regular graph laplacian 
+max(np.linalg.eigh((D1 @ D1.T).A)[0]) # not in [0,2]
+
+
+L = (D1 @ D1.T).A
+x = np.random.uniform(size=L.shape[0])[:,np.newaxis]
+
+
+x.T @ L @ x 
+
+sum([(x[i] - x[j])**2 for i,j in G.edges()])
+
+

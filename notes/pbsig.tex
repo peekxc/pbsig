@@ -194,7 +194,7 @@ In the next section, we show how extend these complexity statements to parameter
 \subsection{A Parameterized Boundary Matrix Relaxation}
 One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the scalar-valued filter function and corresponding filtration belong to a parametric family.  
 One simple such property of the rank function is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---one may permute the matrices in~\eqref{eq:betti_four} and obtain the same Betti number, so long as the matrices have the same essential non-zero pattern. 
-Notice this lies in stark contrast to e.g. the vineyards algorithm~\cite{cohen2006vines}---which requires a $\approx O(m^2)$ maintenance procedure\footnote{Strictly speaking, the bound $O(m^2)$ assumes the homotopy changes each filtration value in a monotone way throughout the homotopy. } to simulate persistence across a homotopy, the canonical continuous parameterized setting. PBNs need no such procedure even in parameterized settings. 
+Notice this lies in stark contrast to e.g. the vineyards algorithm~\cite{cohen2006vines}---which requires a $\approx O(m^2)$ maintenance procedure\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. PBNs need no such procedure even in parameterized settings. 
 We elaborate in the following section. 
 
 Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
@@ -241,10 +241,48 @@ The result of definition~\ref{def:time_boundary_matrix} is that, in parameterize
 One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O((p+1) n^{p+1})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
 As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
 
+% In general, computing dgm_p(X) for p \geq 1 requires O(\lvert X \rvert^{3(p+2)}) [ p = 1 <=> O(n^9), p=2 <=> O(n^12)] (curvature sets paper) and O(\lvert X \rvert^{2(p+2)}) memory.
+
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
 \subsection{Laplacian Connection}
-We now show a few properties that $\hat{\partial}_p^{\ast}(t)$ exhibits which is advantageous for parameterized families. 
-The first such property is a simple parameterized relaxation of PBN:
+Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{} investigates, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest. 
+
+Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$ (0 otherwise). The \emph{graph Laplacian} $L$ is defined as: 
+\begin{equation}
+	L = D - A = \partial_1 \partial_1^T
+\end{equation} 
+where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$ of the vertices $v \in V$. 
+The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; $\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\omega(G)$). For a list of additional properties, see~\cite{}. 
+In particular, the quadratic form that $L$ admits has the particular graph interpretation:
+\begin{equation}
+	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2, \quad x \in \mathbb{R}^n
+\end{equation}
+where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we adapt an example from~\cite{newman2001laplacian}. Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Consider any subset $X \subseteq V$, and let $X' = V \setminus X$ denote the complement set and $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ denote the \emph{cutset} of $G$ restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$. 
+Given $y = L x$, we have: 
+\begin{align*}
+	y_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = y_i  \\
+	y_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert y_i \rvert \\
+	y_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
+\end{align*}
+In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $y = 0$ and thus $0$ must be an eigenvalue of $L$. This example can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries, see~\cite{newman2001laplacian}.
+
+
+
+%graph has a unique Laplacian matrix, this matrix does not in general uniqueIy
+%determine a graph: the Laplacian tells us nothing about how many Ioops were
+%to be found in the original graph.
+
+ 
+% The characteristic polynomial of L(G) is given as the product of the characteristic polynomial of its disjoint subgraphs L(G_1), ..., L(G_k).
+
+% The Spectrum of the Laplacian in Riemannian 	Geometry
+% The spectrum does not in general determine the geometry of a manifold. Nevertheless, some geometric information can be extracted from the spectrum. In what follows, we define a spectral invariant to be anything that is completely determined by the spectrum
+
+To understand the connection to the Laplacian, we focus 
+Another property of the rank function that we may exploit is -invariance: $rank(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$.
+
+%We now show a few properties that the rank-based formula $\beta_p^{i,j}$ exhibits that are advantageous in parameterized settings. 
+%The first such property is a simple parameterized relaxation of PBN:
 \begin{align*}
 	\hat{\beta}_p^{i,j} &= \lvert K_i^{(p)} \rvert - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} ) \\
 %	&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}(\underbrace{(\partial_{q}^{j})(\partial_{q}^{j})^T}_{\uparrow\mathcal{L}_1^i}) + \mathrm{rank}((\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)
@@ -262,11 +300,14 @@ The first such property is a simple parameterized relaxation of PBN:
 %	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
 %\end{enumerate}
 
+\subsection{Complexity of Persistence}
+
+
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{Rank Computation}
 In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show, where applicable, how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized}.
 
-%The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying full orthogonal decompositon of system was too large to fit into memory. 
+%The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying full orthogonal decompositon of system was too large to fit into memory. reduces $A$ to tridiagonal form via a series of orthogonal similarity transformations
  
 The means by which the Lanczos method estimates eigenvalues is by projecting onto successive Krylov subspaces. Given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces are the spaces spanned by: 
 \begin{equation}
@@ -283,7 +324,7 @@ Due orthogonality of $Q_j$, when $A$ is symmetric and real, we have $q_k^T A q_l
 	& & & \beta_{j-1} & \alpha_{j} 
 	\end{bmatrix}, \beta_j > 0, j = 1, 2, \dots, n
 \end{equation}
-Unlike the spectral decomposition $A = U \Lambda U^T$, which identifies $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$, there is no canonical $T_j$ due to the arbitrary choice of $v$. 
+Unlike the spectral decomposition $A = U \Lambda U^T$, which identifies a diagonalizable $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$, there is no canonical choice of $T_j$ due to the arbitrary choice of $v$. 
 %which unitarily diagonalizes $A$ into a form such that any other decomposition $A = \tilde{U}\Lambda\tilde{U}^T$ is related by a similarity transform, 
 Instead, the Lanczos method exploits a particular connection between the iterates $K_j(A,v)$ (for any $j < n$) and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n$, then:
 \begin{equation}
@@ -302,18 +343,19 @@ Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} yields the th
 \begin{equation}\label{eq:three_term_rec}
 	A q_j = \beta_{j\text{-}1} \, q_{j\text{-}1} + \alpha_j \, q_j + \beta_{j} \, q_{j+1}
 \end{equation}
-where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if $q_{j-1}, \beta_j$ and $q_j$ are known, then $\alpha_j$, $\beta_{j+1}$ and $q_{j+1}$ are completely determined and~\eqref{eq:three_term_rec} may be used to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. Note that if we encounter $\beta_j = 0$ for some $j < n$ , then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is invariant for $A$, the iteration stops, and we have $j = \mathrm{rank}(A)$. 
+where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if $q_{j-1}, \beta_j$ and $q_j$ are known, then $\alpha_j$, $\beta_{j+1}$ and $q_{j+1}$ are completely determined and~\eqref{eq:three_term_rec} may be used to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. Note that if we encounter $\beta_j = 0$ for some $j < n$ , then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is $A$-invariant subspace, the iteration stops, and we have $j = \mathrm{rank}(A)$ and $\Lambda(T_j) = \Lambda(A)$. % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
 % Computation 
-The Lanczos iteration is very computationally attractive due to the fact that each step consists of a matrix-vector multiplication, and inner product, and a few vector operations. If one can efficiently compute $v \mapsto Av$ because $A$ is sparse and/or has special structure, then the Lanczos method may require significantly less than the $O(n^3)$ operations needed by the more direct methods. 
-Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. Moreover, if $A \in \mathbb{R}^{n \times n}$ is a symmetric rank-$r$ matrix with an average of $\nu$ nonzeros per row, then approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. Once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j) = \{\, \theta_i \,\}_{i=1}^j$ may be obtained in $O(n \log n)$ time~\cite{}. 
+The Lanczos iteration is computationally attractive due to the fact that each step consists of a matrix-vector multiplication, and inner product, and a few vector operations. If one can efficiently compute $v \mapsto Av$ because $A$ is sparse and/or has special structure, then the Lanczos method may require significantly less than the $O(n^3)$ operations needed by the more direct methods. 
+Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. 
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, the reduction is tridiagonal form is the more difficult part of the the two-phase computation: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. %\{\, \theta_i \,\}_{i=1}^j
 
-The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to the traditional linear operators. In particular, the operator $\partial_p$ need not be represented explicitly in memory. To see this, observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$:
+The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$:
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
 \end{equation}
-he face relation 
+In particular, the operator $\partial_p$ need not be represented explicitly in memory.
 To make this more precise, we start with a useful lemma:
 \begin{lemma}
 For any fixed $p \geq 0$, given simplicial complex $K$ with $m$ ($n$, respectively) simplices of dimension $p$ ($p - 1$, respectively) and an arbitrary vector $v$ of size $\lvert v \rvert = n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(\max \{m,n\})$ time and $O(\max \{m,n\})$ memory. 
