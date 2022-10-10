@@ -22,9 +22,9 @@ In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspect
 %the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
 where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\mu_p^{i,j}$ is the  \emph{multiplicity function}, defined as: 
 \begin{equation}\label{eq:multiplicity}
-	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 < i < j \leq n+ 1
+	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 \leq i < j \leq n+ 1
 \end{equation}
-For $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} by introducing several alternative notions of `tameness', and show that whenever a persistence diagram is sought, it is enough to construct its corresponding \emph{persistence measure}:
+After introducing several alternative notions of `tameness', Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} using measure-theoretic tools to prove the existence and stability of persistence diagram. In particular, for $M$ a decomposable persistence module over $\mathbb{R}$, \cite{chazal2016structure} show that one may recover its persistence diagram by constructing its corresponding \emph{persistence measure}:
 %re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
 \begin{equation}\label{eq:measure}
 	\mu_p(R; M) = \mathrm{card}\left( \,
@@ -32,21 +32,34 @@ For $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal
 	\restr{\mathrm{dgm}_p(M)}{R} \,
 	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
 \end{equation}
-The measure-theoretic perspective from~\eqref{eq:measure} re-interprets the multiplicity function $\mu^\ast_p$ as an integer-valued measure over rectangles in the plane. Since $\mu_p$ is also defined in terms of PBNs, this perspective gives an indirect way of interpreting PBNs in measure-theoretic terms. Indeed, Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
-%as limit points of the $\mu_p$, i.e. for every point $x = (i,j) \in \Delta_+$, define the number $\mu_p(x)$ as the minimum over all positive real numbers $\epsilon$ with $i + \epsilon < j - \epsilon$:
+The essential perspective from~\eqref{eq:measure} is that the multiplicity function $\mu^\ast_p$ can be viewed as an integer-valued measure over rectangles in the plane. 
+Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
 \begin{equation}\label{eq:pbn_cont}
 	x = (i,j) \in \mathrm{dgm}_p(f) \; \Longleftrightarrow \; \mu_p(x) > 0 \; \Longleftrightarrow \; \min_{\epsilon > 0} \left(\beta_p^{i \+ \epsilon, j \shortminus \epsilon} - \beta_p^{i \+ \epsilon, j \+ \epsilon} \right) - \left(\beta_p^{i \shortminus \epsilon, j \shortminus \epsilon} - \beta_p^{i \shortminus \epsilon, j \+ \epsilon} \right) > 0
 \end{equation}
-One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem expressing the persistent Betti number function as a sum of multiplicity functions. A consequence of this theorem is that any distance between persistence diagrams induces a distance between PBN functions $\beta_\ast : \Delta_+ \to \mathbb{N}\cup \{\infty\}$---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:
-\begin{equation*}
+One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. It is natural to ask what other PBN properties can be restated in measure-theoretic terms?
+A prime candidate property for this question is the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational}: for every pair of indices $0 \leq k \leq l \leq n+1$,  the PBN can be recovered via~\eqref{eq:multiplicity}: 
+\begin{equation}\label{eq:betti_mult}
+	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
+\end{equation}
+One of the primary contributions from~\cite{cerri2013betti} is a representation theorem (Theorem 3.11) expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N}\cup \{\infty\}$ as a sum of multiplicity functions, akin to~\eqref{eq:betti_mult}. 
+A consequence of this theorem is that any distance between persistence diagrams induces a distance between PBN functions---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:
+\begin{equation*}\label{eq:pbn_stability}
 	d(\beta_f, \beta_g) = \inf\limits_{\phi} \; \sup\limits_{p \in \mathrm{dgm}(f)} \lVert p - \phi(p) \rVert_{\widetilde{\infty} }
 \end{equation*}
 is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
 Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings. 
 
 % TODO: move to computation section
-Despite the stability of the PBNs in parameterized settings, a number of barriers prevent their application in real-world settings. For instance, the main stability theorem from~\cite{cohen2005stability} assumes that the underlying filtering function or persistence module is \emph{tame} and are defined over triangulable spaces. When the number of corner points is finite, the corresponding distance between PBNs reduces to the bottleneck distance from~\cite{cohen2005stability}. 
-By assuming the filtering functions are just continuous (as in equation~\eqref{eq:pbn_cont}), instead of tame, we encounter two problems on the practical side: 1. the number of corner points is countably infinite, and 2. the matching distance between PBN functions $\beta_p(f), \, \beta_p(g)$ requires as input knowledge of the diagrams $\mathrm{dgm}_p(f), \, \mathrm{dgm}_p(g)$ themselves. 
+The customary interpretation of~\eqref{eq:betti_mult} is that persistence diagrams uniquely determine their PBN functions. In the spirit of~\eqref{eq:measure}, the inverse interpretation---that the PBN function completely characterizes persistence diagram---is the prime motivation for this work. 
+In particular, if a given diagram has a finite number of off-diagonal points, then in theory one may recover the diagram with a finite number of PBN computations. 
+%Since PBN computations carry with them a very different kind of computation, 
+Indeed, this fundamental observation lead~\cite{chen2011output} to create the first output-sensitive PH algorithm to compute [portions of] diagrams via a divide-and-conquer like approach, wherein the primitive computation accesses positional information about the diagram via so-called $\mu$-queries---combinations of PBN-like computations.
+
+
+Despite the duality between diagrams and PBNs, most practitioners work directly with former, not the latter. Indeed, though betti numbers have a certain computational advantages and are stable in the sense of~\eqref{eq:pbn_stability}, a number of barriers prevent their use in real-world settings. 
+For instance, the main stability theorem from~\cite{cohen2005stability} assumes that the underlying filtering function or persistence module is \emph{tame} and are defined over a triangulable space. Including this assumption guarantees the number of corner points will be finite and then ~\eqref{eq:pbn_stability} reduces to the bottleneck distance from~\cite{cohen2005stability}. In contrast, relaxing the assumption that such that  $f$ just continuous (as in equation~\eqref{eq:pbn_cont}) implies the number of corner points may be countably infinite, eliminating any hope of recovering the diagram from a finite set of multiplicity computations. 
+Moreover, although the matching distance between PBN functions $\beta_p(f), \, \beta_p(g)$ is appealing from both a theoretical and practical perspective due to its stability, computing the optimal matching distance requires both knowledge of the diagrams $\mathrm{dgm}_p(f), \, \mathrm{dgm}_p(g)$ themselves and the optimal bijections between them. 
 %% Moreover, achieving the infimum in ... requires computing the optimal bijection ... between D(f), D(g), which takes O(...). 
 %%one arrives at definitions of PBNs in the flavor of equation~\eqref{pbn_cont}. 
 

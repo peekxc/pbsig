@@ -97,7 +97,7 @@ Finally, we illustrate both the computational and practical advantages our expre
 
 % ---- Background & Notation ---- 
 \section{Background \& Notation}\label{sec:background_notation}
-%\subfile{background}
+\subfile{background}
 
 \subsubsection*{Diagrams are PBNs are Diagrams}
 
@@ -232,10 +232,10 @@ Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face 
 where $S_{i, j} : \mathcal{P}(X) \times \mathcal{P}(X) \to \{0, 1\}$ is a \emph{step} function that accepts a face/coface pair $(\sigma_k, \sigma_l)$ and returns a $1$ if $f(\sigma_k) \geq i$ and $f(\sigma_l) \leq j$, and $0$ otherwise.
 \end{definition}
 \noindent
-The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{1,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. 
+The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. 
 \begin{align*}\label{eq:pbn_parameterized}
 	\hat{\beta}_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
-	& h\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ 1, j})(h) \numberthis
+	& h\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
 \end{align*}
 % deflation?
 One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O((p+1) n^{p+1})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
@@ -247,48 +247,58 @@ As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h
 \subsection{Laplacian Connection}
 Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{} investigates, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest. 
 
-Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$ (0 otherwise). The \emph{graph Laplacian} $L$ is defined as: 
+Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
 \begin{equation}
 	L = D - A = \partial_1 \partial_1^T
 \end{equation} 
-where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$ of the vertices $v \in V$. 
-The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; $\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\omega(G)$). For a list of additional properties, see~\cite{}. 
-In particular, the quadratic form that $L$ admits has the particular graph interpretation:
-\begin{equation}
-	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2, \quad x \in \mathbb{R}^n
-\end{equation}
-where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we adapt an example from~\cite{newman2001laplacian}. Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Consider any subset $X \subseteq V$, and let $X' = V \setminus X$ denote the complement set and $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ denote the \emph{cutset} of $G$ restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$. 
-Given $y = L x$, we have: 
+where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
+The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; $\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). For a list of additional properties, see~\cite{}. 
+In particular, the linear and quadratic forms $L$ admits have particular graph interpretations:
+\begin{flalign*}
+	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
+	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
+	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
+\end{flalign*}
+where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we adapt an example from~\cite{newman2001laplacian}. Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set and $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ its \emph{cutset} restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$. 
+%Given $y = L x$, we have: 
+By $L$'s definition, we have:
 \begin{align*}
-	y_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = y_i  \\
-	y_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert y_i \rvert \\
-	y_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
+	(Lx)_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = (Lx)_i  \\
+	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\
+	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
 \end{align*}
-In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $y = 0$ and thus $0$ must be an eigenvalue of $L$. This example can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries, see~\cite{newman2001laplacian}.
-
-
-
+In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $y = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
 %graph has a unique Laplacian matrix, this matrix does not in general uniqueIy
 %determine a graph: the Laplacian tells us nothing about how many Ioops were
 %to be found in the original graph.
-
- 
 % The characteristic polynomial of L(G) is given as the product of the characteristic polynomial of its disjoint subgraphs L(G_1), ..., L(G_k).
-
 % The Spectrum of the Laplacian in Riemannian 	Geometry
 % The spectrum does not in general determine the geometry of a manifold. Nevertheless, some geometric information can be extracted from the spectrum. In what follows, we define a spectral invariant to be anything that is completely determined by the spectrum
 
-To understand the connection to the Laplacian, we focus 
-Another property of the rank function that we may exploit is -invariance: $rank(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$.
+% TODO: UNDERSTAND THE FOURTH TERM 
+The graph laplacian appears naturally in the computation of $\beta_0^\ast$. Consider the rank expression from~\eqref{eq:betti_four}. Since $\partial_0$ is trivial, the expression reduces to: 
+\begin{equation}
+	\beta_p^{i,j} = \lvert K_i^{(0)}\rvert - \mathrm{rank}(\partial_{1}^{j}) + \mathrm{rank}(\partial_{1}^{i \+ 1, j} )
+\end{equation} 
+Since $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, we may equivalently express the rank-based terms as $\mathrm{rank}(L(K_j))$ and $\mathrm{rank}(L(K_j \cap \bar{K}_i))$, where $\bar{K}_i = K_\bullet \setminus K_i$ denotes the complement. Since the rank of any (irreducible) graph Laplacian may be deduced by counting the connected components of the underlying graph, we deduce that the complexity of computing $\beta_0^{i,j}$ reduces to the complexity 
+% TODO: compute this for small example to verify Laplacians
+
+For $p \geq 1$, the PBN expression can still be generalized via \emph{up Laplacians}. The higher-dimensional generalizations of the graph Laplacian for simplicial complexes have been studied in a variety of settings, see e.g.~\cite{}. 
+In particular, given $K$ a finite oriented simplicial complex and some $p \geq 0$, the $p$-th \emph{combinatorial Laplacian} of $K$ is the linear operator $\mathcal{L}_p : C_p \to C_p$ given by: 
+\begin{equation}
+	\mathcal{L}_p = \partial_{p\+1} \circ \partial_{p\+1}^T + \partial_{p}^T \circ \partial_{p}
+\end{equation}
+For convenience, we use the notation ${\uparrow}L_p = \partial_{p\+1} \circ \partial_{p\+1}^T$ and ${\downarrow}L_{p} = \partial_{p}^T \circ \partial_{p}$ to denote the so-called \emph{up} and \emph{down} combinatorial $p$-th Laplacians, respectively. 
+With this notation, notice the computation of the PBN can be expressed via the ranks of up Laplacians
 
 %We now show a few properties that the rank-based formula $\beta_p^{i,j}$ exhibits that are advantageous in parameterized settings. 
 %The first such property is a simple parameterized relaxation of PBN:
-\begin{align*}
-	\hat{\beta}_p^{i,j} &= \lvert K_i^{(p)} \rvert - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} ) \\
-%	&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}(\underbrace{(\partial_{q}^{j})(\partial_{q}^{j})^T}_{\uparrow\mathcal{L}_1^i}) + \mathrm{rank}((\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)
-&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}((\partial_{q}^{j})(\partial_{q}^{j})^T) + \mathrm{rank}( (\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)\\
-&= \lvert K_i^{(p)} \rvert - \mathrm{rank}(L_p^i) - \mathrm{rank}(L_q^j) + \mathrm{rank}(L_q^{i\+1,j}) \numberthis
-\end{align*}
+%\begin{align*}
+%	\hat{\beta}_p^{i,j} &= \lvert K_i^{(p)} \rvert - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} ) \\
+%%	&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}(\underbrace{(\partial_{q}^{j})(\partial_{q}^{j})^T}_{\uparrow\mathcal{L}_1^i}) + \mathrm{rank}((\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)
+%&= \lvert K_i^{(p)} \rvert - \mathrm{rank}((\partial_{p}^{i})(\partial_{p}^{i})^T) - \mathrm{rank}((\partial_{q}^{j})(\partial_{q}^{j})^T) + \mathrm{rank}( (\partial_{q}^{i \+ 1, j})(\partial_{q}^{i \+ 1, j})^T)\\
+%&= \lvert K_i^{(p)} \rvert - \mathrm{rank}(L_p^i) - \mathrm{rank}(L_q^j) + \mathrm{rank}(L_q^{i\+1,j}) \numberthis
+%\end{align*}
 
 % \hat{\beta}_p^{i,j} = \sum\limits_{\underset{\lvert \sigma \rvert = p+1}{\sigma \in \mathcal{P}(X)}} \mathrm{sgn}\left( \; \lvert i - f(\sigma) \rvert_{\+} \right)  - \mathrm{rank}(\partial_{p}^{i}) - \mathrm{rank}(\partial_{q}^{j}) + \mathrm{rank}(\partial_{q}^{i \+ 1, j} )
 
@@ -313,8 +323,15 @@ The means by which the Lanczos method estimates eigenvalues is by projecting ont
 \begin{equation}
 	\mathcal{K}_j(A, v) := \mathrm{span}\{ v, Av, A^2 v, \dots, A^{j-1} \} = \mathrm{range}(K_j(A, v))
 \end{equation}
-where $K_j(A, v) = [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}]$ are the corresponding Krylov matrices. To generate an orthonormal basis for $\mathcal{K}_j(A, v)$, the Lanczos method proceeds by constructing a reduced QR factorizations of $K_j(A,v) = Q_j R_j$, for all $j = 1, 2, \dots, n$.
-Due orthogonality of $Q_j$, when $A$ is symmetric and real, we have $q_k^T A q_l = q_l^T A^T q_k = 0$ for $k > l + 1$, implying the corresponding projections $T_j = Q_j^T A Q_j$ have a tridiagonal structure:
+where $K_j(A, v) = [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}]$ are the corresponding Krylov matrices. 
+% The utility of Krylov subspace methods is motivated by the fact that the minimal polynomial of $A$ can be used to express $A^{-1}$ in terms of powers of $A$.
+The motivation for Krylov subspaces comes from using the minimal polynomial of $A$ to express $A^{-1}$ in terms of powers of $A$. In particular, if $A$ is nonsingular and its minimal polynomial has degree $m$, then $x = A^{-1}v \in K_m(A, v)$ and $K_m(A, v)$ is an invariant subspace of $A$.
+% "Krylov subspace methods for shifted unitary matrices and eigenvalue deflation applied to the Neuberger Operator and the matrix sign function"
+%A non-trivial fact that motivates the use of Krylov subspaces is that subspace $K_n(A, v)$ is the smallest $A$-invariant space that contains $v$. 
+%The vectors $A^j v$ are proportional to those obtained through power iteration and tend to be good approximations to the eigenvectors associated with the largest eigenvalues.
+This observation combined with the fact $A$ is orthogonally diagonalizable (since $A$ is symmetric) implies we may obtain $\Lambda(A)$ by generating an orthonormal basis for $\mathcal{K}_n(A, v)$. 
+To do this, the Lanczos method constructs successive QR factorizations of $K_j(A,v) = Q_j R_j$ for each $j = 1, 2, \dots, n$.
+Due to $A$'s symmetry and the orthogonality of $Q_j$, we have $q_k^T A q_l = q_l^T A^T q_k = 0$ for $k > l + 1$, implying the corresponding $T_j = Q_j^T A Q_j$ have a tridiagonal structure:
 \begin{equation}
 	T_j = \begin{bmatrix} 
 	\alpha_1 & \beta_1 & & & \\
@@ -322,17 +339,18 @@ Due orthogonality of $Q_j$, when $A$ is symmetric and real, we have $q_k^T A q_l
 	 & \beta_2 & \alpha_3 & \ddots & \\
 	& & \ddots & \ddots & \beta_{j-1} \\
 	& & & \beta_{j-1} & \alpha_{j} 
-	\end{bmatrix}, \beta_j > 0, j = 1, 2, \dots, n
+	\end{bmatrix}, \; \beta_j > 0, \; j = 1, 2, \dots, n
 \end{equation}
 Unlike the spectral decomposition $A = U \Lambda U^T$, which identifies a diagonalizable $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$, there is no canonical choice of $T_j$ due to the arbitrary choice of $v$. 
 %which unitarily diagonalizes $A$ into a form such that any other decomposition $A = \tilde{U}\Lambda\tilde{U}^T$ is related by a similarity transform, 
-Instead, the Lanczos method exploits a particular connection between the iterates $K_j(A,v)$ (for any $j < n$) and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n$, then:
+Instead, the Lanczos method exploits a particular connection between the iterates $K_j(A,v)$ and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n$, then:
 \begin{equation}
 	K_n(A, q_1) = Q Q^T K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]
 \end{equation}
-is the QR factorization of $K_n(A, q_1)$---that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
-More explicitly, the Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
-Thus, given an initial pair $(A, q_1)$, we may restrict and project $A$ to its $j$-th Krylov subspace $T_j$ via: 
+is the QR factorization of $K_n(A, q_1)$.
+%that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
+The Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
+Thus, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we may restrict and project $A$ to its $j$-th Krylov subspace $T_j$ via: 
 \begin{equation}\label{eq:krylov_proj}
 	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T
 \end{equation}
@@ -343,19 +361,24 @@ Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} yields the th
 \begin{equation}\label{eq:three_term_rec}
 	A q_j = \beta_{j\text{-}1} \, q_{j\text{-}1} + \alpha_j \, q_j + \beta_{j} \, q_{j+1}
 \end{equation}
-where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if $q_{j-1}, \beta_j$ and $q_j$ are known, then $\alpha_j$, $\beta_{j+1}$ and $q_{j+1}$ are completely determined and~\eqref{eq:three_term_rec} may be used to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. Note that if we encounter $\beta_j = 0$ for some $j < n$ , then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is $A$-invariant subspace, the iteration stops, and we have $j = \mathrm{rank}(A)$ and $\Lambda(T_j) = \Lambda(A)$. % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
+where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined and~\eqref{eq:three_term_rec} may be used iteratively to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is still an $A$-invariant subspace, the iteration stops, and we have $j = \mathrm{rank}(A)$ and $\Lambda(T_j) = \Lambda(A)$. % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
 % Computation 
-The Lanczos iteration is computationally attractive due to the fact that each step consists of a matrix-vector multiplication, and inner product, and a few vector operations. If one can efficiently compute $v \mapsto Av$ because $A$ is sparse and/or has special structure, then the Lanczos method may require significantly less than the $O(n^3)$ operations needed by the more direct methods. 
+The Lanczos iteration's widespread adoption is in part due to its simplicity: each step consists of just a  matrix-vector operator and a few vector operations. It is often referred to as a ``black box'' method due to the fact that a fast $v \mapsto Av$ operator is the only aspect of the computation that explicitly depends on $A$. 
+%the only aspect of the computation an implementation requires from the user-side is an efficient \emph{matvec} operator $v \mapsto Av$. 
+%Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
+If $A$ is sparse and/or has special structure, then the Lanczos method can be quite efficient. 
 Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, the reduction is tridiagonal form is the more difficult part of the the two-phase computation: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. %\{\, \theta_i \,\}_{i=1}^j
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to tridiagonal form (the first phase) is more computationally intensive: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
+%\{\, \theta_i \,\}_{i=1}^j
+Since this issisi
 
 The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$:
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
 \end{equation}
-In particular, the operator $\partial_p$ need not be represented explicitly in memory.
+In particular, the operator $v \mapsto \partial_p \partial_p^T v$ need not be represented explicitly in memory: as long as we have access to the underlying simplicial complex $K$ and its corresponding filter function $f$, we may take advantage of the .
 To make this more precise, we start with a useful lemma:
 \begin{lemma}
 For any fixed $p \geq 0$, given simplicial complex $K$ with $m$ ($n$, respectively) simplices of dimension $p$ ($p - 1$, respectively) and an arbitrary vector $v$ of size $\lvert v \rvert = n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(\max \{m,n\})$ time and $O(\max \{m,n\})$ memory. 
@@ -372,19 +395,31 @@ From this lemma, we have the following result:
 \end{proposition}
 \noindent A proof of this proposition is given in the appendix. 
 
+% Rounding Issues
 For expository purposes, the preceding sections assumed exact arithmetic. 
 
-In principle, if the Lanczos iteration doesn't break down due to rounding errors ($T_k$ is full rank), then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
+
+% Convergence + SDD
+\noindent \textbf{Convergence Rate: }
+In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
 \begin{equation}
 	\lVert p^k(A)b \rVert = {minimum}
 \end{equation}
 % the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
 In fact, there is more we can say: if $S = \mathcal{K}_k(A, q_1)$, then applying the Lanczos iteration yield the \emph{Ritz pairs} $(\theta, y)$ of $A$, which are the pairs satisfying $w^T (Ay - \theta y) = 0$ for all $w \in S$.
-The essential result from~\cite{} is that the eigenvalues $\Lambda(T_k) = \{\theta_1, \theta_2, \dots, \theta_k \}$ are `optimal' in the sense that $T_k = B$ is the matrix that minimizes  $\lVert A Q_k - Qk B \rVert_2$ over the space of all $k \times k$ matrices. Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the largest eigenvalues of $A$. 
-% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
-%It is typically assumed that $\mathcal{K}_k$ has dimension exactly $k$, where $k$ is the number of distinct eigenvalues of $A$. However, the intermediate matrices $T_k$ are well-known to have be good approximations to the extreme eigenvalues of $A$. 
+The essential result from~\cite{} is that the eigenvalues $\Lambda(T_k) = \{\theta_1, \theta_2, \dots, \theta_k \}$ are `optimal' in the sense that $T_k = B$ is the matrix that minimizes  $\lVert A Q_k - Qk B \rVert_2$ over the space of all $k \times k$ matrices. Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
 % Rayleigh 
 % the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
+% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
+The iteration typically converges geometrically and can be stopped as soon as the desired accuracy is reached.
+
+The structure of $L_p = \partial_p \partial_p^T$ is actually amenable to more than just computational efficiency in terms of matrix-vector multiplication. A matrix $A = \{ a_{ij} \}$ is said to be \emph{diagonally dominant} (DD) if it satisfies: 
+\begin{equation}\label{eq:dd}
+a_{ii} \geq \sum\limits_{j \neq i} \, \lvert a_{ij} \rvert \,, \quad \forall \, i,j \in [n]
+\end{equation}  
+Similarly, when the inequality in~\eqref{eq:dd} is strict, $A$ is said to be \emph{strictly diagonally dominant} (SDD). 
+It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally dominant matrix in the sense that $L_p[i,i] = \sum\limits_{j \neq i} \lvert L_p[i,j] \rvert$. Diagonally dominant matrices are of particular interest becsue.... their spectrums can be approximated rather quickly. 
+
 
 %Extending from this, corollary~\ref{} implies $p$-th PBN at index $(i,j) \in \Delta_{+}^{m}$ can be computed in... note that for any $p \geq 1$, this is significant reduction in complexity compared to e.g. the $O(m^3)$ reduction algorithm.
 %Indeed, if $K$ has $n$ vertices, the $\Theta(m^3)$ complexity of the reduction algorithm implies computing the $p$-th persistence diagram requires reducing $\partial_{p+1}$; one deduces loose though asymptotically accurate bounds as $O(n^3(p+2))$ operations, i.e. $O(n^9)$ for $p = 1$, $O(n^{12})$ for $p = 2$, etc. In contrast, combining proposition~\ref{prop:exact_arith_matvec} with corollary~\ref{}, we have that the PBN at index $i,j$ may be compute in... a substantial difference indeed. 
@@ -393,8 +428,9 @@ The essential result from~\cite{} is that the eigenvalues $\Lambda(T_k) = \{\the
 
 
 
-% Convergence; also talk about 
-The iteration typically converges geometrically and can be stopped as soon as the desired accuracy is reached.
+
+
+
 
 % --- Generic Rank approximation via eigenvalues --- 
 % Computational results of being able to calculate/approximate rank quickly
