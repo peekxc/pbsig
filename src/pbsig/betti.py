@@ -1,4 +1,3 @@
-from multiprocessing.sharedctypes import Value
 from typing import *
 import numpy as np 
 
@@ -395,7 +394,7 @@ def tolerance(m: int, n: int, dtype: type = float):
   return _tol
 
 ## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps to make small epsilons match rank 
-def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, method: Optional[str] = None, w: float = 0.0, epsilon: float = 0.0):
+def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, method: Optional[str] = None, w: float = 0.0, epsilon: float = 0.0, keep_terms: bool = False):
   """
   F := Iterable of (nv)-sized arrays representing vertex filtration heights
   p_simplices := (m x p) numpy matrix of (p+1)-simplices
@@ -412,7 +411,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   assert isinstance(p_simplices, np.ndarray), "simplices must be a numpy matrix for now"
   p_dim = p_simplices.shape[1]
   
-  if p_dim == 3: # betti-0
+  if p_dim == 3: # betti-1
     E, T = edges_from_triangles(p_simplices, nv), p_simplices
     tol = tolerance(T.shape[0], E.shape[0])
   elif p_dim == 2: # betti-0
@@ -420,15 +419,20 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   else: 
     raise ValueError("invalid simplices")
 
+  ## Each method accepts a set of eigenvalues (squared singular values!)
   if method is None or method == "rank":
-    relax_f = lambda x: sum(abs(x) > tol(max(x)))
+    base_f = lambda x: abs(x) > tol(max(x))
     w = 0.0
+    reduce_f = lambda x: sum(x)
   elif method == "nuclear":
-    relax_f = lambda x: sum([np.sqrt(xi) if xi > tol(max(x)) else 0.0 for xi in x])
+    base_f = lambda x: [np.sqrt(xi) if xi > tol(max(x)) else 0.0 for xi in x]
+    reduce_f = lambda x: sum(x)
   elif method == "generic":
-    relax_f = lambda x: sum([abs(xi/(xi+epsilon)) if abs(xi) > tol(max(x)) else 0.0 for xi in x])
+    base_f = lambda x: [abs(xi/(xi+epsilon)) if abs(xi) > tol(max(x)) else 0.0 for xi in x]
+    reduce_f = lambda x: sum(x)
   elif method == "fro" or method == "frobenius":
-    relax_f = lambda x: np.sqrt(sum(T3))
+    base_f = lambda x: x
+    reduce_f = lambda x: np.sqrt(sum(x))
   else: 
     raise ValueError("Invalid method")
 
@@ -442,7 +446,10 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
 
 
   ## Compute the terms 
-  shape_sig, terms = array('d'), np.zeros(4)
+  relax_f = lambda x: reduce_f(base_f(x))
+  shape_sig = [] if keep_terms else array('d')
+  terms = np.zeros(4)
+
   if p_dim == 3: ## Betti-1
     E, T = edges_from_triangles(p_simplices, nv), p_simplices
     D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
@@ -481,7 +488,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
         terms[3] = relax_f(np.array(T4))
 
       ## Append to shape signature and continue
-      shape_sig.append(np.sum(terms))
+      shape_sig.append(np.sum(terms) if not(keep_terms) else terms)
   elif p_dim == 2: # Betti-0
     E = p_simplices
     D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
@@ -521,7 +528,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
         #terms[3] = sum([t if abs(t) > 1e-13 else 0 for t in T4])
       
       ## Append to shape signature and continue
-      shape_sig.append(np.sum(terms)) 
+      shape_sig.append(np.sum(terms) if not(keep_terms) else terms)
   else: 
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
