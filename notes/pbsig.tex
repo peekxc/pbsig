@@ -99,7 +99,7 @@ Finally, we illustrate both the computational and practical advantages our expre
 \section{Background \& Notation}\label{sec:background_notation}
 \subfile{background}
 
-\subsubsection*{Diagrams are PBNs are Diagrams}
+\subsubsection*{The duality between PBNs and Diagrams}
 
 % --- Counting measure multiplicity interpretation --- 
 \subfile{counting_measure}
@@ -194,8 +194,7 @@ In the next section, we show how extend these complexity statements to parameter
 \subsection{A Parameterized Boundary Matrix Relaxation}
 One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the scalar-valued filter function and corresponding filtration belong to a parametric family.  
 One simple such property of the rank function is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---one may permute the matrices in~\eqref{eq:betti_four} and obtain the same Betti number, so long as the matrices have the same essential non-zero pattern. 
-Notice this lies in stark contrast to e.g. the vineyards algorithm~\cite{cohen2006vines}---which requires a $\approx O(m^2)$ maintenance procedure\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. PBNs need no such procedure even in parameterized settings. 
-We elaborate in the following section. 
+Another approach to tracking the PBNs in parameterized setting is through the vineyards algorithm~\cite{cohen2006vines}, however this requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. We elaborate in the following section. 
 
 Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
 %Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
@@ -234,25 +233,28 @@ where $S_{i, j} : \mathcal{P}(X) \times \mathcal{P}(X) \to \{0, 1\}$ is a \emph{
 \noindent
 The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. 
 \begin{align*}\label{eq:pbn_parameterized}
-	\hat{\beta}_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
+	\beta_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
 	& h\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
 \end{align*}
 % deflation?
-One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O((p+1) n^{p+1})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
+One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O(q\cdot n^{q})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
 As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
 
 % In general, computing dgm_p(X) for p \geq 1 requires O(\lvert X \rvert^{3(p+2)}) [ p = 1 <=> O(n^9), p=2 <=> O(n^12)] (curvature sets paper) and O(\lvert X \rvert^{2(p+2)}) memory.
 
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
 \subsection{Laplacian Connection}
-Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{} investigates, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest. 
+% Spectral graph theory plug
+Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
+
 
 Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
 \begin{equation}
 	L = D - A = \partial_1 \partial_1^T
 \end{equation} 
 where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
-The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; $\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). For a list of additional properties, see~\cite{}. 
+The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; 
+$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
 In particular, the linear and quadratic forms $L$ admits have particular graph interpretations:
 \begin{flalign*}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
@@ -268,6 +270,29 @@ By $L$'s definition, we have:
 	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
 \end{align*}
 In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $y = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
+
+In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded and carry a particular form. Define the \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ as: 
+\begin{equation}
+	\mathcal{L}(G) = D^{-1/2} L D^{-1/2}
+\end{equation} 
+with the convention that $D^{-1}(v_i,v_i) = 0$ for $\mathrm{deg}(v_i) = 0$. 
+Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
+The variational characterization of eigenvalues in terms of the Rayleigh quotient of $\mathcal{L}$ convey a particular form. Specifically, for any real-valued function $f : V \to \mathbb{R}$ on $G$, when viewed as a column vector, $\mathcal{L}$ satisfies:
+\begin{equation}\label{eq:lap_rayleigh}
+	\frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} = \frac{\sum\limits_{i \sim j} (g(v_i) - g(v_j))^2}{\sum\limits_{i} g(v_i)^2  \cdot \mathrm{deg}(v_i) }
+\end{equation}
+where $f = D^{1/2} g$ and $\langle f, g\rangle$ denotes the standard inner product in $\mathbb{R}^n$.
+Equation~\eqref{eq:lap_rayleigh} may be used to show that the spectrum $\Lambda(\mathcal{L})$ is bounded in the interval $[0, 2]$. In particular, it is known that:
+\begin{equation}
+	\lambda_i \leq \sup_{f} \frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} \leq 2
+\end{equation}
+Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathcal{L}(G)$, with multiplicity $\mathrm{cc}(G)$. Moreover, if $G$ is the union of disjoint graphs $G_1, G_2, \dots, G_k$, then it has as its spectrum the union of the spectra $ \Lambda(G_1), \Lambda(G_2), \dots, \Lambda(G_k)$. 
+Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
+For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
+ 
+%In particular,if...
+
+
 %graph has a unique Laplacian matrix, this matrix does not in general uniqueIy
 %determine a graph: the Laplacian tells us nothing about how many Ioops were
 %to be found in the original graph.
@@ -275,12 +300,15 @@ In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. No
 % The Spectrum of the Laplacian in Riemannian 	Geometry
 % The spectrum does not in general determine the geometry of a manifold. Nevertheless, some geometric information can be extracted from the spectrum. In what follows, we define a spectral invariant to be anything that is completely determined by the spectrum
 
+
+
 % TODO: UNDERSTAND THE FOURTH TERM 
 The graph laplacian appears naturally in the computation of $\beta_0^\ast$. Consider the rank expression from~\eqref{eq:betti_four}. Since $\partial_0$ is trivial, the expression reduces to: 
 \begin{equation}
 	\beta_p^{i,j} = \lvert K_i^{(0)}\rvert - \mathrm{rank}(\partial_{1}^{j}) + \mathrm{rank}(\partial_{1}^{i \+ 1, j} )
 \end{equation} 
-Since $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, we may equivalently express the rank-based terms as $\mathrm{rank}(L(K_j))$ and $\mathrm{rank}(L(K_j \cap \bar{K}_i))$, where $\bar{K}_i = K_\bullet \setminus K_i$ denotes the complement. Since the rank of any (irreducible) graph Laplacian may be deduced by counting the connected components of the underlying graph, we deduce that the complexity of computing $\beta_0^{i,j}$ reduces to the complexity 
+Since $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, we may equivalently express the second and third terms in terms of their graph Laplacians. Let $G_j = \mathcal{L}(K_j)$ denote the graph of $K_j$...
+%as $\mathrm{rank}(L(K_j))$ and $\mathrm{rank}(L(K_j \cap \bar{K}_i))$, where $\bar{K}_i = K_\bullet \setminus K_i$ denotes the complement. Since the rank of any (irreducible) graph Laplacian may be deduced by counting the connected components of the underlying graph, we deduce that the complexity of computing $\beta_0^{i,j}$ reduces to the complexity 
 % TODO: compute this for small example to verify Laplacians
 
 For $p \geq 1$, the PBN expression can still be generalized via \emph{up Laplacians}. The higher-dimensional generalizations of the graph Laplacian for simplicial complexes have been studied in a variety of settings, see e.g.~\cite{}. 
@@ -289,7 +317,7 @@ In particular, given $K$ a finite oriented simplicial complex and some $p \geq 0
 	\mathcal{L}_p = \partial_{p\+1} \circ \partial_{p\+1}^T + \partial_{p}^T \circ \partial_{p}
 \end{equation}
 For convenience, we use the notation ${\uparrow}L_p = \partial_{p\+1} \circ \partial_{p\+1}^T$ and ${\downarrow}L_{p} = \partial_{p}^T \circ \partial_{p}$ to denote the so-called \emph{up} and \emph{down} combinatorial $p$-th Laplacians, respectively. 
-With this notation, notice the computation of the PBN can be expressed via the ranks of up Laplacians
+With this notation, notice the computation of the PBN can be expressed via the ranks of up Laplacians...
 
 %We now show a few properties that the rank-based formula $\beta_p^{i,j}$ exhibits that are advantageous in parameterized settings. 
 %The first such property is a simple parameterized relaxation of PBN:
@@ -370,9 +398,9 @@ The Lanczos iteration's widespread adoption is in part due to its simplicity: ea
 %Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 If $A$ is sparse and/or has special structure, then the Lanczos method can be quite efficient. 
 Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to tridiagonal form (the first phase) is more computationally intensive: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to structured form (the first phase) is the bottleneck: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
 %\{\, \theta_i \,\}_{i=1}^j
-Since this issisi
+
 
 The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$:
 \begin{equation}
@@ -386,12 +414,12 @@ For any fixed $p \geq 0$, given simplicial complex $K$ with $m$ ($n$, respective
 From this lemma, we have the following result: 
 \begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{prop:exact_arith_matvec}
 	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
-	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
 	Then the Lanczos iteration from~\cite{} yields the quantity:
 	\begin{equation}
-		\mathrm{dim}(B_{p-1}(K; \mathbb{R})) = \mathrm{rank}(\partial_p(K))
+		\mathrm{dim}(B_{p}(K; \mathbb{R})) = \mathrm{rank}(\partial_{p+1}(K))
 	\end{equation}
-	in $O(mr)$ time and $O(m)$ storage complexity. 
+	in $O(mr)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
+	%	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
 \end{proposition}
 \noindent A proof of this proposition is given in the appendix. 
 

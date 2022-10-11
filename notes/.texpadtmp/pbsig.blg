@@ -3,46 +3,47 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: /Users/mpiekenbrock/pbsig/notes/.texpadtmp/pbsig.aux
 The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
+Warning--I didn't find a database entry for "ChungSGT"
 Warning--empty school in newman2001laplacian
-You've used 14 entries,
+You've used 15 entries,
             2118 wiz_defined-function locations,
-            582 strings with 6319 characters,
-and the built_in function-call counts, 4817 in all, are:
-= -- 478
-> -- 193
-< -- 5
-+ -- 80
-- -- 62
-* -- 303
-:= -- 771
-add.period$ -- 42
-call.type$ -- 14
-change.case$ -- 69
+            590 strings with 6418 characters,
+and the built_in function-call counts, 5043 in all, are:
+= -- 498
+> -- 200
+< -- 6
++ -- 83
+- -- 64
+* -- 314
+:= -- 810
+add.period$ -- 45
+call.type$ -- 15
+change.case$ -- 72
 chr.to.int$ -- 0
-cite$ -- 15
-duplicate$ -- 203
-empty$ -- 401
-format.name$ -- 62
-if$ -- 1030
+cite$ -- 16
+duplicate$ -- 215
+empty$ -- 423
+format.name$ -- 64
+if$ -- 1078
 int.to.chr$ -- 0
-int.to.str$ -- 14
-missing$ -- 17
-newline$ -- 73
-num.names$ -- 28
-pop$ -- 90
+int.to.str$ -- 15
+missing$ -- 19
+newline$ -- 78
+num.names$ -- 30
+pop$ -- 97
 preamble$ -- 1
-purify$ -- 59
+purify$ -- 62
 quote$ -- 0
-skip$ -- 151
+skip$ -- 158
 stack$ -- 0
-substring$ -- 330
-swap$ -- 54
-text.length$ -- 5
+substring$ -- 335
+swap$ -- 56
+text.length$ -- 6
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 48
+type$ -- 50
 warning$ -- 1
-while$ -- 50
-width$ -- 16
-write$ -- 152
-(There was 1 warning)
+while$ -- 52
+width$ -- 17
+write$ -- 163
+(There were 2 warnings)

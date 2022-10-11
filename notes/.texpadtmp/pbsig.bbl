@@ -25,6 +25,11 @@ Chao Chen and Michael Kerber.
 \newblock In {\em Proceedings of the twenty-seventh annual symposium on
   Computational geometry}, pages 207--216, 2011.
 
+\bibitem{chung1997spectral}
+Fan~RK Chung.
+\newblock {\em Spectral graph theory}, volume~92.
+\newblock American Mathematical Soc., 1997.
+
 \bibitem{cohen2005stability}
 David Cohen-Steiner, Herbert Edelsbrunner, and John Harer.
 \newblock Stability of persistence diagrams.

@@ -28,6 +28,13 @@ Equation~\eqref{eq:multiplicity} demonstrates an intrinsic connection between th
 \begin{equation}\label{eq:betti_mult}
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
+% TODO: move to computation section?
+The customary interpretation of~\eqref{eq:betti_mult} is that persistence diagrams completely characterize their PBNs. This perspective has by and large driven the computational pipeline: if one has a space of interest $\mathcal{X}$ and is interested in computing its PBNs $\beta_p^{i,j}$ for any choice of $i < j$, the standard approach is to first compute $\mathrm{dgm}_p(\mathcal{X})$ such that the corresponding PBNs can be read-off directly.
+Nonetheless, the inverse interpretation via~\eqref{eq:betti_mult} has certain advantages. Its computation depends completely on the choice of indices $(i,j)$: if $\lvert i - j \rvert$ is small, the computation implies a localized computation. Moreover, if one has computed $\beta_p^{i,j}$ for some choice of $(i,j)$, the inner loop of the reduction algorithm from~\cite{edelsbrunner2022computational} suggests  $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ can be determined quadratic time. 
+Indeed, if given diagram has a finite number of off-diagonal points, then in theory for~\eqref{eq:betti_mult} to hold it must be the case that one can recover the diagram with a finite number of PBN computations. 
+Indeed, this fundamental observation lead~\cite{chen2011output} to create a divide-and-conquer like PH algorithm, wherein positional information about the diagram is accessed solely through $\mu$-queries---combinations of PBN-like computations.
+
+% TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
 After introducing several alternative notions of `tameness',~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} using measure-theoretic tools to prove the existence and stability of persistence diagram. In particular, for $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal2016structure} show that one may recover its persistence diagram by constructing its corresponding \emph{persistence measure}:
 %re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
 \begin{equation}\label{eq:measure}
@@ -49,11 +56,7 @@ A consequence of this theorem is that any distance between persistence diagrams 
 is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
 Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings. 
 
-% TODO: move to computation section?
-The customary interpretation of~\eqref{eq:betti_mult} is that persistence diagrams completely characterize their PBNs. This perspective has by and large driven the computational pipeline: if one has a space of interest $X$ and is interested in computing its PBNs $\beta_p^{i,j}$ for any choice of $i < j$, the standard approach is to first compute $\mathrm{dgm}_p(X)$ such that the corresponding PBNs can be read-off directly.
-Nonetheless, the inverse interpretation via~\eqref{eq:betti_mult} has certain advantages. Its computation depends completely on the choice of indices $(i,j)$: if $\lvert i - j \rvert$ is small, the computation implies a localized computation. Moreover, if one has computed $\beta_p^{i,j}$ for some choice of $(i,j)$, the inner loop of the reduction algorithm from~\cite{edelsbrunner2022computational} suggests  $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ can be determined quadratic time. 
-Indeed, if given diagram has a finite number of off-diagonal points, then in theory for~\eqref{eq:betti_mult} to hold it must be the case that one can recover the diagram with a finite number of PBN computations. 
-Indeed, this fundamental observation lead~\cite{chen2011output} to create a divide-and-conquer like PH algorithm, wherein positional information about the diagram is accessed solely through $\mu$-queries---combinations of PBN-like computations.
+
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 
 
