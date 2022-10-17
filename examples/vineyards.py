@@ -309,6 +309,13 @@ tr, cr = linear_homotopy(f0, f1, schedule=False)
 ## Choose filtration directions
 F = np.hstack([f[:,np.newaxis] for (f, v) in rotate_S1(X, n=8)])
 
+
+from pbsig.simplicial import as_filtration, as_simplex
+as_filtration([as_simplex(e) for e in K['edges']])
+
+F = as_filtration([[0],[1],[0,1],[2],[0,2]])
+F.__validate__()
+
 def lower_star_vineyards(K: Dict, F: ArrayLike, p: int = 0):
   """
   F := (n x t) matrix of filtration values for n-vertices over t-time points

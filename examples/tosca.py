@@ -1,5 +1,6 @@
 import scipy.io
 import matplotlib.pyplot as plt
+import numpy as np
 
 mat = scipy.io.loadmat('/Users/mpiekenbrock/Downloads/dog7.mat')
 

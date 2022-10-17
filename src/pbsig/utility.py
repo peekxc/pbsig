@@ -1,14 +1,36 @@
 import sys
 import numpy as np 
 
-from itertools import combinations, tee
+from itertools import *
 from operator import le
 from typing import * 
 from numpy.typing import ArrayLike
 from math import comb
 
-def pairwise(C): 
-  return(zip(C, C[1:]))
+def pairwise(S: Iterable): 
+  a, b = tee(S)
+  next(b, None)
+  return zip(a, b)
+
+def window(S: Iterable, n: int = 2):
+  "Returns a sliding window (of width n) over data from the iterable"
+  "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
+  it = iter(S)
+  result = tuple(islice(it, n))
+  if len(result) == n:
+    yield result
+  for elem in it:
+    result = result[1:] + (elem,)
+    yield result
+
+def rotate(S: Iterable, n: int = 1):
+  from collections import deque
+  items = deque(S)
+  items.rotate(n)
+  return iter(items)
+
+def cycle_window(S: Iterable, offset: int = 1, w: int = 2):
+  return islice(cycle(window(S, w)), (len(S)-1)+offset)
 
 def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), lower: bool = False):
   """
@@ -180,7 +202,7 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
   Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
   """
   n, d = X.shape[0], X.shape[1]
-  if V is not None: method = "directions"
+  method = "directions" if V is not None else method 
   if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
     return(X.mean(axis=0))
   elif method == "hull":
@@ -201,11 +223,43 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
       ])
       #print(cost)
     return(original_center - X.mean(axis=0))
+  # V = np.array([[0,1], [0,-1], [1,0], [-1,0]])
+  # V = np.array([[0,1], [0,-1]])
+  # V = np.array([[1,0], [-1,0]])
+  # np.array([min(X @ vi)*np.array(vi) for vi in V]).mean(axis=0)
   elif method == "bbox":
     min_x, max_x = X.min(axis=0), X.max(axis=0)
     return((min_x + (max_x-min_x)/2))
   else: 
     raise ValueError("Invalid method supplied")
+
+def winding_distance(X: ArrayLike, Y: ArrayLike):
+  """ 
+  Returns the minimum 'winding' distance between sequences of points (X,Y) defining closed curves in the plane homeomorphic to S^1
+  
+  Given two arrays (X, Y) of size (n,m) = (|X|,|Y|) representing 'circle-ish outlines', i.e. representing shapes whose edge sets EX satisfy:
+  
+  EX = [(X[0,:], X[1,:]), ..., (X[-1,], X[0])] (and similar with Y)
+  
+  This function: 
+  1. finds a set of N=max(n,m) equi-spaced points along the boundaries (EX,EY) 
+  2. cyclically rotates the N points from (1) along EX to best-align the N points along EY (i.e. w/ minimum squared euclidean distance)
+  3. computes the integrated distances between the PL-curves traced by (EX, EY) 
+
+  Since the curves are PL, (3) reduces to a sequence of irregular quadrilateral area calculations. 
+  """ 
+  from scipy.spatial import ConvexHull
+  from shapely.geometry import Polygon
+  from itertools import cycle
+  from pyflubber.closed import prepare
+  A, B = prepare(X, Y)
+  N = A.shape[0] # should match B 
+  edge_pairs = cycle(zip(pairwise(A), pairwise(B)))
+  int_diff = 0.0
+  for (p1,p2), (q1,q2) in islice(edge_pairs, N+1):
+    ind = ConvexHull([p1,p2,q1,q2]).vertices
+    int_diff += Polygon(np.vstack([p1,p2,q1,q2])[ind,:]).area
+  return(int_diff)
 
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg

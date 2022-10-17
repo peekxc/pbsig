@@ -1,12 +1,118 @@
+from typing import Dict, Iterable
 import numpy as np
+from pbsig.persistence import barcodes, boundary_matrix, rips, reduction_pHcol, persistence_pairs
+from pbsig.simplicial import delaunay_complex
 from pbsig.vineyards import linear_homotopy, line_intersection
 
-n = 500
+np.random.seed(1234)
+X = np.random.uniform(size=(10,2), low=0,high=1.0)
+
+## Just get the convex hull 
+from scipy.spatial import ConvexHull
+X = X[ConvexHull(X).vertices,:]
+
+K = delaunay_complex(X)
+
+# plt.plot(*X[K['edges'].flatten(),:].T)
+
+V_S1 = lambda alpha: np.array([np.cos(alpha*2*np.pi), np.sin(alpha*2*np.pi)])
+
+v0 = V_S1(0.0)[:,np.newaxis]
+v1 = V_S1(0.025)[:,np.newaxis]
+
+
+f0 = (X @ v0).flatten()
+f1 = (X @ v1).flatten()
+e0 = f0[K['edges']].max(axis=1)
+e1 = f1[K['edges']].max(axis=1)
+
+V_names = [str(v) for v in K['vertices']]
+E_names = [str(tuple(e)) for e in K['edges']]
+
+VF0, VF1 = dict(zip(V_names, f0)), dict(zip(V_names, f1))
+EF0, EF1 = dict(zip(E_names, e0)), dict(zip(E_names, e1))
+
+tr_V = linear_homotopy(VF0, VF1)
+tr_E = linear_homotopy(EF0, EF1)
+
+D0, D1 = boundary_matrix(K, p=(0,1))
+D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+
+from pbsig.vineyards import transpose_dgm
+
+R2 = np.empty(shape=(D1.shape[1], 0)) # fake
+V2 = np.empty((0,0))
+
+P0 = persistence_pairs(R0, R1, f=(VF0,EF0))
+
+for i in tr_E: transpose_dgm(R1, V1, R2, V2, i)
+for i in tr_V: transpose_dgm(R0, V0, R1, V1, i)
+
+P1 = persistence_pairs(R0, R1, f=(VF1,EF1))
+
+from typing import Callable, Iterable
+
+# data are available a StopIteration exception is raised instead
+
+## The iterable should return dictionary of filtration values
+def vineyards_fixed(K, f: Iterable[Dict], p: int = 0, output: str = ["diagrams", "function", "vines"]):
+  f0 = next(f)
+  # VF0 | EF0
+
+  if p == 0: 
+    D0, D1 = boundary_matrix(K, p=(0,1))
+    D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+    R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+    tr_V = linear_homotopy(VF0, VF1)
+    tr_E = linear_homotopy(EF0, EF1)
+    R2 = np.empty(shape=(D1.shape[1], 0)) # fake
+    V2 = np.empty((0,0))  
+    P0 = persistence_pairs(R0, R1, f=(VF0,EF0))
+
+    for i in tr_E: transpose_dgm(R1, V1, R2, V2, i)
+    for i in tr_V: transpose_dgm(R0, V0, R1, V1, i)
+
+    P1 = persistence_pairs(R0, R1, f=(VF1,EF1))
+
+
+
+
+## check: 
+D0, D1 = boundary_matrix(K, p=(0,1))
+D1 = D1[np.ix_(np.argsort(f1), np.argsort(e1))]
+
+print(((D1 @ V1).A % 2).astype(int) == (R1.A % 2).astype(int))
+
+
+print(P0)
+print(P1)
+
+from pbsig.persistence import lower_star_ph_dionysus
+plt.plot(*X.T)
+for i in range(X.shape[0]):
+  plt.text(*X[i,:].T, s=i)
+lower_star_ph_dionysus(f0, E=K['edges'], T=[])[0]
+
+
+lower_star_ph_dionysus(f1, E=K['edges'], T=[])[0]
+
+
+
+
+
+
+
+
+
+
+
+n = 15
 f0 = np.sort(np.random.uniform(size=n))
 f1 = np.random.uniform(size=n)
 
 
-L = linear_homotopy(f0, f1,  plot_lines=True)
+L = linear_homotopy(f0, f1)
 
 ## Validate homotopy
 p = np.argsort(f0)

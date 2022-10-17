@@ -22,7 +22,10 @@ def plot_dgm(dgm: ArrayLike):
   ax = fig.gca()
   fmax = max(filter(lambda x: x != np.inf, dgm.flatten()))
   fmin = min(filter(lambda x: x != np.inf, dgm.flatten()))
-  dgm[dgm[:,1] == np.inf, 1] = fmax*1.05
+  contains_inf = False
+  if any(dgm[:,1] == np.inf):
+    dgm[dgm[:,1] == np.inf, 1] = fmax*1.05
+    contains_inf = True
   ax.scatter(*dgm.T, s=0.55, c='red')
   ax.set_xlim(0.90*fmin, 1.10*fmax)
   ax.set_ylim(0.90*fmin, 1.10*fmax)
@@ -30,13 +33,17 @@ def plot_dgm(dgm: ArrayLike):
   p = Polygon(np.array([[0.90*fmin,0.90*fmin], [1.10*fmax, 0.90*fmin], [1.10*fmax, 1.10*fmax]]), True)
   P = PatchCollection([p],facecolor="#808080", alpha=0.40, edgecolor='black', linewidth=0.0)
   formatter = "{:.2f}".format
-  tick_loc = np.linspace(0.90*fmin, 1.10*fmax, 6, endpoint=False)
+  tick_loc = np.linspace(0.90*fmin, 1.10*fmax, 8, endpoint=False)
   ax.add_collection(P)
   #ax.set_yticks(ax.get_xticklabels())
-  ax.set_yticks(np.append(tick_loc, 1.05*fmax), [formatter(x) for x in tick_loc]+['inf'])
+  if contains_inf:
+    ax.set_yticks(np.append(tick_loc, 1.05*fmax), [formatter(x) for x in tick_loc]+['inf'])
+  else: 
+    ax.set_yticks(np.append(tick_loc, 1.05*fmax), [formatter(x) for x in tick_loc] + [formatter(1.05*fmax)])
   #ax.set_xticks(tick_loc, [formatter(x) for x in tick_loc])
   ax.tick_params(axis='both', which='major', labelsize=5)
-  ax.plot([0.90*fmin, 1.05*fmax], [1.05*fmax, 1.05*fmax], color='gray', linestyle='dashed', linewidth=0.50, alpha=1.0)
+  if contains_inf:
+    ax.plot([0.90*fmin, 1.05*fmax], [1.05*fmax, 1.05*fmax], color='gray', linestyle='dashed', linewidth=0.50, alpha=1.0)
   return(fig, ax)
 
 def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bool = False, **kwargs):

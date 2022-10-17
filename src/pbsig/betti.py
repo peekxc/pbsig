@@ -444,7 +444,6 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   ss_b = smoothstep(lb = b - w, ub = b, reverse = True) #   0 (b-w) -> 1 (b)
   ss_ac = smoothstep(lb = a - w, ub = a, reverse = False) # 1 (a-w) -> 0 (a)
 
-
   ## Compute the terms 
   relax_f = lambda x: reduce_f(base_f(x))
   shape_sig = [] if keep_terms else array('d')
@@ -510,21 +509,31 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
         D1.data = np.array([x if x != 0 else 0.0 for x in D1_nz_pattern * np.repeat(chain_vals, 2)])
         L = D1 @ D1.T
         k = structural_rank(L)
-        k = k - 1 if k == min(D1.shape) else k
-        T3 = eigsh(L, return_eigenvectors=False, k=k)
-        terms[2] = -relax_f(np.array(T3))
+        if k > 0: 
+          k = k - 1 if k == min(D1.shape) else k
+          T3 = eigsh(L, return_eigenvectors=False, k=k)
+          terms[2] = -relax_f(np.array(T3))
+        else: 
+          terms[2] = 0
         #terms[2] = -sum([t if abs(t) > 1e-13 else 0 for t in T3])
 
       ## Term 4
-      chain_vals = ss_b(edge_f) * ss_ac(edge_f)
+      #chain_vals = ss_b(edge_f) * ss_ac(edge_f)
+      A_exc = ss_ac(f[E]).flatten()
+      B_inc = np.repeat(ss_b(edge_f), 2)
       if np.any(chain_vals > 0):
         assert D1.has_sorted_indices
-        D1.data = D1_nz_pattern * np.repeat(np.array([x if x != 0 else 0.0 for x in chain_vals]), 2)
+        D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
+        #D1.data = A_exc * B_inc
+        #D1.data = D1_nz_pattern * np.repeat(np.array([x if x != 0 else 0.0 for x in chain_vals]), 2)
         L = D1 @ D1.T
         k = structural_rank(L)
-        k = k - 1 if k == min(D1.shape) else k
-        T4 = eigsh(L, return_eigenvectors=False, k=k)
-        terms[3] = relax_f(np.array(T4))
+        if k > 0: 
+          k = k - 1 if k == min(D1.shape) else k
+          T4 = eigsh(L, return_eigenvectors=False, k=k)
+          terms[3] = relax_f(np.array(T4))
+        else: 
+          terms[3] = 0.0
         #terms[3] = sum([t if abs(t) > 1e-13 else 0 for t in T4])
       
       ## Append to shape signature and continue

@@ -25,19 +25,23 @@ using VectorXd = Eigen::VectorXd;
 using VectorXf = Eigen::VectorXf;
 using VectorXu = Eigen::Matrix< uint_32, Eigen::Dynamic, 1 >;
 
-
+// Clamps x to the interval [lb, ub] such that: 
+// x < lb ==> x = lb
+// x > ub ==> x = ub 
+// lb <= x <= ub ==> x = x 
 constexpr float clamp(const float x, const float lb, const float ub) {
   return(x < lb ? lb : (x > ub ? ub : x));
 }
 
+// Linear step from 0 -> 1 
 constexpr float smooth_step0(const float x, const float lb, const float ub) {
   return clamp((x - lb) / (ub - lb), 0.0, 1.0);
 }
-constexpr float smooth_step1(const float x, const float lb, const float ub) {
-  x = clamp((x - lb) / (ub - lb), 0.0, 1.0)
+constexpr float smooth_step1(float x, const float lb, const float ub) {
+  x = clamp((x - lb) / (ub - lb), 0.0, 1.0);
   return x * x * (3 - 2 * x);
 }
-constexpr float smooth_step2(const float x, const float lb, const float ub) {
+constexpr float smooth_step2(float x, const float lb, const float ub) {
   x = clamp((x - lb) / (ub - lb), 0.0, 1.0);
   return x * x * x * (x * (x * 6 - 15) + 10);
 }

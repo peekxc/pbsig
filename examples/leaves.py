@@ -1,14 +1,15 @@
+# %% Imports
 import numpy as np 
 from pbsig import * 
 from PIL import Image, ImageFilter
 import cv2
 import matplotlib.pyplot as plt 
 
+# %% Preprocess data set
 base_dir = "/Users/mpiekenbrock/Downloads/"
-leaf_types = [1,2,3,6,9]
-leaf_nums = [5, 10, 15, 20]
+leaf_types = [1,2] # 3,6,7
+leaf_nums = [5,10,15,20] # 21,22,23,24,26
 # leaf_fps = ['l1nr071.tif']
-
 LEAF_DATASET = {}
 for lt in leaf_types:
   for ln in leaf_nums:
@@ -22,22 +23,99 @@ for lt in leaf_types:
     S = contours[:,0,:]
     LEAF_DATASET[(lt, ln)] = S
 
-## Write the outlines to disk
+#%% Write the outlines to disk
 # x_rng, y_rng, d = img.shape
 # img_contours = np.zeros(img.shape)
 # cv2.drawContours(img_contours, contours, -1, (0,255,0), 2)
 # cv2.imwrite('/Users/mpiekenbrock/Downloads/l1nr071_outline.png',img_contours) 
 # plt.plot(*LEAF_DATASET[(1, '15')].T)
+
+# %% Plot leaves 
+from itertools import product
+NT, NL = len(leaf_types), len(leaf_nums)
+fig, axs = plt.subplots(NT, NL, dpi=220)
+for (k, S), (i,j) in zip(LEAF_DATASET.items(), product(range(NT), range(NL))):
+  axs[i,j].plot(*S.T, linewidth=0.40)
+  axs[i,j].axis('off')
+  axs[i,j].set_aspect('equal')
+  # axs[i,j].set_title(k, fontsize=3)
+
+# %% Show vineyards 
+
+
+# %% Show discrete vineyards 
+from pbsig import rotate_S1
+from pbsig.persistence import lower_star_ph_dionysus
+from pbsig.betti import lower_star_betti_sig
+from pbsig.utility import progressbar, simplify_outline
+from pbsig.pht import pht_preprocess_pc
+
+N_SEG = 100
+dgms = {}
+# for k, S in progressbar(LEAF_DATASET.items(), len(LEAF_DATASET)):
+k, S = next(iter(LEAF_DATASET.items()))
+S = pht_preprocess_pc(S.astype(float), transform=True)
+S = np.array([p.start for p in simplify_outline(S, N_SEG)])
+E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
+F = list(rotate_S1(S, 132, include_direction=False))
+dgms[k] = []
+for f in F:
+  dgm0 = lower_star_ph_dionysus(f, E, [])[0]
+  dgm0[dgm0[:,1] == np.inf,1] = max(f)
+  dgms[k].append(dgm0)
+
+f_min = min([min(d.min(axis=1)) for d in dgms[(1,5)]])
+f_max = max([max(d.max(axis=1)) for d in dgms[(1,5)]])
+fig, ax = plot_dgm(dgms[(1,5)][0])
+ax.set_ylim(f_min*1.10, f_max*1.10)
+ax.set_xlim(f_min*1.10, f_max*1.10)
+for dgm0 in dgms[(1,5)]:
+  plt.scatter(*dgm0.T, s=0.05)
+
+## Does the PHT work????
+from pbsig.pht import pht_0_dist
+# k, S = next(iter(LEAF_DATASET.items()))
+
+# S = pht_preprocess_pc(S.astype(float), transform=True)
+# S = np.array([p.start for p in simplify_outline(S, N_SEG)])
+from scipy.spatial.distance import pdist, squareform
+from pbsig.color import scale_interval
+outline = lambda n: np.array(list(zip(range(n), np.roll(range(n), -1))))
+edges = [outline(S.shape[0]) for S in LEAF_DATASET.values()]
+shapes = [S.astype(float) for S in LEAF_DATASET.values()]
+D = pht_0_dist(shapes, edges, nd=32, preprocess=True, progress=True)
+
+
+D_PHT = squareform(D)
+scaling = 'linear' # linear, equalize, logarithmic
+plt.imshow(scale_interval(D_PHT, scaling=scaling))
+plt.suptitle(f"Leaf dataset - PHT")
+plt.title(f"{scaling} scaling")
+plt.colorbar()
+
+# shape_center
+# for k in range(1, 100, 5):
+#   theta = np.linspace(0, 2*np.pi, 2*k, endpoint=False)
+#   V = np.c_[np.cos(theta), np.sin(theta)]
+#   print(np.array([min(X @ vi)*np.array(vi) for vi in V]).mean(axis=0))
+
+# plt.plot(*S.T)
+# plt.gca().set_aspect('equal')
+# plt.scatter(111.50179484,375.30621169, c='red')
+
+
+# %% 
 from pbsig import rotate_S1
 from pbsig.betti import lower_star_betti_sig
-from pbsig.utility import pht_proprocess_pc, progressbar
-from pbsig.utility import simplify_outline
+from pbsig.utility import progressbar, simplify_outline
+from pbsig.pht import pht_preprocess_pc
 
-omega = 0.85
+N_SEG = 100
+omega = 0.85 # window size 
 sigs = []
 for S in progressbar(LEAF_DATASET.values(), len(LEAF_DATASET)):
-  S = pht_proprocess_pc(S.astype(float), transform=True)
-  S = np.array([p.start for p in simplify_outline(S, 100)])
+  S = pht_preprocess_pc(S.astype(float), transform=True)
+  S = np.array([p.start for p in simplify_outline(S, N_SEG)])
   E = np.array(list(zip(range(S.shape[0]), np.roll(range(S.shape[0]), -1))))
   F = list(rotate_S1(S, 32, include_direction=False))
   birth_lb, birth_ub = min([min(f) for f in F]), max([min(f) for f in F])
@@ -56,16 +134,6 @@ plt.imshow(scale_interval(D, scaling=scaling))
 plt.suptitle(f"Leaf dataset - PBT - Nuclear, a={a:0.2f},b={b:0.2f},w={omega:0.2f}")
 plt.title(f"{scaling} scaling")
 plt.colorbar()
-
-from itertools import product
-fig, axs = plt.subplots(5,4, dpi=220)
-for (k, S), (i,j) in zip(LEAF_DATASET.items(), product(range(5), range(4))):
-  axs[i,j].plot(*cycle_outline(S).T, linewidth=0.40)
-  axs[i,j].axis('off')
-  axs[i,j].set_aspect('equal')
-  # axs[i,j].set_title(k, fontsize=3)
-
-
 
 
 from pbsig.persistence import lower_star_dionysuss

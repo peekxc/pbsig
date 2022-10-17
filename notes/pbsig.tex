@@ -86,8 +86,8 @@
 
 In what follows, we investigate how to formulate the persistent Betti number (PBN) computation on filtered simplicial complexes in parameterized settings. 
 In particular, in section~\ref{sec:betti_derivation}, we show how the PBN may be expressed as a sum of rank computations on unfactored boundary (sub)matrices. 
-By representing the boundary operators implicitly and exploiting a variety of properties of the rank function, we demonstrate how this PBN characterization admits certain computational advantages in both static and parameterized settings. 
-Namely we show the $p$-th PBN of a filtered simplicial complex $K_\bullet$ which may be computed in essentially quadratic time and linear storage, as opposed to the cubic time and quadratic storage complexity required by persistence.
+By representing the boundary operators implicitly and exploiting a variety of properties of the rank function, we demonstrate the rank-based PBN expression admits certain computational advantages in both static and parameterized settings. 
+We show the $p$-th PBN of a filtered simplicial complex $K_\bullet$ may be computed in essentially quadratic time and linear storage, as opposed to the cubic time and quadratic storage complexity required by persistence.
 Finally, we illustrate both the computational and practical advantages our expression has with a few applications in section~\ref{sec:applications}. 
 %By exploiting a connection between the rank function and the spectrum of linear operators, we also introduce a spectral-based approach $(1-\epsilon)$-approximates the PBN. 
 
@@ -118,7 +118,7 @@ The $p$-th persistent Betti number $\beta_p^{i,j}$ at some index $(i,j) \in \Del
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and is thus easily obtained, efficient computation of the intersection term (the persistence part) is a bit more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, making the PBN computation no more efficient than the full persistence computation.
+While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and is thus may be reduced to a rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying the PBN computation has the same complexity as the full persistence computation.
 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
@@ -161,7 +161,7 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 \noindent Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex. 
 In fact, Lemma~\ref{lemma:rank} may be further generalized to arbitrary rectangles in $\Delta_+$ via $\mu$\emph{-queries}~\cite{chen2011output}: box-parameterized rank-based queries that count the number of persistence pairs that intersect a fixed ``box'' placed in the upper half-plane. 
 Our first result of this effort we show is that this Lemma allows us to write the persistent Betti number as a sum of rank functions. 
-\begin{proposition}
+\begin{proposition}\label{prop:rank_reduction}
 For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $n = \lvert K^{(p)} \rvert$, $m = \lvert K^{(p\+1)} \rvert$. For any pair $(i,j) \in \left([n], [m] \right)$, the persistent Betti number $\beta_p^{i,j}$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
 	\beta_p^{i,j} = \mathrm{rank}(I_p^{1,i}) - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
@@ -169,7 +169,7 @@ For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary m
 	\end{equation}
 where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{proposition}
-\noindent A detailed proof using Lemma 1 is given in the appendix. The main utility this proposition provides is that it enables the persistent Betti number as a combination of rank computations performed directly on the \emph{unfactored} dimension $p$ and $(p+1)$ boundary matrices. We dedicate the rest of the paper to exploring the consequences of this fact. 
+\noindent A detailed proof using Lemma 1 is given in the appendix. The primary utility proposition~\eqref{prop:rank_reduction} provides is it expresses the PBN of a filtration $K_\bullet$ as a combination of rank computations performed directly on the \emph{unfactored} dimension $p$ and $(p+1)$ boundary matrices. We dedicate the rest of the paper to exploring the consequences of this fact. 
 
 To get some intuition on what the structure and size of these matrices, we include a picture of each of the terms in Equation~\eqref{eq:betti_four}. 
 \begin{figure}[!h]
@@ -208,10 +208,11 @@ Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bulle
 	0 & \text{otherwise}
    \end{cases}
 \end{equation}
-where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial(\sigma)$. 
+where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. 
 
 % Change index set
-%The typical input to the persistence computation is a fixed complex/filter pair $(K_\bullet, f)$,  from which the corresponding boundary matrices are constructed. These filter functions typically have a particular geometrical interpretation. For example, a common scenario in practice is let $K_\bullet$ via a Rips filtration a metric space $(X, d_X)$; in this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
+All of the notation given thus far, such as the definitions of the PH groups~\eqref{eq:hom_map} and the the PBN~\eqref{eq:pbn}, have used integer indices $(i,j) \in \Delta_+^m$ to describe the PH groups over a filtered complex $K$ of size $\lvert K \rvert = m$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [m]$. In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ is well defined. In practice, $f$ is typically derived from geometrical settings such that $\mathrm{range}(f) = \mathbb{R}$. A common scenario is where $K_\bullet$ is obtained via a Rips filtration constructed over a metric space $(X, d_X)$. In this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
+% mention DMSs 
 %In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 
 Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter function was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and you wanted to compute $\beta_p^{i,j}$ over $\mathcal{H}$. We give several application settings where this kind of formulation occurs naturally in section~\ref{sec:applications}. To simplify this process, we introduce the notion of a \emph{parameterized boundary matrix}.
@@ -219,7 +220,7 @@ Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter fu
 % TODO: fix i,j to be [n], [m]... no need for upper half plane yet 
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
 Let $X$ denote a data set of interest of size $\lvert X \rvert = n$, equipped with parameterized filtering function $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}$. 
-Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \mathbb{F}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \mathbb{R}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	\pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -245,7 +246,7 @@ As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
 \subsection{Laplacian Connection}
 % Spectral graph theory plug
-Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
+% Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
 
 Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
@@ -393,7 +394,8 @@ where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \al
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
 % Computation 
-The Lanczos iteration's widespread adoption is in part due to its simplicity: each step consists of just a  matrix-vector operator and a few vector operations. It is often referred to as a ``black box'' method due to the fact that a fast $v \mapsto Av$ operator is the only aspect of the computation that explicitly depends on $A$. 
+The Lanczos iteration's widespread adoption is in part due to its simplicity: each step consists of just a single matrix-vector product and a few vector operations. It is often referred to as a ``black box'' method due to the fact that a fast matrix-vector product is the only aspect of the computation that explicitly depends on $A$. 
+% Indeed, one need not have $A$ stored in memory explicitly: approximations of the $v \mapsto Av$ operator is all that is 
 %the only aspect of the computation an implementation requires from the user-side is an efficient \emph{matvec} operator $v \mapsto Av$. 
 %Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 If $A$ is sparse and/or has special structure, then the Lanczos method can be quite efficient. 
@@ -466,16 +468,40 @@ It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally domin
 
 \section{Applications}\label{sec:applications}
 
-\newpage 
-% --- APPLICATION 1: Continuous Persistent Betti Curves (PBCs) as Shape Signatures --- 
+\newpage
+
+% --- APPLICATION 1: Fast Dgm computation ---
+%\subsection*{Complexity}
+% \subfile{rank_complexity} % include numerical rank definition
+
+\newpage
+
+% --- APPLICATION 2: Continuous Persistent Betti Curves (PBCs) as Shape Signatures --- 
 % Benefits of rank(A) \approx < nuclear norm of A >
 %\subsection*{Application: Relaxation}
 %\subfile{spectral_relaxation}
 
-% --- APPLICATION 2: ??? PHT ??? --- 
-%\subsection*{Complexity}
-\subfile{rank_complexity} % include numerical rank definition
+\newpage
 
+% --- APPLICATION 3: ??? PHT ??? ---
+
+\subsection*{Persistent Homology Transform}
+Given a simplicial complex $K$ embedded in $\mathbb{R}^d$, the Persistent Homology Transform (PHT) is a shape statistic that establishes a fundamental connection between the topological information summarized by $K$'s PH groups and the geometry of its associated embedding. 
+
+Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite simplicial complex $K$, define the parameterized filtration $K(v)_\alpha$ for any unit vector $v \in S^{d-1}$ up to index $\alpha$ as: 
+\begin{equation}
+	K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\}
+\end{equation}
+We write $K(v)$ to indicate the filtration of $K$ for all $\alpha$. Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. The PHT of the complex $K$ built from $X$ is defined as: 
+\begin{align*}
+	\mathrm{PHT}(K): S^{d-1} &\to \mathcal{D}^d \\
+	v &\mapsto \left( \, \mathrm{dgm}_0(K, v), \mathrm{dgm}_1(K, v), \dots, \mathrm{dgm}_{d-1}(K, v) \, \right)\numberthis
+\end{align*}
+where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$.
+
+
+constructing metrics capable of differentiating non-diffeomorphic shapes.
+ 
 
 \appendix
 \section{Appendix}

@@ -24,38 +24,47 @@ where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\m
 \begin{equation}\label{eq:multiplicity}
 	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 \leq i < j \leq n+ 1
 \end{equation}
-Equation~\eqref{eq:multiplicity} demonstrates an intrinsic connection between the multiplicity function and the persistent Betti numbers. Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
+Equation~\eqref{eq:multiplicity} demonstrates an intrinsic connection between the multiplicity function and the persistent Betti numbers. 
+The implication associated with~\eqref{eq:multiplicity} is that persistence diagrams completely characterize their PBNs.
+Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
 \begin{equation}\label{eq:betti_mult}
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-The customary interpretation of~\eqref{eq:betti_mult} is that persistence diagrams completely characterize their PBNs. This perspective has by and large driven the computational pipeline: if one has a space of interest $\mathcal{X}$ and is interested in computing its PBNs $\beta_p^{i,j}$ for any choice of $i < j$, the standard approach is to first compute $\mathrm{dgm}_p(\mathcal{X})$ such that the corresponding PBNs can be read-off directly.
-Nonetheless, the inverse interpretation via~\eqref{eq:betti_mult} has certain advantages. Its computation depends completely on the choice of indices $(i,j)$: if $\lvert i - j \rvert$ is small, the computation implies a localized computation. Moreover, if one has computed $\beta_p^{i,j}$ for some choice of $(i,j)$, the inner loop of the reduction algorithm from~\cite{edelsbrunner2022computational} suggests  $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ can be determined quadratic time. 
-Indeed, if given diagram has a finite number of off-diagonal points, then in theory for~\eqref{eq:betti_mult} to hold it must be the case that one can recover the diagram with a finite number of PBN computations. 
-Indeed, this fundamental observation lead~\cite{chen2011output} to create a divide-and-conquer like PH algorithm, wherein positional information about the diagram is accessed solely through $\mu$-queries---combinations of PBN-like computations.
+Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and then them off directly. Perhaps as a side effect of this, most of the earlier computational research related to persistence focused on improving the computation of the diagram itself~\cite{}. 
+% the connection between $\mu_p^\ast$ and $\beta_p^{\ast}$ elucidated by~\eqref{eq:betti_mult} implies
+Nonetheless, PBN computations exhibit certain advantages; 
+computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)
+portions of $\mathrm{dgm}_p(K_\bullet)$ are counted by PBNs via~\eqref{eq:betti_mult}; %(2)
+%once $\beta_p^{i,j}$ has been obtained, $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ may be readily computed; 
+as a weaker invariant, a single PBN ought to be easier to compute that the full persistence diagram. %(3)
+Indeed, if the diagram of interest has a finite number of off-diagonal points, then~\eqref{eq:betti_mult} implies one can recover the diagram with a finite number of PBN computations. 
+%This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
 
 % TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
-After introducing several alternative notions of `tameness',~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} using measure-theoretic tools to prove the existence and stability of persistence diagram. In particular, for $M$ a decomposable persistence module over $\mathbb{R}$, Chazal~\cite{chazal2016structure} show that one may recover its persistence diagram by constructing its corresponding \emph{persistence measure}:
+By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} 
+%via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
+by showing that one may recover the persistence diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
 %re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
+% After introducing several alternative notions of `tameness',
 \begin{equation}\label{eq:measure}
 	\mu_p(R; M) = \mathrm{card}\left( \,
 	%\mathrm{dgm}_p(M)\restriction_R 
 	\restr{\mathrm{dgm}_p(M)}{R} \,
 	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
 \end{equation}
-The essential perspective from~\eqref{eq:measure} is that the multiplicity function $\mu^\ast_p$ can be viewed as an integer-valued measure over rectangles in the plane. 
+% The diagram exists wherever the measure takes finite values. 
 Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
 \begin{equation}\label{eq:pbn_cont}
 	x = (i,j) \in \mathrm{dgm}_p(f) \; \Longleftrightarrow \; \mu_p(x) > 0 \; \Longleftrightarrow \; \min_{\epsilon > 0} \left(\beta_p^{i \+ \epsilon, j \shortminus \epsilon} - \beta_p^{i \+ \epsilon, j \+ \epsilon} \right) - \left(\beta_p^{i \shortminus \epsilon, j \shortminus \epsilon} - \beta_p^{i \shortminus \epsilon, j \+ \epsilon} \right) > 0
 \end{equation}
-One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem (Theorem 3.11) expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N}\cup \{\infty\}$ as a sum of multiplicity functions, akin to~\eqref{eq:betti_mult}. 
+One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem akin to~\eqref{eq:betti_mult} (Theorem 3.11) expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N}\cup \{\infty\}$ as a sum of multiplicity functions. 
 A consequence of this theorem is that any distance between persistence diagrams induces a distance between PBN functions---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:
 \begin{equation*}\label{eq:pbn_stability}
 	d(\beta_f, \beta_g) = \inf\limits_{\phi} \; \sup\limits_{p \in \mathrm{dgm}(f)} \lVert p - \phi(p) \rVert_{\widetilde{\infty} }
 \end{equation*}
 is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
-Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings. 
-
+Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings.
 
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 

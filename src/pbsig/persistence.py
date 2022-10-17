@@ -26,14 +26,16 @@ _perf = {
 }
 def H1_boundary_matrix(vertices: ArrayLike, edges: Iterable, coboundary: bool = False, dtype = int, sign_pattern: tuple = (1, -1)):
   p = np.argsort(vertices)        ## inverse permutation 
-  v_sort = np.array(vertices)[p]  ## use p for log(n) lookup 
+  v_sort = np.array(vertices)[p]  ## use p for log(n) lookup; this is [n] if all V unique
   V, E = len(vertices), len(edges)
-  
+  r_sign_pattern = tuple(reversed(sign_pattern))
   data_val, row_ind, col_ind = np.zeros(2*E, dtype=dtype), np.zeros(2*E, dtype=int), np.zeros(2*E, dtype=int)
   for i, (u,v) in enumerate(edges):
     u_ind, v_ind = np.searchsorted(v_sort, [u, v])
-    data_val[2*i], data_val[2*i+1] = sign_pattern
-    row_ind[2*i], row_ind[2*i+1] = int(p[u_ind]), int(p[v_ind])
+    riu, riv = int(p[u_ind]), int(p[v_ind]) # row index 
+    # can use p[u], p[v] if V unique and == [n]
+    data_val[2*i], data_val[2*i+1] = sign_pattern if riu < riv else r_sign_pattern
+    row_ind[2*i], row_ind[2*i+1] = riu, riv
     col_ind[2*i], col_ind[2*i+1] = int(i), int(i)
   if coboundary:
     D = coo_array((data_val, (col_ind, row_ind)), shape=(E, V), dtype=dtype).tolil(copy=False)
@@ -274,14 +276,13 @@ def persistent_betti(D1, D2, i: int, j: int, summands: bool = False):
   #assert i < j, "i must be less than j"
   i, j = int(i), int(j)
   if (i == 0): 
-    return((0, 0, 0) if summands else 0)
+    return((0, 0, 0, 0) if summands else 0)
   t1 = D1[:,:i].shape[1] # i, D1.shape[1]
   t2 = 0 if np.prod(D1[:,:i].shape) == 0 else np.linalg.matrix_rank(D1[:,:i].A)
   D2_tmp = D2[:,:j]
   t3_1 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
-  D2_tmp = D2_tmp[i:,:]
+  D2_tmp = D2_tmp[i:,:] # note i is 1-based, so this is like (i+1)
   t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
-  t3 = t3_1 - t3_2
   return((t1, t2, t3_1, t3_2) if summands else t1 - t2 - t3_1 + t3_2)
 
 def persistent_betti_rips(X: ArrayLike, b: float, d: float, p: int = 1, **kwargs):
@@ -590,6 +591,24 @@ def plot_rips(X, diam: float, vertex_opt: Dict = {}, edge_opt: Dict = {}, poly_o
 
 # TODO: Remove names, include in f. That is, f is either a tuple of ArrayLike's or a tuple of Dict's 
 def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Sequence[Union[ArrayLike, Dict]] = None, collapse: bool = True):
+  """
+  R1 := reduced matrix whose pivot/zero columns mark the destroyers/creators of the p-1/p homology classes, with columns and rows in filtration order*
+  R2 := reduced matrix whose pivot/zero columns mark the destroyers/creators of the p/p+1 homology classes, with columns and rows in filtration order*
+  f := a 2-tuple (f0,f1) where each fx is either a sorted arraylike of filtration values or a dictionary mapping simplex names -> filtration values
+  collapse := boolean indicating whether to collapse pairs with 0 persistence
+
+  ** Note **:  
+  Both the rows and columsn of R1 are assumed to be filtration order! That is, the p-chains (p-1 chains) corresponding to the columns (rows) of R1 
+  must respect the poset and filtration order induced by the underlying filter function. 
+
+  In contrast, if (f0,f1) are given as (simplex -> filtration value) key-value pairs, then said pairs need not necessarily be in any order. 
+  However, then *lexicographic refinement* of the mapping will then be assumed to match the columns and rows of their respective reduced matrices. 
+
+  The lexicographic refinement order of a given map M: K -> F mapping sorts simplices s \in K first by filtration value M(s), then by lexicographic order, i.e. 
+  if f(s1) = f(s2) for s1,s2 \in K, then s1 < s2 in the lexicographic refinement is s1 is lexicographically smaller than s2. 
+
+  """
+  from operator import itemgetter
   assert is_reduced(R1), "Passed in matrix is not in reduced form"
   births_index = np.flatnonzero(low_entry(R1) == -1)
   deaths_index = low_entry(R2)
@@ -600,11 +619,13 @@ def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Sequence[Union[Arr
   assert len(f) == 2, "f must be tuple of function values"
   if isinstance(f[0], dict) and isinstance(f[1], dict):
     from pbsig.utility import is_sorted
-    ew, tw = np.array(list(f[0].values())), np.array(list(f[1].values()))
     
-    ## Why is this needed??? because columns/rows of R1 are assumed to be sorted in filtration order?
+    ## See the note
+    f0 = f[0] if is_sorted(f[0].values()) else { k:v  for v,k in sorted(zip(f[0].values(), f[0].keys())) }
+    f1 = f[1] if is_sorted(f[1].values()) else { k:v  for v,k in sorted(zip(f[1].values(), f[1].keys())) }
+    ew, tw = np.fromiter(f0.values(), dtype=float), np.fromiter(f1.values(), dtype=float)
     assert is_sorted(ew) and is_sorted(tw)
-    b_names, d_names = np.array(list(f[0].keys())), np.array(list(f[1].keys()))
+    b_names, d_names = np.array(list(f0.keys())), np.array(list(f1.keys()))
     names = True
   else: 
     assert isinstance(f[0], np.ndarray) and isinstance(f[1], np.ndarray)
@@ -657,55 +678,22 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
 
 ## TODO: redo with filtration class at some point
 def barcodes(K: Dict, p: int, f: Tuple, **kwargs):
-  return(0)
-  # if p == 0:
-  #   f_names = np.array([str(v) for v in K['vertices']])
-  #   s_names = np.array([str(e) for e in K['edges']])
-  #   D1 = boundary_matrix(K, p=0)
-  #   D2 = boundary_matrix(K, p=1, f=(f1,f2))
-
-
-  # res = []
-  # fv0 = F[:,0]
-  # fe0 = fv0[E].max(axis=1)
-  # ft0 = fv0[T].max(axis=1)
-  # vi, ei, ti = np.argsort(fv0), np.argsort(fe0), np.argsort(ft0)
-
-  # Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
-  # Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
-  # Tf = dict(sorted(zip(to_str(T), ft0), key=index(1)))
-
-  # D1, D2 = boundary_matrix(K, p=(1,2), f=((fv0,fe0), (fe0,ft0)))
-  # D1, D2 = D1.tolil(), D2.tolil()
-  # R1, R2, V1, V2 = reduction_pHcol(D1, D2)
-
-  # ## Handle deficient cases
-  # R0, V0 = sps.lil_matrix((0,len(V))), sps.lil_matrix(np.eye(len(V)))
-  # R3, V3 = sps.lil_matrix((len(T), 0)), sps.lil_matrix((0,0))
-  # D0, D3 = R0, R3
-
-  # assert validate_decomp(D0, R0, V0, D1, R1, V1)
-  # assert validate_decomp(D1, R1, V1, D2, R2, V2)
-
-  # v_names = np.array(list(Vf.keys()))
-  # e_names = np.array(list(Ef.keys()))
-  # P = persistence_pairs(R0, R1, f=(fv0[vi], fe0[ei]), names=(v_names, e_names))
-
-  # elif p == 1: 
-  #   f_names = np.array([str(e) for e in K['edges']])
-  #   s_names = np.array([str(t) for t in K['triangles']])
-  #   f1, f2 = f if not(f is None) else (np.array(range(len(f_names))), np.array(range(len(s_names))))
-  #   D1, D2 = boundary_matrix(K, p=(1,2), f=f)
-  # else:
-  #   raise ValueError(f"invalid p={p}")
-  # # D1 = boundary_matrix(K, p=p, f=f1)
-  # # D2 = boundary_matrix(K, p=p+1, f=f2)
-  # D1, D2 = D1.tolil(), D2.tolil()
-  # R1, R2, V1, V2 = reduction_pHcol(D1, D2)
-  # assert validate_decomp(D1, R1, V1, D2, R2, V2)
-  # P = persistence_pairs(R1, R2, f=f, names=(f_names, s_names), **kwargs)
-  # return(P)
-
+  """
+  Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
+  """
+  
+  if p == 0:
+    f0, e0 = f
+    V_names = [str(v) for v in K['vertices']]
+    E_names = [str(tuple(e)) for e in K['edges']]
+    VF0 = dict(zip(V_names, f0))
+    EF0 = dict(zip(E_names, e0))
+    D0, D1 = boundary_matrix(K, p=(0,1))
+    D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+    R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+    P0 = persistence_pairs(R0, R1, f=(VF0,EF0))
+    # assert validate_decomp(D0, R0, V0, D1, R1, V1)
+  return(P0)
 
 # def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
 # p_birth = np.where(low_entry(R1) == -1)
