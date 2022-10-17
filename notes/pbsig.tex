@@ -492,15 +492,18 @@ Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite 
 \begin{equation}
 	K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\}
 \end{equation}
-We write $K(v)$ to indicate the filtration of $K$ for all $\alpha$. Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. The PHT of the complex $K$ built from $X$ is defined as: 
-\begin{align*}
+We write $K(v)$ to indicate the filtration of $K$ for all $\alpha$. Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. Similarly, the PHT summarizes how the topology of $K$ changes in \emph{all} directions; given a complex $K$ built from $X$, it is defined as: 
+\begin{align*}\label{eq:pht}
 	\mathrm{PHT}(K): S^{d-1} &\to \mathcal{D}^d \\
 	v &\mapsto \left( \, \mathrm{dgm}_0(K, v), \mathrm{dgm}_1(K, v), \dots, \mathrm{dgm}_{d-1}(K, v) \, \right)\numberthis
 \end{align*}
-where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$.
+where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$ and $S^{d-1}$ the unit $d-1$ sphere. The stability of persistence diagrams ensures that the map $v \mapsto \mathrm{dgm}_p(K, v)$ is Lipschitz with respect to the bottleneck distance metric $d_B(\cdot, \cdot)$ whenever $K$ is a finite simplicial complex, thus the PHT may be thought of naturally as a parameterized family of diagrams.
+
+The primary result of~\cite{} is that the PHT is injective on the space of subsets of $R^d$ that can be written as finite simplicial complexes\footnote{Implicit in the injectivity statement of the PHT is that, given a subset $X \subset \mathbb{R}^d$ which may be written as finite simplicial complex $K$, the restriction $f: X \to \mathbb{R}$ to any simplex in $K$ must is linear.}, which we denote as $\mathcal{K}_d$. 
+Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the equivalence $(K, f) \sim (K,f')$ when $f(K) = f'(K)$.
 
 
-constructing metrics capable of differentiating non-diffeomorphic shapes.
+% One of the constructing metrics capable of differentiating non-diffeomorphic shapes.
  
 
 \appendix
