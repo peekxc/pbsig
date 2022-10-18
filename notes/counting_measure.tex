@@ -31,7 +31,7 @@ Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022compu
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and then them off directly. Perhaps as a side effect of this, most of the earlier computational research related to persistence focused on improving the computation of the diagram itself~\cite{}. 
+Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly. Perhaps as a side effect of this, most of the earlier computational research related to persistence focused on improving the computation of the diagram itself~\cite{}. 
 % the connection between $\mu_p^\ast$ and $\beta_p^{\ast}$ elucidated by~\eqref{eq:betti_mult} implies
 Nonetheless, PBN computations exhibit certain advantages; 
 computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)
@@ -44,7 +44,7 @@ Indeed, if the diagram of interest has a finite number of off-diagonal points, t
 % TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
 By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} 
 %via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
-by showing that one may recover the persistence diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
+by showing that one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
 %re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
 % After introducing several alternative notions of `tameness',
 \begin{equation}\label{eq:measure}
@@ -64,7 +64,8 @@ A consequence of this theorem is that any distance between persistence diagrams 
 	d(\beta_f, \beta_g) = \inf\limits_{\phi} \; \sup\limits_{p \in \mathrm{dgm}(f)} \lVert p - \phi(p) \rVert_{\widetilde{\infty} }
 \end{equation*}
 is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
-Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions, justifying their use and study in continuously parameterized settings.
+Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions. 
+Thus, like persistence diagrams, this stability justifies their use and study of PBNs in continuously parameterized settings.
 
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 

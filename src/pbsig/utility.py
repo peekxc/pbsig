@@ -30,7 +30,7 @@ def rotate(S: Iterable, n: int = 1):
   return iter(items)
 
 def cycle_window(S: Iterable, offset: int = 1, w: int = 2):
-  return islice(cycle(window(S, w)), (len(S)-1)+offset)
+  return window(islice(cycle(S), len(S)+offset), w)
 
 def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), lower: bool = False):
   """
@@ -197,10 +197,23 @@ def scale_diameter(X: ArrayLike, diam: float = 1.0):
   return(Xs)
 
 
-def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox", "hull"], V: Optional[ArrayLike] = None):
+def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
   """
   Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
+
+  Each type of center varies in cost and definition, but each can effectively be interpreted as some kind of 'barycenter'. In particular: 
+
+  barycenter := point-wise barycenter of 'X', equivalent to arithmetic mean of the points 
+  box := barycenter of bounding box of 'X' 
+  hull := barycenter of convex hull of 'X'
+  polygon := barycenter of 'X', when 'X' traces out the boundary of a closed polygon in R^2*
+  directions := barycenter of 'X' projected onto a set of rotationally-symmetric direction vectors 'V' in S^1
+  
+  The last options 'directions' uses an iterative process (akin to meanshift) to find the barycenter 'u' satisfying: 
+
+  np.array([min((X-u) @ v)*v for v in V]).sum(axis=0) ~= [0.0, 0.0]
   """
+  import warnings
   n, d = X.shape[0], X.shape[1]
   method = "directions" if V is not None else method 
   if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
@@ -210,9 +223,12 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
     return(X[ConvexHull(X).vertices,:].mean(axis=0))
   elif method == "directions":
     assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
+    ## Check V is rotationally symmetric
+    rot_sym = np.allclose([min(np.linalg.norm(V + v, axis=1)) for v in V], 0.0, atol=atol)
+    warnings.warn("Warning: supplied vectors 'V' not rotationally symmetric up to supplied tolerance")
     original_center = X.mean(axis=0)
     cost: float = np.inf
-    while cost > 1e-12:
+    while not(np.isclose(cost, 0.0, atol=atol)):
       Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
       U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
       center_diff = U.mean(axis=0)
@@ -221,15 +237,14 @@ def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox"
         np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
         np.linalg.norm(center_diff)
       ])
-      #print(cost)
     return(original_center - X.mean(axis=0))
-  # V = np.array([[0,1], [0,-1], [1,0], [-1,0]])
-  # V = np.array([[0,1], [0,-1]])
-  # V = np.array([[1,0], [-1,0]])
-  # np.array([min(X @ vi)*np.array(vi) for vi in V]).mean(axis=0)
   elif method == "bbox":
     min_x, max_x = X.min(axis=0), X.max(axis=0)
     return((min_x + (max_x-min_x)/2))
+  elif method == "polygon":
+    from shapely.geometry import Polygon
+    P = Polygon(X)
+    return np.array(list(P.centroid.coords)).flatten()
   else: 
     raise ValueError("Invalid method supplied")
 
@@ -260,6 +275,50 @@ def winding_distance(X: ArrayLike, Y: ArrayLike):
     ind = ConvexHull([p1,p2,q1,q2]).vertices
     int_diff += Polygon(np.vstack([p1,p2,q1,q2])[ind,:]).area
   return(int_diff)
+
+def shift_curve(line, reference, objective: Optional[Callable] = None):
+  min_, best_offset = np.inf, 0
+  if objective is None: 
+    objective = lambda X,Y: np.linalg.norm(X-Y)
+  for offset in range(len(line)):
+    deviation = objective(reference, np.roll(line, offset, axis=0))
+    if deviation < min_:
+      min_ = deviation
+      best_offset = offset
+  if best_offset:
+    line = np.roll(line, best_offset, axis=0)
+  return line
+
+def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
+  """ Procrustes distance between closed curves """
+  from procrustes.rotational import rotational
+  from pbsig.pht import pht_preprocess_pc
+  from pyflubber.closed import prepare
+  if preprocess:
+    A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
+  if do_reflect:
+    R_refl = np.array([[-1, 0], [0, 1]])
+    A1,B1 = procrustes_cc(A, B, do_reflect=False, matched=matched, preprocess=False)
+    A2,B2 = procrustes_cc(A @ R_refl, B, do_reflect=False, matched=matched, preprocess=False)
+    return (A1, B1) if np.linalg.norm(A1-B1, 'fro') < np.linalg.norm(A2-B2, 'fro') else (A2, B2)
+  else:
+    if matched:
+      R = rotational(A, B, pad=False, translate=False, scale=False)
+      # return np.linalg.norm((A @ R.t) - B, 'fro')
+      return A @ R.t, B
+    else: 
+      ## Fix clockwise / counter-clockwise orientation of points
+      A_p, B_p = prepare(A, B)
+      
+      ## Shift points along shape until minimum procrustes distance is obtained
+      pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
+      os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
+      A, B = A_p, np.roll(B_p, os, axis=0)
+      return procrustes_cc(A, B, matched=True)
+
+def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
+  A_p, B_p = procrustes_cc(A, B, **kwargs)
+  return np.linalg.norm(A_p - B_p, 'fro')
 
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg

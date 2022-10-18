@@ -118,7 +118,7 @@ The $p$-th persistent Betti number $\beta_p^{i,j}$ at some index $(i,j) \in \Del
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and is thus may be reduced to a rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying the PBN computation has the same complexity as the full persistence computation.
+While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus may be reduced to a rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying the PBN computation has the same complexity as the full persistence computation.
 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
@@ -149,7 +149,7 @@ For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$ as follows:
 %\end{equation}
 The structure theorem from~\cite{zomorodian2004computing} shows that 1-parameter persistence modules can be decomposed in an \emph{essentially unique} way into indecomposables. Computationally, a consequence of this phenomenon is the Pairing Uniqueness Lemma~\cite{cohen2006vines}, which asserts that if $R = \partial V$ is the decomposition of the boundary matrix, then:  
 $$ r_R(i,j) \neq 0 \Leftrightarrow R[i,j] \neq 0 $$
-Since the persistence diagram is derived completely from $R$, this result suggests that information about a diagram can be obtained through rank computations alone.
+Since the persistence diagram is derived completely from $R$, this suggests that information about a diagram can be obtained through rank computations alone.
 For a more geometric description of this idea, see the third picture in Figure~\ref{fig:mult}. We record a non-trivial fact that follows from this observation: 
 \begin{lemma}[Dey \& Wang~\cite{dey2022computational}]\label{lemma:rank}
 Let $R = \partial V$ denote the matrix decomposition of a given filtered boundary matrix $\partial$ derived from the associated filtration $K_\bullet$. For any pair $(i,j)$ satisfying $1 \leq i < j \leq m$, we have:
@@ -187,14 +187,29 @@ As a result, we have the following corollary:
 	Given a filtration $K_\bullet$ of size $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$ and two indices $i \in [n]$, $j \in [m]$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
+
+%\begin{proposition}\label{prop:mu_query}
+%For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $n = \lvert K^{(p)} \rvert$, $m = \lvert K^{(p\+1)} \rvert$.
+%Let $R = [i,j] \times [k,l]$ denote a fixed rectangle in $\mathbb{R}^2$ satisfying $a < b \leq c < d$. The multiplicity $\mu_p^R$ of this box is given by:
+%	\begin{equation}\label{eq:mu_four}
+%	\mu_p^{R} =  \mathrm{rank}(\partial_{p\+1}^{j} ) - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
+%	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
+%	\end{equation}
+%where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
+%\end{proposition}
+%\begin{corollary}
+%	Given a filtration $K_\bullet$ of size $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$ and two indices $i \in [n]$, $j \in [m]$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
+%	%with $n < m$
+%\end{corollary} 
+
 \noindent 
 In the next section, we show how extend these complexity statements to parameterized settings. We address the storage and time complexity of $R_\partial(\cdot, \cdot)$ in section~\ref{sec:background_notation}.
 
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
-One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the scalar-valued filter function and corresponding filtration belong to a parametric family.  
+One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the input data is  thought to be generated from a parameterized family.  
 One simple such property of the rank function is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---one may permute the matrices in~\eqref{eq:betti_four} and obtain the same Betti number, so long as the matrices have the same essential non-zero pattern. 
-Another approach to tracking the PBNs in parameterized setting is through the vineyards algorithm~\cite{cohen2006vines}, however this requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. We elaborate in the following section. 
+Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. We elaborate in the following section. 
 
 Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
 %Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
@@ -256,7 +271,7 @@ Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \m
 where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
 The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; 
 $\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
-In particular, the linear and quadratic forms $L$ admits have particular graph interpretations:
+In fact, the linear and quadratic forms $L$ admits have particular graph interpretations:
 \begin{flalign*}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
@@ -270,7 +285,7 @@ By $L$'s definition, we have:
 	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\
 	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
 \end{align*}
-In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $y = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
+In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
 
 In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded and carry a particular form. Define the \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ as: 
 \begin{equation}
@@ -400,11 +415,11 @@ The Lanczos iteration's widespread adoption is in part due to its simplicity: ea
 %Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 If $A$ is sparse and/or has special structure, then the Lanczos method can be quite efficient. 
 Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to structured form (the first phase) is the bottleneck: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to structured form (the first phase) is typically the bottleneck: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
 %\{\, \theta_i \,\}_{i=1}^j
 
-
-The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$:
+% Still working on this part
+The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
 \end{equation}

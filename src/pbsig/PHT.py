@@ -8,19 +8,24 @@ from itertools import combinations
 from numpy.typing import ArrayLike
 from . import rotate_S1
 from .persistence import lower_star_ph_dionysus
-from .utility import progressbar, shape_center, uniform_S1,PL_path, complex2points
+from .utility import progressbar, shape_center, uniform_S1, PL_path, complex2points
 from gudhi.wasserstein import wasserstein_distance
 
-def pht_preprocess_pc(P: ArrayLike, transform: bool = False, **kwargs):
-  # V_dir = np.array(list(uniform_S1(nd)))
-  # u = shape_center(P, method="directions", V=V_dir)
-  u = shape_center(P, **kwargs)
-  L = sum([-np.min(P @ vi[:,np.newaxis]) for vi in V_dir])
-  def _preprocess(A):
-    A = A - u 
-    A = (1/L)*A
-    return(A)
-  return(_preprocess if not(transform) else _preprocess(P))
+def pht_transformer(scale = ["directions", "diameter"], translate: str = "directions", nd: int = 32, **kwargs):
+  assert nd % 2 == 0, "Number of directions must be even"
+  # if center == "directions":
+  V = np.array(list(uniform_S1(nd)))
+  def _preprocess(X: ArrayLike) -> ArrayLike:
+    u = shape_center(X, method="directions", V=V, **kwargs)
+    L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
+    X = X - u 
+    X = (nd/L)*X
+    return(X)
+  return(_preprocess)
+
+def pht_preprocess_pc(X: ArrayLike, nd: int = 32):
+  P = pht_transformer(nd)
+  return(P(X))
 
 def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
   """
@@ -60,18 +65,18 @@ def wasserstein_mod_rot(D0, D1, p: float = 1.0, **kwargs) -> float:
   D0 := List of diagrams 
   D1 := List of diagrams
   """
+  from pbsig.utility import rotate
   assert len(D0) == len(D1), "Lists containing diagrams should be equal"
   wd = lambda a,b: wasserstein_distance(a, b, matching=False, order=p, keep_essential_parts=True)
   wdists = []
   m = len(D0)
   for i in range(m): 
-    D_rot = D0[(m-i):] + D0[i:]  
+    D_rot = rotate(D0, i)
     wdists.append(sum([wd(d0,d1) for d0,d1 in zip(D_rot, D1)]))
   return(wdists[np.argmin(wdists)])
 
-def pht_0_dist(X: Iterable, nd: int = 32, preprocess: bool = True, progress: bool = False, diagrams: bool = False):
+def pht_0_dist(X: Iterable, mod_rotation: bool = True, nd: int = 32, preprocess: bool = True, progress: bool = False, diagrams: bool = False):
   """
-  
   X := iterable of (V, E) where V is point cloud of vertex positions and E are edges, or iterable of diagrams
   nd := number of directions
   """
@@ -85,7 +90,11 @@ def pht_0_dist(X: Iterable, nd: int = 32, preprocess: bool = True, progress: boo
     D = X
   ns = len(D) # number of shapes 
   comb_it = progressbar(combinations(D, 2), comb(ns, 2)) if progress else combinations(D, 2)
-  pht_dist = np.array([wasserstein_mod_rot(D0, D1) for D0, D1 in comb_it])
+  if mod_rotation:
+    pht_dist = np.array([wasserstein_mod_rot(D0, D1) for D0, D1 in comb_it])
+  else: 
+    wd = lambda D0, D1: sum([wasserstein_distance(d0, d1) for d0,d1 in zip(D0, D1)])
+    pht_dist = np.array([wd(D0, D1) for D0, D1 in comb_it])
   return(pht_dist)
 
 from pbsig.betti import lower_star_betti_sig
