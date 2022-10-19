@@ -227,15 +227,17 @@ B_truth[3] == B[3]
 # B[0] - B[1] - B[2] + B[3] 
 plt.plot(B[0] - B[1] - B[2] + B[3])
 
-i = min(np.flatnonzero(B_truth[0] != B[0].astype(int)))
-a,b = R[0]
+i = min(np.flatnonzero(B_truth[2] != B[2].astype(int)))
+a,b = R[2]
 b0_summands = lower_star_betti_sig([F[i]], E, nv=len(F[i]), a=a, b=b, method="rank", keep_terms=True).astype(int) 
-B_truth[0]
+
 sum(F[i] <= a) == b0_summands[0,0]
-fig, ax = plot_dgm(T1_dgms[1])
+fig, ax = plot_dgm(T1_dgms[i])
 ax.plot(*(np.array(R)[[0,1,3,2,0]]).T, linewidth=0.20)
- 
-K = { 'vertices' : np.fromiter(range(len(F[0])), dtype=int), 'edges': E }
+
+lower_star_betti_sig([F[0]], E, nv=len(F[0]), a=a, b=b, method="rank", keep_terms=True)
+
+K = { 'vertices' : np.fromiter(range(len(F[i])), dtype=int), 'edges': E }
 V_names = [str(v) for v in K['vertices']]
 E_names = [str(tuple(e)) for e in K['edges']]
 f0, e0 = F[i], F[i][E].max(axis=1)
@@ -247,7 +249,57 @@ R0, R1, V0, V1 = reduction_pHcol(D0, D1)
 ii = sum(np.array(sorted(f0)) <= a)
 jj = sum(np.array(sorted(e0)) <= b)
 persistent_betti(D0, D1, ii, jj, summands=True)
-d = lower_star_ph_dionysus(F[1], E, [])[0]
+np.linalg.matrix_rank(D1[ii:,:(jj+1)].A)
+
+D1_true = D1.copy()
+
+## Test case: 
+from itertools import product
+fv, ev = F[0], F[0][E].max(axis=1)
+
+K = { 'vertices' : np.fromiter(range(len(fv)), dtype=int), 'edges': E }
+V_names = [str(v) for v in K['vertices']]
+E_names = [str(tuple(e)) for e in K['edges']]
+VF0 = dict(zip(V_names, fv))
+EF0 = dict(zip(E_names, ev))
+D0, D1 = boundary_matrix(K, p=(0,1))
+D1 = D1[np.ix_(np.argsort(fv), np.argsort(ev))]
+for i,j in product(fv, ev):
+  if i < j:
+    ## This requires D1 to be in sorted order, based on y
+    ii, jj = np.searchsorted(fv, i), np.searchsorted(ev,j)
+    p2 = np.array(persistent_betti(D0, D1, i=ii, j=jj, summands=True))
+
+    ## This does not 
+    nv = len(fv)
+    p1 = lower_star_betti_sig([fv], p_simplices=E, nv=nv, a=i,b=j,method="rank", keep_terms=True).flatten().astype(int)
+    if p1[0] == 0 and p2[0] == 0:
+      continue
+    assert all(abs(p1) == abs(p2)), "Failed assertion"
+
+np.array(list(zip(*W.nonzero())))
+
+## Compare 
+W_full = np.zeros(shape=(D1.shape[0], D1.shape[0]))
+W = D1[ii:,:(jj+1)].tocsc().copy()
+W @ W.T
+L # \# of non-zeros
+
+## betti 
+T = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+T.sort_indices()
+T.nonzero()[0]
+
+BW = T[ii:,:(jj+1)]
+
+np.linalg.matrix_rank(T[ii:,:(jj+1)].A)
+
+
+
+
+
+d = lower_star_ph_dionysus(F[i], E, [])[0]
+sum(np.logical_and(d[:,0] <= a, d[:,1] > b))
 
 
 F1 = list(rotate_S1(dataset[('turtle',1)], n=132, include_direction=False))

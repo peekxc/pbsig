@@ -64,8 +64,6 @@ from pbsig.betti import persistent_betti, lower_star_betti_sig
 nv = len(x)
 E = np.array(list(zip(range(nv-1), range(1, nv))))
 lower_star_betti_sig([y], E, nv=nv, a=y_cuts[1], b=y_cuts[2], method="rank", keep_terms=True)
-
-
 lower_star_betti_sig([y], E, nv=nv, a=y_cuts[0], b=y_cuts[2], method="rank", keep_terms=False) ## why isn't this 2?
 lower_star_betti_sig([y], E, nv=nv, a=y_cuts[3], b=y_cuts[0], method="rank", keep_terms=False) ## why isn't this 2?
 
