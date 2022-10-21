@@ -409,16 +409,17 @@ where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \al
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
 % Computation 
-The Lanczos iteration's widespread adoption is in part due to its simplicity: each step consists of just a single matrix-vector product and a few vector operations. It is often referred to as a ``black box'' method due to the fact that a fast matrix-vector product is the only aspect of the computation that explicitly depends on $A$. 
-% Indeed, one need not have $A$ stored in memory explicitly: approximations of the $v \mapsto Av$ operator is all that is 
-%the only aspect of the computation an implementation requires from the user-side is an efficient \emph{matvec} operator $v \mapsto Av$. 
-%Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
-If $A$ is sparse and/or has special structure, then the Lanczos method can be quite efficient. 
-Indeed, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration of $A$ may be carried out with just three $O(n)$-sized vectors. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. In general, eigenvalue computations consist of two phases, of which the reduction to structured form (the first phase) is typically the bottleneck: once $T_j$ has been obtained for sufficient $j > 0$, the corresponding spectrum $\Lambda(T_j)$ may be obtained in $O(n \log n)$ time~\cite{gu1995divide}. 
+Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form, and (2) diagonalization of the tridiagonal form. As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the first phase is typically the bottleneck. 
+The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.  
+Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
+% such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
+% , then the Lanczos method can be quite efficient. 
+% Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
+Indeed, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
 %\{\, \theta_i \,\}_{i=1}^j
 
 % Still working on this part
+The Lanczos iteration and its variants are part of a family of so-called ``black box'' methods---from the user side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a `black box' $v \mapsto Av$ operator. 
 The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
