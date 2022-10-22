@@ -547,3 +547,31 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   else: 
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
+
+def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
+  """
+  Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
+  diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
+ 
+  Each rectangle r = (a,b,c,d) \in R where a < b <= c < d, representing the box
+  [a,b] x [c,d] in the upper half-plane. 
+  
+  Specialization/overloads: 
+    * Use (-inf,a,a,inf) to calculate the Betti number at index a
+    * Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
+  """
+  from pbsig.persistence import ph0_lower_star
+  assert p == 0
+  R = np.array(R)
+  U = np.zeros(shape=(len(F), len(R)))
+  for i, f in enumerate(F):
+    dgm = ph0_lower_star(f, E, **kwargs)
+    for j, (a,b,c,d) in enumerate(R):
+      assert a < b and b <= c and c < d, "Invalid rectangle: each rectangle must have positive measure"
+      if len(dgm) > 0:
+        born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
+        died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
+        U[i,j] = sum(np.logical_and(born_mu, died_mu))
+  return(U)
+
+    

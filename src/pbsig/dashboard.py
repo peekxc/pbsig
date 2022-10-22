@@ -8,6 +8,9 @@ from bokeh.layouts import column, row
 from bokeh.models import Range1d, ColumnDataSource, BoxEditTool, Model, Annulus, Plot, AnnularWedge, Slider, Span, Panel, Tabs, Button, Div, Line, PolyAnnotation, Rect
 from bokeh.core.property.color import Color 
 from bokeh.transform import linear_cmap
+nan = float('nan')
+
+from pbsig.simplicial import delaunay_complex
 
 # output_notebook(verbose=False, hide_banner=True)
 
@@ -68,12 +71,29 @@ S1 = cp.annulus(x=0, y=0, inner_radius=1.0, outer_radius=1.05, fill_color="#7fc9
 # S1.glyph.on_event(SelectionGeometry, my_cb)
 # S1.glyph.on_event(Press, my_cb)
 
+## Add polygon display
+from pbsig.pht import pht_preprocess_pc
+
+X = np.random.uniform(size=(16,2)) 
+K = delaunay_complex(X)
+E,T = K['edges'], K['triangles']
+v_glyph = cp.circle(X[:,0], X[:,1], size=4, color="navy", alpha=0.5)
+
+EX = [[X[u,0], X[v,0]] for u,v in E]
+EY = [[X[u,1], X[v,1]] for u,v in E]
+e_glyph = cp.multi_line(EX, EY, alpha=0.80, color="firebrick", line_width=3)
+
+TX = [list(X[t,0]) for t in T]
+TY = [list(X[t,1]) for t in T]
+t_glyph = cp.patches(TX, TY, color="green", alpha=0.5, line_width=2)
+
+
 ## Add angle slider
 viridis_color = linear_cmap('start_angle', 'Turbo256', low=0, high=2*np.pi)
 angle_src = ColumnDataSource({ 'start_angle': [0], 'end_angle': [np.pi/16] })
 S1_slider = Slider(start=0, end=2*np.pi, step=0.01, value=0.0)
 
-## 
+## Addons: vertical line on function, line on circle, etc. 
 vline = Span(location=0, dimension='height', line_color='black', line_width=2.5)
 line_source = ColumnDataSource(dict(x=[0,1], y=[0,0]))
 s1_arrow = cp.line(x="x", y="y", line_color="black", line_width=3, line_alpha=1.0, source=line_source)
@@ -96,6 +116,10 @@ compute_button = Button(label="Compute hashes", button_type="primary", width=int
 def compute_cb(new):
   log_msgs.append('Compute button selected.')
   log_msgs.append(', '.join([str(c) for c in box_source.data['x']]))
+
+  ## Persistence part 
+  # M = lower_star_multiplicity(F, E, R, max_death="max")
+
   # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
 compute_button.on_click(compute_cb)
 
