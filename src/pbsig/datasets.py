@@ -100,8 +100,58 @@ def freundenthal_image(image: ArrayLike, threshold: int = 200):
 
 # def letters():
 #   from pbsig import data as package_data_mod
-#   data_path = package_data_mod.__path__._path[0]
+  #   data_path = package_data_mod.__path__._path[0]
 
+def open_tar(fn: str, mode: str = "r:gz"):
+  import tarfile
+  tar = tarfile.open(fn, mode)
+  for member in tar.getmembers():
+    yield member
+    # f = tar.extractfile(member)
+    # if f is not None:
+    #   yield f
+
+def _largest_contour(img: ArrayLike, threshold: int = 180):
+  import cv2
+  _, thresh_img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
+  contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+  contours = (contours[np.argmax([len(c) for c in contours])])
+  S = contours[:,0,:]
+  return(S)
   
-#   return(V, E, T)
-
+def mpeg7(contour: bool = True, simplify: int = 150):
+  import io
+  from os.path import exists
+  from pbsig import data as package_data_mod
+  from pbsig.utility import simplify_outline
+  from PIL import Image, ImageFilter
+  base_dir = package_data_mod.__path__._path[0] + '/mpeg7'
+  mpeg7 = []
+  # for fn in os.listdir(base_dir):
+  #   if fn[-3:] == 'gif':
+  #     mpeg7.append(Image.open(base_dir+'/'+fn))
+  # for member in open_tar(base_dir+"/mpeg7.tar.xz", mode="r:xz"):
+  #   f = tar.extractfile(member)
+  #   if member.size > 0:
+  #     content = f.read()
+  #     mpeg7.append(Image.open(io.BytesIO(content)))
+  shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
+  shape_nums = [1,2] #3,4,5
+  normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
+  dataset = {}
+  for st in shape_types:
+    for sn in shape_nums:
+      img_dir = base_dir + f"/{st}-{sn}.gif"
+      assert exists(img_dir), "Image not found"
+      im = Image.open(img_dir)
+      img_gray = normalize(np.array(im)).astype(np.uint8)
+      if contour:
+        S = _largest_contour(img_gray)
+        S = _largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
+        assert len(S) > 4
+        S = simplify_outline(S, simplify) if simplify > 0 else S 
+        dataset[(st, sn)] = np.array([l.start for l in S]) 
+      else: 
+        dataset[(st, sn)] = img_gray
+  return(dataset)
+  

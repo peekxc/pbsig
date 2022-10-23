@@ -5,7 +5,7 @@ from bokeh.palettes import Turbo256
 from bokeh.plotting import figure, show, curdoc
 from bokeh.io import output_notebook
 from bokeh.layouts import column, row
-from bokeh.models import Range1d, ColumnDataSource, BoxEditTool, Model, Annulus, Plot, AnnularWedge, Slider, Span, Panel, Tabs, Button, Div, Line, PolyAnnotation, Rect
+from bokeh.models import Range1d, ColumnDataSource, BoxEditTool, Model, Annulus, Plot, AnnularWedge, Slider, Span, Panel, Tabs, Button, Div, Line, PolyAnnotation, Rect, Step
 from bokeh.core.property.color import Color 
 from bokeh.transform import linear_cmap
 nan = float('nan')
@@ -60,10 +60,12 @@ sp.toolbar.logo = None
 ## Circle plot 
 #plot.add_glyph(source, glyph)
 #xaxis = LinearAxis()plot.add_layout(xaxis, 'below')
-cp = figure(title=None, width=300, height=300, min_border=0, toolbar_location=None)
-cp.y_range = Range1d(-1.5,1.5, bounds=(-1.5,1.5))
-cp.x_range = Range1d(-1.5,1.5, bounds=(-1.5,1.5))
-S1 = cp.annulus(x=0, y=0, inner_radius=1.0, outer_radius=1.05, fill_color="#7fc97f")
+cp = figure(title=None, width=300, height=300, min_border=0, toolbar_location=None, match_aspect=True, aspect_scale=1)
+#v_symmetry=True
+cp.y_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
+cp.x_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
+#S1 = cp.annulus(x=0, y=0, inner_radius=1.5, outer_radius=1.5, fill_color="#7fc97f")
+S1 = cp.circle(x=0, y=0, radius=1.5, line_color="black", fill_color="#7fc97f", line_width=3, fill_alpha=0.0, radius_units='data')
 # S1.glyph.on_event(MouseEnter, my_cb)
 # S1.glyph.on_event(DoubleTap, my_cb)
 # S1.glyph.on_event(Tap, my_cb)
@@ -73,19 +75,22 @@ S1 = cp.annulus(x=0, y=0, inner_radius=1.0, outer_radius=1.05, fill_color="#7fc9
 
 ## Add polygon display
 from pbsig.pht import pht_preprocess_pc
-
-X = np.random.uniform(size=(16,2)) 
+X = pht_preprocess_pc(np.random.uniform(size=(56,2)), nd=32)
 K = delaunay_complex(X)
 E,T = K['edges'], K['triangles']
-v_glyph = cp.circle(X[:,0], X[:,1], size=4, color="navy", alpha=0.5)
-
-EX = [[X[u,0], X[v,0]] for u,v in E]
-EY = [[X[u,1], X[v,1]] for u,v in E]
-e_glyph = cp.multi_line(EX, EY, alpha=0.80, color="firebrick", line_width=3)
 
 TX = [list(X[t,0]) for t in T]
 TY = [list(X[t,1]) for t in T]
-t_glyph = cp.patches(TX, TY, color="green", alpha=0.5, line_width=2)
+t_glyph = cp.patches(TX, TY, color="green", alpha=0.15, line_width=0)
+
+EX = [[X[u,0], X[v,0]] for u,v in E]
+EY = [[X[u,1], X[v,1]] for u,v in E]
+e_glyph = cp.multi_line(EX, EY, alpha=0.80, color="firebrick", line_width=1.5)
+# t_glyph.level = 'underlay'
+
+vertex_src = ColumnDataSource({ 'x': X[:,0], 'y': X[:,1] , 'lambda': X[:,0] })
+turbo_color = linear_cmap('lambda', 'Turbo256', low=-1.0, high=1.0)
+v_glyph = cp.circle('x', 'y', size=8, alpha=1.0, color=turbo_color, source=vertex_src) #color=turbo_color
 
 
 ## Add angle slider
@@ -95,17 +100,27 @@ S1_slider = Slider(start=0, end=2*np.pi, step=0.01, value=0.0)
 
 ## Addons: vertical line on function, line on circle, etc. 
 vline = Span(location=0, dimension='height', line_color='black', line_width=2.5)
-line_source = ColumnDataSource(dict(x=[0,1], y=[0,0]))
+line_source = ColumnDataSource(dict(x=[0,1.5], y=[0,0]))
 s1_arrow = cp.line(x="x", y="y", line_color="black", line_width=3, line_alpha=1.0, source=line_source)
 # cp.add_glyph(s1_arrow)
 
 def slider_callback(attr: str, old_theta: float, new_theta: float) -> None:
   # log_msgs.append(new)
   # log_msgs.append(str(s1_arrow.glyph.x))
-  line_source.data['x'] = [0, np.cos(new_theta)]
-  line_source.data['y'] = [0, np.sin(new_theta)]
+  v = np.array([np.cos(new_theta), np.sin(new_theta)])
+  line_source.data['x'] = [0, v[0]*1.5]
+  line_source.data['y'] = [0, v[1]*1.5]
   # log_msgs.append(str(line_source.data['x']))
   vline.location = new_theta
+
+  #viridis_color = 
+  vertex_src.data['lambda'] = X @ v
+  # from pbsig.color import bin_color
+  # from bokeh.colors import RGB
+  # rgb = bin_color(X @ v)
+  # C = [RGB(*(r*255)) for r in bin_color(X @ v)]
+  # v_glyph.glyph.fill_color = C[0] # linear_cmap(, 'Turbo256', low=-1.5, high=1.5)
+
 S1_slider.on_change("value", slider_callback)
 sp.add_layout(vline)
 
@@ -113,12 +128,28 @@ sp.add_layout(vline)
 info_div = Div(text="<i>Betti Hash</i> panel info div", width=w, height=50)
 
 compute_button = Button(label="Compute hashes", button_type="primary", width=int(w/3))
+
+Ms = ColumnDataSource({ 'x' : [], 'y' : [] })
+# step_glyph = Step(x="x", y="y", line_color="#f46d43", mode="before")
+# sp.add_glyph(Ms, step_glyph)
+step_renderer = sp.step(x="x", y="y", line_color="#f46d43", mode="before", source=Ms)
+# sp
+
 def compute_cb(new):
   log_msgs.append('Compute button selected.')
   log_msgs.append(', '.join([str(c) for c in box_source.data['x']]))
 
   ## Persistence part 
-  # M = lower_star_multiplicity(F, E, R, max_death="max")
+  from pbsig.pht import rotate_S1
+  from pbsig.betti import lower_star_multiplicity
+  F = list(rotate_S1(X, 132, include_direction=False))
+  R = [[-0.50, 0.0, 0.1, 0.25]]
+  M = lower_star_multiplicity(F, E, R, max_death="max")
+  #log_msgs.append(M[0])
+  NR = np.fromiter(range(len(M)), dtype=int)
+  NR = (NR / len(NR))*(2*np.pi)
+  Ms.data['x'] = NR
+  Ms.data['y'] = M
 
   # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
 compute_button.on_click(compute_cb)
