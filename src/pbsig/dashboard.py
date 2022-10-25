@@ -1,34 +1,59 @@
 # dashboard.py
 import numpy as np 
+from typing import *
 import bokeh 
 from bokeh.palettes import Turbo256
 from bokeh.plotting import figure, show, curdoc
 from bokeh.io import output_notebook
 from bokeh.layouts import column, row
-from bokeh.models import Range1d, ColumnDataSource, BoxEditTool, Model, Annulus, Plot, AnnularWedge, Slider, Span, Panel, Tabs, Button, Div, Line, PolyAnnotation, Rect, Step
+from bokeh.events import Press, PressUp
+#from bokeh.models import Range1d, ColumnDataSource, BoxEditTool, Model, Annulus, Plot, AnnularWedge, Slider, Span, Panel, Tabs, Button, Div, Line, PolyAnnotation, Rect, Step, MultiChoice
+from bokeh.models import *
 from bokeh.core.property.color import Color 
 from bokeh.transform import linear_cmap
-nan = float('nan')
-
+from pbsig.pht import rotate_S1, pht_preprocess_pc
+from pbsig.betti import lower_star_multiplicity
+from pbsig.utility import cycle_window
+from pbsig.datasets import mpeg7
 from pbsig.simplicial import delaunay_complex
-
+nan = float('nan')
 # output_notebook(verbose=False, hide_banner=True)
 
+## Get data 
+D = mpeg7()
+X = pht_preprocess_pc(D[('turtle',1)],nd=32)
+E = np.array(list(cycle_window(range(X.shape[0]))))
+T = []
+
+## Settings 
 log_msgs = []
 w,h = 300, 300
 TOOLS = ["pan", "wheel_zoom", "reset"]
+control_panel = column([], name="controls")
+
+## Text support 
+directions = Div(text="<b> Control Panel </b>")
+control_panel.children.append(directions)
+
+## Add data picking options
+DATA_OPTIONS = [str(k) for k in D.keys()]
+def choose_dataset(attr: str, old: List, new: List):
+  print(old)
+  print(new)
+data_choice = MultiChoice(value=[], options=DATA_OPTIONS, placeholder="Data set")
+data_choice.on_change('value', choose_dataset)
+control_panel.children.append(data_choice)
 
 ## Setup halfplane on [lb,ub]
 lb, ub = 0.0, 1.0
 hp = figure(title="Barcode", x_axis_label="birth", y_axis_label="death", width=w, height=h, tools=TOOLS+['tap'])
 hp.line([lb,ub], [lb,ub], color="black", line_width=1)
 hp.toolbar.logo = None
-hp.y_range = Range1d(lb, ub, bounds=(lb, ub))
-hp.x_range = Range1d(lb, ub, bounds=(lb, ub))
-lhp = PolyAnnotation(fill_color="gray",fill_alpha=0.95,xs=[0, 1, 1, 0],ys=[0, 0, 1, 0])
+hp.y_range = Range1d(lb, ub) # bounds=(lb, ub)
+hp.x_range = Range1d(lb, ub) #  bounds=(lb, ub)
+lhp = PolyAnnotation(fill_color="gray",fill_alpha=0.95,xs=[-100, 100, 100, -100],ys=[-100, -100, 100, -100])
 lhp.level = 'underlay'
 hp.add_layout(lhp)
-
 
 ## Setup box renderer
 box_data = {'x': [0.30], 'y': [0.70], 'width': [0.10], 'height': [0.10], 'alpha': [0.5]}
@@ -45,10 +70,17 @@ hp.add_tools(box_tool)
 from typing import List 
 from bokeh.events import DoubleTap, Tap, MouseEnter, ButtonClick, SelectionGeometry, Press
 def my_cb2(attr: str, old: List[int], new: List[int]) -> None:
-  log_msgs.append(f"box {str(new)} selected")
+  log_msgs.append(f"box selected: {str(old)} -> {str(new)} selected")
+  # if len(old) > 0 and len(new) == 0: ## let go of box? 
+
+  log_msgs.append(str(box_source.data['x']))
+
+## Just do a polling to fix boxes 
+hp.on_event("press", lambda event: log_msgs.append("press"))
+hp.on_event(PressUp, lambda event: log_msgs.append("pressUp"))
+# box_source.data.on_change('x', my_cb2)
 box_source.selected.on_change('indices', my_cb2)
 # hp.on_event(MouseEnter, my_cb)
-
 
 ## Signature plot 
 theta = np.linspace(0, 2*np.pi, 1000, endpoint=False)
@@ -60,28 +92,19 @@ sp.toolbar.logo = None
 ## Circle plot 
 #plot.add_glyph(source, glyph)
 #xaxis = LinearAxis()plot.add_layout(xaxis, 'below')
-cp = figure(title=None, width=300, height=300, min_border=0, toolbar_location=None, match_aspect=True, aspect_scale=1)
+cp = figure(title="Angle of Filtration", plot_width=300, plot_height=300, min_border=0, toolbar_location=None, match_aspect=True, aspect_scale=1)
 #v_symmetry=True
-cp.y_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
+cp.frame_width = 220
+cp.frame_height = 220
 cp.x_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
-#S1 = cp.annulus(x=0, y=0, inner_radius=1.5, outer_radius=1.5, fill_color="#7fc97f")
+cp.y_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
 S1 = cp.circle(x=0, y=0, radius=1.5, line_color="black", fill_color="#7fc97f", line_width=3, fill_alpha=0.0, radius_units='data')
-# S1.glyph.on_event(MouseEnter, my_cb)
-# S1.glyph.on_event(DoubleTap, my_cb)
-# S1.glyph.on_event(Tap, my_cb)
-# S1.glyph.on_event(ButtonClick, my_cb)
-# S1.glyph.on_event(SelectionGeometry, my_cb)
-# S1.glyph.on_event(Press, my_cb)
 
 ## Add polygon display
-from pbsig.pht import pht_preprocess_pc
-X = pht_preprocess_pc(np.random.uniform(size=(56,2)), nd=32)
-K = delaunay_complex(X)
-E,T = K['edges'], K['triangles']
-
-TX = [list(X[t,0]) for t in T]
-TY = [list(X[t,1]) for t in T]
-t_glyph = cp.patches(TX, TY, color="green", alpha=0.15, line_width=0)
+if len(T) > 0:
+  TX = [list(X[t,0]) for t in T]
+  TY = [list(X[t,1]) for t in T]
+  t_glyph = cp.patches(TX, TY, color="green", alpha=0.15, line_width=0)
 
 EX = [[X[u,0], X[v,0]] for u,v in E]
 EY = [[X[u,1], X[v,1]] for u,v in E]
@@ -92,11 +115,9 @@ vertex_src = ColumnDataSource({ 'x': X[:,0], 'y': X[:,1] , 'lambda': X[:,0] })
 turbo_color = linear_cmap('lambda', 'Turbo256', low=-1.0, high=1.0)
 v_glyph = cp.circle('x', 'y', size=8, alpha=1.0, color=turbo_color, source=vertex_src) #color=turbo_color
 
-
 ## Add angle slider
 viridis_color = linear_cmap('start_angle', 'Turbo256', low=0, high=2*np.pi)
 angle_src = ColumnDataSource({ 'start_angle': [0], 'end_angle': [np.pi/16] })
-S1_slider = Slider(start=0, end=2*np.pi, step=0.01, value=0.0)
 
 ## Addons: vertical line on function, line on circle, etc. 
 vline = Span(location=0, dimension='height', line_color='black', line_width=2.5)
@@ -121,20 +142,48 @@ def slider_callback(attr: str, old_theta: float, new_theta: float) -> None:
   # C = [RGB(*(r*255)) for r in bin_color(X @ v)]
   # v_glyph.glyph.fill_color = C[0] # linear_cmap(, 'Turbo256', low=-1.5, high=1.5)
 
+## Add slider to controls panel
+S1_slider = Slider(start=0, end=2*np.pi, step=0.01, value=0.0)
 S1_slider.on_change("value", slider_callback)
 sp.add_layout(vline)
+control_panel.children.append(S1_slider)
 
 ## Controls panel
 info_div = Div(text="<i>Betti Hash</i> panel info div", width=w, height=50)
+dgms_button = Button(label="D", button_type="primary", width=int(w/6))
+nd_inp = NumericInput(value=32, low=1, high=512, placeholder="Number of directions", mode='int', width=int(w/6))
 
-compute_button = Button(label="Compute hashes", button_type="primary", width=int(w/3))
+dgm_points = ColumnDataSource({ 'x': [], 'y': [], 'r_index': [] }) #'alpha': []
+def compute_dgms(new):
+  from pbsig.persistence import ph0_lower_star
+  log_msgs.append('Dgm button selected.')
+  log_msgs.append(', '.join([str(c) for c in box_source.data['x']]))
+  F = list(rotate_S1(X, nd_inp.value, include_direction=False))
+  dgms = [ph0_lower_star(f, E, max_death="max") for f in F]
+  # pc = hp.scatter(list(dgms[0][:,0]),list(dgms[0][:,1]), marker="square", fill_color="red")
+  P = np.vstack([d for d in dgms])
+  ds = np.array([d.shape[0] for d in dgms]).astype(int) # dgm sizes
+  dgm_points.data = {
+    'x' : P[:,0],
+    'y' : P[:,1], 
+    'r_index' : np.repeat(list(range(len(ds))), ds)
+  }
+  lb, ub = min(P.flatten()), max(P.flatten())
+  # print(dgm_points.data)
+  turbo_color = linear_cmap('r_index', 'Turbo256', low=0, high=nd_inp.value)
+  # dgm_points
+  hp.scatter(x='x', y='y', size=10, marker="dot", color=turbo_color, source=dgm_points)
+  hp.x_range.update(start=lb, end=ub, bounds=(lb, ub))
+  hp.y_range.update(start=lb, end=ub, bounds=(lb, ub))
+
+dgms_button.on_click(compute_dgms)
+
+control_panel.children.append(row(nd_inp, dgms_button))
+#control_panel.children.append(info_div)
 
 Ms = ColumnDataSource({ 'x' : [], 'y' : [] })
-# step_glyph = Step(x="x", y="y", line_color="#f46d43", mode="before")
-# sp.add_glyph(Ms, step_glyph)
 step_renderer = sp.step(x="x", y="y", line_color="#f46d43", mode="before", source=Ms)
-# sp
-
+# control_panel.children.append(compute_button)
 def compute_cb(new):
   log_msgs.append('Compute button selected.')
   log_msgs.append(', '.join([str(c) for c in box_source.data['x']]))
@@ -142,7 +191,7 @@ def compute_cb(new):
   ## Persistence part 
   from pbsig.pht import rotate_S1
   from pbsig.betti import lower_star_multiplicity
-  F = list(rotate_S1(X, 132, include_direction=False))
+  F = list(rotate_S1(X, nd_inp.value, include_direction=False))
   R = [[-0.50, 0.0, 0.1, 0.25]]
   M = lower_star_multiplicity(F, E, R, max_death="max")
   #log_msgs.append(M[0])
@@ -152,29 +201,20 @@ def compute_cb(new):
   Ms.data['y'] = M
 
   # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
+
+compute_button = Button(label="Compute hashes", button_type="primary", width=int(w/3))
 compute_button.on_click(compute_cb)
-
-# direction_button = Button(label="Update direction", button_type="success", width=int(w/3))
-# def direction_callback(new):
-#   log_msgs.append('Radio button option ' + str(new) + ' selected.')
-
-
+control_panel.children.append(compute_button)
 
 ## Add log panel
 log_div = Div(text='LOG:', width=w, height=h, style={"overflow-y": "scroll", "max-height" : "300px" }, name="Log")
 def update_log():
   ms = ''.join([f"<li>{msg}</li>" for msg in reversed(log_msgs)])
   log_div.text = '<small><ul>{}</ul></small>'.format(ms)
-  
-# log_button.on_click(update_log)
+control_panel.children.append(row(log_div, name="Log", sizing_mode="stretch_both"))
 
-
-# P = column(
-#   row(hp, sp, cp, column(S1_slider, compute_button, log_button)), 
-#   log_div
-# )
-P = row(hp, sp, cp, column(S1_slider, compute_button, row(log_div, name="Log", sizing_mode="stretch_both"), name="controls"))
-# show(P, notebook_handle=True)
+## Form the final layout
+P = row(control_panel, hp, sp, cp)
 curdoc().add_periodic_callback(update_log, 200)
 curdoc().add_root(P)
 
@@ -197,3 +237,10 @@ curdoc().add_root(P)
   #S1_slider.js_link('value', wc, 'start_angle')
   # S1_slider.js_link('value', vline, 'location')
     #b1 = hp.quad(top=[0.80], bottom=[0.60], left=[0.20], right=[0.4], color="#FFA500")
+
+# S1.glyph.on_event(MouseEnter, my_cb)
+# S1.glyph.on_event(DoubleTap, my_cb)
+# S1.glyph.on_event(Tap, my_cb)
+# S1.glyph.on_event(ButtonClick, my_cb)
+# S1.glyph.on_event(SelectionGeometry, my_cb)
+# S1.glyph.on_event(Press, my_cb)
