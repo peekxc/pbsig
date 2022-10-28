@@ -6,37 +6,39 @@ import matplotlib.pyplot as plt
 from os.path import exists
 from PIL import Image
 
-base_dir = "/Users/mpiekenbrock/Downloads/original"
-shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
-shape_nums = [1,2] #3,4,5
+# base_dir = "/Users/mpiekenbrock/Downloads/original"
+# shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
+# shape_nums = [1,2] #3,4,5
 
-normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
+# normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
 
-def largest_contour(img: ArrayLike, threshold: int = 180):
-  _, thresh_img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
-  contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-  contours = (contours[np.argmax([len(c) for c in contours])])
-  S = contours[:,0,:]
-  return(S)
+# def largest_contour(img: ArrayLike, threshold: int = 180):
+#   _, thresh_img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
+#   contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#   contours = (contours[np.argmax([len(c) for c in contours])])
+#   S = contours[:,0,:]
+#   return(S)
 
-from pbsig.pht import pht_preprocess_pc
-from pbsig.utility import simplify_outline
-dataset = {}
-for st in shape_types:
-  for sn in shape_nums:
-    img_dir = base_dir + f"/{st}-{sn}.gif"
-    assert exists(img_dir), "Image not found"
-    im = Image.open(img_dir)
-    img_gray = normalize(np.array(im)).astype(np.uint8)
-    S = largest_contour(img_gray)
-    S = largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
-    assert len(S) > 4
-    S_path = simplify_outline(S, 150)
-    X_shape = np.array([l.start for l in S_path])
-    X_shape = pht_preprocess_pc(X_shape, nd=64) # defined w.r.t number of directions! 
-    dataset[(st, sn)] = X_shape
+# from pbsig.pht import pht_preprocess_pc
+# from pbsig.utility import simplify_outline
+# dataset = {}
+# for st in shape_types:
+#   for sn in shape_nums:
+#     img_dir = base_dir + f"/{st}-{sn}.gif"
+#     assert exists(img_dir), "Image not found"
+#     im = Image.open(img_dir)
+#     img_gray = normalize(np.array(im)).astype(np.uint8)
+#     S = largest_contour(img_gray)
+#     S = largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
+#     assert len(S) > 4
+#     S_path = simplify_outline(S, 150)
+#     X_shape = np.array([l.start for l in S_path])
+#     X_shape = pht_preprocess_pc(X_shape, nd=64) # defined w.r.t number of directions! 
+#     dataset[(st, sn)] = X_shape
 
-
+dataset = mpeg7(simplify=150)
+for k, S in dataset.items():
+  dataset[k] = pht_preprocess_pc(S, nd=64)
 
 # V = [v for fv, v in rotate_S1(X_shape, 32)]
 # V = np.array([v.flatten() for v in V])
@@ -48,6 +50,7 @@ for st in shape_types:
 # print(c)
 # X_shape = X_shape - c.flatten() 
 
+X_shape = dataset[('turtle',1)]
 V = np.array(list(uniform_S1(n=128)))
 u1 = shape_center(X_shape, "directions", V = V)  ## barycenter of set of direction vectors
 u2 = shape_center(X_shape, "polygon")            ## barycenter of polygon
@@ -113,6 +116,39 @@ procrustes_dist_cc(A, B) == procrustes_dist_cc(*procrustes_cc(A, B))
 # plt.plot(*dataset[('turtle',1)].T);plt.plot(*dataset[('turtle',2)].T)
 # plt.plot(*dataset[('chicken',1)].T);plt.plot(*dataset[('chicken',2)].T)
 # plt.plot(*dataset[('watch',1)].T);plt.plot(*dataset[('watch',2)].T)
+
+from pbsig.pht import pht_0
+dataset = mpeg7(simplify=138)
+X = dataset[('turtle', 1)]
+E = np.array(list(cycle_window(range(X.shape[0]))))
+X_dgms = pht_0(X,E,nd=132,transform=False,replace_inf=True)
+X_dgms_1 = [ph0_lower_star(f, E, max_death="max") for f in rotate_S1(X, 132, include_direction=False)]
+plot_fake_vines(X_dgms)
+plot_fake_vines(X_dgms_1)
+
+lex_sort = lambda X: X[np.lexsort(np.rot90(X)),:]
+for ii, (A, B) in enumerate(zip(X_dgms, X_dgms_1)):
+  A, B = lex_sort(A).astype(np.float32), lex_sort(B).astype(np.float32)
+  assert len(A) == len(B)
+  assert max(abs(A - B).flatten()) <= np.finfo(np.float32).eps
+
+F = list(rotate_S1(X, 132, include_direction=False))
+f = F[ii]
+lower_star_ph_dionysus(f, E=E, T=[])[0].shape
+ph0_lower_star(f, E, collapse=True).shape
+
+plt.scatter(*X.T, c=F[ii])
+for k,(x,y) in enumerate(X): plt.text(x,y,s=str(k))
+
+f = F[ii]
+d1 = lower_star_ph_dionysus(f, E=E, T=[])[0]
+[np.argmin(abs(f - b)) for b in d1[:,0]]
+[np.argmin(abs(f - d)) for d in d1[:,1] if d != np.inf]
+
+fv = f
+d2 = ph0_lower_star(F[ii], E, collapse=True)
+[np.argmin(abs(f - b)) for b in d2[:,0]]
+[np.argmin(abs(f - d)) for d in d2[:,1] if d != np.inf]
 
 ## Compute PHT
 from pbsig.pht import pht_0_dist, pht_preprocess_pc, pht_0

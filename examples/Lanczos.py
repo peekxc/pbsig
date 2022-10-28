@@ -245,6 +245,151 @@ D = np.diag([G.degree(i) for i in range(X.shape[0])])
 
 all(np.array((D - A) == (D1 @ D1.T).A).flatten())
 
+## Check Lx; indeed it works! 
+L = D - A
+x = np.random.uniform(size=L.shape[0])
+v0 = np.array([D[i,i]*x[i] - sum(x[A[i,:].indices]) for i, xi in enumerate(x)]).flatten()
+v1 = (L @ x).flatten()
+
+f = X @ np.array([0, 1])
+E = K['edges']
+fe = f[E].max(axis=1)
+#a, b = np.median(f), np.median(fe)
+a, b = f[3], fe[-3]
+w = 0.50
+
+from pbsig.betti import smoothstep
+D1 = boundary_matrix(K, 1).tocsc()
+D1.sort_indices()
+eps = 1e-12
+ss_b = smoothstep(lb = b-w, ub = b+eps, reverse = True)     # 1 (b-w) -> 0 (b), includes (-infty, b]
+ss_ac = smoothstep(lb = a-w, ub = a+eps, reverse = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
+nz_pn = np.sign(D1.data)
+
+entries = np.repeat(ss_b(fe), 2)*ss_ac(f[E].flatten())*nz_pn
+entries[entries == 0.0] = 0.0
+D1.data = entries
+
+## finally: the laplacian
+L = D1 @ D1.T
+y = L @ x
+
+np.set_printoptions(edgeitems=30, linewidth=100000)
+np.around(L.A, 2)
+
+## TODO: fix this
+sum([f[i]**2 * ss_b(ew)**2 for (i,j), ew in zip(E, fe) if (i == 0 or j == 0)])
+
+
+v0 = np.array([D[i,i]*x[i] - sum(x[A[i,:].indices]) for i, xi in enumerate(x)]).flatten()
+
+# for v in range(D.shape[0]):
+plot_mesh2D(X, K['edges'], K['triangles'])
+
+# Vertex-weighted multiplication 
+D1 = boundary_matrix(K, 1).tocsc()
+D1.sort_indices()
+
+## Functions on the vertices and edges
+rf = np.linspace(0, D1.shape[0])*0.7581
+cf = np.linspace(0, D1.shape[1])*0.6257
+
+row_ind, col_ind = D1.nonzero()
+D1_r = D1.copy()
+D1_r[np.ix_(row_ind, col_ind)] = rf[row_ind]
+L_r = D1_r @ D1_r.T
+
+D1_c = D1.copy()
+D1_c[np.ix_(row_ind, col_ind)] = cf[col_ind]
+L_c = D1_c @ D1_c.T
+
+L_r @ x
+L_c @ x
+
+deg = np.diagonal((D1 @ D1.T).A)
+L = (D1 @ D1.T).A
+
+## Lx (vertex case)
+y = np.zeros(len(x))
+for i, xi in enumerate(x):
+  t1 = xi*deg[i]*rf[i]**2  
+  J = np.setdiff1d(np.flatnonzero(L[i,:]), i)
+  t2 = xi*sum(x[J]*rf[J])
+  y[i] = t1 - t2 
+
+X = np.random.uniform(size=(24,2))
+K = delaunay_complex(X)
+
+import networkx as nx 
+G = nx.Graph()
+G.add_nodes_from(K['vertices'])
+G.add_edges_from(K['edges'])
+vf = np.random.uniform(size=len(G.nodes))
+ef = np.random.uniform(size=len(G.edges))
+
+A = boundary_matrix(K, p=1).tocsc()
+A.sort_indices()
+ri, ci = A.indices, np.repeat(range(A.shape[1]), 2)
+
+Ar, Ac = A.copy(), A.copy()
+Ar.data, Ac.data = np.sign(A.data)*vf[ri], np.sign(A.data)*ef[ci]
+Lr, Lc = (Ar @ Ar.T).A, (Ac @ Ac.T).A
+
+x = np.random.uniform(size=Lr.shape[1])
+
+## Lr @ x 
+y = np.zeros(len(x))
+for i, xi in enumerate(x):
+  t1 = xi*G.degree(i)*vf[i]**2  
+  J = np.array(list(G.neighbors(i)))
+  t2 = vf[i]*sum(x[J]*vf[J])
+  y[i] = t1 - t2
+
+max(abs((Lr @ x) - y)) < 1e-12 # true 
+
+## Lc @ x 
+E = list(G.edges)
+y = np.zeros(len(x))
+for i, xi in enumerate(x):
+  J = np.array(list(G.neighbors(i)))
+  j_ind = np.array([E.index((i,j)) if i < j else E.index((j,i)) for j in J], dtype=int)
+  y[i] = xi*sum(ef[j_ind]**2) - sum(x[J]*(ef[j_ind]**2))
+
+max(abs((Lc @ x) - y)) < 1e-12 # true 
+
+## Equivalent formulation(s) (faster)
+
+## Lc @ x; assumes w(i,j) = w(j,i) 
+y = np.zeros(len(x))
+for i,j in G.edges():
+  w_ij = ef[E.index((i,j)) if i < j else E.index((j,i))]**2
+  y[i] += (x[i]*w_ij - x[j]*w_ij)
+  y[j] += (x[j]*w_ij - x[i]*w_ij)
+
+## Lr @ x; assumes w(i,j) = w(j,i) 
+y = np.zeros(len(x))
+for i, fi in enumerate(vf):
+  y[i] = x[i]*G.degree(i)*fi**2
+for i,j in G.edges():
+  y[i] -= x[j]*vf[i]*vf[j]
+  y[j] -= x[i]*vf[i]*vf[j]
+
+max(abs((Lr @ x) - y)) 
+
+
+## Test both
+y = np.zeros(len(x))
+for i, fi in enumerate(vf):
+  y[i] = x[i]*G.degree(i)*fi**2
+for i,j in G.edges():
+  w_ij = ef[E.index((i,j)) if i < j else E.index((j,i))]**2
+  y[i] += (x[i]*w_ij - x[j]*w_ij) - x[j]*vf[i]*vf[j]
+  y[j] += (x[j]*w_ij - x[i]*w_ij) - x[i]*vf[i]*vf[j]
+
+((Lc * Lr) @ x) - y
+
+
+
 DN = np.diag(1/np.sqrt(np.diagonal(D)))
 
 ## Normalized laplacian 
@@ -273,5 +418,10 @@ x = np.random.uniform(size=L.shape[0])[:,np.newaxis]
 x.T @ L @ x 
 
 sum([(x[i] - x[j])**2 for i,j in G.edges()])
+
+
+
+
+
 
 

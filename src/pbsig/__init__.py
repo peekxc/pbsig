@@ -10,7 +10,7 @@ from numpy.typing import ArrayLike
 from .persistence import *
 from .betti import *
 from .linalg import *
-
+from .fast_pbn import *
 
 def plot_dgm(dgm: ArrayLike):
   import matplotlib.pyplot as plt
@@ -61,21 +61,21 @@ def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bo
     for i, xy in enumerate(X): ax.annotate(i, xy)
   return(fig, ax)
 
-def rotate_S1(X: ArrayLike, n: int = 10, include_direction: bool = True):
+def rotate_S1(X: ArrayLike, nd: int = 10, include_direction: bool = True):
   """ 
   Create an generator that returns the inner product of points in 'X' along 'n' different directions on the unit circle, 
   starting from the vector point up (v = (0, 1))
 
   Params: 
     X := (m x 2) ndarray of points 
-    n := number of directions to discretize S1 by (uniformly)
+    nd := number of directions to discretize S1 by (uniformly)
   
   Returns: 
     Generator which yields a tuple (fv, v) where: 
     fv := m-length ndarray of inner products of X with unit vector 'v' 
     v := the unit vector 'X' was projected onto
   """
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
+  theta = np.linspace(0, 2*np.pi, nd, endpoint=False)+(np.pi/2)
   for x,y in zip(np.cos(theta), np.sin(theta)):
     v = np.array([x,y])[:,np.newaxis]
     if include_direction:

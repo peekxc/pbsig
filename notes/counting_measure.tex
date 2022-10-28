@@ -31,7 +31,7 @@ Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022compu
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly. Perhaps as a side effect of this, most of the earlier computational research related to persistence focused on improving the computation of the diagram itself~\cite{}. 
+Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly. Perhaps as a side effect of this, much of the existing research related to persistence and its applications involve computing the diagram itself~\cite{}. 
 % the connection between $\mu_p^\ast$ and $\beta_p^{\ast}$ elucidated by~\eqref{eq:betti_mult} implies
 Nonetheless, PBN computations exhibit certain advantages; 
 computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)

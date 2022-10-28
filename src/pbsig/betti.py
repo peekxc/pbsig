@@ -548,7 +548,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
+def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable], R: Collection[tuple], p: int = 0, **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
@@ -565,13 +565,48 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[
   R = np.array(R)
   U = np.zeros(shape=(len(F), len(R)))
   for i, f in enumerate(F):
-    dgm = ph0_lower_star(f, E, **kwargs)
+    dgm = ph0_lower_star(f, E, **kwargs) # O(m*a(n) + mlogm) since E is unsorted
     for j, (a,b,c,d) in enumerate(R):
-      assert a < b and b <= c and c < d, "Invalid rectangle: each rectangle must have positive measure"
+      assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
       if len(dgm) > 0:
         born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
         died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
         U[i,j] = sum(np.logical_and(born_mu, died_mu))
   return(U)
 
+
+
+def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0, ):
+  nv, ne = len(f), E.shape[0]
+  eps = tol(np.sqrt(E.shape[0]*2)) # use bound on spectral norm to get tol instead of np.finfo(float).eps?
+  ss_b = smoothstep(lb = b-w, ub = b+eps, reverse = True)     # 1 (b-w) -> 0 (b), includes (-infty, b]
+  ss_ac = smoothstep(lb = a-w, ub = a+eps, reverse = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
+  # A_exc = ss_ac(f[E]).flatten()
+  # B_inc = np.repeat(ss_b(edge_f), 2)
+  # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
+  # L = D1 @ D1.T
+  # k = structural_rank(L)
+  # if k > 0: 
+  #   k = k - 1 if k == min(D1.shape) else k
+  #   T4 = eigsh(L, return_eigenvectors=False, k=k)
+  #   terms[3] = relax_f(np.array(T4))
+  # else: 
+  #   terms[3] = 0.0
+  #   nv, ne = shape
+  r, rz = np.zeros(ne), np.zeros(nv)
+  def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
+    r.fill(0) # r = Ax ~ O(E)
+    rz.fill(0)# rz = Ar ~ O(V)
+    for cc, (i,j) in enumerate(E):
+      ew = max(fv[i], fv[j])
+      r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
+    for cc, (i,j) in enumerate(E):
+      ew = max(fv[i], fv[j])
+      rz[i] += ew*r[cc] #?? 
+      rz[j] -= ew*r[cc]
+    return(rz)
     
+def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
+  a,b,c,d = next(iter(R))
+  Ef = [f[E].max(axis=1) for f in F]
+

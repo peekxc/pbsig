@@ -839,25 +839,43 @@ def ph0_lower_star(fv: ArrayLike, E: ArrayLike, collapse: bool = True, lex_sort:
   dgm = []
   for (i,j), f in zip(E[ei,:], fv[E[ei,:]].max(axis=1)):
     ## The 'elder' was born first before the child: has smaller function value
+    # assert i != 7 and j != 8 # should kill 5! 
     elder, child = (i, j) if fv[i] <= fv[j] else (j, i)
+    # if child == 5 and elder == 6: assert False
     if not ds.connected(i,j):
       if not paired[child]: # child unpaired => merged instantly by (i,j)
         dgm += [(fv[child], f)] if insert_rule(fv[child], f) else []
         paired[child] = True # kill the child
+        #assert child != 5
         #print(f"{child}, ({i},{j})")
       else: # child already paired in component, use elder rule (keep elder alive)
-        creator = elders[elder] if fv[elders[child]] <= fv[elders[elder]] else elders[child]
+        #assert elder != 8 # problem child
+        creator = elders[ds[elder]] if fv[elders[ds[child]]] <= fv[elders[ds[elder]]] else elders[ds[child]]
         dgm += [(fv[creator], f)] if insert_rule(fv[creator], f) else []
+        # assert not(paired[creator])
         paired[creator] = True
         #print(f"{creator}, ({i},{j})")
       
-      ## Representative step: get set-representatives w/ minimum function value
-      elder_i, elder_j = elders[ds[i]], elders[ds[j]]
-      elders[i] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
-      elders[j] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
+    ## Merge (i,j) and update elder map
+    elder_i, elder_j = elders[ds[i]], elders[ds[j]]
+    ds.merge(i,j)
+    elders[ds[i]] = elders[ds[j]] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
+
+    ## Representative step: get set-representatives w/ minimum function value
+    # cc_i, cc_j = np.array(list(ds.subset(i))), np.array(list(ds.subset(j)))
+    # elder_i = cc_i[np.argmin(fv[cc_i])]
+    # elder_j = cc_j[np.argmin(fv[cc_j])]
+    
+    # new_elder = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
+    # elders[i] = elders[j] = elders[ds[i]] = elders[ds[j]] = new_elder
+    # elders[i] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
+    # elders[i] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
       
-      ## Merge (i,j) and update elder map
-      ds.merge(i,j)
+
+    # cc = np.array(list(ds.subset(i)))
+    # elder_ind = cc[np.argmin(fv[cc])]
+    # assert elders[i] == elder_ind and elders[j] == elder_ind
+
       
   ## Post-processing 
   # print(f"Essential: {str(np.flatnonzero(paired == False))}")

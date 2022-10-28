@@ -37,10 +37,12 @@ control_panel.children.append(directions)
 
 ## Add data picking options
 DATA_OPTIONS = [str(k) for k in D.keys()]
+pc_data_source = ColumnDataSource({ 'data_keys' : [ DATA_OPTIONS[0] ]})
 def choose_dataset(attr: str, old: List, new: List):
   print(old)
   print(new)
-data_choice = MultiChoice(value=[], options=DATA_OPTIONS, placeholder="Data set")
+  pc_data_source.data['data_keys'] = new
+data_choice = MultiChoice(value=[DATA_OPTIONS[0]], options=DATA_OPTIONS, placeholder="Data set(s)")
 data_choice.on_change('value', choose_dataset)
 control_panel.children.append(data_choice)
 
@@ -54,6 +56,7 @@ hp.x_range = Range1d(lb, ub) #  bounds=(lb, ub)
 lhp = PolyAnnotation(fill_color="gray",fill_alpha=0.95,xs=[-100, 100, 100, -100],ys=[-100, -100, 100, -100])
 lhp.level = 'underlay'
 hp.add_layout(lhp)
+# Tabs(tabs=[tab1, tab2])
 
 ## Setup box renderer
 box_data = {'x': [0.30], 'y': [0.70], 'width': [0.10], 'height': [0.10], 'alpha': [0.5]}
@@ -153,7 +156,7 @@ info_div = Div(text="<i>Betti Hash</i> panel info div", width=w, height=50)
 dgms_button = Button(label="D", button_type="primary", width=int(w/6))
 nd_inp = NumericInput(value=32, low=1, high=512, placeholder="Number of directions", mode='int', width=int(w/6))
 
-dgm_points = ColumnDataSource({ 'x': [], 'y': [], 'r_index': [] }) #'alpha': []
+dgm_points = ColumnDataSource({ 'x': [], 'y': [], 'r_index': [], 'alpha': [] }) 
 def compute_dgms(new):
   from pbsig.persistence import ph0_lower_star
   log_msgs.append('Dgm button selected.')
@@ -166,13 +169,14 @@ def compute_dgms(new):
   dgm_points.data = {
     'x' : P[:,0],
     'y' : P[:,1], 
-    'r_index' : np.repeat(list(range(len(ds))), ds)
+    'r_index' : np.repeat(list(range(len(ds))), ds), # pht rotation index
+    'alpha' : np.repeat(1.0, P.shape[0])
   }
   lb, ub = min(P.flatten()), max(P.flatten())
   # print(dgm_points.data)
   turbo_color = linear_cmap('r_index', 'Turbo256', low=0, high=nd_inp.value)
   # dgm_points
-  hp.scatter(x='x', y='y', size=10, marker="dot", color=turbo_color, source=dgm_points)
+  hp.scatter(x='x', y='y', alpha='alpha', size=15, marker="dot", color=turbo_color, source=dgm_points)
   hp.x_range.update(start=lb, end=ub, bounds=(lb, ub))
   hp.y_range.update(start=lb, end=ub, bounds=(lb, ub))
 
@@ -192,19 +196,59 @@ def compute_cb(new):
   from pbsig.pht import rotate_S1
   from pbsig.betti import lower_star_multiplicity
   F = list(rotate_S1(X, nd_inp.value, include_direction=False))
-  R = [[-0.50, 0.0, 0.1, 0.25]]
+  if len(box_source.data['x']) > 0:
+    R = []
+    for rx,ry,rw,rh in zip(box_source.data['x'], box_source.data['y'], box_source.data['width'], box_source.data['height']):
+      a,b,c,d = rx-rw/2, rx+rw/2, ry-rh/2, ry+rh/2
+      R.append([a,b,c,d])
   M = lower_star_multiplicity(F, E, R, max_death="max")
   #log_msgs.append(M[0])
   NR = np.fromiter(range(len(M)), dtype=int)
   NR = (NR / len(NR))*(2*np.pi)
-  Ms.data['x'] = NR
-  Ms.data['y'] = M
-
+  Ms.data = {
+    'x' : NR, 
+    'y' : M
+  }
+  print(M.flatten())
   # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
 
 compute_button = Button(label="Compute hashes", button_type="primary", width=int(w/3))
 compute_button.on_click(compute_cb)
 control_panel.children.append(compute_button)
+
+import time
+ri: int = 0
+def animate_cb():
+  global ri 
+  NR = nd_inp.value
+  RI = np.array(dgm_points.data['r_index']) # rotation index 
+  A = np.repeat(0.10, len(RI))
+  ri = (ri + 1) % NR
+  # for ri in np.sort(np.unique(RI)):
+  print(f"{ri} out of ")
+  A[RI == ri] = 1.00
+  A[RI != ri] = 0.10
+  dgm_points.data.update(alpha=A) # data['alpha'] = A
+  # time.sleep(0.25) 
+  log_msgs.append(f"rotation index: {ri}")
+
+## Add vines animation button
+vines_clicked: bool = False
+cb_object: int = 0
+def init_animate_cb(new):
+  global vines_clicked
+  global cb_object
+  ndp: int = len(dgm_points.data['x'])
+  if ndp > 0:
+    if not vines_clicked:
+      cb_object = curdoc().add_periodic_callback(animate_cb, 50)
+    else: 
+      curdoc().remove_periodic_callback(cb_object)
+      dgm_points.data.update(alpha=np.repeat(1.0, ndp))
+    vines_clicked = not(vines_clicked)
+animate_button = Button(label="Animate vines", button_type="danger", width=int(w/6))
+animate_button.on_click(init_animate_cb)
+control_panel.children.append(animate_button)
 
 ## Add log panel
 log_div = Div(text='LOG:', width=w, height=h, style={"overflow-y": "scroll", "max-height" : "300px" }, name="Log")
