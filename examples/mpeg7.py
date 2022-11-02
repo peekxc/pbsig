@@ -40,6 +40,8 @@ dataset = mpeg7(simplify=150)
 for k, S in dataset.items():
   dataset[k] = pht_preprocess_pc(S, nd=64)
 
+dataset[('turtle',1)].mean(axis=0)
+
 # V = [v for fv, v in rotate_S1(X_shape, 32)]
 # V = np.array([v.flatten() for v in V])
 
@@ -152,7 +154,7 @@ d2 = ph0_lower_star(F[ii], E, collapse=True)
 
 ## Compute PHT
 from pbsig.pht import pht_0_dist, pht_preprocess_pc, pht_0
-X = [dataset[k] for k in valid_keys]
+X = [dataset[k] for k in dataset.keys()]
 E = [np.array(list(zip(range(x.shape[0]), np.roll(range(x.shape[0]), -1)))) for x in X]
 dgms = [pht_0(x,e,nd=132,transform=False,replace_inf=True) for x,e in zip(X,E)]
 
@@ -173,8 +175,8 @@ assert len(np.unique(D)) == len(D)
 # plt.title(f"{scaling} scaling")
 
 ## Show PHT distance matrix better
-from pbsig.color import heatmap, annotate_heatmap
-D_im = squareform(scale_interval(D, scaling='linear'))
+from pbsig.color import scale_interval, heatmap, annotate_heatmap
+D_im = squareform(scale_interval(D/50000, scaling='linear'))
 #I = np.array([0,1,2,3,4,5,6,7,8,9,17,18,19], dtype=int)
 I = np.fromiter(range(D_im.shape[0]), dtype=int)
 fig, ax = plt.subplots()
@@ -238,7 +240,7 @@ plt.show()
 
 ## PB curve example
 from pbsig.betti import lower_star_betti_sig
-F = list(rotate_S1(dataset[('turtle',1)], n=132, include_direction=False))
+F = list(rotate_S1(dataset[('turtle',1)], nd=132, include_direction=False))
 T1_dgms = [lower_star_ph_dionysus(f, E, [])[0] for f in F]
 for i, f in zip(range(len(T1_dgms)), F):
   dgm = T1_dgms[i]
@@ -338,12 +340,14 @@ d = lower_star_ph_dionysus(F[i], E, [])[0]
 sum(np.logical_and(d[:,0] <= a, d[:,1] > b))
 
 
-F1 = list(rotate_S1(dataset[('turtle',1)], n=132, include_direction=False))
-F2 = list(rotate_S1(dataset[('turtle',2)], n=132, include_direction=False))
-F3 = list(rotate_S1(dataset[('watch',1)], n=132, include_direction=False))
+F1 = list(rotate_S1(dataset[('turtle',1)], nd=132, include_direction=False))
+F2 = list(rotate_S1(dataset[('turtle',2)], nd=132, include_direction=False))
+F3 = list(rotate_S1(dataset[('watch',1)], nd=132, include_direction=False))
 B1 = [lower_star_betti_sig(F1, E, nv=len(F1[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
 B2 = [lower_star_betti_sig(F2, E, nv=len(F2[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
 B3 = [lower_star_betti_sig(F3, E, nv=len(F3[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
+#a,b = -0.25, 1.15
+# [[-0.25, 0.05], [-1.2, 0.05], [-0.25, 1.15], [-1.2, 1.15]]
 
 S1 = B1[0] - B1[1] - B1[2] + B1[3]
 S2 = B2[0] - B2[1] - B2[2] + B2[3]
@@ -386,6 +390,7 @@ plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
 plt.gca().set_aspect('equal')
 
 ## manual rolling
+from procrustes import rotational
 pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
 os = np.argmin([pro_error(T1_p, np.roll(T2_p, offset, axis=0)) for offset in range(T1_p.shape[0])])
 A,B = T1_p, np.roll(T2_p, os, axis=0)
@@ -400,6 +405,9 @@ plt.plot(*A.T);plt.plot(*B.T)
 plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
 plt.gca().set_aspect('equal')
 
+## Replace and check!
+dataset[('turtle',1)] = A
+dataset[('turtle',2)] = B
 
 # res = rotational(T1, T2, pad=False, translate=False, scale=False)
 # plt.plot(*(res.new_a@res.t).T)
@@ -617,3 +625,37 @@ plt.scatter(*B.T, c=bin_color(range(A.shape[0])))
 np.linalg.norm(A - B, 'fro')
 
 # F = interpolate(X[0], X[1], t = 1.0, closed=True)
+
+
+## Testing MPEG-7 again 
+
+dataset = mpeg7(simplify=150)
+for k, S in dataset.items():
+  dataset[k] = pht_preprocess_pc(S, nd=132)
+
+R = [[-0.25, 0.05], [-1.2, 0.05], [-0.25, 1.15], [-1.2, 1.15]]
+F1 = list(rotate_S1(dataset[('turtle',1)], nd=132, include_direction=False))
+F2 = list(rotate_S1(dataset[('turtle',2)], nd=132, include_direction=False))
+F3 = list(rotate_S1(dataset[('watch',1)], nd=132, include_direction=False))
+B1 = [lower_star_betti_sig(F1, E, nv=len(F1[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
+B2 = [lower_star_betti_sig(F2, E, nv=len(F2[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
+B3 = [lower_star_betti_sig(F3, E, nv=len(F3[0]), a=a, b=b, method="nuclear", w=0.15) for a,b in R]
+
+S1 = B1[0] - B1[1] - B1[2] + B1[3]
+S2 = B2[0] - B2[1] - B2[2] + B2[3]
+S3 = B3[0] - B3[1] - B3[2] + B3[3]
+fig, axs = plt.subplots(1,2,figsize=(8,2), dpi=150)
+axs[0].plot(S1, color='red', label='Turtle 1')
+axs[0].plot(S2, color='blue', label='Turtle 2')
+axs[0].plot(S3, color='yellow', label='Watch 1')
+axs[1].plot(abs(S1-S2), color='purple', label='|T1-T2|')
+axs[1].plot(abs(S1-S3), color='orange', label='|T1-W1|')
+axs[1].plot(abs(S2-S3), color='green', label='|T2-W1|')
+axs[0].legend()
+axs[1].legend()
+
+
+
+
+
+

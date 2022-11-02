@@ -49,11 +49,11 @@ def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
 def pht_0(X: ArrayLike, E: ArrayLike, nd: int = 32, transform: bool = True, progress: bool = False, replace_inf: bool = False):
   if transform:
     X = pht_preprocess_pc(X, nd, transform=True)
-  circle = rotate_S1(X, n=nd, include_direction=False)
+  circle = rotate_S1(X, nd=nd, include_direction=False)
   circle_it = progressbar(circle, nd) if progress else circle 
   dgms0 = [lower_star_ph_dionysus(fv, E, [])[0] for fv in circle_it]
   if replace_inf: 
-    for i, fv in zip(range(len(dgms0)), rotate_S1(X, n=nd, include_direction=False)):
+    for i, fv in zip(range(len(dgms0)), rotate_S1(X, nd=nd, include_direction=False)):
       dgm = dgms0[i]
       which_inf = dgm[:,1] == np.inf
       dgm[which_inf,1] = max(fv)

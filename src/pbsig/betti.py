@@ -497,7 +497,9 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     
     for f in F:
       ## Eps can cause issues if non-identical vertex values too close
-      assert all(eps < abs(np.unique(np.diff(sorted(f))))), "Spectral-norm tolerance too large"
+      if method == "rank" and all(eps < abs(np.unique(np.diff(sorted(f))))):
+        import warnings
+        warnings.warn("Spectral-norm tolerance too large for accurate rank estimation")
       terms.fill(0)
       
       ## Term 1
@@ -548,7 +550,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable], R: Collection[tuple], p: int = 0, **kwargs):
+def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable], R: Collection[tuple], p: int = 0, method: str = ["rank", "nuclear"], **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
@@ -561,17 +563,31 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
     * Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
   """
   from pbsig.persistence import ph0_lower_star
-  assert p == 0
+  if p != 0:
+    raise NotImplemented("p > 0 hasn't been implemented yet")
   R = np.array(R)
   U = np.zeros(shape=(len(F), len(R)))
-  for i, f in enumerate(F):
-    dgm = ph0_lower_star(f, E, **kwargs) # O(m*a(n) + mlogm) since E is unsorted
+  if method == ["rank", "nuclear"] or method == "exact":
+    for i, f in enumerate(F):
+      dgm = ph0_lower_star(f, E, max_death="max") # O(m*a(n) + mlogm) since E is unsorted
+
+      for j, (a,b,c,d) in enumerate(R):
+        assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
+        if len(dgm) > 0:
+          born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
+          died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
+          U[i,j] = sum(np.logical_and(born_mu, died_mu))
+  else: 
+    assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
+    F = list(iter(F))
+    nv = len(F[0])
     for j, (a,b,c,d) in enumerate(R):
-      assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
-      if len(dgm) > 0:
-        born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
-        died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
-        U[i,j] = sum(np.logical_and(born_mu, died_mu))
+      for i, f in enumerate(F):
+        t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
+        t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
+        t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
+        t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
+        U[i,j] = t1 - t2 - t3 + t4 
   return(U)
 
 
@@ -606,7 +622,7 @@ def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: 
       rz[j] -= ew*r[cc]
     return(rz)
     
-def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
-  a,b,c,d = next(iter(R))
-  Ef = [f[E].max(axis=1) for f in F]
+# def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
+#   a,b,c,d = next(iter(R))
+#   Ef = [f[E].max(axis=1) for f in F]
 

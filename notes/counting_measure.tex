@@ -13,7 +13,8 @@
 
 The connection between the persistent homology (PH) groups and their corresponding persistent Betti numbers (PBNs) has long been studied from multiple perspectives by several authors~\cite{cerri2013betti, chazal2016structure, cohen2005stability, zomorodian2004computing}.
 %We recall a few characterizations which are illuminating in this effort.
-From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
+From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
+%They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
 %More recently, Bauer studied persistence in a form a matching. 
 In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspective on PH by defining the persistence diagram in terms of a \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$, the $p$-th persistence diagram over $f$ is given as: 
 \begin{equation}
@@ -24,27 +25,30 @@ where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\m
 \begin{equation}\label{eq:multiplicity}
 	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 \leq i < j \leq n+ 1
 \end{equation}
-Equation~\eqref{eq:multiplicity} demonstrates an intrinsic connection between the multiplicity function and the persistent Betti numbers. 
-The implication associated with~\eqref{eq:multiplicity} is that persistence diagrams completely characterize their PBNs.
+Equation~\eqref{eq:multiplicity} illuminates an intrinsic connection between the multiplicity function and the persistent Betti numbers. 
+Namely, the inclusion-exclusion property that~\eqref{eq:multiplicity} obeys suggests that diagrams completely characterize their PBNs.
 Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
 \begin{equation}\label{eq:betti_mult}
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-Equation~\eqref{eq:betti_mult} is convenient for practitioners: if one is interested in computing the PBNs of some space $\mathcal{X}$, simply compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly. Perhaps as a side effect of this, much of the existing research related to persistence and its applications involve computing the diagram itself~\cite{}. 
+Thus, if one is interested in computing any of the PBNs of some space $\mathcal{X}$, it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. 
+Perhaps as a result of this characterization, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{}, as opposed to the PBNs (\cite{cerri2013betti, chen2011output} are notable exceptions). 
 % the connection between $\mu_p^\ast$ and $\beta_p^{\ast}$ elucidated by~\eqref{eq:betti_mult} implies
-Nonetheless, PBN computations exhibit certain advantages; 
-computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)
-portions of $\mathrm{dgm}_p(K_\bullet)$ are counted by PBNs via~\eqref{eq:betti_mult}; %(2)
-%once $\beta_p^{i,j}$ has been obtained, $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ may be readily computed; 
-as a weaker invariant, a single PBN ought to be easier to compute that the full persistence diagram. %(3)
-Indeed, if the diagram of interest has a finite number of off-diagonal points, then~\eqref{eq:betti_mult} implies one can recover the diagram with a finite number of PBN computations. 
+%Nonetheless, PBN computations exhibit certain advantages; 
+%computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)
+%portions of $\mathrm{dgm}_p(K_\bullet)$ are counted by PBNs via~\eqref{eq:betti_mult}; %(2)
+%%once $\beta_p^{i,j}$ has been obtained, $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ may be readily computed; 
+%as a weaker invariant, a single PBN ought to be easier to compute that the full persistence diagram. %(3)
+Nonetheless, as we shall show, there are certain advantages the PBN computation has over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
+Indeed,~\eqref{eq:multiplicity} implies one in theory recover the diagram through [a finite number of] PBN computations alone, suggesting an alternative computational paradigm with which to approach persistence computation~\cite{chen2011output}. 
 %This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
 
 % TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
-By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, Chazal~\cite{chazal2016structure} generalize~\eqref{eq:multiplicity} 
+For persistence modules indexed over the real line, the duality between diagrams and PBNs was further studied by Chazal~\cite{chazal2016structure} in the measure-theoretic setting. 
+By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, a generalization of~\eqref{eq:multiplicity} 
 %via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
-by showing that one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
+was shown by demonstrating that one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
 %re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
 % After introducing several alternative notions of `tameness',
 \begin{equation}\label{eq:measure}

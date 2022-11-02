@@ -111,14 +111,18 @@ Finally, we illustrate both the computational and practical advantages our expre
 Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively. 
 Additionally, let $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
 With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
-The $p$-th persistent Betti number $\beta_p^{i,j}$ at some index $(i,j) \in \Delta_+^m$ is defined as: 
+The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^m$ is defined as: 
 \begin{align*} \label{eq:pbn}
-	\beta_p^{i,j} &= \mathrm{dim}(H_p^{i,j}) \\
-	&= \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
+	\centering
+	\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}) &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
+	& = \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus may be reduced to a rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al~\cite{zomorodian2004computing} give a procedure to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying the PBN computation has the same complexity as the full persistence computation.
+While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a matrix rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. The approach is essentially the same as the subspace intersection algorithm presented in~\cite{}.
+However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
+
+% Golub and Van Loan 
 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
@@ -207,10 +211,11 @@ In the next section, we show how extend these complexity statements to parameter
 
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
-One advantage of expressing the PBN via equation~\eqref{eq:betti_four} is that certain properties of rank function may be exploited in \emph{parameterized} settings, i.e. settings where the input data is  thought to be generated from a parameterized family.  
-One simple such property of the rank function is permutation invariance: given any square matrix $A \in \mathbb{R}^{n \times n}$, $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Observe the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} need not be in filtration order induced by $(K_\bullet, f)$ to be evaluated---one may permute the matrices in~\eqref{eq:betti_four} and obtain the same Betti number, so long as the matrices have the same essential non-zero pattern. 
-Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. We elaborate in the following section. 
-
+Expressing the PBN via~\eqref{eq:betti_four} enables us to exploit properties of the rank function which are advantageous in \emph{parameterized} settings, i.e. settings where the input data is  thought to be generated from a parameterized family.  
+One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is well known that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Though  the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} are given in filtration order, the permutation invariance of the rank function suggests they need not be to be evaluated---so long as the constitutive matrices have the correct non-zero pattern, the Betti number must be identical.
+We elaborate in what follows. 
+ 
+% Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. 
 Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
 %Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
 %\begin{equation}\label{eq:alt_sum}
@@ -223,19 +228,25 @@ Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bulle
 	0 & \text{otherwise}
    \end{cases}
 \end{equation}
-where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. 
+where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
 
 % Change index set
-All of the notation given thus far, such as the definitions of the PH groups~\eqref{eq:hom_map} and the the PBN~\eqref{eq:pbn}, have used integer indices $(i,j) \in \Delta_+^m$ to describe the PH groups over a filtered complex $K$ of size $\lvert K \rvert = m$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [m]$. In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ is well defined. In practice, $f$ is typically derived from geometrical settings such that $\mathrm{range}(f) = \mathbb{R}$. A common scenario is where $K_\bullet$ is obtained via a Rips filtration constructed over a metric space $(X, d_X)$. In this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
+All of the notation given thus far, such as the definitions of the PH groups~\eqref{eq:hom_map} and the the PBN~\eqref{eq:pbn}, have used integer indices $(i,j) \in \Delta_+^m$ to describe the PH groups over a filtration pair $(K_\bullet, f)$ of size $\lvert K \rvert = m$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [m]$.
+In practice, the filter function $f$ is often derived from geometrical settings wherein it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, and it is more pragmatic to think of  $f : K \to \mathbb{R}$ is real-valued.
+ In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
+In what follows, in the spirit of~\eqref{eq:pbn_cont}, we alter our notation by re-defining the PBNs $\beta_p^{i,j}$ using pairs $(i,j) \in \Delta_{+}$ from the upper-half plane $\Delta_{+}$.
+
+%such that $\mathrm{range}(f) = \mathbb{R}$, and it is often more informative to work with the pairs $(f(\tau_i), f(\sigma_j))$ stemming from the persistent-pairs $()$ persistence diagram 
+% A common scenario is where $K_\bullet$ is obtained via a Rips filtration constructed over a metric space $(X, d_X)$. In this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
 % mention DMSs 
 %In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 
-Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter function was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and you wanted to compute $\beta_p^{i,j}$ over $\mathcal{H}$. We give several application settings where this kind of formulation occurs naturally in section~\ref{sec:applications}. To simplify this process, we introduce the notion of a \emph{parameterized boundary matrix}.
+Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter function was parameterized $f : \mathcal{H} \times K \to \mathbb{R}$ and one was interested in computing $\beta_p^{i,j}$ over $\mathcal{H}$. We give several application contexts where this kind of formulation occurs naturally in section~\ref{sec:applications}. As a first step to simplifying the PBN computation in this setting, we introduce the notion of a \emph{parameterized boundary matrix}.
 % $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$
 % TODO: fix i,j to be [n], [m]... no need for upper half plane yet 
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
 Let $X$ denote a data set of interest of size $\lvert X \rvert = n$, equipped with parameterized filtering function $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}$. 
-Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \mathbb{R}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	\pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -287,12 +298,12 @@ By $L$'s definition, we have:
 \end{align*}
 In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
 
-In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded and carry a particular form. Define the \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ as: 
+In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded. The \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ is typically given as: 
 \begin{equation}
 	\mathcal{L}(G) = D^{-1/2} L D^{-1/2}
 \end{equation} 
 with the convention that $D^{-1}(v_i,v_i) = 0$ for $\mathrm{deg}(v_i) = 0$. 
-Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
+% Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
 The variational characterization of eigenvalues in terms of the Rayleigh quotient of $\mathcal{L}$ convey a particular form. Specifically, for any real-valued function $f : V \to \mathbb{R}$ on $G$, when viewed as a column vector, $\mathcal{L}$ satisfies:
 \begin{equation}\label{eq:lap_rayleigh}
 	\frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} = \frac{\sum\limits_{i \sim j} (g(v_i) - g(v_j))^2}{\sum\limits_{i} g(v_i)^2  \cdot \mathrm{deg}(v_i) }
@@ -306,8 +317,11 @@ Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathc
 Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
 For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
  
-%In particular,if...
-
+The formulation of the boundary matrix given in~also lends to a structured interpretation with the Laplacian. Consider two kinds of weighted graph Laplacians, one $L^V$ defined with respect to a vertex function $f_v : V \to \mathbb{R}$ and the other defined with respect to an edge function $f_E : E \to \mathbb{R}$. In the former case, we have the typical weighted Laplacian matrix-vector intereptetaioon: 
+\begin{equation}
+	(L^E x)_i = \mathrm{deg}(v_i) \cdot x_i \cdot d^w(v_i) - \sum\limits_{i \sim j} x_j 
+\end{equation}
+where $d^w(v_i) = \sum\limits_{}$...
 
 %graph has a unique Laplacian matrix, this matrix does not in general uniqueIy
 %determine a graph: the Laplacian tells us nothing about how many Ioops were
@@ -318,14 +332,20 @@ For a list of additional properties the graph and normalized Laplacians satisfy,
 
 
 
+
+
+
 % TODO: UNDERSTAND THE FOURTH TERM 
-The graph laplacian appears naturally in the computation of $\beta_0^\ast$. Consider the rank expression from~\eqref{eq:betti_four}. Since $\partial_0$ is trivial, the expression reduces to: 
-\begin{equation}
-	\beta_p^{i,j} = \lvert K_i^{(0)}\rvert - \mathrm{rank}(\partial_{1}^{j}) + \mathrm{rank}(\partial_{1}^{i \+ 1, j} )
-\end{equation} 
-Since $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, we may equivalently express the second and third terms in terms of their graph Laplacians. Let $G_j = \mathcal{L}(K_j)$ denote the graph of $K_j$...
+%The graph laplacian appears naturally in the computation of $\beta_0^\ast$. Consider the rank expression from~\eqref{eq:betti_four}. Since $\partial_0$ is trivial, the expression reduces to: 
+%\begin{equation}
+%	\beta_p^{i,j} = \lvert K_i^{(0)}\rvert - \mathrm{rank}(\partial_{1}^{j}) + \mathrm{rank}(\partial_{1}^{i \+ 1, j} )
+%\end{equation} 
+%Since $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, we may equivalently express the second and third terms in terms of their graph Laplacians. Let $G_j = \mathcal{L}(K_j)$ denote the graph of $K_j$...
 %as $\mathrm{rank}(L(K_j))$ and $\mathrm{rank}(L(K_j \cap \bar{K}_i))$, where $\bar{K}_i = K_\bullet \setminus K_i$ denotes the complement. Since the rank of any (irreducible) graph Laplacian may be deduced by counting the connected components of the underlying graph, we deduce that the complexity of computing $\beta_0^{i,j}$ reduces to the complexity 
 % TODO: compute this for small example to verify Laplacians
+
+\textbf{Example:} Consider a 2-simplex $K = \Delta_2$ with vertex weights $\mathrm{Im}(f_E) = \{a, b, c\}$ and edge weights $\mathrm{Im}(f_E) = \{d,e,f\}$. Suppose we augment the chain expressions in boundary matrix $\partial_p$ to reflect The matrix representations of 
+
 
 For $p \geq 1$, the PBN expression can still be generalized via \emph{up Laplacians}. The higher-dimensional generalizations of the graph Laplacian for simplicial complexes have been studied in a variety of settings, see e.g.~\cite{}. 
 In particular, given $K$ a finite oriented simplicial complex and some $p \geq 0$, the $p$-th \emph{combinatorial Laplacian} of $K$ is the linear operator $\mathcal{L}_p : C_p \to C_p$ given by: 
@@ -499,26 +519,42 @@ It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally domin
 
 \newpage
 
-% --- APPLICATION 3: ??? PHT ??? ---
+% --- APPLICATION 3: Directional transforms ---- 
+\subsection*{Directional Transform}
+The canonical interpretation of the information displayed by a persistence diagram is that is summarizes the persistence of the sublevel sets of filtered space. Given a filtration pair $(\, K, f \, )$ where $K$ is a finite simplicial complex and $f : K \to \mathbb{R}$ is a real-valued function, the sublevel sets $\lvert K \rvert_i=f^{-1}(-\infty, i]$ deformation retract to... % say more about stars, homotopy equivalence
+% simplexwise-linear function
+% http://www.csun.edu/~ctoth/Handbook/chap24.pdf
+If $K$ is embedded in $\mathbb{R}^d$, then geometrically $f$ takes on the interpretation of a `height' function whose range yields the `height' of every simplex in $K$. 
+%Obviously, this notion of height depends on the embedding of $K$: viewing $K$ (and thus, $X$) from different `directions' induces potentially distinct sublevel sets, 
 
-\subsection*{Persistent Homology Transform}
-Given a simplicial complex $K$ embedded in $\mathbb{R}^d$, the Persistent Homology Transform (PHT) is a shape statistic that establishes a fundamental connection between the topological information summarized by $K$'s PH groups and the geometry of its associated embedding. 
-
-Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite simplicial complex $K$, define the parameterized filtration $K(v)_\alpha$ for any unit vector $v \in S^{d-1}$ up to index $\alpha$ as: 
+%Given a simplicial complex $K$ embedded in $\mathbb{R}^d$, 
+Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite simplicial complex $K$ whose simplices are PL-embedded in $\mathbb{R}^d$. Given this setting,  define the \emph{directional transform} (DT) of $K$ as follows:
+\begin{align*}\label{eq:pht}
+	\mathrm{DT}(K): S^{d-1} &\to  K \times C(K, \mathbb{R}) \\
+	v &\mapsto (K_\bullet, f_v)
+\end{align*}
+where we write $(K_\bullet, f)$ to indicate the filtration on $K$ induced by $f_v$ for all $\alpha \in \mathbb{R}$, i.e.: 
 \begin{equation}
-	K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\}
+	K_\bullet = K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\} %_{\alpha = -\infty}^{\infty}
 \end{equation}
-We write $K(v)$ to indicate the filtration of $K$ for all $\alpha$. Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. Similarly, the PHT summarizes how the topology of $K$ changes in \emph{all} directions; given a complex $K$ built from $X$, it is defined as: 
+Conceptually, we think of DT as an $S^{d-1}$-parameterized family of filtrations. 
+
+% Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. Similarly, the PHT summarizes how the topology of $K$ changes in \emph{all} directions
+
+The Persistent Homology Transform (PHT) is a shape statistic that establishes a fundamental connection between the topological information summarized by $K$'s PH groups and the geometry of its associated embedding. Given a complex $K$ built from $X$, it is defined as: 
 \begin{align*}\label{eq:pht}
 	\mathrm{PHT}(K): S^{d-1} &\to \mathcal{D}^d \\
 	v &\mapsto \left( \, \mathrm{dgm}_0(K, v), \mathrm{dgm}_1(K, v), \dots, \mathrm{dgm}_{d-1}(K, v) \, \right)\numberthis
 \end{align*}
-where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$ and $S^{d-1}$ the unit $d-1$ sphere. The stability of persistence diagrams ensures that the map $v \mapsto \mathrm{dgm}_p(K, v)$ is Lipschitz with respect to the bottleneck distance metric $d_B(\cdot, \cdot)$ whenever $K$ is a finite simplicial complex, thus the PHT may be thought of naturally as a parameterized family of diagrams.
+where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$ and $S^{d-1}$ the unit $d-1$ sphere. The stability of persistence diagrams ensures that the map $v \mapsto \mathrm{dgm}_p(K, v)$ is Lipschitz with respect to the bottleneck distance metric $d_B(\cdot, \cdot)$ whenever $K$ is a finite simplicial complex. 
+Thus, the PHT may be thought of as an element in $C(S^{d-1}, \mathcal{D}^d)$: . 
+
+%thus the PHT may be thought of naturally as a parameterized family of diagrams.
 
 The primary result of~\cite{} is that the PHT is injective on the space of subsets of $R^d$ that can be written as finite simplicial complexes\footnote{Implicit in the injectivity statement of the PHT is that, given a subset $X \subset \mathbb{R}^d$ which may be written as finite simplicial complex $K$, the restriction $f: X \to \mathbb{R}$ to any simplex in $K$ must is linear.}, which we denote as $\mathcal{K}_d$. 
 Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the equivalence $(K, f) \sim (K,f')$ when $f(K) = f'(K)$.
 
-
+%Like the directional transform, the PHT is essentially the ompositon of the DT with PH: PHT= PH \circ DT. 
 % One of the constructing metrics capable of differentiating non-diffeomorphic shapes.
  
 

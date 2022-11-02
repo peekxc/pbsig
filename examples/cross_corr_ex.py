@@ -15,7 +15,6 @@ c1 = signal.correlate(s1, s1, mode='same')[int(n/2)]
 c2 = signal.correlate(s2, s2, mode='same')[int(n/2)]
 
 C = signal.correlate(s1, s2, mode='same')
-best_ind = 
 
 np.linspace(-0.5, 0.5, n)[np.argmax(C/np.sqrt(c1*c2))]
 
@@ -53,13 +52,11 @@ def rfft_xcorr(x, y):
 def match(x, ref):
   cxy = rfft_xcorr(x, ref)
   index = np.argmax(cxy)
-  if index < len(x):
-    return index
-  else: # negative lag
-    return index - len(cxy)   
+  return index if index < len(x) else index - len(cxy)
 
 def phase_align(s1: Sequence, s2: Sequence):
   ind = match(s2, s1)
+  # fft gets us close; check O(1) offsets in neighborhood for exact rolling 
   offsets = np.fromiter(range(-5, 5), dtype=int)
   r_ind = np.argmin([np.linalg.norm(s2 - np.roll(s1, ind+i)) for i in offsets])
   return(np.roll(s1, ind+offsets[r_ind]))

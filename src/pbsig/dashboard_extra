@@ -1,0 +1,98 @@
+
+# bokeh serve dashboard.py --dev
+# bkapp(doc)
+
+#doc.add_root(model)
+
+
+# show(bkapp)
+
+  # show(curdoc())
+  # 
+
+  # c = Color()
+  # c.prop = "#FFA50019"
+  # sliders = column(amp, freq, phase, offset)  #wc = cp.annular_wedge(x=0, y=0, inner_radius=0.95, outer_radius=1.10, start_angle="start_angle", end_angle="end_angle", fill_color=viridis_color, source=angle_src)# source, wc 
+  
+
+  #S1_slider.js_link('value', wc, 'start_angle')
+  # S1_slider.js_link('value', vline, 'location')
+    #b1 = hp.quad(top=[0.80], bottom=[0.60], left=[0.20], right=[0.4], color="#FFA500")
+
+# S1.glyph.on_event(MouseEnter, my_cb)
+# S1.glyph.on_event(DoubleTap, my_cb)
+# S1.glyph.on_event(Tap, my_cb)
+# S1.glyph.on_event(ButtonClick, my_cb)
+# S1.glyph.on_event(SelectionGeometry, my_cb)
+# S1.glyph.on_event(Press, my_cb)
+## Just do a polling to fix boxes 
+# hp.on_event("press", lambda event: log_msgs.append("press"))
+# hp.on_event(PressUp, lambda event: log_msgs.append("pressUp"))
+# box_source.data.on_change('x', my_cb2)
+
+## Signature plot 
+# theta = np.linspace(0, 2*np.pi, 1000, endpoint=False)
+# sp = figure(title="", x_axis_label="Angle", y_axis_label=None, width=w, height=h, tools=TOOLS+['xpan']) # r"\[\beta_p(K)\]"
+# sp.toolbar.logo = None
+
+# ## Halflane/dgm plot: sets up halfplane on [lb,ub]
+# lb, ub = 0.0, 1.0
+# hp = figure(title="Barcode", x_axis_label="birth", y_axis_label="death", width=w, height=h, tools=TOOLS+['tap'])
+# hp.line([-100,100], [-100,100], color="black", line_width=1)
+# hp.toolbar.logo = None
+# hp.y_range = Range1d(lb, ub) # bounds=(lb, ub)
+# hp.x_range = Range1d(lb, ub) #  bounds=(lb, ub)
+# lhp = PolyAnnotation(fill_color="gray",fill_alpha=0.95,xs=[-100, 100, 100, -100],ys=[-100, -100, 100, -100])
+# lhp.level = 'underlay'
+# hp.add_layout(lhp)
+# # Tabs(tabs=[tab1, tab2])
+
+# ## Setup box renderer
+# # box_data = {'x': [0.30], 'y': [0.70], 'width': [0.10], 'height': [0.10], 'alpha': [0.5]}
+# box_data = {'x': [], 'y': [], 'width': [], 'height': [], 'alpha': []}
+# box_source = ColumnDataSource(data=box_data)
+# box_renderer = hp.rect('x', 'y', 'width', 'height', alpha='alpha', source=box_source, fill_color="gray", fill_alpha=0.30, line_color=None)
+# selected_box = Rect(fill_color="firebrick", fill_alpha=0.90, line_color="black")
+# unselected_box = Rect(fill_color="gray", fill_alpha=0.30, line_color=None)
+# box_renderer.selection_glyph = selected_box
+# box_renderer.nonselection_glyph = unselected_box
+# box_tool = BoxEditTool(renderers=[box_renderer])
+# hp.add_tools(box_tool)
+
+# from typing import List 
+# from bokeh.events import DoubleTap, Tap, MouseEnter, ButtonClick, SelectionGeometry, Press
+# def box_selected_cb(attr: str, old: List[int], new: List[int]) -> None:
+#   log_msgs.append(f"box selected: {str(old)} -> {str(new)} selected")
+#   # if len(old) > 0 and len(new) == 0: ## let go of box? 
+#   log_msgs.append(str(box_source.data['x']))
+
+# box_source.selected.on_change('indices', box_selected_cb)
+# # hp.on_event(MouseEnter, my_cb)
+
+# ## Circle plot 
+# cp = figure(title="Filtration direction", plot_width=300, plot_height=300, min_border=0, toolbar_location=None, match_aspect=True, aspect_scale=1)
+# cp.frame_width = cp.frame_height = 220
+# cp.x_range = cp.y_range = Range1d(start=-1.7,end=1.7,bounds=(-1.7,1.7))
+# S1 = cp.circle(x=0, y=0, radius=1.5, line_color="black", fill_color="#7fc97f", line_width=3, fill_alpha=0.0, radius_units='data')
+
+# ## Add polygon display
+# if len(T) > 0:
+#   TX = [list(X[t,0]) for t in T]
+#   TY = [list(X[t,1]) for t in T]
+#   t_glyph = cp.patches(TX, TY, color="green", alpha=0.15, line_width=0)
+
+# EX = [[X[u,0], X[v,0]] for u,v in E]
+# EY = [[X[u,1], X[v,1]] for u,v in E]
+# e_glyph = cp.multi_line(EX, EY, alpha=0.80, color="firebrick", line_width=1.5)
+# # t_glyph.level = 'underlay'
+
+# vertex_src = ColumnDataSource({ 'x': X[:,0], 'y': X[:,1] , 'lambda': X[:,0] })
+# turbo_color = linear_cmap('lambda', 'Turbo256', low=-1.0, high=1.0)
+# v_glyph = cp.circle('x', 'y', size=8, alpha=1.0, color=turbo_color, source=vertex_src) #color=turbo_color
+
+# ## Addons: vertical line on function, line on circle, etc. 
+# vline = Span(location=0, dimension='height', line_color='black', line_width=2.5)
+# sp.add_layout(vline)
+# line_source = ColumnDataSource({ 'x' : [0,1.5], 'y': [0,0] })
+# s1_arrow = cp.line(x="x", y="y", line_color="black", line_width=3, line_alpha=1.0, source=line_source)
+# # cp.add_glyph(s1_arrow)

@@ -3,11 +3,10 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: /Users/mpiekenbrock/pbsig/notes/.texpadtmp/pbsig.aux
 The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
-Warning--I didn't find a database entry for "ChungSGT"
 Warning--empty school in newman2001laplacian
 You've used 15 entries,
             2118 wiz_defined-function locations,
-            590 strings with 6418 characters,
+            588 strings with 6402 characters,
 and the built_in function-call counts, 5043 in all, are:
 = -- 498
 > -- 200
@@ -46,4 +45,4 @@ warning$ -- 1
 while$ -- 52
 width$ -- 17
 write$ -- 163
-(There were 2 warnings)
+(There was 1 warning)
