@@ -7,8 +7,8 @@ A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes ind
 \begin{equation}
 	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
 \end{equation} 
-Filtrations may be equivalently defined as functions $f : K \to I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$. Here, we consider two index sets for $I$: $\mathbb{R}$ and $[n] = \{ 1, \dots, n\}$. 
-Any finite filtration may be trivially converted into an essential, simplexwise filtration via a set of \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. Thus, without loss of generality, we exclusively consider essential simplexwise filtrations and for brevity refer to them simply as filtrations.
+Filtrations may be equivalently defined via \emph{filter functions} $f : K \to I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$. Here, we consider two index sets for $I$: $\mathbb{R}$ and $[n] = \{ 1, \dots, n\}$. 
+Any finite filtration may be trivially converted into an essential, simplexwise filtration via a set of \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. For simplicity, but without loss of generality, we exclusively consider essential simplexwise filtrations and for brevity refer to them as filtrations.
 %\\
 %\\
 %\noindent
@@ -33,12 +33,12 @@ The $p$-boundary of a $p$-chain is defined linearly in terms of its constitutive
 
 Let $K_\bullet = \{K_i\}_{i\in [m]}$ denote a filtration of size $\lvert K_\bullet \rvert = m$, 
 %let $\Delta_{+} = \{ (i,j) : i < j, i, j \in \mathbb{R} \}$ denote the upper half-plane, 
-and let $\Delta_{+}^m = \{ (i,j) : 0 \leq i \leq j \leq m \}$ denote the set of possible filtration index pairs. 
+and let $\Delta_{+}^m = \{ (i,j) : 0 \leq i \leq j \leq m \}$ denote the set of filtration index pairs. 
 For every such pair $(i,j) \in \Delta_{+}^m$, the inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j}$  at the level of homology:
 \begin{equation}\label{eq:hom_map}
 	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) 
 \end{equation}
-When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decomposes $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$~\cite{zomorodian2004computing} demarcating the evolution of homology classes: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
+When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decomposes $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
 The $p$-th persistent homology groups are the images of these transformations and the $p$-th persistent Betti numbers are their dimensions:
 \begin{equation}
 	H_{p}^{i,j} = \begin{cases}

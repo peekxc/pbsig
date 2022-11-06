@@ -62,7 +62,7 @@ void ph0_lower_star(py::array_t< double > fv, py::array_t< int > EI, py::array_t
       }
     }
     elders[ds[u]] = elders[ds[v]] = elders[ds[u]] <= elders[ds[v]] ? elders[ds[u]] : elders[ds[v]];
-    ds.merge(u,v)
+    ds._union(u,v);
   }
 }
 

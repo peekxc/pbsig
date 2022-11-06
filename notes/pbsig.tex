@@ -25,6 +25,7 @@
     innerleftmargin=8pt,
     backgroundcolor=white
    }
+   
   
 \usepackage{scalerel}
 %\newcommand\plus{\scaleobj{0.5}{+}}
@@ -58,6 +59,9 @@
 \newtheorem{corollary}{Corollary}
 \newtheorem{remark}{Remark}
 \newtheorem{lemma}{Lemma}
+
+\theoremstyle{definition}
+\newtheorem{example}{Example}[section]
 
 \newcommand{\inv}{^{\raisebox{.2ex}{$\scriptscriptstyle-1$}}}
 \newcommand\sbullet[1][.5]{\mathbin{\vcenter{\hbox{\scalebox{#1}{$\bullet$}}}}}
@@ -110,8 +114,8 @@ Finally, we illustrate both the computational and practical advantages our expre
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
 Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively. 
 Additionally, let $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
-With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.  
-The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^m$ is defined as: 
+With a slight abuse of notation, we also use $\partial_p$ to also denote the filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq m_p}$.
+The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^m$, where $\Delta_+^m  := \{ \, (i,j) \in [m] \times [m] : i < j \, \}$, is defined as: 
 \begin{align*} \label{eq:pbn}
 	\centering
 	\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}) &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
@@ -162,33 +166,54 @@ Let $R = \partial V$ denote the matrix decomposition of a given filtered boundar
 	\end{equation}
 Equivalently, all lower-left submatrices of $\partial$ have the same rank as their corresponding submatrices in $R$. 
 \end{lemma}
-\noindent Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex. 
-In fact, Lemma~\ref{lemma:rank} may be further generalized to arbitrary rectangles in $\Delta_+$ via $\mu$\emph{-queries}~\cite{chen2011output}: box-parameterized rank-based queries that count the number of persistence pairs that intersect a fixed ``box'' placed in the upper half-plane. 
+\noindent We now seek to specialize Lemma~\ref{lemma:rank} to the setting where only the $p$-th dimensional homology classes are of interest. This turns out to be particularly easy, as one may observe the reduction algorithm only adds $p$-chains to $p$-chains. That is, if a simplex $\sigma_j$ corresponds to column $j$ in $\partial$, the only columns that may ever be added to $j$ correspond to simplices of dimension $p$ as well. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ represents the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
+We will use $\partial_p$ and $R_p$ to refer to these modified matrices of $\partial$ and $R$ for the remainder of this section. 
+%with the filter function $f : K_\bullet \to [m]$. 
+
+Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
 Our first result of this effort we show is that this Lemma allows us to write the persistent Betti number as a sum of rank functions. 
 \begin{proposition}\label{prop:rank_reduction}
-For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $n = \lvert K^{(p)} \rvert$, $m = \lvert K^{(p\+1)} \rvert$. For any pair $(i,j) \in \left([n], [m] \right)$, the persistent Betti number $\beta_p^{i,j}$ at $(i,j)$ is given by:
+Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^m$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
-	\beta_p^{i,j} = \mathrm{rank}(I_p^{1,i}) - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
+	% \mathrm{rank}(I_p^{1,i})
+	\beta_p^{i,j}(K_\bullet) = i - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
-where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
+%where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{proposition}
-\noindent A detailed proof using Lemma 1 is given in the appendix. The primary utility proposition~\eqref{prop:rank_reduction} provides is it expresses the PBN of a filtration $K_\bullet$ as a combination of rank computations performed directly on the \emph{unfactored} dimension $p$ and $(p+1)$ boundary matrices. We dedicate the rest of the paper to exploring the consequences of this fact. 
+\noindent A detailed proof of Proposition~\ref{prop:rank_reduction} is given in the appendix. It turns out Lemma~\ref{lemma:rank} can also be used to generalize~\eqref{eq:betti_four} to arbitrary rectangles in $\Delta_+$ via $\mu$\emph{-queries}: box-parameterized rank queries which count the number of persistence pairs that intersect a fixed ``box'' placed in the upper half-plane~\cite{chen2011output}. 
+As a result, the $p$-th multiplicity function can also be defined in a rank-based formulation akin to~\eqref{eq:betti_four}. 
+\begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
+Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq m$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
+	\begin{equation}\label{eq:mu_four}
+	\mu^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
+	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
+	\end{equation}
+\end{proposition}
+\noindent Compared to other methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$ (such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}), the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. Thus, we may exploit various properties of the rank function to accelerate (or relax) the computation of both invariants without e.g. reducing $\partial$ to $R$, zeroing columns of $\partial$ to obtain $\partial_p$, or even representing $\partial$ in memory explicitly. We dedicate the rest of the paper to exploring the consequences of this fact. 
 
-To get some intuition on what the structure and size of these matrices, we include a picture of each of the terms in Equation~\eqref{eq:betti_four}. 
-\begin{figure}[!h]
-	\centering
-	\includegraphics[width=0.70\textwidth]{four_matrices}
-	\caption{The four matrices whose ranks yield $\beta_p^{i,j}$ in the same order as given in~\eqref{eq:betti_four}. Each solid portion represents (sparse) blocks of non-zero entries, while each white portion is zero. Observe $\partial_{p+1}^{i+1, j} \subseteq \partial_{p+1}^{1,j}$ can be obtained by intersecting the non-zero entries of $\partial_{p+1}^{1,j}$ with the non-zero entries in the complement of $\partial_p^{1,i}$.  }
-\end{figure}
+%To get some intuition on what the structure and size of these matrices, we include a picture of each of the terms in Equation~\eqref{eq:betti_four}. 
+%\begin{figure}[!h]
+%	\centering
+%	\includegraphics[width=0.70\textwidth]{four_matrices}
+%	\caption{The four matrices whose ranks yield $\beta_p^{i,j}$ in the same order as given in~\eqref{eq:betti_four}. Each solid portion represents (sparse) blocks of non-zero entries, while each white portion is zero. Observe $\partial_{p+1}^{i+1, j} \subseteq \partial_{p+1}^{1,j}$ can be obtained by intersecting the non-zero entries of $\partial_{p+1}^{1,j}$ with the non-zero entries in the complement of $\partial_p^{1,i}$.  }
+%\end{figure}
 Boundary matrices are sparse and highly structured: given $K_\bullet$ with $m$ simplices $\sigma_1, \sigma_2, \dots, \sigma_m$ constructed from a $p$-dimensional complex $K$, its full boundary matrix $\partial$ is upper-triangular and has a storage complexity of: 
 \begin{equation}
 	\mathrm{nnz}(\partial) \sim O(m \log m)
 \end{equation} 
-To see this, note that since a $p$-simplex has $2^{p+1} - 1$ faces, $p \leq \log(m + 1) - 1$. Moreover, since each column of $\partial_p^\ast$ contains exactly $p+1$ non-zero entries, $\mathrm{nnz}(\partial) \sim O((p+1)m)$. Indeed, the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the largest number of non-zeros in any matrix in~\eqref{eq:betti_four} is $O(\max\{p\, i, (p+1)\,j\})$.
+To see this, note that since a $p$-simplex has $2^{p+1} - 1$ faces, we have $p \leq \log(m + 1) - 1$. Moreover, since each column of $\partial_p^\ast$ contains exactly $p+1$ non-zero entries, $\mathrm{nnz}(\partial) \sim O((p+1)m)$.
 As a result, we have the following corollary:
 \begin{corollary}
-	Given a filtration $K_\bullet$ of size $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$ and two indices $i \in [n]$, $j \in [m]$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
+	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and indices $i,j \in \Delta_+^m$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O(\mathrm{R}_{p}(j))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries. 
+	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
+	%with $n < m$
+\end{corollary} 
+\noindent The relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the largest number of non-zeros in any matrix in~\eqref{eq:betti_four} is $O(\max\{p\, i, (p+1)\,j\})$. %p(j-i), j(p+1)
+\begin{corollary}
+	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq m$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p}(l - i))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries.
+	%$ j(p+1) - i$
+	%time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
 
@@ -212,29 +237,25 @@ In the next section, we show how extend these complexity statements to parameter
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
 Expressing the PBN via~\eqref{eq:betti_four} enables us to exploit properties of the rank function which are advantageous in \emph{parameterized} settings, i.e. settings where the input data is  thought to be generated from a parameterized family.  
-One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is well known that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Though  the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} are given in filtration order, the permutation invariance of the rank function suggests they need not be to be evaluated---so long as the constitutive matrices have the correct non-zero pattern, the Betti number must be identical.
-We elaborate in what follows. 
+One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is well known that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Though  the boundary matrices $\partial_p$ in~\eqref{eq:betti_four} are given in filtration order to elucidate their structure, the permutation invariance of the rank function suggests they need not be in such an order to be evaluated---so long as the constitutive terms have the same non-zero pattern as their filtration-ordered counterparts, their ranks and thus their PBNs will be identical.
+In what follows, we re-define the boundary matrix to exploit this permutation invariance. 
  
-% Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. 
-Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ with $m = \lvert C_p(K_{\bullet}) \rvert$ and $n = \lvert C_{p-1}(K_{\bullet}) \rvert$ can be represented by an ordered $(n \times m)$ boundary matrix $\partial_p$ whose columns and rows correspond to $p$-simplices and $(p-1)$-simplices. After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
-%Given an oriented $p$-simplex $\sigma = [v_0, v_1, \dots, v_p]$, its corresponding image under the  boundary operator $\partial_p$ is given as: 
-%\begin{equation}\label{eq:alt_sum}
-%	\partial_p(\sigma) = \partial_p([v_0, v_1, \dots, v_p]) = \sum\limits_{i=0}^p (-1)^i [v_0, \dots, \hat{v}_i, \dots v_p]
+%% Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. 
+%Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ of size $m = \lvert K \rvert$ is represented by an ordered $(m \times m)$ boundary matrix $\partial_p$ whose columns and rows corresponding to $q$-simplices and $(q-1)$-simplices are zero, for $q \neq p$.
+%After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
+%\begin{equation}\label{eq:matrix_pchain}
+%	\partial_p[k, l] = \begin{cases} 
+%	c(\sigma_j)  & \text{if } \sigma_l \in \partial_p(\sigma_k) \\
+%	0 & \text{otherwise}
+%   \end{cases}
 %\end{equation}
-%where $\hat{v}_i$ indicates the removal of $v_i$ from the $i$th summand.  
-\begin{equation}\label{eq:matrix_pchain}
-	\partial_p[k, l] = \begin{cases} 
-	c(\sigma_j)  & \text{if } \sigma_l \in \partial_p(\sigma_k) \\
-	0 & \text{otherwise}
-   \end{cases}
-\end{equation}
-where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
+%where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
 
 % Change index set
 All of the notation given thus far, such as the definitions of the PH groups~\eqref{eq:hom_map} and the the PBN~\eqref{eq:pbn}, have used integer indices $(i,j) \in \Delta_+^m$ to describe the PH groups over a filtration pair $(K_\bullet, f)$ of size $\lvert K \rvert = m$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [m]$.
 In practice, the filter function $f$ is often derived from geometrical settings wherein it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, and it is more pragmatic to think of  $f : K \to \mathbb{R}$ is real-valued.
  In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
-In what follows, in the spirit of~\eqref{eq:pbn_cont}, we alter our notation by re-defining the PBNs $\beta_p^{i,j}$ using pairs $(i,j) \in \Delta_{+}$ from the upper-half plane $\Delta_{+}$.
+In what follows, in the spirit of~\eqref{eq:pbn_cont}, we alter our notation by re-defining $\beta_p^{i,j}$ using pairs $(i,j) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ (x,y) \in \mathbb{R}^2 : y > x \} $.
 
 %such that $\mathrm{range}(f) = \mathbb{R}$, and it is often more informative to work with the pairs $(f(\tau_i), f(\sigma_j))$ stemming from the persistent-pairs $()$ persistence diagram 
 % A common scenario is where $K_\bullet$ is obtained via a Rips filtration constructed over a metric space $(X, d_X)$. In this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
@@ -245,32 +266,51 @@ Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter fu
 % $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$
 % TODO: fix i,j to be [n], [m]... no need for upper half plane yet 
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
-Let $X$ denote a data set of interest of size $\lvert X \rvert = n$, equipped with parameterized filtering function $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}$. 
-Define $(\mathcal{P}(X), \preceq^\ast)$ be a fixed linear extension of the face poset of the standard $(n- 1)$-simplex. For fixed $i,j \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $\binom{n}{p} \times \binom{n}{p\+1}$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+Let $K$ denote an abstract simplicial complex of size $\lvert K \rvert = m$, equipped with parameterized filtering function $f : K \times \mathcal{H} \to \mathbb{R}$. 
+Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $m \times m$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
-	\pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+	\pm \, (1 - (S_{i} \circ f_h)(\sigma_k)) \cdot (S_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
 	%, \text{ where } \epsilon = f(\sigma_l) \\
 	0 & \text{otherwise}
 \end{cases}
 \end{equation}
 % where $S_{\omega}^{\alpha} : \mathbb{R} \to [0, 1]$ is a \emph{smooth-step} function whose range decreases smoothly from $1 \to 0$ in the interval $[\alpha - \omega, \alpha]$.
-where $S_{i, j} : \mathcal{P}(X) \times \mathcal{P}(X) \to \{0, 1\}$ is a \emph{step} function that accepts a face/coface pair $(\sigma_k, \sigma_l)$ and returns a $1$ if $f(\sigma_k) \geq i$ and $f(\sigma_l) \leq j$, and $0$ otherwise.
+%where $S_{i, j} : \mathcal{P}(X) \times \mathcal{P}(X) \to \{0, 1\}$ is a \emph{step} function that accepts a face/coface pair $(\sigma_k, \sigma_l)$ and returns a $1$ if $f(\sigma_k) \geq i$ and $f(\sigma_l) \leq j$, and $0$ otherwise. 
+where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_i(x) = 1$ if $x \leq i$ and $0$ otherwise, and $f_h(\sigma) = f(\sigma, h)$.
 \end{definition}
 \noindent
-The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. 
+The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. The parameterized PBN can be written as: 
 \begin{align*}\label{eq:pbn_parameterized}
 	\beta_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
-	& h\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
+	h &\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
 \end{align*}
 % deflation?
-One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O(q\cdot n^{q})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
-As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
+where $\epsilon > 0$ is an arbitrarily small positive number. By the reduction shown above, we also have a parameterized multiplicity function for any rectangle $R = [i,j] \times [k,l]$ in the upper half-plane $\Delta_{+}$ satisfying $i < j \leq k < l$: 
+\begin{align*}\label{eq:mu_parameterized}
+	\mu_p^{R} : \mathcal{H} &\to \mathbb{N} \\
+	h & \mapsto  (\mathrm{r} \circ \hat{\partial}_{q}^{j \+ \epsilon, k})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, k})(h) -  (\mathrm{r} \circ \hat{\partial}_{q}^{j \+ \epsilon, l})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, l})(h) \numberthis
+\end{align*}
+
+
+%One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O(q\cdot n^{q})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
+%As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
 
 % In general, computing dgm_p(X) for p \geq 1 requires O(\lvert X \rvert^{3(p+2)}) [ p = 1 <=> O(n^9), p=2 <=> O(n^12)] (curvature sets paper) and O(\lvert X \rvert^{2(p+2)}) memory.
 
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
 \subsection{Laplacian Connection}
+Thus far, we have discussed various ways of re-writing expressions of the PBN, and the advantages/disadvantages each form implies on the computational side. We now pivot to focus on the computation of the constitutive terms of these expressions themselves, again with a motivation of understanding the PBN computation in continuously parameterized settings. 
+
+% start with the numerical rank? 
+
+%For a square matrix of order $n$, the quadratic form: 
+% \begin{equation}
+% x^T A x = \sum\limits_{k=1}^n \sum\limits_{l=1}^n	a_{kl} x_k x_l 
+% \end{equation}
+%defines a continuous function in $x \in \mathbb{R}^n$. 
+%$x = \left( x_i \right)_{i=1}^n$
 % Spectral graph theory plug
 % Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
@@ -280,48 +320,59 @@ Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \m
 	L = D - A = \partial_1 \partial_1^T
 \end{equation} 
 where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
-The graph Laplacian and its many variants~\cite{} are well studied. Structurally, they admit a number are attractive features: $L$ is symmetric and thus its eigenvalues are real-valued; $L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$; 
-$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
-In fact, the linear and quadratic forms $L$ admits have particular graph interpretations:
-\begin{flalign*}
+The structure of the graph Laplacian imply linear and quadratic forms have particular graph interpretations:
+\begin{flalign*}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign*}
-where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we adapt an example from~\cite{newman2001laplacian}. Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set and $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ its \emph{cutset} restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$. 
-%Given $y = L x$, we have: 
-By $L$'s definition, we have:
+where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. 
+Structurally, they admit a number are attractive features. 
+The matrix $L$ is symmetric and thus its eigenvalues are real-valued. 
+$L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$ (i.e.~\eqref{eq:lap_quad_from}).
+The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we begin with an example. 
+\begin{example}[Adapted from~\cite{newman2001laplacian}]\label{ex:laplacian}
+Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set. By $L$'s definition, we have:
 \begin{align*}
 	(Lx)_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = (Lx)_i  \\
 	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\
 	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
 \end{align*}
-In other words, $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$. The interpretation extends can be generalized to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
+where $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ denotes the \emph{cutset}  of $X$ restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$.
+\end{example}
+\noindent In other words, example~\ref{ex:laplacian} demonstrates that $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$ with an eigenvector pair $\mathbf{1}$. Like the adjacency matrix, the interpretation of the matrix-vector product has a natural extension to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
 
-In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded. The \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ is typically given as: 
-\begin{equation}
-	\mathcal{L}(G) = D^{-1/2} L D^{-1/2}
-\end{equation} 
-with the convention that $D^{-1}(v_i,v_i) = 0$ for $\mathrm{deg}(v_i) = 0$. 
-% Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
-The variational characterization of eigenvalues in terms of the Rayleigh quotient of $\mathcal{L}$ convey a particular form. Specifically, for any real-valued function $f : V \to \mathbb{R}$ on $G$, when viewed as a column vector, $\mathcal{L}$ satisfies:
-\begin{equation}\label{eq:lap_rayleigh}
-	\frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} = \frac{\sum\limits_{i \sim j} (g(v_i) - g(v_j))^2}{\sum\limits_{i} g(v_i)^2  \cdot \mathrm{deg}(v_i) }
+%$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
+
+The formulation of the boundary matrix given in~\eqref{def:time_boundary_matrix} also lends to a structured interpretation with the graph Laplacian and its various operators. Consider two kinds of weighted graph Laplacians, one defined from boundary matrices whose chains are parameterized with respect to an edge function $f_E : V \times V \to \mathbb{R}$ and the other $L^V$ defined respect to a vertex function $f_v : V \to \mathbb{R}$. 
+That is, we consider boundary matrices $\partial_p^E$
+
+In the former case, the weighted Laplacian matrix-vector form is given by: 
+\begin{equation}\label{eq:lap_edge}
+	\left ( x \right )_i = (L^E x)_i =  x_i \cdot d_f(v_i) -  \sum\limits_{i \sim j} x_j \cdot f_E(v_i, v_j)^2
 \end{equation}
-where $f = D^{1/2} g$ and $\langle f, g\rangle$ denotes the standard inner product in $\mathbb{R}^n$.
-Equation~\eqref{eq:lap_rayleigh} may be used to show that the spectrum $\Lambda(\mathcal{L})$ is bounded in the interval $[0, 2]$. In particular, it is known that:
-\begin{equation}
-	\lambda_i \leq \sup_{f} \frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} \leq 2
+where $d_f(v_i) = \sum\limits_{j \sim i} f_E(v_i, v_j)^2$. In the latter case, it is given by: 
+\begin{equation}\label{eq:lap_vertex}
+	(L^V x)_i =  x_i \cdot d(v_i) \cdot f_V(v_i)^2 -  \sum\limits_{i \sim j} x_j \cdot f_V(v_i) \cdot  f_V(v_j)
 \end{equation}
-Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathcal{L}(G)$, with multiplicity $\mathrm{cc}(G)$. Moreover, if $G$ is the union of disjoint graphs $G_1, G_2, \dots, G_k$, then it has as its spectrum the union of the spectra $ \Lambda(G_1), \Lambda(G_2), \dots, \Lambda(G_k)$. 
-Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
-For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
- 
-The formulation of the boundary matrix given in~also lends to a structured interpretation with the Laplacian. Consider two kinds of weighted graph Laplacians, one $L^V$ defined with respect to a vertex function $f_v : V \to \mathbb{R}$ and the other defined with respect to an edge function $f_E : E \to \mathbb{R}$. In the former case, we have the typical weighted Laplacian matrix-vector intereptetaioon: 
-\begin{equation}
-	(L^E x)_i = \mathrm{deg}(v_i) \cdot x_i \cdot d^w(v_i) - \sum\limits_{i \sim j} x_j 
+Moreover, if we ignore the cancellations in sign, the hadamard product between these two operators has the following form: 
+\begin{equation}\label{eq:lap_hadamard}
+	(L^E \circ L^V)[i,j] = 
+	\begin{cases}
+		d_f(v_i) \cdot d(v_i) \cdot f_V(v_i)^2	& i = j \\
+		-(f_E(v_i, v_j)^2 \cdot f_V(v_i) \cdot f_V(v_j)) & i \sim j \\
+		0 & i \nsim j 	
+	\end{cases}
 \end{equation}
-where $d^w(v_i) = \sum\limits_{}$...
+In all cases, if $L = \partial_p \partial_p^T$ where $\partial_p \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the matrix-vector product operation for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. 
+
+\subsection{Special Cases} The spectrum of the graph Laplacian is known to have closed-form expressions for certain structured graphs. In particular, the spectra of the cycle graph $C_n$ and the path graph $P_n$ over $n$ vertices is given by: 
+\begin{equation}
+	\Lambda(C_n) = 1-\cos\left (\frac{2\pi k}{n} \right), \quad \Lambda(P_n) = 1-\cos\left (\frac{\pi k}{n-1} \right)
+\end{equation}
+for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are working with is one of these special graphs, it follows that may read off its $(i,j)$-th PBN in $O(n)$ time. 
+
+%Moreover, by composing the vertex and edge functions $f_V$ and $f_E$, respectively, with the step functions $S_\ast : \mathbb{R} \to \{0, 1\}$
 
 %graph has a unique Laplacian matrix, this matrix does not in general uniqueIy
 %determine a graph: the Laplacian tells us nothing about how many Ioops were
@@ -344,16 +395,16 @@ where $d^w(v_i) = \sum\limits_{}$...
 %as $\mathrm{rank}(L(K_j))$ and $\mathrm{rank}(L(K_j \cap \bar{K}_i))$, where $\bar{K}_i = K_\bullet \setminus K_i$ denotes the complement. Since the rank of any (irreducible) graph Laplacian may be deduced by counting the connected components of the underlying graph, we deduce that the complexity of computing $\beta_0^{i,j}$ reduces to the complexity 
 % TODO: compute this for small example to verify Laplacians
 
-\textbf{Example:} Consider a 2-simplex $K = \Delta_2$ with vertex weights $\mathrm{Im}(f_E) = \{a, b, c\}$ and edge weights $\mathrm{Im}(f_E) = \{d,e,f\}$. Suppose we augment the chain expressions in boundary matrix $\partial_p$ to reflect The matrix representations of 
+%\textbf{Example:} Consider a 2-simplex $K = \Delta_2$ with vertex weights $\mathrm{Im}(f_E) = \{a, b, c\}$ and edge weights $\mathrm{Im}(f_E) = \{d,e,f\}$. Suppose we augment the chain expressions in boundary matrix $\partial_p$ to reflect The matrix representations of 
 
 
-For $p \geq 1$, the PBN expression can still be generalized via \emph{up Laplacians}. The higher-dimensional generalizations of the graph Laplacian for simplicial complexes have been studied in a variety of settings, see e.g.~\cite{}. 
-In particular, given $K$ a finite oriented simplicial complex and some $p \geq 0$, the $p$-th \emph{combinatorial Laplacian} of $K$ is the linear operator $\mathcal{L}_p : C_p \to C_p$ given by: 
-\begin{equation}
-	\mathcal{L}_p = \partial_{p\+1} \circ \partial_{p\+1}^T + \partial_{p}^T \circ \partial_{p}
-\end{equation}
-For convenience, we use the notation ${\uparrow}L_p = \partial_{p\+1} \circ \partial_{p\+1}^T$ and ${\downarrow}L_{p} = \partial_{p}^T \circ \partial_{p}$ to denote the so-called \emph{up} and \emph{down} combinatorial $p$-th Laplacians, respectively. 
-With this notation, notice the computation of the PBN can be expressed via the ranks of up Laplacians...
+%For $p \geq 1$, the PBN expression can still be generalized via \emph{up Laplacians}. The higher-dimensional generalizations of the graph Laplacian for simplicial complexes have been studied in a variety of settings, see e.g.~\cite{}. 
+%In particular, given $K$ a finite oriented simplicial complex and some $p \geq 0$, the $p$-th \emph{combinatorial Laplacian} of $K$ is the linear operator $\mathcal{L}_p : C_p \to C_p$ given by: 
+%\begin{equation}
+%	\mathcal{L}_p = \partial_{p\+1} \circ \partial_{p\+1}^T + \partial_{p}^T \circ \partial_{p}
+%\end{equation}
+%For convenience, we use the notation ${\uparrow}L_p = \partial_{p\+1} \circ \partial_{p\+1}^T$ and ${\downarrow}L_{p} = \partial_{p}^T \circ \partial_{p}$ to denote the so-called \emph{up} and \emph{down} combinatorial $p$-th Laplacians, respectively. 
+%With this notation, notice the computation of the PBN can be expressed via the ranks of up Laplacians...
 
 %We now show a few properties that the rank-based formula $\beta_p^{i,j}$ exhibits that are advantageous in parameterized settings. 
 %The first such property is a simple parameterized relaxation of PBN:
@@ -439,7 +490,7 @@ Indeed, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with a
 %\{\, \theta_i \,\}_{i=1}^j
 
 % Still working on this part
-The Lanczos iteration and its variants are part of a family of so-called ``black box'' methods---from the user side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a `black box' $v \mapsto Av$ operator. 
+The Lanczos iteration and its variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator, which need not necessarily involve explicitly storing $A$ in memory. 
 The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
@@ -447,8 +498,11 @@ The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ 
 In particular, the operator $v \mapsto \partial_p \partial_p^T v$ need not be represented explicitly in memory: as long as we have access to the underlying simplicial complex $K$ and its corresponding filter function $f$, we may take advantage of the .
 To make this more precise, we start with a useful lemma:
 \begin{lemma}
-For any fixed $p \geq 0$, given simplicial complex $K$ with $m$ ($n$, respectively) simplices of dimension $p$ ($p - 1$, respectively) and an arbitrary vector $v$ of size $\lvert v \rvert = n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(\max \{m,n\})$ time and $O(\max \{m,n\})$ memory. 
+For any fixed $p \geq 0$, given simplicial complex $K$ with $(m, n)$ simplices of dimension $(p, p - 1)$ and an arbitrary vector $v$ of size $\lvert v \rvert = n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(\max \{m,n\})$ time and $O(\max \{m,n\})$ memory. 
 \end{lemma}
+\begin{proof}
+	
+\end{proof}
 From this lemma, we have the following result: 
 \begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{prop:exact_arith_matvec}
 	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
@@ -746,6 +800,28 @@ Given a filtration $K_\bullet$ with $m$ simplices, let $\partial$ denote its $m 
  	\end{enumerate} 
  	where $\mathrm{low}_R(i)$ denotes the row index of lowest non-zero entry of column $i$ in $R$ or $\mathrm{null}$ if it doesn't exist. Any matrix $R$ satisfying property (I2) is said to be  \emph{reduced}; that is, no two columns share the same low-row indices.
 \end{definition}
+
+
+
+\section{Laplacian facts}
+In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded. The \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ is typically given as: 
+\begin{equation}
+	\mathcal{L}(G) = D^{-1/2} L D^{-1/2}
+\end{equation} 
+with the convention that $D^{-1}(v_i,v_i) = 0$ for $\mathrm{deg}(v_i) = 0$. 
+% Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
+The variational characterization of eigenvalues in terms of the Rayleigh quotient of $\mathcal{L}$ convey a particular form. Specifically, for any real-valued function $f : V \to \mathbb{R}$ on $G$, when viewed as a column vector, $\mathcal{L}$ satisfies:
+\begin{equation}\label{eq:lap_rayleigh}
+	\frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} = \frac{\sum\limits_{i \sim j} (g(v_i) - g(v_j))^2}{\sum\limits_{i} g(v_i)^2  \cdot \mathrm{deg}(v_i) }
+\end{equation}
+where $f = D^{1/2} g$ and $\langle f, g\rangle$ denotes the standard inner product in $\mathbb{R}^n$.
+Equation~\eqref{eq:lap_rayleigh} may be used to show that the spectrum $\Lambda(\mathcal{L})$ is bounded in the interval $[0, 2]$. In particular, it is known that:
+\begin{equation}
+	\lambda_i \leq \sup_{f} \frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} \leq 2
+\end{equation}
+Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathcal{L}(G)$, with multiplicity $\mathrm{cc}(G)$. Moreover, if $G$ is the union of disjoint graphs $G_1, G_2, \dots, G_k$, then it has as its spectrum the union of the spectra $ \Lambda(G_1), \Lambda(G_2), \dots, \Lambda(G_k)$. 
+Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
+For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
 
 
 % ----- Junk ------

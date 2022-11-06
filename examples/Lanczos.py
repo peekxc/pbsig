@@ -1,33 +1,216 @@
-import numpy as np 
 from typing import *
-
+import numpy as np 
+import networkx as nx
 from pbsig.utility import rank_C2
+from pbsig.persistence import boundary_matrix
+import matplotlib.pyplot as plt 
 
 K = {
   'vertices' : [0,1,2,3,4,5,6,7,8],
   'edges' : [[0,1],[0,2],[0,7],[1,2],[1,8],[2,3],[2,4],[3,4],[3,5],[3,6],[4,6],[6,7],[7,8]],
   'triangles' : [[0,1,2],[2,3,4]]
 }
-
-## Random vertex height values
-fv = np.random.uniform(size=len(K['vertices']), low=0, high=1)
-fe = np.array([max(fv[u],fv[v]) for u,v in K['edges']])
-
-## Replace elementary chains
-from pbsig.persistence import boundary_matrix
-D = boundary_matrix(K, p = 1)
-D.data = np.sign(D.data)*np.repeat(fe, 2)
-
-import networkx as nx
 G = nx.Graph()
 G.add_nodes_from(K['vertices'])
 G.add_edges_from(K['edges'])
-max_spectral = np.sqrt(max([sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()]))
 
-max_laplacian_spectral = np.sqrt(2)*np.sqrt(max([G.degree(v)**2 + sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()])) 
+## Random vertex+edge height values
+fv = np.random.uniform(size=len(K['vertices']), low=0, high=1)
+fe = np.array([max(fv[u],fv[v]) for u,v in K['edges']])
+
+## Replace elementary chains w/ edge-values
+DE = boundary_matrix(K, p = 1).tocsc()
+DE.sort_indices()
+DE.data = np.sign(DE.data)*np.repeat(fe, 2)
+
+## Look at the values of the matrix + its Laplacian 
+plt.imshow(abs(DE.A),interpolation='none',cmap='binary')
+plt.imshow(abs((DE @ DE.T).A), interpolation='none',cmap='binary')
+
+## Check that it matches the explicit form of the matrix-vector product (graph-based)
+ED = np.zeros(shape=(DE.shape[0], DE.shape[0]))
+for i,j in K['edges']:
+  ED[i,j] = ED[j,i] = max(fv[i],fv[j])
+
+x = np.random.uniform(size=DE.shape[0])[:,np.newaxis] 
+y = np.zeros(DE.shape[0])
+for i, xi in enumerate(x):
+  J = np.array(list(G.neighbors(i)))
+  y[i] = xi * (ED[i,J]**2).sum() - sum(x[J].flatten() * ED[i,J]**2)
+  
+## Check equivalent   
+LE = DE @ DE.T
+assert max(abs(y - (LE @ x).flatten())) < 1e-14
+
+## O(m) mat-vec example for edge-weighted 1-Laplacians
+z = np.zeros(DE.shape[0])
+for cc, (i,j) in enumerate(K['edges']):
+  e_ij = ED[i,j]**2
+  z[i] += x[i]*e_ij - x[j]*e_ij
+  z[j] += x[j]*e_ij - x[i]*e_ij
+assert max(abs(z - ((DE @ DE.T) @ x).flatten())) < 1e-14
+
+## Replace elementary chains w/ vertex-values
+from scipy.sparse import csc_matrix
+DV = boundary_matrix(K, p = 1).tocsc().astype(float)
+RI, CI = DV.nonzero()
+DV = DV.A
+for ri, ci in zip(RI, CI):
+  DV[ri,ci] = np.sign(DV[ri,ci]) * fv[ri]
+DV = csc_matrix(DV)
+
+## Show vertex-valued matrices
+plt.imshow(abs(DV.A),interpolation='none',cmap='binary')
+plt.imshow(abs((DV @ DV.T).A), interpolation='none',cmap='binary')
+
+## Check that it matches the explicit form of the matrix-vector product (graph-based)
+y = np.zeros(DV.shape[0])
+for i, xi in enumerate(x.flatten()):
+  J = np.array(list(G.neighbors(i)))
+  y[i] = xi*G.degree(i)*fv[i]**2 - sum(x[J].flatten()*fv[i]*fv[J])
+  
+assert max(abs(((DV @ DV.T) @ x).flatten() - y)) < 1e-14
+
+## Verify O(m) matrix-vec multiplication example 
+D = np.array([G.degree(i) for i in G.nodes()])
+z = np.zeros(DV.shape[0])
+for i in range(D.shape[0]):
+  z[i] += x[i]*D[i]*fv[i]**2
+for cc, (i,j) in enumerate(K['edges']):
+  f_ij = fv[i]*fv[j]
+  z[i] -= x[j]*f_ij
+  z[j] -= x[i]*f_ij
+
+LV = DV @ DV.T
+assert max(abs((LV @ x).flatten() - z)) < 1e-14
+
+## Hadamard product in O(m) time
+DEV = np.sign(DE.A) * abs(DE * DV).A
+LEV = DEV @ DEV.T
+plt.imshow(abs(LEV), interpolation='none',cmap='binary')
+
+## Get an explicit mat-vec product
+y = LEV @ x
+
+# ## The O(m) reduction 
+# z, Df = np.zeros(D.shape[0]), np.zeros(D.shape[0])
+# for cc, (i,j) in enumerate(K['edges']):
+#   Df[i] += ED[i,j]**2
+#   Df[j] += ED[i,j]**2
+# for i in range(D.shape[0]):
+#   z[i] += x[i]*Df[i]*D[i]*fv[i]**2
+# for cc, (i,j) in enumerate(K['edges']):
+#   f_ij, e_ij = fv[i]*fv[j], ED[i,j]**2
+#   z[i] -= x[j]*e_ij*fv[i]*fv[j]
+#   z[j] -= x[i]*e_ij*fv[i]*fv[j]
+
+# assert max(abs(np.diag(LE.todense()) - Df)) < 1e-14
+# assert max(abs(np.diag(LV.todense()) - D*fv**2)) < 1e-14
+# assert max(abs(np.diag(LE.todense())*np.diag(LV.todense()) - (LE * LV).diagonal())) < 1e-14
+# assert max(abs(y.flatten() - z)) < 1e-14
+# ((DE @ DE.T) * (DV @ DV.T)).nonzero()[1] == ((DE * DV) @ (DE * DV).T).nonzero()[1]
+
+LEV = (DE * DV) @ (DE * DV).T
+#LEV = csc_matrix(abs(LEV.todense())*np.sign(LEV.todense()))
+SM = np.sign(-np.ones(shape=(DEV.shape[0], DEV.shape[0])) + np.diag(np.repeat(2, DE.shape[0])))
+LEV = csc_matrix(SM * abs(LEV.todense()))
+
+for i,j in zip(*LEV.nonzero()):
+  assert LEV[i,j] < 0 if i != j else LEV[i,j] >= 0
+
+## First part
+# z = np.zeros(DE.shape[0])
+# for i in range(DE.shape[0]):
+#   J = np.array(list(G.neighbors(i)))
+#   z[i] = fv[i]**2 * sum(ED[i,J]**2)
+# assert max(abs(z - LEV.diagonal())) < 1e-14
+for i,j in zip(*LEV.nonzero()):
+  if i != j:
+    assert (abs(LEV[i,j]) - (ED[i,j]**2 * fv[i] * fv[j])) < 1e-14
+
+
+## O(m) solution 
+z, Df = np.zeros(D.shape[0]), np.zeros(D.shape[0])
+for cc, (i,j) in enumerate(K['edges']):
+  Df[i] += ED[i,j]**2
+  Df[j] += ED[i,j]**2
+for i in range(D.shape[0]):
+  z[i] += x[i]*Df[i]*fv[i]**2
+# assert max(abs(np.diagonal(LEV @ np.diag(x.flatten())) - z)) < 1e-14
+for cc, (i,j) in enumerate(K['edges']):
+  z[i] -= x[j] * ED[i,j]**2 * fv[i] * fv[j]
+  z[j] -= x[i] * ED[i,j]**2 * fv[i] * fv[j]
+
+## YES! It works! 
+assert max(abs((LEV @ x).flatten() - z)) < 1e-14
+
+
+from numpy.typing import ArrayLike
+from scipy.sparse.linalg import LinearOperator, aslinearoperator
+class UpLaplacianVE1_ls(LinearOperator):
+  def __init__(self, K: dict, fv: ArrayLike):
+    self.nv = len(fv)
+    self.fv = fv
+    self.fe = lambda i,j: max(self.fv[i],self.fv[j])
+    self.z: ArrayLike = np.zeros(self.nv)
+    self.Df: ArrayLike= np.zeros(self.nv)
+    for cc, (i,j) in enumerate(K['edges']):
+      self.Df[i] += self.fe(i,j)**2
+      self.Df[j] += self.fe(i,j)**2
+    self.shape = (int(self.nv), int(self.nv))
+    self.dtype = np.dtype(np.float64)
+
+  def _matvec(self, x: ArrayLike):
+    self.z.fill(0.0)
+    for i in range(self.nv):
+      self.z[i] += x[i]*self.Df[i]*self.fv[i]**2
+    for cc, (i,j) in enumerate(K['edges']):
+      self.z[i] -= x[j] * self.fe(i,j)**2 * self.fv[i] * self.fv[j]
+      self.z[j] -= x[i] * self.fe(i,j)**2 * self.fv[i] * self.fv[j]
+    return self.z 
+
+## Verify the operator works 
+from scipy.sparse.linalg import eigsh
+LEV_matvec = aslinearoperator(UpLaplacianVE1_ls(K, fv))
+LEV_lo = aslinearoperator(LEV)
+
+LEV_matvec.matvec(x)
+LEV @ x
+
+eigsh(LEV_matvec, k=5, return_eigenvectors=False)
+eigsh(LEV_lo, k=5, return_eigenvectors=False)
+
+from pbsig.linalg import lanczos
+
+I = np.array(K['edges'])[:,0].astype(int)
+J = np.array(K['edges'])[:,1].astype(int)
+
+lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 1, 1e-14) # nev, num lanczos vectors, max_iter, tol
+
+## Augment to use smoothsteps
+
+
+
+
+
+
+
+z - LEV.diagonal()
+
+for cc, (i,j) in enumerate(K['edges']):
+  f_ij, e_ij = fv[i]*fv[j], ED[i,j]**2
+  z[i] -= x[j]*e_ij*fv[i]*fv[j]
+  z[j] -= x[i]*e_ij*fv[i]*fv[j]
+
+np.diag(LEV)
+np.diag(LEV @ np.eye(DE.shape[0]))
+
+# max_spectral = np.sqrt(max([sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()]))
+
+# max_laplacian_spectral = np.sqrt(2)*np.sqrt(max([G.degree(v)**2 + sum([G.degree(u) for u in G.neighbors(v)]) for v in G.nodes()])) 
 #max(np.linalg.eigh(L)[0])
 
-## O(n) matrix-vec multiplication example 
+## Verify O(n) matrix-vec multiplication example 
 x = np.random.uniform(size=D.shape[0])[:,np.newaxis] # V
 y = D.T @ x # E 
 z = D @ y # V

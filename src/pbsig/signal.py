@@ -13,7 +13,7 @@ def rfft_xcorr(x, y):
   return cxy
 
 ## From: https://stackoverflow.com/a/4696026/6912436
-def match(x, ref):
+def match_index(x, ref):
   cxy = rfft_xcorr(x, ref)
   index = np.argmax(cxy)
   return index if index < len(x) else index - len(cxy)
@@ -22,7 +22,7 @@ def phase_align(s1: Sequence, s2: Sequence):
   """
   Aligns s1 with s2 = rolls s1 to minimize sum of squared pairwise differences between s1 and s2. 
   """
-  ind = match(s2, s1)
+  ind = match_index(s2, s1)
   # fft gets us close; check O(1) offsets in neighborhood for exact rolling 
   offsets = np.fromiter(range(-5, 5), dtype=int)
   r_ind = np.argmin([np.linalg.norm(s2 - np.roll(s1, ind+i)) for i in offsets])
