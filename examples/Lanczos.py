@@ -185,14 +185,41 @@ from pbsig.linalg import lanczos
 I = np.array(K['edges'])[:,0].astype(int)
 J = np.array(K['edges'])[:,1].astype(int)
 
-lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 1, 1e-14) # nev, num lanczos vectors, max_iter, tol
+lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
 
+
+from scipy.sparse import random
+from scipy.sparse.linalg import eigsh, aslinearoperator
+np.set_printoptions(precision=2, suppress=True)
+
+M = random(20,20, density=0.15, random_state=1234)
+A = aslinearoperator(M @ M.T)
+
+print(eigsh(A, k=19, return_eigenvectors=False))
+# 0.   0.   0.01 0.03 0.06 0.07 0.12 0.2  0.3  0.52 0.62 0.67 0.89 1.13 1.3 1.59 2.47 2.97 4.63
+
+print(eigsh(A, sigma=4.0, k=2, return_eigenvectors=False, which='LM'))
+# [2.97 4.63]
+print(eigsh(A, sigma=2.40, k=2, return_eigenvectors=False, which='LM'))
+# [2.47 2.97]
+print(eigsh(A, sigma=1.50, k=2, return_eigenvectors=False, which='LM'))
+# [1.3  1.59]
+print(eigsh(A, sigma=1.20, k=2, return_eigenvectors=False, which='LM'))
+# [1.13 1.3 ]
+
+eigsh(LEV_lo, sigma=1.94037204/2, v0=eve[:,0], k=2, return_eigenvectors=True, which='LM')
 ## Augment to use smoothsteps
 
 
+import petsc
+dir(petsc)
+import slepc4py
+slepc4py.init()
+format(dir(slepc4py.lib.ImportPETSc()))
+format(dir(slepc4py.lib.ImportSLEPc()))
+format(dir(slepc4py.SLEPc))
 
-
-
+format(dir(slepc4py.SLEPc.EPS()))
 
 
 z - LEV.diagonal()

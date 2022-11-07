@@ -166,12 +166,10 @@ Let $R = \partial V$ denote the matrix decomposition of a given filtered boundar
 	\end{equation}
 Equivalently, all lower-left submatrices of $\partial$ have the same rank as their corresponding submatrices in $R$. 
 \end{lemma}
-\noindent We now seek to specialize Lemma~\ref{lemma:rank} to the setting where only the $p$-th dimensional homology classes are of interest. This turns out to be particularly easy, as one may observe the reduction algorithm only adds $p$-chains to $p$-chains. That is, if a simplex $\sigma_j$ corresponds to column $j$ in $\partial$, the only columns that may ever be added to $j$ correspond to simplices of dimension $p$ as well. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ represents the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
-We will use $\partial_p$ and $R_p$ to refer to these modified matrices of $\partial$ and $R$ for the remainder of this section. 
-%with the filter function $f : K_\bullet \to [m]$. 
+\noindent Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex. %with the filter function $f : K_\bullet \to [m]$. 
+Though~\eqref{eq:lower_left_rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in extending this lemma to $p$-dimensional homology, for any fixed choice $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains, we may simply ignore all $q$-chains for $q \neq p$. That is, if the $p$-chain of a $p$-simplex $\sigma_j$ corresponds to column $j$ in $\partial$, the only columns that may be added to $j$ must correspond to simplices of dimension $p$. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ represents the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
 
-Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
-Our first result of this effort we show is that this Lemma allows us to write the persistent Betti number as a sum of rank functions. 
+In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. The first fact we prove is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number as a sum of rank functions. 
 \begin{proposition}\label{prop:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^m$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
@@ -432,6 +430,15 @@ for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are
 \subsection{Rank Computation}
 In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show, where applicable, how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized}.
 
+% Computation 
+The goal of a general eiegnvalue decomposition is to compute an orthogonal diagonalization of an $n \times n $ matrix $A$:
+\begin{equation}
+	A = V \Lambda V^T
+\end{equation}
+Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form, and (2) diagonalization of the tridiagonal form. As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the first phase is typically the bottleneck. 
+
+%\{\, \theta_i \,\}_{i=1}^j
+
 %The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying full orthogonal decompositon of system was too large to fit into memory. reduces $A$ to tridiagonal form via a series of orthogonal similarity transformations
  
 The means by which the Lanczos method estimates eigenvalues is by projecting onto successive Krylov subspaces. Given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces are the spaces spanned by: 
@@ -440,11 +447,11 @@ The means by which the Lanczos method estimates eigenvalues is by projecting ont
 \end{equation}
 where $K_j(A, v) = [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}]$ are the corresponding Krylov matrices. 
 % The utility of Krylov subspace methods is motivated by the fact that the minimal polynomial of $A$ can be used to express $A^{-1}$ in terms of powers of $A$.
-The motivation for Krylov subspaces comes from using the minimal polynomial of $A$ to express $A^{-1}$ in terms of powers of $A$. In particular, if $A$ is nonsingular and its minimal polynomial has degree $m$, then $x = A^{-1}v \in K_m(A, v)$ and $K_m(A, v)$ is an invariant subspace of $A$.
+The motivation for Krylov subspaces comes from using the minimal polynomial of $A$ to express $A^{-1}$ in terms of powers of $A$. In particular, if $A$ is nonsingular and its minimal polynomial has degree $m$, then $A^{-1}v \in K_m(A, v)$ and $K_m(A, v)$ is an invariant subspace of $A$.
 % "Krylov subspace methods for shifted unitary matrices and eigenvalue deflation applied to the Neuberger Operator and the matrix sign function"
 %A non-trivial fact that motivates the use of Krylov subspaces is that subspace $K_n(A, v)$ is the smallest $A$-invariant space that contains $v$. 
 %The vectors $A^j v$ are proportional to those obtained through power iteration and tend to be good approximations to the eigenvectors associated with the largest eigenvalues.
-This observation combined with the fact $A$ is orthogonally diagonalizable (since $A$ is symmetric) implies we may obtain $\Lambda(A)$ by generating an orthonormal basis for $\mathcal{K}_n(A, v)$. 
+This observation---combined with the fact $A$ is orthogonally diagonalizable, since $A$ is symmetric---implies we may obtain $\Lambda(A)$ by generating an orthonormal basis for $\mathcal{K}_n(A, v)$. 
 To do this, the Lanczos method constructs successive QR factorizations of $K_j(A,v) = Q_j R_j$ for each $j = 1, 2, \dots, n$.
 Due to $A$'s symmetry and the orthogonality of $Q_j$, we have $q_k^T A q_l = q_l^T A^T q_k = 0$ for $k > l + 1$, implying the corresponding $T_j = Q_j^T A Q_j$ have a tridiagonal structure:
 \begin{equation}
@@ -456,7 +463,7 @@ Due to $A$'s symmetry and the orthogonality of $Q_j$, we have $q_k^T A q_l = q_l
 	& & & \beta_{j-1} & \alpha_{j} 
 	\end{bmatrix}, \; \beta_j > 0, \; j = 1, 2, \dots, n
 \end{equation}
-Unlike the spectral decomposition $A = U \Lambda U^T$, which identifies a diagonalizable $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$, there is no canonical choice of $T_j$ due to the arbitrary choice of $v$. 
+Unlike the spectral decomposition $A = V \Lambda V^T$, which identifies a diagonalizable $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$, there is no canonical choice of $T_j$ due to the arbitrary choice of $v$. 
 %which unitarily diagonalizes $A$ into a form such that any other decomposition $A = \tilde{U}\Lambda\tilde{U}^T$ is related by a similarity transform, 
 Instead, the Lanczos method exploits a particular connection between the iterates $K_j(A,v)$ and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n$, then:
 \begin{equation}
@@ -464,7 +471,7 @@ Instead, the Lanczos method exploits a particular connection between the iterate
 \end{equation}
 is the QR factorization of $K_n(A, q_1)$.
 %that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
-The Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
+Indeed, the Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
 Thus, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we may restrict and project $A$ to its $j$-th Krylov subspace $T_j$ via: 
 \begin{equation}\label{eq:krylov_proj}
 	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T
@@ -476,18 +483,70 @@ Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} yields the th
 \begin{equation}\label{eq:three_term_rec}
 	A q_j = \beta_{j\text{-}1} \, q_{j\text{-}1} + \alpha_j \, q_j + \beta_{j} \, q_{j+1}
 \end{equation}
-where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined and~\eqref{eq:three_term_rec} may be used iteratively to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is still an $A$-invariant subspace, the iteration stops, and we have $j = \mathrm{rank}(A)$ and $\Lambda(T_j) = \Lambda(A)$. % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
+where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$. Observe that if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined and~\eqref{eq:three_term_rec} may be used iteratively to obtain $T_j$---this sequential process is called the \emph{Lanczos iteration}. One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we may harvest the requested spectral information as needed: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
+% The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
-% Computation 
-Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form, and (2) diagonalization of the tridiagonal form. As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the first phase is typically the bottleneck. 
+% Rayleigh-Ritz discussion
+Even before an $A$-invariant subspace is obtained, intermediate spectral information is readily available in $T_j$, for $j < \mathrm{rank}(A)$. 
+%If $T_j$ represents projection of $A$ onto the $j$-th Krylov subspace $\mathcal{K}_j(A, q_1)$, 
+Diagonalizing $T_j = Y \Theta Y^T$ yields pairs $\{  (\theta_1, y_1), \dots, (\theta_j, y_j) \}$ which satisfy $w^T (Ay - \theta y) = 0$ for all $w \in \mathcal{K}_j(A, q_1)$.
+These value/vector pairs $(\theta, y)$ are called \emph{Ritz pairs}; the values $\theta$ are called \emph{Ritz values} and their associated vectors $v = Q y$ in the range of $Q$ are called \emph{Ritz vectors}. These pairs are known to be Rayleigh-Ritz approximations of $A$'s eigenpairs $\Lambda(A) = \{  (\lambda_1, v_1), \dots, (\lambda_j, v_j) \}$. They are collectively known to be optimal in the sense that they minimize... 
+Note we there are fundamentally two spaces 
+$$ A Q = Q T = Q Y \Theta $$
+For any $j < n$, when $T = T_j$ and $Q = Q_j$, the associated vectors $v_i^{(j)} \approx Q_i^{(j)}  y_i^{(j)}$ are called \emph{Ritz vectors}. 
+Note that, during the Lanczos iteration, we maintain two orthonormal basis for $K_j(A, q_1)$: the Lanczos basis $\{q _i\}_{i=1}^j$ and the Ritz basis $\{ Q y_i^{(j)} \}_{i=1}^{j}$. In principle, the former changes each iteration, which the latter changes each step $j$.  
+
+
+These values/vector pairs act as , and they are well-studied.
+
+
+To deduce which Ritz values are better than others, note that: 
+\begin{equation}
+	\lVert A v_i^{(j)} - v_i^{(j)} \theta_i^{(j)} \rVert = \beta_i^{(j)} = \beta_{j+1} \cdot \lvert \langle e_j, y_i^{(j)} \rangle   \rvert 
+\end{equation}
+ 
+In fact, it is known that the Ritz values $\{ \theta_1^{(1)}, \theta_1^{(2)}, \dots, \theta_1^{(j)} \}$ of $T_j$ satisfy: 
+ \begin{equation}
+ 	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
+ \end{equation}
+In principle, 
+The way in which the Ritz values approach the spectrum of $A$ is well-studied~\cite{}.
+
+
+% The Rayleigh-Ritz properties are preserved under semi-orthogonality w_j \approx \sqrt{\epsilon}
+ 
+ 
+ 
+ 
+
 The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.  
 Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
 % such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
 % , then the Lanczos method can be quite efficient. 
 % Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 Indeed, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
-%\{\, \theta_i \,\}_{i=1}^j
+
+
+
+% It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
+
+
+
+
+
+In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
+\begin{equation}
+	\lVert p^k(A)b \rVert = {minimum}
+\end{equation}
+% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
+
+The essential result from~\cite{} is that the eigenvalues $\Lambda(T_k) = \{\theta_1, \theta_2, \dots, \theta_k \}$ are `optimal' in the sense that $T_k = B$ is the matrix that minimizes  $\lVert A Q_k - Qk B \rVert_2$ over the space of all $k \times k$ matrices. Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
+% Rayleigh 
+% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
+% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
+The iteration typically converges geometrically and can be stopped as soon as the desired accuracy is reached.
+
 
 % Still working on this part
 The Lanczos iteration and its variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator, which need not necessarily involve explicitly storing $A$ in memory. 
@@ -519,20 +578,7 @@ From this lemma, we have the following result:
 For expository purposes, the preceding sections assumed exact arithmetic. 
 
 
-% Convergence + SDD
-\noindent \textbf{Convergence Rate: }
-In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
-\begin{equation}
-	\lVert p^k(A)b \rVert = {minimum}
-\end{equation}
-% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
-In fact, there is more we can say: if $S = \mathcal{K}_k(A, q_1)$, then applying the Lanczos iteration yield the \emph{Ritz pairs} $(\theta, y)$ of $A$, which are the pairs satisfying $w^T (Ay - \theta y) = 0$ for all $w \in S$.
-The essential result from~\cite{} is that the eigenvalues $\Lambda(T_k) = \{\theta_1, \theta_2, \dots, \theta_k \}$ are `optimal' in the sense that $T_k = B$ is the matrix that minimizes  $\lVert A Q_k - Qk B \rVert_2$ over the space of all $k \times k$ matrices. Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
-% Rayleigh 
-% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
-% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
-The iteration typically converges geometrically and can be stopped as soon as the desired accuracy is reached.
-
+% SDD
 The structure of $L_p = \partial_p \partial_p^T$ is actually amenable to more than just computational efficiency in terms of matrix-vector multiplication. A matrix $A = \{ a_{ij} \}$ is said to be \emph{diagonally dominant} (DD) if it satisfies: 
 \begin{equation}\label{eq:dd}
 a_{ii} \geq \sum\limits_{j \neq i} \, \lvert a_{ij} \rvert \,, \quad \forall \, i,j \in [n]
