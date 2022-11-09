@@ -47,15 +47,48 @@ F = list(rotate_S1(X, 132, include_direction=False))
 I = np.array(K['edges'])[:,0].astype(int)
 J = np.array(K['edges'])[:,1].astype(int)
 
+np.random.seed(1234)
 v0 = np.random.uniform(size=len(fv), low=-0.50, high=0.50)
 #theta = np.linspace(0, 2*np.pi, 132, endpoint=False)
-theta = np.zeros(132)
-lanczos.UL0_VELS_PHT_2D(X, theta, I, J, 30, 40, 100, 1e-5, v0, 0, 0, 0, 0)
+theta = np.zeros(10)
+lanczos.UL0_VELS_PHT_2D(X, theta, I, J, 30, 40, 0, 1e-5, v0, 0, 0, 0, 0)
+# 392 ops, 10 restarts for 10 zero-theta's w/ 0 maxiter
 
 # Even all the zero vector takes large amount. Why? 
 # How to re-use any of the computation?
 # 10585
 # 9960
+
+## JD? 
+import pysparse
+from pysparse.sparse import spmatrix
+from pysparse.itsolvers import krylov
+from pysparse.eig import jdsym
+from pysparse.precon import precon
+
+A = spmatrix.ll_mat_from_mtx('edge6x3x5_A.mtx')
+M = spmatrix.ll_mat_from_mtx('edge6x3x5_B.mtx')
+tau = 25.0
+
+Atau = A.copy()
+Atau.shift(-tau, M)
+K = precon.jacobi(Atau)
+
+A = A.to_sss(); M = M.to_sss()
+k_conv, lmbd, Q, it  = jdsym.jdsym(A, M, K, 5, tau,
+                                   1e-10, 150, krylov.qmrs,
+                                   jmin=5, jmax=10, clvl=1, strategy=1)
+
+
+
+
+
+
+
+
+
+
+
 
 from pbsig.linalg import lanczos
 n_ops = 0

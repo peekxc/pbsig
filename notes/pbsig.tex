@@ -431,14 +431,20 @@ for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are
 In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized}.
 
 % Summarized from "The Lanczos Method: Evolution and Application" 
-For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric positive definite, the implicit equation $x^T A x = 1$ defines an $n$-dimensional ellipsoid $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2 = 1$ whose $n$ principle axes are the eigenvectors $\{v_i\}_{i=1}^n$ which satisfy $A v_i = \lambda_i v_i$ and whose eigenvalues $\Lambda(A) =\{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ are real-valued.  
+For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric positive definite, the implicit equation $x^T A x = 1$ defines an $n$-dimensional ellipsoid $y^T \Lambda y = 1$ whose $n$ principle axes are eigenvectors $\{v_i\}_{i=1}^n$ and whose lengths are the squares of eigenvalues $\Lambda(A)$ of $A$, i.e. $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2$. Each eigen-pair of $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued.  
 % https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
-For any two distinct eigenvalues of $A$, $\lambda$ and $\lambda'$, the corresponding eigenvectors $v$ and $u$ are orthogonal, thus we may obtain $\Lambda(A)$ by constructing an orthonormal eigenvector basis $V$ of $A$, via orthogonal diagonalization:
+Moreover, for any two distinct eigenvalues $\lambda, \lambda' \in \mathbb{R}$ of $A$, the corresponding eigenvectors $v, u \in \mathbb{R}^n$ are orthogonal and thus we may obtain $\Lambda(A)$ via orthogonal diagonalization:
+%by constructing an orthonormal eigenvector basis $V$ of $A$,
 \begin{equation}\label{eq:eigen_decomp}
-	A = V \Lambda V^T
+	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
 \end{equation}
 % Insert similarity transforms  
-Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form, and (2) diagonalization of the tridiagonal form. As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the first phase is typically the bottleneck. 
+Solving~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
+Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+% For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
+
+As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the first phase typically requires $O(n^3)$ if e.g. $Q$ is the product of Householder reflectors, and thus this phase typically dominates the computation. 
+% Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $U_r = \sum_{i=1}^r \lambda_i v_i v_i^T$ is the optimal rank-$r$ decomposition satisfying: 
 \begin{equation}
@@ -562,7 +568,7 @@ The iteration typically converges geometrically and can be stopped as soon as th
 
 
 % Still working on this part
-The Lanczos iteration and its variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator, which need not necessarily involve explicitly storing $A$ in memory. 
+The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator. In particular, since $A$ is not modified at all during the computation, one need  necessarily involve explicitly storing $A$ in memory. 
 The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
 \begin{equation}
 	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)

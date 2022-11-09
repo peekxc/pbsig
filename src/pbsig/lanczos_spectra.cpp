@@ -249,7 +249,7 @@ auto UpLaplacian0_VELS_PHT_2D(MatrixXf X, const VectorXf Theta, VectorXu I, Vect
     v[0] = cos(Theta[i]);
     v[1] = sin(Theta[i]);
     op.fv = X * v;
-    solver.compute_ev(SortRule::LargestMagn, max_iter, tol, SortRule::LargestAlge);
+    solver.compute_ev_no_sort(max_iter, tol);
   }
   return wrap_solver(solver, max_iter, tol);
 };
