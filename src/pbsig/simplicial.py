@@ -4,7 +4,7 @@ from typing import *
 from itertools import *
 from numpy.typing import ArrayLike
 from scipy.spatial import Delaunay
-from .utility import edges_from_triangles
+from .utility import edges_from_triangles, cycle_window
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
@@ -14,6 +14,16 @@ def delaunay_complex(X: ArrayLike):
     'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
     'edges' : E,
     'triangles' : T
+  }
+  return(K)
+
+def cycle_graph(X: ArrayLike):
+  "Creates a cycle graph from a set of ordered points" 
+  E = np.array(list(cycle_window(range(X.shape[0]))))
+  K = {
+    'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
+    'edges' : E,
+    'triangles' : np.empty(shape=(0,3))
   }
   return(K)
 

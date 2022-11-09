@@ -114,24 +114,40 @@ def is_sorted(L: Iterable, compare: Callable = le):
 #       return False
 #   return True
 
-def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, reverse: bool = False):
+def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = False):
   """
-  Maps [lb, ub] -> [0, 1] via a smoother version of a step function
+  Maps [lb, ub] -> [0, 1] via a smoother version of a (up) step function. When down=False and lb=ub, the step functions look like: 
+
+  down = False       |    down = True
+  1:      o------    |    1: -----* 
+  0: -----*          |    0:      o------  
+
+  When |lb - ub| > 0, the returned function is a differentiable relaxation the above step function(s). 
+
+  Parameters: 
+    lb := lower bound in the domain to begin the step 
+    ub := upper bound in the domain to end the step 
+    order := smoothness parameter 
+    down := whether to make the step a down step. Default to False (makes an up-step).
+  
+  Returns a vectorized function S(x) satisfying one of: 
+    1. S(x) = 0 for all x <= lb, 0 < S(x) < 1 for all lb < x < ub, and S(x) = 1 for all x >= ub, if down = False
+    2. S(x) = 1 for all x <= lb, 0 < S(x) < 1 for all lb < x < ub, and S(x) = 0 for all x >= ub, if down = True
   """
   assert ub >= lb, "Invalid input"
   if lb == ub:
-    def _ss(x: float):
-      if reverse: 
-        return(1.0 if x < lb else 0.0)
-      else: 
-        return(0.0 if x < lb else 1.0)
+    if down: 
+      def _ss(x: float): return 1.0 if x <= lb else 0.0
+    else:
+      def _ss(x: float): return 0.0 if x <= lb else 1.0
   else: 
     d = (ub-lb)
+    assert d > 0, "Must be positive distance"
     def _ss(x: float):
-      y = (x-lb)/d if not(reverse) else 1.0 - (x-lb)/d
-      if (y <= 0.0): return(0.0)
-      if (y >= 1.0): return(1.0)
-      return(3*y**2 - 2*y**3)
+      if (x <= lb): return(1.0 if down else 0.0)
+      if (x >= ub): return(0.0 if down else 1.0)
+      y = (x-lb)/d 
+      return (1.0 - (3*y**2 - 2*y**3)) if down else 3*y**2 - 2*y**3
   return(np.vectorize(_ss))
 
 def rank_C2(i: int, j: int, n: int):

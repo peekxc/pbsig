@@ -441,9 +441,9 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
   # ss_b = smoothstep(lb = b - w/2, ub = b + w/2, reverse = True)
   # ss_ac = smoothstep(lb = a - w/2, ub = a + w/2, reverse = False)
   eps = tol(np.sqrt(len(p_simplices)*2)) # use bound on spectral norm to get tol instead of np.finfo(float).eps?
-  ss_a = smoothstep(lb = a-w, ub = a+eps, reverse = True)     #   1 (a-w) -> 0 (a), includes (-infty, a]
-  ss_b = smoothstep(lb = b-w, ub = b+eps, reverse = True)     #   1 (b-w) -> 0 (b), includes (-infty, b]
-  ss_ac = smoothstep(lb = a-w, ub = a+eps, reverse = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
+  ss_a = smoothstep(lb = a-w, ub = a+eps, down = True)     #   1 (a-w) -> 0 (a), includes (-infty, a]
+  ss_b = smoothstep(lb = b-w, ub = b+eps, down = True)     #   1 (b-w) -> 0 (b), includes (-infty, b]
+  ss_ac = smoothstep(lb = a-w, ub = a+eps, down = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
 
   ## Compute the terms 
   relax_f = lambda x: reduce_f(base_f(x))
@@ -581,13 +581,19 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
     assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
     F = list(iter(F))
     nv = len(F[0])
+    version = 1
     for j, (a,b,c,d) in enumerate(R):
       for i, f in enumerate(F):
-        t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
-        t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
-        t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
-        t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
-        U[i,j] = t1 - t2 - t3 + t4 
+        if version == 1:
+          t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
+          t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
+          t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
+          t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
+          U[i,j] = t1 - t2 - t3 + t4 
+        elif version == 2: 
+          lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
+
+
   return(U)
 
 
@@ -595,8 +601,8 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
 def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0, ):
   nv, ne = len(f), E.shape[0]
   eps = tol(np.sqrt(E.shape[0]*2)) # use bound on spectral norm to get tol instead of np.finfo(float).eps?
-  ss_b = smoothstep(lb = b-w, ub = b+eps, reverse = True)     # 1 (b-w) -> 0 (b), includes (-infty, b]
-  ss_ac = smoothstep(lb = a-w, ub = a+eps, reverse = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
+  ss_b = smoothstep(lb = b-w, ub = b+eps, down = True)     # 1 (b-w) -> 0 (b), includes (-infty, b]
+  ss_ac = smoothstep(lb = a-w, ub = a+eps, down = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
   # A_exc = ss_ac(f[E]).flatten()
   # B_inc = np.repeat(ss_b(edge_f), 2)
   # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])

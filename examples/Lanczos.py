@@ -85,49 +85,23 @@ LV = DV @ DV.T
 assert max(abs((LV @ x).flatten() - z)) < 1e-14
 
 ## Hadamard product in O(m) time
-DEV = np.sign(DE.A) * abs(DE * DV).A
-LEV = DEV @ DEV.T
-plt.imshow(abs(LEV), interpolation='none',cmap='binary')
+# DEV = np.sign(DE.A) * abs(DE * DV).A
+# LEV = DEV @ DEV.T
+# plt.imshow(abs(LEV), interpolation='none',cmap='binary')
 
-## Get an explicit mat-vec product
-y = LEV @ x
-
-# ## The O(m) reduction 
-# z, Df = np.zeros(D.shape[0]), np.zeros(D.shape[0])
-# for cc, (i,j) in enumerate(K['edges']):
-#   Df[i] += ED[i,j]**2
-#   Df[j] += ED[i,j]**2
-# for i in range(D.shape[0]):
-#   z[i] += x[i]*Df[i]*D[i]*fv[i]**2
-# for cc, (i,j) in enumerate(K['edges']):
-#   f_ij, e_ij = fv[i]*fv[j], ED[i,j]**2
-#   z[i] -= x[j]*e_ij*fv[i]*fv[j]
-#   z[j] -= x[i]*e_ij*fv[i]*fv[j]
-
-# assert max(abs(np.diag(LE.todense()) - Df)) < 1e-14
-# assert max(abs(np.diag(LV.todense()) - D*fv**2)) < 1e-14
-# assert max(abs(np.diag(LE.todense())*np.diag(LV.todense()) - (LE * LV).diagonal())) < 1e-14
-# assert max(abs(y.flatten() - z)) < 1e-14
-# ((DE @ DE.T) * (DV @ DV.T)).nonzero()[1] == ((DE * DV) @ (DE * DV).T).nonzero()[1]
-
+## Form the correctly signed hadamard Laplacian
 LEV = (DE * DV) @ (DE * DV).T
-#LEV = csc_matrix(abs(LEV.todense())*np.sign(LEV.todense()))
-SM = np.sign(-np.ones(shape=(DEV.shape[0], DEV.shape[0])) + np.diag(np.repeat(2, DE.shape[0])))
+SM = np.sign(-np.ones(shape=LEV.shape) + np.diag(np.repeat(2, DE.shape[0])))
 LEV = csc_matrix(SM * abs(LEV.todense()))
 
+## Assert the signs are all correct
 for i,j in zip(*LEV.nonzero()):
   assert LEV[i,j] < 0 if i != j else LEV[i,j] >= 0
 
-## First part
-# z = np.zeros(DE.shape[0])
-# for i in range(DE.shape[0]):
-#   J = np.array(list(G.neighbors(i)))
-#   z[i] = fv[i]**2 * sum(ED[i,J]**2)
-# assert max(abs(z - LEV.diagonal())) < 1e-14
+## Assert the formula works for non-diagonal entries
 for i,j in zip(*LEV.nonzero()):
   if i != j:
     assert (abs(LEV[i,j]) - (ED[i,j]**2 * fv[i] * fv[j])) < 1e-14
-
 
 ## O(m) solution 
 z, Df = np.zeros(D.shape[0]), np.zeros(D.shape[0])
@@ -144,7 +118,7 @@ for cc, (i,j) in enumerate(K['edges']):
 ## YES! It works! 
 assert max(abs((LEV @ x).flatten() - z)) < 1e-14
 
-
+## Form the operator
 from numpy.typing import ArrayLike
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 class UpLaplacianVE1_ls(LinearOperator):
@@ -169,23 +143,104 @@ class UpLaplacianVE1_ls(LinearOperator):
       self.z[j] -= x[i] * self.fe(i,j)**2 * self.fv[i] * self.fv[j]
     return self.z 
 
+
 ## Verify the operator works 
-from scipy.sparse.linalg import eigsh
 LEV_matvec = aslinearoperator(UpLaplacianVE1_ls(K, fv))
+assert all(max(abs(LEV_matvec.matvec(x) - (LEV @ x))) < 1e-12)
+
+## Verify eiegnvalues are same 
+from scipy.sparse.linalg import eigsh
 LEV_lo = aslinearoperator(LEV)
+ev1 = eigsh(LEV_matvec, k=5, return_eigenvectors=False)
+ev2 = eigsh(LEV_lo, k=5, return_eigenvectors=False)
+assert max(abs(ev1 - ev2)) < 1e-12
 
-LEV_matvec.matvec(x)
-LEV @ x
-
-eigsh(LEV_matvec, k=5, return_eigenvectors=False)
-eigsh(LEV_lo, k=5, return_eigenvectors=False)
-
+## Verify custom operator works
 from pbsig.linalg import lanczos
-
 I = np.array(K['edges'])[:,0].astype(int)
 J = np.array(K['edges'])[:,1].astype(int)
+v0 = np.random.uniform(size=len(fv), low=-0.50, high=0.50)
+v0 = v0 / np.linalg.norm(v0)
+res = lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 1000, 1e-12, v0, 0, 0, 0, 0) # nev, num lanczos vectors, max_iter, tol
+assert res['status'] == "success"
+assert max(abs(np.sort(res['eigenvalues']) - np.sort(ev1))) < np.sqrt(np.finfo(np.float32).eps)
 
-lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
+## Now adjust to match smoothstep 
+from pbsig.betti import smoothstep
+a,b,eps = np.quantile(fv, 0.25), np.quantile(fe, 0.75), np.finfo(float).eps
+ss_b = smoothstep(lb = b-0.20, ub = b+eps, down = True)     
+ss_ac = smoothstep(lb = a-0.20, ub = a+eps, down = False) 
+
+DE = boundary_matrix(K, p = 1).tocsc()
+DE.sort_indices()
+DE.data = np.sign(DE.data)*ss_b(np.repeat(fe, 2))
+
+DV = boundary_matrix(K, p = 1).tocsc().astype(float)
+RI, CI = DV.nonzero()
+DV = DV.A
+for ri, ci in zip(RI, CI):
+  DV[ri,ci] = np.sign(DV[ri,ci]) * ss_ac(fv[ri])
+DV = csc_matrix(DV)
+
+## Form the correctly signed hadamard Laplacian
+LEV = (DE * DV) @ (DE * DV).T
+SM = np.sign(-np.ones(shape=LEV.shape) + np.diag(np.repeat(2, DE.shape[0])))
+LEV = csc_matrix(SM * abs(LEV.todense()))
+
+class UpLaplacianVE1_ls(LinearOperator):
+  def __init__(self, K: dict, fv: ArrayLike, a: float, b: float, w: float):
+    eps = np.finfo(float).eps
+    self.ss_b = smoothstep(lb = b-w, ub = b+eps, down = True)   # includes S(b) > 0, marks S(b+eps) = 0    
+    self.ss_ac = smoothstep(lb = a-w, ub = a+eps, down = False) # set S(a-w)=0, S(a-w+eps)>0, and S(a+eps) = 1
+    self.nv = len(fv)
+    self.fv = fv
+    self.fe = lambda i,j: max(self.fv[i],self.fv[j])
+    self.z: ArrayLike = np.zeros(self.nv)
+    self.Df: ArrayLike= np.zeros(self.nv)
+    for cc, (i,j) in enumerate(K['edges']):
+      self.Df[i] += self.ss_b(self.fe(i,j))**2
+      self.Df[j] += self.ss_b(self.fe(i,j))**2
+    self.shape = (int(self.nv), int(self.nv))
+    self.dtype = np.dtype(np.float64)
+
+  def _matvec(self, x: ArrayLike):
+    self.z.fill(0.0)
+    for i in range(self.nv):
+      self.z[i] += x[i]*self.Df[i]*self.ss_ac(self.fv[i])**2
+    for cc, (i,j) in enumerate(K['edges']):
+      self.z[i] -= x[j] * self.ss_b(self.fe(i,j))**2 * self.ss_ac(self.fv[i]) * self.ss_ac(self.fv[j])
+      self.z[j] -= x[i] * self.ss_b(self.fe(i,j))**2 * self.ss_ac(self.fv[i]) * self.ss_ac(self.fv[j])
+    return self.z 
+
+## Ensure operator work
+LEV_matvec = aslinearoperator(UpLaplacianVE1_ls(K, fv, a=a, b=b, w=0.20))
+assert all(max(abs(LEV_matvec.matvec(x) - LEV @ x)) < 1e-12)
+
+## Ensure the eigenvalues are the same
+ev1 = eigsh(LEV_matvec, k=8, return_eigenvectors=False)
+ev2 = eigsh(LEV.todense(), k=8, return_eigenvectors=False)
+assert max(abs(ev1 - ev2)) < 1e-12
+
+## Try custom
+# from pbsig.linalg import lanczos
+# I = np.array(K['edges'])[:,0].astype(int)
+# J = np.array(K['edges'])[:,1].astype(int)
+# v0 = np.random.uniform(size=len(fv), low=-0.50, high=0.50)
+# v0 = v0 / np.linalg.norm(v0)
+# res = lanczos.UL0_VELS_lanczos(fv, I, J, 8, 9, 1000, 1e-12, v0, a, b, eps, 0.20) # nev, num lanczos vectors, max_iter, tol
+# assert res['status'] == "success"
+# assert max(abs(np.sort(res['eigenvalues']) - np.sort(ev1))) < np.sqrt(np.finfo(np.float32).eps)
+
+
+
+
+
+
+
+
+
+
+
 
 
 from scipy.sparse import random
@@ -424,6 +479,22 @@ eigsh(B, k=3, return_eigenvectors=False, which="LM")+shift
 lanczos.sparse_lanczos(A, 3, 4, 1, 0.10)['eigenvalues'] - lanczos.sparse_lanczos(A, 3, 4, 1000, 1e-12)['eigenvalues']
 
 # wut = lanczos.sparse_lanczos(A, 4, 5, 19, 1e-10)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 # lanczos.sparse_lanczos(A, 1, 2, 10, 1e-10)
