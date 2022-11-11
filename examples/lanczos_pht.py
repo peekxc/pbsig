@@ -83,10 +83,64 @@ k_conv, lmbd, Q, it  = jdsym.jdsym(A, M, K, 5, tau,
 
 
 
+import numpy as np
+from numpy.testing import assert_allclose
+import scipy.sparse
+from scipy.sparse import random as random_sp
+import primme
 
 
+A = random_sp(300,300,density=0.15)
+M = A @ A.T
 
 
+lanczos.sparse_lanczos(M, 10, 11, 150, 1e-6) # M, nev, ncv, max_iter, tol
+
+ew, ev, res = primme.eigsh(M, k=10, maxiter=150, tol=1e-6, which='LM', return_stats=True) # OPinv
+print(res['numMatvecs'])
+ew2, ev2, res2 = primme.eigsh(M, k=10, tol=1e-6, v0=ev2, which='LM', return_stats=True)
+print(res2['numMatvecs'])
+# Conjecture: does computing the p-th Betti number of a complex with n = |K^p| have ~Omega(nr) complexity, for p >= 1?
+
+# OPinv (N x N matrix, array, sparse matrix, or LinearOperator, optional) 
+# Preconditioner to accelerate the convergence. Usually it is an approximation of the inverse of (A - sigma*M)
+
+# lock (N x i, ndarray, optional) – Seek the eigenvectors orthogonal to these ones. 
+# The provided vectors should be orthonormal. Useful to avoid converging to previously computed solutions.
+
+from scipy.sparse import csc_matrix, diags
+from scipy.sparse.linalg import eigsh, minres, cg, LinearOperator
+
+eigsh(M, k=1, sigma=500.0)[0]
+
+class CG_OPinv(LinearOperator):
+  def __init__(self, shift, M):
+    self.shape = M.shape
+    self.dtype = M.dtype
+    self.shift = shift
+    self.M = M 
+  def _matvec(self, x):
+    return cg(M - self.shift*diags(np.repeat(1.0, self.shape[0])), x)[0]
+
+x = ev[:,0]
+assert np.allclose(M @ x, ew[0] * x)  ## indeed it is an eigenvector
+assert np.allclose(x, cg(M, M @ x)[0]) ## asserts CG solves the system A x = b when b = \lambda x 
+cg(M, x)
+
+ew
+eigsh(M, k=1, sigma=50.0, OPinv=CG_OPinv(50.0, M))[0]
+
+eigsh(M, k=1, sigma=70.0, OPinv=CG_OPinv(70.0, M))[0]
+
+
+eigsh(M, k=1, sigma=70.0, OPinv=op)[0]
+eigsh(M, k=1, sigma=50.0)[0]
+
+eigsh(M - 50.0*diags(np.repeat(1.0, M.shape[0])), k=1, which='LM', mode='normal')[0]
+
+50.0 + 1/484.32684885
+
+primme.eigsh(M, k=10, maxiter=150, tol=1e-6, which='LM', return_stats=True)
 
 
 
@@ -119,3 +173,58 @@ for i, fv in enumerate(F):
 for j in range(U.shape[1]):
   plt.plot(U[:,j])
 plt.plot(U.sum(axis=1))
+
+
+
+
+
+import numpy as np
+from numpy.testing import assert_allclose
+import scipy.sparse
+import primme
+A = scipy.sparse.spdiags(np.asarray(range(100), dtype=np.float32)+1, [0], 100, 100)
+def P(x):
+   # The scipy.sparse.linalg.LinearOperator constructor may call this function giving a vector
+   # as input; detect that case and return whatever
+   if x.ndim == 1:
+      return x / A.diagonal()
+   shifts = primme.get_eigsh_param('ShiftsForPreconditioner')
+   print(len(shifts))
+   y = np.copy(x)
+   for i in range(x.shape[1]): 
+    S = A.diagonal() - shifts[i]
+    S = np.array([s if s > 0 else 1 for s in S])
+    y[:,i] = x[:,i] / S # since D^{-1} == 1/d_ii for diagonal matrix
+   return y
+Pop = scipy.sparse.linalg.LinearOperator(A.shape, matvec=P, matmat=P)
+
+
+
+ew, stats = primme.eigsh(
+  A, 10, OPinv=Pop,
+  maxiter=15000, maxBlockSize=20, tol=np.finfo(np.float32).eps,
+  #maxBlockSize=100, tol=1e-2 
+  which='LM', return_eigenvectors=False, 
+  return_stats=True, raise_for_unconverged=False, return_history=False
+)
+
+
+def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
+  ni = int(np.ceil(k/b))
+  f_args = dict(tol=np.finfo(np.float32).eps, which='CGT', return_eigenvectors=True, raise_for_unconverged=False, return_history=False)
+  f_args = f_args | kwargs
+  evals = np.zeros(ni*b)
+  for i in range(ni):
+    if i == 0:
+      ew, ev = primme.eigsh(A, k=b, **f_args)
+    else: 
+      #f_args['which'] = min(ew)
+      f_args['sigma'] = min(ew)
+      ew, ev = primme.eigsh(A, k=b, lock=ev, **f_args)
+    print(ew)
+    evals[(i*b):((i+1)*b)] = ew
+  return(evals)
+
+## How to avoid getting eigenvalues already sought? Use CGT! 
+
+eigsh_block_shifted(A, k=10, b=3, OPinv=Pop)
