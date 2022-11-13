@@ -266,7 +266,7 @@ Suppose that instead of being given a fixed pair $(K_\bullet, f)$, the filter fu
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
 Let $K$ denote an abstract simplicial complex of size $\lvert K \rvert = m$, equipped with parameterized filtering function $f : K \times \mathcal{H} \to \mathbb{R}$. 
 Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $m \times m$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
-\begin{equation}
+\begin{equation}\label{eq:param_boundary_matrix}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
 	\pm \, (S_{i} \circ f_h)(\sigma_k)) \cdot (\tilde{S}_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -298,71 +298,7 @@ where $\epsilon > 0$ is an arbitrarily small positive number. By the reduction s
 % In general, computing dgm_p(X) for p \geq 1 requires O(\lvert X \rvert^{3(p+2)}) [ p = 1 <=> O(n^9), p=2 <=> O(n^12)] (curvature sets paper) and O(\lvert X \rvert^{2(p+2)}) memory.
 
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
-\subsection{Laplacian Connection}
-Thus far, we have discussed various ways of re-writing expressions of the PBN, and the advantages/disadvantages each form implies on the computational side. We now pivot to focus on the computation of the constitutive terms of these expressions themselves, again with a motivation of understanding the PBN computation in continuously parameterized settings. 
 
-% start with the numerical rank? 
-
-%For a square matrix of order $n$, the quadratic form: 
-% \begin{equation}
-% x^T A x = \sum\limits_{k=1}^n \sum\limits_{l=1}^n	a_{kl} x_k x_l 
-% \end{equation}
-%defines a continuous function in $x \in \mathbb{R}^n$. 
-%$x = \left( x_i \right)_{i=1}^n$
-% Spectral graph theory plug
-% Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
-
-
-Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its corresponding \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
-\begin{equation}
-	L = D - A = \partial_1 \partial_1^T
-\end{equation} 
-where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
-The structure of the graph Laplacian imply linear and quadratic forms have particular graph interpretations:
-\begin{flalign*}\label{eq:lap_quad_from}
-	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
-	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
-	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
-\end{flalign*}
-where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. 
-Structurally, they admit a number are attractive features. 
-The matrix $L$ is symmetric and thus its eigenvalues are real-valued. 
-$L$ is positive semi-definite ($L \succeq 0$) and thus satisfies $x^T L x \geq 0$ for all $x \neq 0$ (i.e.~\eqref{eq:lap_quad_from}).
-The graph Laplacian is generally known to capture the connectivity structure of $G$. To make this more concrete, we begin with an example. 
-\begin{example}[Adapted from~\cite{newman2001laplacian}]\label{ex:laplacian}
-Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set. By $L$'s definition, we have:
-\begin{align*}
-	(Lx)_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = (Lx)_i  \\
-	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\
-	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
-\end{align*}
-where $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ denotes the \emph{cutset}  of $X$ restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$.
-\end{example}
-\noindent In other words, example~\ref{ex:laplacian} demonstrates that $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$ with an eigenvector pair $\mathbf{1}$. Like the adjacency matrix, the interpretation of the matrix-vector product has a natural extension to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
-
-%$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
-
-The formulation of the boundary matrix given in~\eqref{def:time_boundary_matrix} also lends to a structured interpretation with the graph Laplacian and its various operators. Consider two kinds of weighted graph Laplacians, one defined from boundary matrices whose chains are parameterized with respect to an edge function $f_E : V \times V \to \mathbb{R}$ and the other $L^V$ defined respect to a vertex function $f_v : V \to \mathbb{R}$. 
-That is, we consider boundary matrices $\partial_p^E$
-
-In the former case, the weighted Laplacian matrix-vector form is given by: 
-\begin{equation}\label{eq:lap_edge}
-	\left ( x \right )_i = (L^E x)_i =  x_i \cdot d_f(v_i) -  \sum\limits_{i \sim j} x_j \cdot f_E(v_i, v_j)^2
-\end{equation}
-where $d_f(v_i) = \sum\limits_{j \sim i} f_E(v_i, v_j)^2$. In the latter case, it is given by: 
-\begin{equation}\label{eq:lap_vertex}
-	(L^V x)_i =  x_i \cdot d(v_i) \cdot f_V(v_i)^2 -  \sum\limits_{i \sim j} x_j \cdot f_V(v_i) \cdot  f_V(v_j)
-\end{equation}
-Moreover, if we ignore the cancellations in sign, the hadamard product between these two operators has the following form: 
-\begin{equation}\label{eq:lap_hadamard}
-	(L^E \circ L^V)[i,j] = 
-	\begin{cases}
-		d_f(v_i) \cdot d(v_i) \cdot f_V(v_i)^2	& i = j \\
-		-(f_E(v_i, v_j)^2 \cdot f_V(v_i) \cdot f_V(v_j)) & i \sim j \\
-		0 & i \nsim j 	
-	\end{cases}
-\end{equation}
-In all cases, if $L = \partial_p \partial_p^T$ where $\partial_p \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the matrix-vector product operation for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. 
 
 \subsection{Special Cases} The spectrum of the graph Laplacian is known to have closed-form expressions for certain structured graphs. In particular, the spectra of the cycle graph $C_n$ and the path graph $P_n$ over $n$ vertices is given by: 
 \begin{equation}
@@ -426,43 +362,52 @@ for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are
 \subsection{Complexity of Persistence}
 
 
-% Benefits of rank(A) = < non-zero eigenvalues >
-\subsection{Rank Computation}
-In this section we discuss a few iterative methods for finding the eigenvalues of a Hermitian matrices. In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized}.
 
+\section*{An quadratic-time rank computation}
+In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. For any $X \in \mathbb{R}^{n \times m}$ with $n < m$, the \emph{rank} function is defined as: 
+\begin{equation}\label{eq:rank_def}
+	\mathrm{rank}(X) = \sum\limits_{i=1}^n \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
+		1 & \text{if } x > 0 \\
+		0 & \text{otherwise}
+	\end{cases}
+\end{equation}
+where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values from the singular value decomposition (SVD) $X = U \Sigma V^T$ and $\mathrm{sgn}_+: \mathbb{R}_{+} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of a Hermitian matrices. 
+In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
+
+% Benefits of rank(A) = < non-zero eigenvalues >
+\subsection{The Lanczos iteration}
 % Summarized from "The Lanczos Method: Evolution and Application" 
-For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric positive definite, the implicit equation $x^T A x = 1$ defines an $n$-dimensional ellipsoid $y^T \Lambda y = 1$ whose $n$ principle axes are eigenvectors $\{v_i\}_{i=1}^n$ and whose lengths are the squares of eigenvalues $\Lambda(A)$ of $A$, i.e. $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2$. Each eigen-pair of $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued.  
+For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric positive definite, the implicit equation $x^T A x = 1$ defines an $n$-dimensional ellipsoid $y^T \Lambda y = 1$ whose $n$ principle axes are eigenvectors $\{v_i\}_{i=1}^n$ and whose lengths are the squares of eigenvalues $\Lambda(A)$ of $A$.
+%i.e. $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2$. 
+Each eigen-pair of $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued and every pair of eigenvectors $v, u \in \mathbb{R}^n$ whose corresponding eigenvalues $\lambda \neq \lambda'$ are orthogonal.  
 % https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
-Moreover, for any two distinct eigenvalues $\lambda, \lambda' \in \mathbb{R}$ of $A$, the corresponding eigenvectors $v, u \in \mathbb{R}^n$ are orthogonal and thus we may obtain $\Lambda(A)$ via orthogonal diagonalization:
+Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of the aforementioned ellipsoid---via orthogonal diagonalization:
 %by constructing an orthonormal eigenvector basis $V$ of $A$,
 \begin{equation}\label{eq:eigen_decomp}
 	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
 \end{equation}
 % Insert similarity transforms  
-Solving~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
-Eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+Decomposing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
+Computing the eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-
-As the second phase may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the first phase typically requires $O(n^3)$ if e.g. $Q$ is the product of Householder reflectors, and thus this phase typically dominates the computation. 
+The latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former phase is effectively bounded below by $\Omega(n^3)$ for dense matrices using non-Strassen-like computations, and thus it is this reduction to tridiagonal form that dominates the computation. 
+To counter this when $A$ sparse and structured, Lanczos~\cite{} proposed the so-called \emph{method of minimized iterations} to obtain a tridiagonal form of $A$ in much lower complexity.
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
-The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $U_r = \sum_{i=1}^r \lambda_i v_i v_i^T$ is the optimal rank-$r$ decomposition satisfying: 
-\begin{equation}
-	\argmin_{U_r \in \mathbb{R}^{n \times n}}\lVert A - U_r \rVert_F
-\end{equation}
-The eigenvalues $\Lambda(A)$ are canonically the definition of $A$'s rank: 
-\begin{equation}
-	\mathrm{rank}(A) = \sum\limits_{i=1}^n 1(\lambda_i > 0)
-\end{equation}
-The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is the Arnoldi iteration, whose specialization to symmetric matrices yields the Lanczos method~\cite{}, or as Lanczos called it, the \emph{method of minimized iterations}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying decompositon of system was too large to fit into memory. 
-We review the method in its original form as presented by Lanczos, the he coined the .
+%The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
+%\begin{equation}
+%	A_{(r)} = \argmin_{B \in \mathbb{R}^{n \times n}}\lVert A - B \rVert_F
+%\end{equation}
+% History of Lanczos 
+%The success of iterative methods at extracting spectral-information from large, sparse matrices in the past three decades is unprecedented. Core to these methods is what is known today as the Lanczos method~\cite{}, or as Lanczos called it, the \emph{method of minimized iterations}. Although discovered before the widely successful direct methods (Householder transformations, QR factorization, etc.), the Lanczos algorithm became the staple for applications where the underlying decomposition of system was too large to fit into memory. 
+%We review the method briefly in what follows.
 %reduces $A$ to tridiagonal form via a series of orthogonal similarity transformations
  
-The means by which the Lanczos method estimates eigenvalues is by projecting onto successive Krylov subspaces. Given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces are the spaces spanned by: 
+The means by which the Lanczos method estimates eigenvalues is by projecting onto successive Krylov subspaces. Given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces spanned by: 
 \begin{equation}
 	\mathcal{K}_j(A, v) := \mathrm{span}\{ v, Av, A^2 v, \dots, A^{j-1} \} = \mathrm{range}(K_j(A, v))
 \end{equation}
-where $K_j(A, v) = [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}]$ are the corresponding Krylov matrices. 
+where $K_j(A, v) = [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}]$ are their corresponding Krylov matrices. 
 % The utility of Krylov subspace methods is motivated by the fact that the minimal polynomial of $A$ can be used to express $A^{-1}$ in terms of powers of $A$.
 Krylov subspaces arise naturally from using the minimal polynomial of $A$ to express $A^{-1}$ in terms of powers of $A$. In particular, if $A$ is nonsingular and its minimal polynomial has degree $m$, then $A^{-1}v \in K_m(A, v)$ and $K_m(A, v)$ is an invariant subspace of $A$.
 % "Krylov subspace methods for shifted unitary matrices and eigenvalue deflation applied to the Neuberger Operator and the matrix sign function"
@@ -508,37 +453,30 @@ The sequential process that iteratively builds $T_j$ by exploiting the recurrenc
 Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we have solved the symmetric eigenvalue problem~\eqref{eq:eigen_decomp}: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
+We summarize the motivating principles the Lanczos iteration with a Lemma. 
+\begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
+	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ in $O(\mathcal{M}(n)r)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
+\end{lemma}
+
 
 % Rayleigh-Ritz discussion
 Even before an $A$-invariant subspace is obtained, intermediate spectral information is readily available in $T_j$, for $j < \mathrm{rank}(A)$. 
 %If $T_j$ represents projection of $A$ onto the $j$-th Krylov subspace $\mathcal{K}_j(A, q_1)$, 
-Diagonalizing $T_j = Y \Theta Y^T$ yields pairs $\{  (\theta_1, y_1), \dots, (\theta_j, y_j) \}$ which satisfy $w^T (Ay - \theta y) = 0$ for all $w \in \mathcal{K}_j(A, q_1)$.
-These value/vector pairs $(\theta, y)$ are called \emph{Ritz pairs}; the values $\theta$ are called \emph{Ritz values} and their associated vectors $v = Q y$ in the range of $Q$ are called \emph{Ritz vectors}. These pairs are known to be Rayleigh-Ritz approximations of $A$'s eigenpairs $\Lambda(A) = \{  (\lambda_1, v_1), \dots, (\lambda_j, v_j) \}$. They are collectively known to be optimal in the sense that $T_k = B$ is the matrix that minimizes $\lVert A Q_k - Q_k B \rVert_2$ over the space of all $k \times k$ matrices. 
-The decomposition via tridiagonalization of $A$ now looks like: 
-$$ A Q = Q T = Q (Y \Theta Y^T)$$
-Note that, during the Lanczos iteration, we maintain two orthonormal basis for $K_j(A, q_1)$: the Lanczos basis $\{q_i\}_{i=1}^j$ and the Ritz basis $\{ Q y_i^{(j)} \}_{i=1}^{j}$. In principle, the former changes each iteration, which the latter changes each step $j$.  
-%For any $j < n$, when $T = T_j$ and $Q = Q_j$, the associated vectors $v_i^{(j)} \approx Q_i^{(j)}  y_i^{(j)}$ are called \emph{Ritz vectors}. 
-
-
-To deduce which Ritz values are better than others, note that: 
+Diagonalizing $T_j = Y \Theta Y^T$ yields value/vector pairs $\{  (\theta_1^{(j)}, y_1^{(j)}), \dots, (\theta_j^{(j)}, y_j^{(j)}) \}$, called \emph{Ritz pairs}. The values $\theta$ are called \emph{Ritz values} and their associated vectors $v = Q y$ in the range of $Q$ are called \emph{Ritz vectors}.
+Ritz pairs satisfy $w^T (Ay - \theta y) = 0$ for all $w \in \mathcal{K}_j(A, q_1)$, and thus are intimately connected to the underlying Krylov subspace. 
+From the Ritz perspective, the Lanczos iteration implicitly maintains two orthonormal basis for $K_j(A, q_1)$---a Lanczos basis $Q$ and the Ritz basis $Y$:
+$$ A = Q T Q^T = Q Y \Theta Y^T Q^T \Longleftrightarrow A Q Y = Q Y \Theta $$
+In principle, the Lanczos basis $\{q_i\}_{i=1}^j$ changes each iteration, while the Ritz basis $\{ Q y_i^{(j)} \}_{i=1}^{j}$ changes after each subspace projection. The way in which the Ritz values approach the spectrum of $A$ is well-studied~\cite{}, as they are known to be Rayleigh-Ritz approximations of $A$'s eigenpairs $\Lambda(A) = \{  (\lambda_1, v_1), \dots, (\lambda_j, v_j) \}$, and they are collectively known to be optimal in the sense that $T_k = B$ is the matrix that minimizes $\lVert A Q_k - Q_k B \rVert_2$ over the space of all $k \times k$ matrices. 
+Moreover, Ritz values contain intrinsic information of the distance between $\Lambda(T_j)$ and $\Lambda(A)$. To see this, note that: 
 \begin{equation}
 	\lVert A v_i^{(j)} - v_i^{(j)} \theta_i^{(j)} \rVert = \beta_i^{(j)} = \beta_{j+1} \cdot \lvert \langle e_j, y_i^{(j)} \rangle   \rvert 
 \end{equation}
- 
-In fact, it is known that the Ritz values $\{ \theta_1^{(1)}, \theta_1^{(2)}, \dots, \theta_1^{(j)} \}$ of $T_j$ satisfy: 
+Thus, we need not necessarily keep the Lanczos vectors $Q$ in memory to monitor how close the spectra of the $T_j$'s approximate $\Lambda(A)$. In fact, it is known that the Ritz values $\{ \theta_1^{(1)}, \theta_1^{(2)}, \dots, \theta_1^{(j)} \}$ of $T_j$ satisfy: 
  \begin{equation}
  	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
  \end{equation}
-In principle, 
-The way in which the Ritz values approach the spectrum of $A$ is well-studied~\cite{}.
-
-
 % The Rayleigh-Ritz properties are preserved under semi-orthogonality w_j \approx \sqrt{\epsilon}
  
- 
- 
- 
-
 The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.  
 Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
 % such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
@@ -550,21 +488,17 @@ Indeed, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with a
 
 % It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
 
-
-
-
-
-In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
-\begin{equation}
-	\lVert p^k(A)b \rVert = {minimum}
-\end{equation}
+%In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
+%\begin{equation}
+%	\lVert p^k(A)b \rVert = {minimum}
+%\end{equation}
 % the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
 
 % Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
 % Rayleigh 
 % the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
 % where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
-The iteration typically converges geometrically and can be stopped as soon as the desired accuracy is reached.
+
 
 
 % Still working on this part
@@ -612,14 +546,82 @@ It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally domin
 
 
 
+\subsection{An $O(m)$ \texttt{matvec} operator}
+%Thus far, we have discussed various ways of re-writing expressions of the PBN, and the advantages/disadvantages each form implies on the computational side. We now pivot to focus on the computation of the constitutive terms of these expressions themselves, again with a motivation of understanding the PBN computation in continuously parameterized settings. 
+
+% start with the numerical rank? 
+
+%For a square matrix of order $n$, the quadratic form: 
+% \begin{equation}
+% x^T A x = \sum\limits_{k=1}^n \sum\limits_{l=1}^n	a_{kl} x_k x_l 
+% \end{equation}
+%defines a continuous function in $x \in \mathbb{R}^n$. 
+%$x = \left( x_i \right)_{i=1}^n$
+% Spectral graph theory plug
+% Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
 
-
-
+Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
+\begin{equation}\label{eq:L_form}
+	L = D - A = \partial_1 \partial_1^T
+\end{equation} 
+where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
+The graph Laplacian is heavily structured matrix that is known to capture the connectivity structure of $G$. In particular, the structure of the graph Laplacian imply linear and quadratic forms which have particular graph interpretations:
+\begin{flalign}\label{eq:lap_quad_from}
+	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
+	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
+	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
+\end{flalign}
+where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. 
+Moreover, $L$ is symmetric, positive semi-definite, and the connection between $L$ and $\partial_1$ via~\eqref{eq:L_form} suggests the elementary chain modifications from~\eqref{eq:param_boundary_matrix} can be adapted to the linear and quadratic forms from~\eqref{eq:lap_quad_from}. 
+%$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
+%The formulation of the boundary matrix given in~\eqref{def:time_boundary_matrix} also lends to a structured interpretation with the graph Laplacian and its various operators. 
+Consider boundary matrices $\partial_1^E$ and $\partial_1^V$ whose chain entries are parameterized by edge and vertex functions, $f_E : V \times V \to \mathbb{R}$ and $f_v : V \to \mathbb{R}$, respectively:
+\begin{equation}
+	\partial_1^E[k,l] = \begin{cases}
+	\pm \, f_E(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+	0 & \text{otherwise}
+	\end{cases}, \quad \quad 
+	\partial_1^V[k,l] = \begin{cases}
+	\pm \, f_V(\sigma_k) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+	0 & \text{otherwise}
+	\end{cases}
+\end{equation}
+Both parameterizations generate two kinds of weighted graph Laplacians via~\eqref{eq:L_form}.
+In the edge-weighted case, the Laplacian matrix-vector form is given by: 
+\begin{equation}\label{eq:lap_edge}
+	\left ( (\partial_1^E)(\partial_1^E)^T x \right )_i = (L^E x)_i =  x_i \cdot d_f(v_i) -  \sum\limits_{i \sim j} x_j \cdot f_E(v_i, v_j)^2
+\end{equation}
+where $d_f(v_i) = \sum\limits_{j \sim i} f_E(v_i, v_j)^2$. In the vertex-weighted case, it is given by: 
+\begin{equation}\label{eq:lap_vertex}
+	\left ( (\partial_1^V)(\partial_1^V)^T x \right )_i = (L^V x)_i =  x_i \cdot d(v_i) \cdot f_V(v_i)^2 -  \sum\limits_{i \sim j} x_j \cdot f_V(v_i) \cdot  f_V(v_j)
+\end{equation}
+Ignoring sign cancellations, the $(i,j)$-th entry of the Laplacian matrix $L^{VE}$ formed by combining~\eqref{eq:L_form} with the hadamard product $\partial_1^{VE} = \partial_1^V \circ \partial_1^E$ has the following form: 
+\begin{equation}\label{eq:lap_hadamard}
+	L^{VE}[i,j] = \left((\partial_1^{VE}) (\partial_1^{VE})^T\right)[i,j] = 
+	\begin{cases}
+		d_f(v_i) \cdot f_V(v_i)^2	& i = j \\
+		-(f_E(v_i, v_j)^2 \cdot f_V(v_i) \cdot f_V(v_j)) & i \sim j \\
+		0 & i \nsim j 	
+	\end{cases}
+\end{equation}
+In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time.  
 
 % --- Generic Rank approximation via eigenvalues --- 
+\section{Continuous Rank Relaxation}
+
+%In the spirit of~\cite{chen1996class}, 
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
+
+
+\section{Approximation \& Perturbation theory}
+The stability of the spectral relaxation proposed in~\eqref{} lends some stability the computation of $\beta$ and $\hat{\beta}$ in the parameterized setting. 
+
+Namely, if $(K, f_h)$ is a parameterized filtration where $f : \mathcal{H} \times K \to \mathbb{R}$ is a real-valued filter function that various smoothly in $\mathcal{H}$, one would expect the spectra of the constitutive terms in $\beta_p^\ast$ and $\mu_p^\ast$ to also vary smoothly as a function of $\mathcal{H}$. 
+
+Let $\hat{\partial}_h$
+
 
 \section{Applications}\label{sec:applications}
 
@@ -679,6 +681,21 @@ Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the e
 
 \appendix
 \section{Appendix}
+
+\section{Laplacian Interpretation}
+We adapt an example from~\cite{newman2001laplacian} to better convey the information carried by the Laplacian form of the boundary matrices. 
+\begin{example}[Adapted from~\cite{newman2001laplacian}]\label{ex:laplacian}
+Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set. By $L$'s definition, we have:
+\begin{align*}
+	(Lx)_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = (Lx)_i  \\
+	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\
+	(Lx)_i = 0 &\Longleftrightarrow i \in X \cup X' \text{ and } c_i(X) = \emptyset
+\end{align*}
+where $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$ denotes the \emph{cutset}  of $X$ restricted to $v$, i.e. the set of edges having as one endpoint $v \in X$ and another endpoint outside of $X$.
+\end{example}
+\noindent In other words, example~\ref{ex:laplacian} demonstrates that $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$ with an eigenvector pair $\mathbf{1}$. Like the adjacency matrix, the interpretation of the matrix-vector product has a natural extension to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
+
+
 
 \subsection{Proofs}
 \subsubsection*{Proof of Lemma 1}

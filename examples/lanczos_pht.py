@@ -59,30 +59,6 @@ lanczos.UL0_VELS_PHT_2D(X, theta, I, J, 30, 40, 0, 1e-5, v0, 0, 0, 0, 0)
 # 10585
 # 9960
 
-## JD? 
-import pysparse
-from pysparse.sparse import spmatrix
-from pysparse.itsolvers import krylov
-from pysparse.eig import jdsym
-from pysparse.precon import precon
-
-A = spmatrix.ll_mat_from_mtx('edge6x3x5_A.mtx')
-M = spmatrix.ll_mat_from_mtx('edge6x3x5_B.mtx')
-tau = 25.0
-
-Atau = A.copy()
-Atau.shift(-tau, M)
-K = precon.jacobi(Atau)
-
-A = A.to_sss(); M = M.to_sss()
-k_conv, lmbd, Q, it  = jdsym.jdsym(A, M, K, 5, tau,
-                                   1e-10, 150, krylov.qmrs,
-                                   jmin=5, jmax=10, clvl=1, strategy=1)
-
-
-
-
-
 import numpy as np
 from numpy.testing import assert_allclose
 import scipy.sparse
@@ -227,4 +203,32 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 
 ## How to avoid getting eigenvalues already sought? Use CGT! 
 
+eigsh_block_shifted(A, k=10, b=3)
 eigsh_block_shifted(A, k=10, b=3, OPinv=Pop)
+# OPinv=Pop
+
+## Preconditioned CG testing 
+from scipy.sparse.linalg import cg
+
+n_iter = 0
+def inc_cb(xk):
+  global n_iter 
+  n_iter += 1
+x = np.random.uniform(size=A.shape[0], low=-0.50, high=0.50)
+b = A @ x
+
+## Test regular CG 
+xs, _ = cg(A=A, b=b, callback=inc_cb, tol=1e-12)
+assert max(abs(xs - x)) <= 1e-11
+
+## PCG with exact inverse
+from scipy.sparse import diags
+M = diags(1/A.diagonal())
+xs, _ = cg(A=A, b=b, M=M, callback=inc_cb, tol=1e-12)
+assert max(abs(xs - x)) <= 1e-11
+
+
+f_args = dict(tol=np.finfo(np.float32).eps, which='LM', return_eigenvectors=False, raise_for_unconverged=False, return_stats=True, return_history=False)
+
+primme.eigsh(A, k=30, **f_args)
+primme.eigsh(A, k=30, OPinv=M, **f_args)
