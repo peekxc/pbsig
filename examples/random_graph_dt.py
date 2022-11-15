@@ -17,7 +17,7 @@ import primme
 ## PRIMME_GD_plusK := GD with locally optimal restarting.
 ## PRIMME_JDQMR := Jacobi-Davidson with adaptive stopping criterion for inner Quasi Minimum Residual (QMR).
 ## (min matvec's) PRIMME_GD_Olsen_plusK := GD+k and the cheap Olsen’s Method. 
-opts = dict(tol=1e-6, printLevel=0, return_eigenvectors=False, return_stats=True)
+opts = dict(tol=1e-6, printLevel=0, return_eigenvectors=False, return_stats=True, return_history=True)
 
 G = nx.connected_watts_strogatz_graph(130, k=7, p=0.20)
 K = { 'vertices': np.array(list(G.nodes)), 'edges': np.array(list(G.edges)) }
@@ -41,10 +41,19 @@ def weighted_graph_Laplacian(K: dict, v: ArrayLike):
 # lanczos.sparse_lanczos(L, 10, 30, 1000, 1e-6)
 L = weighted_graph_Laplacian(K, [1,0])
 stats = lanczos.sparse_lanczos(L, 29, 30, 1000, 1e-6)
-_, stats = primme.eigsh(L, k=29, ncv=30, tol=1e-6, return_stats=True, return_eigenvectors=False, method="PRIMME_RQI")
-_, stats = primme.eigsh(L, k=29, ncv=30, tol=1e-6, return_stats=True, return_eigenvectors=False, method="PRIMME_STEEPEST_DESCENT")
-_, stats = primme.eigsh(L, k=29, ncv=30, tol=1e-6, return_stats=True, return_eigenvectors=False, method="PRIMME_Arnoldi")
-_, stats = primme.eigsh(L, k=29, ncv=30, tol=1e-6, return_stats=True, return_eigenvectors=False, method="PRIMME_GD_Olsen_plusK")
+# _, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_RQI", **opts)
+
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_Arnoldi", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_STEEPEST_DESCENT", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_GD", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_GD_Olsen_plusK", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_JDQR", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_JDQMR", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_JDQMR_ETol", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_JD_Olsen_plusK", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_LOBPCG_OrthoBasis", **opts)
+_, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_LOBPCG_OrthoBasis_Window", **opts)
+
 
 class CG_OPinv(LinearOperator):
   def __init__(self, M):
@@ -66,17 +75,33 @@ class CG_OPinv(LinearOperator):
     self.y = y
     for i in range(x.shape[1]):
       # S = shifts[i]*self.I #S = np.array([s if s > 0 else 1 for s in S])
-      y[:,i] = cg(A=self.M - shifts[i]*self.I, b=x, tol=1e-6, callback=self.__update_cb__)[0]
+      y[:,i] = self.cg(A=self.M - shifts[i]*self.I, b=x, tol=1e-6, callback=self.__update_cb__)[0]
     return y
 
+def print_stats(stats, pre):
+  stat_keys = ['numOuterIterations', 'numRestarts', 'numMatvecs', 'numPreconds']
+  print(str([(k, stats[k]) for k in stat_keys] + [("numPrecondIters", pre.n_calls)]))
+
+## Using L=M itself as a preconditioner 
 cg_pre = CG_OPinv(L)
-cg_pre = CG_OPinv(diags(L.diagonal()))
-
 _, stats = primme.eigsh(L, k=29, ncv=30, which='LM', OPinv=cg_pre, method="PRIMME_GD_Olsen_plusK", **opts)
+print_stats(stats, cg_pre)
+
+## Using D_L=M the diagonal as a preconditioner 
+cg_pre = CG_OPinv(diags(L.diagonal()))
+_, stats = primme.eigsh(L, k=29, ncv=30, which='LM', OPinv=cg_pre, method="PRIMME_GD_Olsen_plusK", **opts)
+print_stats(stats, cg_pre)
+
+## Using T=M as low-stretch spanning tree as a preconditioner 
+from pbsig.lsst import low_stretch_st
+M = low_stretch_st(G, method="akpw")
+cg_pre = CG_OPinv(M)
+_, stats = primme.eigsh(L, k=29, ncv=30, which='LM', OPinv=cg_pre, method="PRIMME_GD_Olsen_plusK", **opts)
+print_stats(stats, cg_pre)
 
 
+  
 
-cg_pre.n_calls
 
 
 
@@ -88,17 +113,28 @@ lanczos.sparse_lanczos(L, 29, 30, 1000, 1e-6)['n_operations']
 primme.eigsh(L, k=1, ncv=15, which='LM', OPinv=cg_preconditioner, method="PRIMME_GD_Olsen_plusK", **opts)
 
 # import matplotlib.pyplot as plt
+
+from scipy.sparse import csc_matrix, coo_matrix
 import numpy as np
+import networkx as nx
 from julia.api import Julia
 jl = Julia(compiled_modules=False) # it's unclear why this is needed, but it is
 from julia import Main
 Main.using("Laplacians")
 Main.using("LinearAlgebra")
 Main.using("SparseArrays")
-# Main.G = 
-from itertools import combinations
-import networkx as nx
-# G = nx.from_numpy_array(L)
+G = nx.connected_watts_strogatz_graph(10, k=3, p=0.20)
+A = coo_matrix(nx.adjacency_matrix(G)).astype(float)
+Main.I = np.array(A.row+1).astype(float)
+Main.J = np.array(A.col+1).astype(float)
+Main.V = A.data 
+jl.eval("S = sparse(I,J,V)")
+T = np.array(jl.eval("t = akpw(S)"))
+
+# A = nx.adjacency_matrix(G).todense()
+# A = [list(np.array(A[i,:]).astype(float).flatten()) for i in range(A.shape[0])]
+
+nx.adjacency_matrix(G)
 
 # A = jl.eval(f"A = empty_graph({ G.number_of_nodes() })")
 # for u,v in combinations(range(G.number_of_nodes()), 2):
@@ -107,12 +143,15 @@ import networkx as nx
 # A = jl.eval("A = uniformWeight(A)")
 jl.eval("I = [1,2,3]; J = [1,2,3]; V = [1,1,1];")
 jl.eval("S = sparse(I,J,V)")
-
+jl.eval("t = akpw(S)")
 
 G = jl.eval("G = pure_random_graph(10)")
+G = jl.eval("G = dropzeros(G)")
 np.array(jl.eval("t = akpw(G)"))
 # A = jl.eval("zeros(3,3)")
-Main.G = A
+Main.G = G
+np.array(jl.eval("t = akpw(G)"))
+
 
 # mst = np.array(jl.eval("mst = kruskal(a)"))
 st = np.array(jl.eval("t = akpw(G)"))
