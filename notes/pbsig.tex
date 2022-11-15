@@ -300,11 +300,11 @@ where $\epsilon > 0$ is an arbitrarily small positive number. By the reduction s
 % Benefits of rank(A) = rank(A^T A) = rank(A A^T)
 
 
-\subsection{Special Cases} The spectrum of the graph Laplacian is known to have closed-form expressions for certain structured graphs. In particular, the spectra of the cycle graph $C_n$ and the path graph $P_n$ over $n$ vertices is given by: 
-\begin{equation}
-	\Lambda(C_n) = 1-\cos\left (\frac{2\pi k}{n} \right), \quad \Lambda(P_n) = 1-\cos\left (\frac{\pi k}{n-1} \right)
-\end{equation}
-for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are working with is one of these special graphs, it follows that may read off its $(i,j)$-th PBN in $O(n)$ time. 
+%\subsection{Special Cases} The spectrum of the graph Laplacian is known to have closed-form expressions for certain structured graphs. In particular, the spectra of the cycle graph $C_n$ and the path graph $P_n$ over $n$ vertices is given by: 
+%\begin{equation}
+%	\Lambda(C_n) = 1-\cos\left (\frac{2\pi k}{n} \right), \quad \Lambda(P_n) = 1-\cos\left (\frac{\pi k}{n-1} \right)
+%\end{equation}
+%for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are working with is one of these special graphs, it follows that may read off its $(i,j)$-th PBN in $O(n)$ time. 
 
 %Moreover, by composing the vertex and edge functions $f_V$ and $f_E$, respectively, with the step functions $S_\ast : \mathbb{R} \to \{0, 1\}$
 
@@ -359,8 +359,7 @@ for all $k = 0, 1, \dots, n-1$. Thus, if we know ahead of times the graph we are
 %	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
 %\end{enumerate}
 
-\subsection{Complexity of Persistence}
-
+\subsection{Complexity of Persistence} TODO 
 
 
 \section*{An quadratic-time rank computation}
@@ -372,7 +371,7 @@ In this section we discuss the computational details involved in evaluating the 
 	\end{cases}
 \end{equation}
 where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of a Hermitian matrices. 
-In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
+In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases, and the connections the boundary operators have with graph Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}
@@ -390,8 +389,8 @@ Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of
 Decomposing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
 Computing the eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-The latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former phase is effectively bounded below by $\Omega(n^3)$ for dense matrices using non-Strassen-like computations, and thus it is this reduction to tridiagonal form that dominates the computation. 
-To counter this when $A$ sparse and structured, Lanczos~\cite{} proposed the so-called \emph{method of minimized iterations} to obtain a tridiagonal form of $A$ in much lower complexity.
+The latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense matrices using non-Strassen-like computations, and thus it is the reduction to tridiagonal form that dominates the computation. 
+Lanczos~\cite{} proposed the so-called \emph{method of minimized iterations}, now known as the \emph{Lanczos method}, as an attractive alternative for obtaining a tridiagonal form of sparse, symmetric $A$.
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -476,91 +475,19 @@ Thus, we need not necessarily keep the Lanczos vectors $Q$ in memory to monitor 
  	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
  \end{equation}
 % The Rayleigh-Ritz properties are preserved under semi-orthogonality w_j \approx \sqrt{\epsilon}
- 
-The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.  
-Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
-% such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
-% , then the Lanczos method can be quite efficient. 
-% Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
-Indeed, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
-
-
-
-% It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
-
-%In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
-%\begin{equation}
-%	\lVert p^k(A)b \rVert = {minimum}
-%\end{equation}
-% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
-
-% Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
-% Rayleigh 
-% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
-% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
-
-
-
-% Still working on this part
-The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator. In particular, since $A$ is not modified at all during the computation, one need  necessarily involve explicitly storing $A$ in memory. 
-The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
-\begin{equation}
-	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
-\end{equation}
-In particular, the operator $v \mapsto \partial_p \partial_p^T v$ need not be represented explicitly in memory: as long as we have access to the underlying simplicial complex $K$ and its corresponding filter function $f$, we may take advantage of the .
-To make this more precise, we start with a useful lemma:
-\begin{lemma}
-Let $K$ denote a simplicial complex with $(m, n)$ simplices of dimension $(p, p - 1)$. Assume $m > n$. For any fixed $p \geq 0$ and arbitrary vector $v \in \mathbb{R}^n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(m)$ time and $O(m)$ memory. 
-\end{lemma}
-\begin{proof}
-	
-\end{proof}
-From this lemma, we have the following result: 
-\begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{prop:exact_arith_matvec}
-	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
-	Then the Lanczos iteration from~\cite{} yields the quantity:
-	\begin{equation}
-		\mathrm{dim}(B_{p}(K; \mathbb{R})) = \mathrm{rank}(\partial_{p+1}(K))
-	\end{equation}
-	in $O(mr)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
-	%	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
-\end{proposition}
-\noindent A proof of this proposition is given in the appendix. 
-
-% Rounding Issues
-For expository purposes, the preceding sections assumed exact arithmetic. 
-
-
-% SDD
-The structure of $L_p = \partial_p \partial_p^T$ is actually amenable to more than just computational efficiency in terms of matrix-vector multiplication. A matrix $A = \{ a_{ij} \}$ is said to be \emph{diagonally dominant} (DD) if it satisfies: 
-\begin{equation}\label{eq:dd}
-a_{ii} \geq \sum\limits_{j \neq i} \, \lvert a_{ij} \rvert \,, \quad \forall \, i,j \in [n]
-\end{equation}  
-Similarly, when the inequality in~\eqref{eq:dd} is strict, $A$ is said to be \emph{strictly diagonally dominant} (SDD). 
-It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally dominant matrix in the sense that $L_p[i,i] = \sum\limits_{j \neq i} \lvert L_p[i,j] \rvert$. Diagonally dominant matrices are of particular interest becsue.... their spectrums can be approximated rather quickly. 
-
-
-%Extending from this, corollary~\ref{} implies $p$-th PBN at index $(i,j) \in \Delta_{+}^{m}$ can be computed in... note that for any $p \geq 1$, this is significant reduction in complexity compared to e.g. the $O(m^3)$ reduction algorithm.
-%Indeed, if $K$ has $n$ vertices, the $\Theta(m^3)$ complexity of the reduction algorithm implies computing the $p$-th persistence diagram requires reducing $\partial_{p+1}$; one deduces loose though asymptotically accurate bounds as $O(n^3(p+2))$ operations, i.e. $O(n^9)$ for $p = 1$, $O(n^{12})$ for $p = 2$, etc. In contrast, combining proposition~\ref{prop:exact_arith_matvec} with corollary~\ref{}, we have that the PBN at index $i,j$ may be compute in... a substantial difference indeed. 
-%Obviously, the assumption of exact arithmetic is too strong to be of any practical use. Round-off errors plague the simple Lanczos iteration.  
-
-
+ %% , then the Lanczos method can be quite efficient. 
+%% Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
+%% such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
 
 \subsection{An $O(m)$ \texttt{matvec} operator}
-%Thus far, we have discussed various ways of re-writing expressions of the PBN, and the advantages/disadvantages each form implies on the computational side. We now pivot to focus on the computation of the constitutive terms of these expressions themselves, again with a motivation of understanding the PBN computation in continuously parameterized settings. 
-
-% start with the numerical rank? 
-
-%For a square matrix of order $n$, the quadratic form: 
-% \begin{equation}
-% x^T A x = \sum\limits_{k=1}^n \sum\limits_{l=1}^n	a_{kl} x_k x_l 
-% \end{equation}
-%defines a continuous function in $x \in \mathbb{R}^n$. 
-%$x = \left( x_i \right)_{i=1}^n$
-% Spectral graph theory plug
-% Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
-
-
+% The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. .  
+ The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator. In particular, since $A$ is not modified at all during the computation, one need necessarily involve explicitly storing $A$ in memory. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.
+Indeed, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
+However, the sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. 
+In what follows, we take advantage of the the simplicial structure of $K$ and the fact that $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$ to both elucidate the structured form of the matrix vector operator and highlight connections to other areas of applied mathematics.
+For simplicity, we focus on the case where $p = 0$, and defer higher dimensions for later. 
+ 
 Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
 \begin{equation}\label{eq:L_form}
 	L = D - A = \partial_1 \partial_1^T
@@ -605,8 +532,71 @@ Ignoring sign cancellations, the $(i,j)$-th entry of the Laplacian matrix $L^{VE
 		0 & i \nsim j 	
 	\end{cases}
 \end{equation}
-In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time.  
+In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. We end this section with a proposition, which essentially follows by combing the above observations with Proposition~\ref{prop:exact_arith_lanczos}.
+\begin{proposition}\label{prop:exact_arith_matvec}
+	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
+	Then the Lanczos iteration from~\cite{} yields the quantity:
+	\begin{equation}
+		\mathrm{dim}(B_{p}(K; \mathbb{R})) = \mathrm{rank}(\partial_{p+1}(K))
+	\end{equation}
+	in $O(mr)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
+	%	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
+\end{proposition}
+\noindent A proof of this proposition is given in the appendix. 
 
+% It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
+
+%In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
+%\begin{equation}
+%	\lVert p^k(A)b \rVert = {minimum}
+%\end{equation}
+% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in..., wherein the convergenence of the Lanczos procedure is studied more in detail.
+
+% Thus, if $\mathrm{rank}(A) = r$, the eigenvalues of $T_k$ for some $k < r$ tend to converge quickly to the extremal eigenvalues of $A$. 
+% Rayleigh 
+% the explicit formulas of the of the characteristic polynomials of $A_k$ are given in...
+% where $S_k^T T_k S_k = \mathrm{diag}\{\theta_1, \theta_2, \dots, \theta_k \}$ satisfying $T_k = \lVert A Q_k - Qk B \rVert_2$
+
+% Still working on this part
+% Observe each column of $\partial_p$ corresponds to a $p$-chain of the form~\eqref{eq:matrix_pchain}, which is a constant up to difference in sign. Thus, evaluating $y = \partial_p^T v$ reduces to computing the locations $(k_1, k_2, \dots, k_{p+1})$ (how to phrase this?):
+%\begin{equation}
+%	y_{i} = y_i \pm S_{i,j}(\sigma_k, \sigma_l)
+%\end{equation}
+%In particular, the operator $v \mapsto \partial_p \partial_p^T v$ need not be represented explicitly in memory: as long as we have access to the underlying simplicial complex $K$ and its corresponding filter function $f$, we may take advantage of the .
+%To make this more precise, we start with a useful lemma:
+%\begin{lemma}
+%Let $K$ denote a simplicial complex with $(m, n)$ simplices of dimension $(p, p - 1)$. Assume $m > n$. For any fixed $p \geq 0$ and arbitrary vector $v \in \mathbb{R}^n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(m)$ time and $O(m)$ memory. 
+%\end{lemma}
+
+\subsection{Convergence Rate \& Rounding \& SDD} TODO
+%\< TODO \> 
+% For expository purposes, the preceding sections assumed exact arithmetic. 
+% SDD
+%The structure of $L_p = \partial_p \partial_p^T$ is actually amenable to more than just computational efficiency in terms of matrix-vector multiplication. A matrix $A = \{ a_{ij} \}$ is said to be \emph{diagonally dominant} (DD) if it satisfies: 
+%\begin{equation}\label{eq:dd}
+%a_{ii} \geq \sum\limits_{j \neq i} \, \lvert a_{ij} \rvert \,, \quad \forall \, i,j \in [n]
+%\end{equation}  
+%Similarly, when the inequality in~\eqref{eq:dd} is strict, $A$ is said to be \emph{strictly diagonally dominant} (SDD). 
+%It is well known that for any $p \geq 0$, $L_p$ is the smallest diagonally dominant matrix in the sense that $L_p[i,i] = \sum\limits_{j \neq i} \lvert L_p[i,j] \rvert$. Diagonally dominant matrices are of particular interest becsue.... their spectrums can be approximated rather quickly. 
+
+
+%Extending from this, corollary~\ref{} implies $p$-th PBN at index $(i,j) \in \Delta_{+}^{m}$ can be computed in... note that for any $p \geq 1$, this is significant reduction in complexity compared to e.g. the $O(m^3)$ reduction algorithm.
+%Indeed, if $K$ has $n$ vertices, the $\Theta(m^3)$ complexity of the reduction algorithm implies computing the $p$-th persistence diagram requires reducing $\partial_{p+1}$; one deduces loose though asymptotically accurate bounds as $O(n^3(p+2))$ operations, i.e. $O(n^9)$ for $p = 1$, $O(n^{12})$ for $p = 2$, etc. In contrast, combining proposition~\ref{prop:exact_arith_matvec} with corollary~\ref{}, we have that the PBN at index $i,j$ may be compute in... a substantial difference indeed. 
+%Obviously, the assumption of exact arithmetic is too strong to be of any practical use. Round-off errors plague the simple Lanczos iteration.  
+
+
+%Thus far, we have discussed various ways of re-writing expressions of the PBN, and the advantages/disadvantages each form implies on the computational side. We now pivot to focus on the computation of the constitutive terms of these expressions themselves, again with a motivation of understanding the PBN computation in continuously parameterized settings. 
+
+% start with the numerical rank? 
+
+%For a square matrix of order $n$, the quadratic form: 
+% \begin{equation}
+% x^T A x = \sum\limits_{k=1}^n \sum\limits_{l=1}^n	a_{kl} x_k x_l 
+% \end{equation}
+%defines a continuous function in $x \in \mathbb{R}^n$. 
+%$x = \left( x_i \right)_{i=1}^n$
+% Spectral graph theory plug
+% Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
 \begin{figure}
 \centering
@@ -622,30 +612,52 @@ In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
 On one hand, equation~\eqref{eq:pbn_stability} shows that PBN functions \emph{are} stable with respect to the extended matching distance: if the two filter functions are $\epsilon$-close in the sense that $\lVert f - f' \lVert_\infty \leq \epsilon$, then the PBN functions have distance $d(\beta_f, \beta_{f'}) \leq \epsilon$. 
-On of the other hand, computationally, the extending matching distance $d(\beta_f, \beta_{f'})$ requires finding the optimal matching $\phi$ between the points $p \in \Lambda_+$ with non-zero multiplicity, a quantity which effectively requires obtaining the persistence diagrams to compute. Since both (a) computing the full persistence diagram and (b) obtaining the optimal matching are both  high complexity algorithms, we would like to avoid them while still retaining some information contained in them, if possible. 
-We tackled (a) by fixing specific \emph{regions} of $\Lambda_+$ a-priori. We now focus on tackling (b). 
+On the other hand, computationally, the extending matching distance $d(\beta_f, \beta_{f'})$ requires finding the optimal matching $\phi$ between the points $p \in \Lambda_+$ with non-zero multiplicity, which effectively requires the persistence diagrams of $f$ and $f'$ to compute. Since both (a) computing the full persistence diagram and (b) obtaining the optimal matching are both  high complexity algorithms, we would like to avoid them while still retaining some information contained in them, if possible. 
+We tackled the form by fixing specific \emph{regions} of $\Lambda_+$ a-priori; we now focus on on the latter.
 
-One disadvantage in working with counting/multiplicity functions restricted to portions of real-plane is that they are not smooth. 
+One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are not smooth. 
 Namely, if $(K, f_h)$ is a parameterized filtration where $K$ is a fixed simplicial complex and $f : \mathcal{H} \times K \to \mathbb{R}$, it's possible to construct counter examples where $\mu_p^R(K, f_h) \sim O(\lvert K^{(p)} \rvert)$ and $\mu_p^R(K, f_{h'}) = 0$, for some choice $h, h' \in \mathcal{H}$ with $\lvert h - h' \rvert$ arbitrarily small~\cite{}.
 Intuitively, as both of the invariants studied so far are counting type invariants restricted to a portion of $\Lambda_+$, it's always possible to encounter such situations where small changes in the input  affect the corresponding invariant in a non-Lipshitz way.
 
  
- 
- 
 Like the PBN, the discontinuous nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. Several other authors~\cite{}, have confronted this discontinuity by relaxing $\mathrm{rank}(X)$ with the nuclear norm $\lVert X\rVert_\ast$. This is partially motivated by the fact that, if $x = (\sigma_1, \dots, \sigma_n)$ is a vector containing the singular values of $X$, then: 
-\begin{equation}
+\begin{equation}\label{eq:pseudo_norm}
 	\mathrm{rank}(X) = \lVert x \rVert_0  \approx \lVert x \rVert_1 = \lVert X \rVert_\ast 
 \end{equation}
-Additionally, in the context of the Rank Minimization Problem (RMP), the nuclear norm forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
+In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
+Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems became an active area of research, which lead to many fruitful results in the area of compressed sensing and matrix completion. 
+% In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 
-In the spirit of~\cite{}, we consider a family of continuous rank approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, each of which are functions of the singular value function and some positive relaxation parameter $\epsilon > 0$. 
+In the spirit of~\cite{}, we consider a family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy. Given a positive $\epsilon > 0$, the basic quality we want out of such a relaxation is:
+\begin{flalign}\label{eq:lap_quad_from}
+	(\, \forall \, x > 0 \,)  & & \quad\quad\quad 
+%\begin{equation}
+	\lim_{\epsilon \to 0^+} \phi(x, \epsilon) = \mathrm{sgn}_+(x),\quad \quad & \mathrm{rank}(X) \approx \sum\limits_{i=1}^n \phi(\sigma_i(X), \epsilon) & &&
+\end{flalign}
+%\end{equation}
+Following~\cite{}, Bi et al.~\cite{} give a framework for constructing such smoothing functions which is motivated by the fact that $\mathrm{sgn}_+(x)$ may be equivalently expressed as an integral of the Dirac delta function.  
+%an integral $\mathrm{sgn}_+(x) = \int_{-\infty}^x \delta(z) dz$, where the $\delta$ is a Dirac delta function satisfying $\int\limits_{-\infty}^\infty \delta(z) dz = 1$. In particular, for any $\epsilon > 0$, we define $\phi(\cdot, \epsilon)$ as:
+\begin{equation}
+	\phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \forall \, z \geq 0
+\end{equation}
+where $\hat{\delta}(z, \epsilon) = \nu(\epsilon)^{\text{-}1} p \left ( u \nu(\epsilon)^{\text{-}1} \right )$ for some continuous density function $p: \mathbb{R}_+ \to \mathbb{R}_+$ and some choice of continuous increasing $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
+These function were shown to satisfy a number of nice properties of these functions; namely, if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
+Moreover, given a real matrix $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, one obtains an continuously differentiable operator $\Phi_\epsilon$ for any fixed $\epsilon > 0$ by replacing $\sigma \mapsto \phi(\sigma, \epsilon)$ and mapping $X$ as follows:
+%$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
+\begin{align*}
+ \Phi_\epsilon : \quad & \mathbb{R}^{n \times m}  & \to \quad & \mathbb{R}^{n \times m}  \\
+						           & X & \mapsto \quad &  U \, \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon)) \, V^T \numberthis
+\end{align*}
+%whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
+we summarize the main points: 
+\begin{proposition}[Continuous Rank Relaxation~\cite{}]
+	\begin{enumerate}
+%		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
+%		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
+%		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
+	\end{enumerate}
+\end{proposition}
 
-Let $\delta(u, \epsilon) = \nu(\epsilon)^{\text{-}1} \rho \left ( u \nu(\epsilon)^{\text{-}1} \right )$ for
-
-The continuity of these relaxation is studied extensively in~\cite{}, wherein a plethora of results were shown. We summarize the main points: 
-\begin{enumerate}
-	\item $\phi$ is continuously differentiable 
-\end{enumerate}
 
 To adapt these relaxations to the PBN functions as defined via~\eqref{}, we need to modify the chain entries in~\eqref{} to vary continuously as functions of $\mathcal{H}$. 
 The 
@@ -677,7 +689,7 @@ Note that when $\nu(\epsilon) = \sqrt[\leftroot{-2}\uproot{2}p]{\epsilon}$ and $
 \begin{equation}
 	\phi_\epsilon(X) = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[X (X X^T + \epsilon \, I_n) X^T\right]
 \end{equation}
-The cylic property of the trace opertor implies...
+The cyclic property of the trace operator implies...
 
 
 % The stability of the spectral relaxation proposed in~\eqref{} lends some stability the computation of the Betti and Multiplicity computations we have discussed in parameterized setting. 
@@ -688,7 +700,8 @@ Indeed, since Laplacian matrices are normal matrices, we expect their spectra to
 
 % The spectrum of Normal matrices are stable: if A is normal and is perturbed by a perturbation w/ norm at most \epsilon, then the spectrum moves by at most \epsilon. And Laplacian matrices are normal matrices
 % https://terrytao.wordpress.com/2008/10/28/when-are-eigenvalues-stable/
-Let $\hat{\partial}_h$
+In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th up Laplacian at time $h \in \mathcal{H}$.
+%Let $\hat{\partial}_h$
 
 \newpage
 

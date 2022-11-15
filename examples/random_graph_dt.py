@@ -7,7 +7,7 @@ import networkx as nx
 from pbsig.persistence import boundary_matrix
 from pbsig.linalg import lanczos
 from pbsig.simplicial import cycle_graph
-from pbsig.pht import rotate_S1
+from pbsig.pht import rotate_S1, uniform_S1
 from pbsig.datasets import mpeg7
 from pbsig.pht import pht_preprocess_pc
 
@@ -101,6 +101,53 @@ print_stats(stats, cg_pre)
 
 
   
+
+
+## Go around the sphere 
+F = list(rotate_S1(X, nd=132, include_direction=False))
+
+nmv_irl = 0
+for v in uniform_S1(512):
+  L = weighted_graph_Laplacian(K, v)
+  stats = lanczos.sparse_lanczos(L, 29, 30, 1000, 1e-6)
+  nmv_irl += stats['n_operations']
+
+PRIMME_METHOD = "PRIMME_GD"
+nmv_sd = 0
+opts['return_eigenvectors'] = False
+for v in uniform_S1(512):
+  L = weighted_graph_Laplacian(K, v)
+  _, stats = primme.eigsh(L, k=29, ncv=30, method=PRIMME_METHOD, **opts)
+  nmv_sd += stats['numMatvecs']
+
+nmv_sd_ev = 0
+opts['return_eigenvectors'] = True
+for i, v in enumerate(uniform_S1(512)):
+  if i == 0: 
+    L = weighted_graph_Laplacian(K, v)
+    _, EV, stats = primme.eigsh(L, k=29, ncv=30, method=PRIMME_METHOD, **opts)
+  else: 
+    NL = weighted_graph_Laplacian(K, v)
+    # E = NL - L
+    # [EV[:,[j]].T @ E @ EV[:,[j]] for j in range(EV.shape[1])]
+    _, EV, stats = primme.eigsh(NL, k=29, ncv=30, v0 = EV, method="PRIMME_STEEPEST_DESCENT", **opts)
+    L = NL
+  nmv_sd_ev += stats['numMatvecs']
+  pv = v
+
+## Use previous eiegnvectors ?
+L = weighted_graph_Laplacian(K, [1, 0])
+opts['return_eigenvectors'] = True
+_, EV, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_GD", **opts)
+_, EV, stats = primme.eigsh(L, k=29, ncv=30, v0 = EV, method="PRIMME_GD", **opts)
+
+
+
+
+
+
+
+
 
 
 
