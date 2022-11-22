@@ -104,44 +104,68 @@ print_stats(stats, cg_pre)
 
 
 ## Go around the sphere 
-F = list(rotate_S1(X, nd=132, include_direction=False))
+nd = 512
+S1 = list(uniform_S1(nd))
 
-nmv_irl = 0
-for v in uniform_S1(512):
-  L = weighted_graph_Laplacian(K, v)
-  stats = lanczos.sparse_lanczos(L, 29, 30, 1000, 1e-6)
-  nmv_irl += stats['n_operations']
-
-PRIMME_METHOD = "PRIMME_GD"
-nmv_sd = 0
-opts['return_eigenvectors'] = False
-for v in uniform_S1(512):
-  L = weighted_graph_Laplacian(K, v)
-  _, stats = primme.eigsh(L, k=29, ncv=30, method=PRIMME_METHOD, **opts)
-  nmv_sd += stats['numMatvecs']
-
-nmv_sd_ev = 0
-opts['return_eigenvectors'] = True
-for i, v in enumerate(uniform_S1(512)):
-  if i == 0: 
+from typing import *
+def laplacian_dt(S1: Iterable, method: str, k: int, ncv: int, reuse_ev: bool = False):
+  res = np.zeros(len(S1))
+  opts['return_eigenvectors'] = reuse_ev
+  for i, v in enumerate(S1):
     L = weighted_graph_Laplacian(K, v)
-    _, EV, stats = primme.eigsh(L, k=29, ncv=30, method=PRIMME_METHOD, **opts)
-  else: 
-    NL = weighted_graph_Laplacian(K, v)
-    # E = NL - L
-    # [EV[:,[j]].T @ E @ EV[:,[j]] for j in range(EV.shape[1])]
-    _, EV, stats = primme.eigsh(NL, k=29, ncv=30, v0 = EV, method="PRIMME_STEEPEST_DESCENT", **opts)
-    L = NL
-  nmv_sd_ev += stats['numMatvecs']
-  pv = v
+    if method == "IRL":
+      stats = lanczos.sparse_lanczos(L, k, ncv, 1000, 1e-6)
+      res[i] = stats['n_operations']
+    elif reuse_ev == False:
+      _, stats = primme.eigsh(L, k=k, ncv=ncv, method=method, **opts)
+      res[i] = stats['numMatvecs']
+    else:
+      _, EV, stats = primme.eigsh(L, k=k, ncv=ncv, method=method, **opts) if i == 0 else primme.eigsh(L, k=k, ncv=ncv, v0=EV, method=method, **opts) 
+      res[i] = stats['numMatvecs']
+  return(res)
+
+nmv_irl = laplacian_dt(S1, method="IRL", k=29, ncv=30)
+nmv_jdqmr = laplacian_dt(S1, method="PRIMME_JDQMR", k=29, ncv=30)
+nmv_jdqmr_ = laplacian_dt(S1, method="PRIMME_JDQMR", k=29, ncv=30, reuse_ev=True)
+nmv_gd = laplacian_dt(S1, method="PRIMME_GD", k=29, ncv=30)
+nmv_gd_ = laplacian_dt(S1, method="PRIMME_GD", k=29, ncv=30, reuse_ev=True)
+nmv_gdo = laplacian_dt(S1, method="PRIMME_GD_Olsen_plusK", k=29, ncv=30)
+nmv_gdo_ = laplacian_dt(S1, method="PRIMME_GD_Olsen_plusK", k=29, ncv=30, reuse_ev=True)
+nmv_gdco = laplacian_dt(S1, method="PRIMME_STEEPEST_DESCENT", k=29, ncv=30)
+nmv_gdco_ = laplacian_dt(S1, method="PRIMME_STEEPEST_DESCENT", k=29, ncv=30, reuse_ev=True)
+
+import matplotlib.pyplot as plt 
+fig = plt.figure(figsize=(8,8), dpi=250)
+ax = fig.gca()
+ax.plot(np.cumsum(nmv_irl), label='IRL')
+ax.plot(np.cumsum(nmv_jdqmr), label='GD', color='green')
+ax.plot(np.cumsum(nmv_jdqmr_), label='GD+V', color='green', linestyle='dashed')
+ax.plot(np.cumsum(nmv_gd), label='JDQMR', color='blue')
+ax.plot(np.cumsum(nmv_gd_), label='JDQMR+V', color='blue', linestyle='dashed')
+ax.plot(np.cumsum(nmv_gdo), label='GD (Olsen)', color='purple')
+ax.plot(np.cumsum(nmv_gdo_), label='GD (Olsen) + V', color='purple', linestyle='dashed')
+ax.plot(np.cumsum(nmv_gdco), label='GD (cheap Olsen)', color='red')
+ax.plot(np.cumsum(nmv_gdco_), label='GD (cheap Olsen)+V', color='red', linestyle='dashed')
+ax.legend()
+ax.set_yscale('log')
+
+plt.suptitle("Num. O(m) operations to obtain largest 30 EV's", y=0.950, fontsize=18)
+plt.title(f"Directional Transform over Watts-Strogatz Graph w/ (n,m)={G.number_of_nodes(),G.number_of_edges()}")
+
+plt.show()
+
+(sum(nmv_irl)/512)/29.0
+(sum(nmv_gdco)/512)/29.0
+
+
+
+
 
 ## Use previous eiegnvectors ?
-L = weighted_graph_Laplacian(K, [1, 0])
-opts['return_eigenvectors'] = True
-_, EV, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_GD", **opts)
-_, EV, stats = primme.eigsh(L, k=29, ncv=30, v0 = EV, method="PRIMME_GD", **opts)
-
-
+# L = weighted_graph_Laplacian(K, [1, 0])
+# opts['return_eigenvectors'] = True
+# _, EV, stats = primme.eigsh(L, k=29, ncv=30, method="PRIMME_GD", **opts)
+# _, EV, stats = primme.eigsh(L, k=29, ncv=30, v0 = EV, method="PRIMME_GD", **opts)
 
 
 

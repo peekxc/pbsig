@@ -6,6 +6,12 @@ Ulrich Bauer.
 \newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
   2021.
 
+\bibitem{bi2013approximation}
+Shujun Bi, Le~Han, and Shaohua Pan.
+\newblock Approximation of rank function and its application to the nearest
+  low-rank correlation matrix.
+\newblock {\em Journal of Global Optimization}, 57(4):1113--1137, 2013.
+
 \bibitem{cerri2013betti}
 Andrea Cerri, Barbara~Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia
   Landi.
@@ -24,6 +30,13 @@ Chao Chen and Michael Kerber.
 \newblock An output-sensitive algorithm for persistent homology.
 \newblock In {\em Proceedings of the twenty-seventh annual symposium on
   Computational geometry}, pages 207--216, 2011.
+
+\bibitem{chen1996class}
+Chunhui Chen and Olvi~L Mangasarian.
+\newblock A class of smoothing functions for nonlinear and mixed
+  complementarity problems.
+\newblock {\em Computational Optimization and Applications}, 5(2):97--138,
+  1996.
 
 \bibitem{chung1997spectral}
 Fan~RK Chung.
@@ -63,6 +76,12 @@ Ming Gu and Stanley~C Eisenstat.
   eigenproblem.
 \newblock {\em SIAM Journal on Matrix Analysis and Applications},
   16(1):172--191, 1995.
+
+\bibitem{milosavljevic2011zigzag}
+Nikola Milosavljevi{\'c}, Dmitriy Morozov, and Primoz Skraba.
+\newblock Zigzag persistent homology in matrix multiplication time.
+\newblock In {\em Proceedings of the twenty-seventh Annual Symposium on
+  Computational Geometry}, pages 216--225, 2011.
 
 \bibitem{newman2001laplacian}
 Michael~William Newman.

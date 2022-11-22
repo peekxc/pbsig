@@ -123,7 +123,7 @@ The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a matrix rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. The approach is essentially the same as the subspace intersection algorithm presented in~\cite{}.
+While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a matrix rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
 However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
 
 % Golub and Van Loan 
@@ -131,7 +131,7 @@ However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 
-In what follows, we outline a different approach to computing~\eqref{eq:pbn} that is both simpler and computationally more attractive. 
+In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is both simpler and computationally more attractive. 
 To illustrate our approach, we require more notation. If $A$ is a $m \times n$ matrix, let $A^{i, j}$ denote the lower-left submatrix defined by last $m - i + 1$ rows (rows $i$ through $m$, inclusive) and the first $j$ columns. 
 %Given an $n \times m$ matrix $A$, let $A[I, J]$ refer to the submatrix formed by taking rows in the set $I$ and taking columns in the set $J \subseteq [m]$. Let $L_{, j}$
 %\begin{equation}
@@ -188,7 +188,27 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K \rvert$
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent Compared to other methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$ (such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}), the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. Thus, we may exploit various properties of the rank function to accelerate (or relax) the computation of both invariants without e.g. reducing $\partial$ to $R$, zeroing columns of $\partial$ to obtain $\partial_p$, or even representing $\partial$ in memory explicitly. We dedicate the rest of the paper to exploring the consequences of this fact. 
+\noindent Computationally, the complexity of computing the PBN reduces the complexity of computing the rank of a set of boundary matrices. We summarize this with the following corollary:
+\begin{corollary}
+	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and indices $i,j \in \Delta_+^m$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O(\mathrm{R}_{p}(j))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+2)k)$ non-zero $\mathbb{F}$ entries. 
+	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
+	%with $n < m$
+\end{corollary} 
+\noindent Observe the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the  dominant cost of computing~\eqref{eq:betti_four} lies in computing either $\mathrm{rank}(\partial_p^{1,i})$ or $\mathrm{rank}(\partial_{p+1}^{1,j})$. As a result, we get a more localized bound for computing $\mu_p^R$. 
+\begin{corollary}
+	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq m$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p}(l - i))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries.
+	%$ j(p+1) - i$
+	%time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
+	%with $n < m$
+\end{corollary} 
+
+\noindent Compared to other classical methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$, such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. 
+%We exploit various properties of the rank function to 
+%Using various properties of the rank function, this accelerate the computation of both invariants. 
+%Combined with various properties of the rank function, we exploit this aspect of to accelerate the computation of both invariants in~\eqref{eq:betti_four} and~\eqref{eq:mu_four}. 
+Exploiting this, we show how to compute both topological invariants in essentially $O(m)$ memory, while also accelerating their re-computation in parameterized settings. 
+Moreover, we achieve these computations all without performing any reductions to $\partial$ as used in the standard algorithm~\cite{edelsbrunner2022computational}, without using any $O(m^2)$ combinatorial preprocessing procedure as in~\cite{cohen2006vines}, and without reducing the computation matrix multiplication time $O(n^\omega)$ with Strassen-like reductions~\cite{milosavljevic2011zigzag}.
+Indeed, our formulation need not even have $\partial$ in memory explicitly. We dedicate the rest of the paper to exploring the consequences of this fact. 
 
 %To get some intuition on what the structure and size of these matrices, we include a picture of each of the terms in Equation~\eqref{eq:betti_four}. 
 %\begin{figure}[!h]
@@ -196,24 +216,12 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K \rvert$
 %	\includegraphics[width=0.70\textwidth]{four_matrices}
 %	\caption{The four matrices whose ranks yield $\beta_p^{i,j}$ in the same order as given in~\eqref{eq:betti_four}. Each solid portion represents (sparse) blocks of non-zero entries, while each white portion is zero. Observe $\partial_{p+1}^{i+1, j} \subseteq \partial_{p+1}^{1,j}$ can be obtained by intersecting the non-zero entries of $\partial_{p+1}^{1,j}$ with the non-zero entries in the complement of $\partial_p^{1,i}$.  }
 %\end{figure}
-Boundary matrices are sparse and highly structured: given $K_\bullet$ with $m$ simplices $\sigma_1, \sigma_2, \dots, \sigma_m$ constructed from a $p$-dimensional complex $K$, its full boundary matrix $\partial$ is upper-triangular and has a storage complexity of: 
-\begin{equation}
-	\mathrm{nnz}(\partial) \sim O(m \log m)
-\end{equation} 
-To see this, note that since a $p$-simplex has $2^{p+1} - 1$ faces, we have $p \leq \log(m + 1) - 1$. Moreover, since each column of $\partial_p^\ast$ contains exactly $p+1$ non-zero entries, $\mathrm{nnz}(\partial) \sim O((p+1)m)$.
-As a result, we have the following corollary:
-\begin{corollary}
-	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and indices $i,j \in \Delta_+^m$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O(\mathrm{R}_{p}(j))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries. 
-	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
-	%with $n < m$
-\end{corollary} 
-\noindent The relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the largest number of non-zeros in any matrix in~\eqref{eq:betti_four} is $O(\max\{p\, i, (p+1)\,j\})$. %p(j-i), j(p+1)
-\begin{corollary}
-	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq m$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p}(l - i))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries.
-	%$ j(p+1) - i$
-	%time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
-	%with $n < m$
-\end{corollary} 
+%Boundary matrices are sparse and highly structured: given $K_\bullet$ with $m$ simplices $\sigma_1, \sigma_2, \dots, \sigma_m$ constructed from a $p$-dimensional complex $K$, its full boundary matrix $\partial$ is upper-triangular and has a storage complexity of: 
+%\begin{equation}
+%	\mathrm{nnz}(\partial) \sim O(m \log m)
+%\end{equation} 
+%To see this, note that since a $p$-simplex has $2^{p+1} - 1$ faces, we have $p \leq \log(m + 1) - 1$. Moreover, since each column of $\partial_p^\ast$ contains exactly $p+1$ non-zero entries, $\mathrm{nnz}(\partial) \sim O((p+1)m)$.
+
 
 %\begin{proposition}\label{prop:mu_query}
 %For any fixed $p \geq 0$, let $\partial_p$ denote the $p$-dimensional boundary matrices of filtration $K_\bullet$ of size $n = \lvert K^{(p)} \rvert$, $m = \lvert K^{(p\+1)} \rvert$.
@@ -228,9 +236,6 @@ As a result, we have the following corollary:
 %	Given a filtration $K_\bullet$ of size $n = \lvert K_{i}^{(p)} \rvert$ and $m = \lvert K_{j}^{(p+1)} \rvert$ and two indices $i \in [n]$, $j \in [m]$, computing $\beta_p^{i,j}$ can be done in time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 %	%with $n < m$
 %\end{corollary} 
-
-\noindent 
-In the next section, we show how extend these complexity statements to parameterized settings. We address the storage and time complexity of $R_\partial(\cdot, \cdot)$ in section~\ref{sec:background_notation}.
 
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
@@ -251,8 +256,8 @@ In what follows, we re-define the boundary matrix to exploit this permutation in
 
 % Change index set
 All of the notation given thus far, such as the definitions of the PH groups~\eqref{eq:hom_map} and the the PBN~\eqref{eq:pbn}, have used integer indices $(i,j) \in \Delta_+^m$ to describe the PH groups over a filtration pair $(K_\bullet, f)$ of size $\lvert K \rvert = m$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [m]$.
-In practice, the filter function $f$ is often derived from geometrical settings wherein it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, and it is more pragmatic to think of  $f : K \to \mathbb{R}$ is real-valued.
- In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
+In practice, the filter function $f$ is often derived from geometrical settings wherein it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, as the filter function $f : K \to \mathbb{R}$ is quite often real-valued.
+% In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
 In what follows, in the spirit of~\eqref{eq:pbn_cont}, we alter our notation by re-defining $\beta_p^{i,j}$ using pairs $(i,j) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ (x,y) \in \mathbb{R}^2 : y > x \} $.
 
 %such that $\mathrm{range}(f) = \mathbb{R}$, and it is often more informative to work with the pairs $(f(\tau_i), f(\sigma_j))$ stemming from the persistent-pairs $()$ persistence diagram 
@@ -279,16 +284,22 @@ Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^
 where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_i(x) = 0$ if $x \leq i$ and $1$ otherwise, $\tilde{S}_{i} = 1 - S_i$, and $f_h(\sigma) = f(\sigma, h)$.
 \end{definition}
 \noindent
-The result of definition~\ref{def:time_boundary_matrix} is that, in parameterized settings, the PBN can be written in essentially the same form as~\eqref{eq:betti_four}. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. We also write $r(A) = \mathrm{rank}(A)$. The parameterized PBN can be written as: 
+We now show definition~\ref{def:time_boundary_matrix} simplifies the expression of the PBN in parameterized settings. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. 
+%We also write $r(A) = \mathrm{rank}(A)$.
+% TODO: ask Jose about this
+%We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
+Let $V = \{ v_1, v_2, \dots, v_n\}$ denote a fixed vertex set. The parameterized PBN can be written as: 
 \begin{align*}\label{eq:pbn_parameterized}
-	\beta_p^{i,j} : \mathcal{H} &\to \mathbb{N} \\
-	h &\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
+	\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
+	%h &\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
+	h, K &\mapsto \lvert K_i^{(p)}(h) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j}(h)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \epsilon, j}(h)\,\big) \numberthis
 \end{align*}
 % deflation?
-where $\epsilon > 0$ is an arbitrarily small positive number. By the reduction shown above, we also have a parameterized multiplicity function for any rectangle $R = [i,j] \times [k,l]$ in the upper half-plane $\Delta_{+}$ satisfying $i < j \leq k < l$: 
+where $\epsilon > 0$ is an arbitrarily small positive number. Observe~\eqref{eq:pbn_parameterized} is essentially the same form as~\eqref{eq:betti_four}. 
+By Proposition~\ref{prop:mu_reduction}, we also have a parameterized multiplicity function for any rectangle $R = [i,j] \times [k,l]$ in the upper half-plane $\Delta_{+}$ satisfying $i < j \leq k < l$: 
 \begin{align*}\label{eq:mu_parameterized}
-	\mu_p^{R} : \mathcal{H} &\to \mathbb{N} \\
-	h & \mapsto  (\mathrm{r} \circ \hat{\partial}_{q}^{j \+ \epsilon, k})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, k})(h) -  (\mathrm{r} \circ \hat{\partial}_{q}^{j \+ \epsilon, l})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, l})(h) \numberthis
+	\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
+	h, K & \mapsto  \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \epsilon, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \epsilon, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \epsilon, l}(h)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i \+ \epsilon, l}(h)\,\big) \numberthis
 \end{align*}
 
 
@@ -363,22 +374,23 @@ where $\epsilon > 0$ is an arbitrarily small positive number. By the reduction s
 
 
 \section*{An quadratic-time rank computation}
-In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. For any $X \in \mathbb{R}^{n \times m}$ with $n < m$ that admits a singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as composition of the one-side sign function and the singular value function:
+In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. Given a matrix $X \in \mathbb{R}^{n \times m}$ satisfying $n < m$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
+%of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
 		1 & \text{if } x > 0 \\
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of a Hermitian matrices. 
-In particular, we focus on the Lanczos iteration, and related adaptations to positive semi-definite, diagonally dominant (DD) and strictly diagonally dominant (SDD) cases, and the connections the boundary operators have with graph Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
+where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of Hermitian matrices. 
+In particular, we focus on the Lanczos iteration applied to positive semi-definite matrices, diagonally dominant (DD) and strictly diagonally dominant (SDD) matrices, and combinatorial Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}
 % Summarized from "The Lanczos Method: Evolution and Application" 
 For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric positive definite, the implicit equation $x^T A x = 1$ defines an $n$-dimensional ellipsoid $y^T \Lambda y = 1$ whose $n$ principle axes are eigenvectors $\{v_i\}_{i=1}^n$ and whose lengths are the squares of eigenvalues $\Lambda(A)$ of $A$.
 %i.e. $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2$. 
-Each eigen-pair of $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued and every pair of eigenvectors $v, u \in \mathbb{R}^n$ whose corresponding eigenvalues $\lambda \neq \lambda'$ are orthogonal.  
+Each eigen-pair $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued and every pair of eigenvectors $v, u \in \mathbb{R}^n$ whose corresponding eigenvalues $\lambda \neq \lambda'$ are orthogonal.  
 % https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
 Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of the aforementioned ellipsoid---via orthogonal diagonalization:
 %by constructing an orthonormal eigenvector basis $V$ of $A$,
@@ -386,11 +398,11 @@ Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of
 	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
 \end{equation}
 % Insert similarity transforms  
-Decomposing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
-Computing the eigen decompositions of symmetric matrices generally consist of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
+Computing the eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-The latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense matrices using non-Strassen-like computations, and thus it is the reduction to tridiagonal form that dominates the computation. 
-Lanczos~\cite{} proposed the so-called \emph{method of minimized iterations}, now known as the \emph{Lanczos method}, as an attractive alternative for obtaining a tridiagonal form of sparse, symmetric $A$.
+Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full rank matrices using non-Strassen-like operations, and thus this reduction to tridiagonal form dominates the computation. 
+Lanczos~\cite{} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form, and thus revealing its spectrum.
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -412,7 +424,7 @@ Krylov subspaces arise naturally from using the minimal polynomial of $A$ to exp
 % "Krylov subspace methods for shifted unitary matrices and eigenvalue deflation applied to the Neuberger Operator and the matrix sign function"
 %A non-trivial fact that motivates the use of Krylov subspaces is that subspace $K_n(A, v)$ is the smallest $A$-invariant space that contains $v$. 
 %The vectors $A^j v$ are proportional to those obtained through power iteration and tend to be good approximations to the eigenvectors associated with the largest eigenvalues.
-The spectral theorem implies that $A$ is orthogonally diagonalizable, since $A$ is symmetric, and thus we may obtain $\Lambda(A)$ by generating an orthonormal basis for $\mathcal{K}_n(A, v)$. 
+Since $A$ is symmetric, the spectral theorem implies that $A$ is orthogonally diagonalizable and that we may obtain $\Lambda(A)$ by generating an orthonormal basis for $\mathcal{K}_n(A, v)$. 
 To do this, the Lanczos method constructs successive QR factorizations of $K_j(A,v) = Q_j R_j$ for each $j = 1, 2, \dots, n$.
 Due to $A$'s symmetry and the orthogonality of $Q_j$, we have $q_k^T A q_l = q_l^T A^T q_k = 0$ for $k > l + 1$, implying the corresponding $T_j = Q_j^T A Q_j$ have a tridiagonal structure:
 \begin{equation}
@@ -426,20 +438,19 @@ Due to $A$'s symmetry and the orthogonality of $Q_j$, we have $q_k^T A q_l = q_l
 \end{equation}
 Unfortunately, unlike the spectral decomposition $A = V \Lambda V^T$---which identifies a diagonalizable $A$ with its spectrum $\Lambda(A)$ up to a change of basis $A \mapsto M^{-1} A M$---there is no canonical choice of $T_j$ due to the arbitrary choice of $v$. 
 %which unitarily diagonalizes $A$ into a form such that any other decomposition $A = \tilde{U}\Lambda\tilde{U}^T$ is related by a similarity transform, 
-However, there is a connection between the iterates $K_j(A,v)$ and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n$, then:
+However, there is a connection between the iterates $K_j(A,v)$ and the full tridiagonalization of $A$: if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix $Q Q^T = I_n = [e_1, e_2, \dots, e_n]$, then:
 \begin{equation}
 	K_n(A, q_1) = Q Q^T K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]
 \end{equation}
-is the QR factorization of $K_n(A, q_1)$, where $e_1$ is the first column of $I_n$. Thus, tridiagonalizing $A$ with respect to a unit-norm $q_1$ completely characterizes $Q$. 
+\emph{is} the QR factorization of $K_n(A, q_1)$. Thus, tridiagonalizing $A$ with respect to a unit-norm $q_1$ completely characterizes $Q$. 
 %that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
 Indeed, the Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
 As a result, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we may restrict and project $A$ to its $j$-th Krylov subspace $T_j$ via: 
 \begin{equation}\label{eq:krylov_proj}
-	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T
+	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T \quad\quad (\beta_j > 0)
 \end{equation}
-where $Q_j = [\, q_1 \mid q_2 \mid \dots \mid q_j \,]$ is an orthonormal set of vectors mutually orthogonal to $q_{j\+1}$, 
+where $Q_j = [\, q_1 \mid q_2 \mid \dots \mid q_j \,]$ is an orthonormal set of vectors mutually orthogonal to $q_{j\+1}$.
 %$q_{j+1} \in \mathbb{R}^n$ is a unit vector satisfying $q_{j+1} \perp \{ q_1, q_2, \dots, q_j \}$, 
-$e_{j}$ is the standard $j$ identity vector, and $\beta_j > 0$.
 Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} and rearranging the terms yields the \emph{three-term recurrence}: 
 \begin{equation}\label{eq:three_term_rec}
 	 \beta_{j} \, q_{j+1} = A q_j - \alpha_j \, q_j - \beta_{j\text{-}1} \, q_{j\text{-}1}  
@@ -452,40 +463,34 @@ The sequential process that iteratively builds $T_j$ by exploiting the recurrenc
 Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we have solved the symmetric eigenvalue problem~\eqref{eq:eigen_decomp}: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
-We summarize the motivating principles the Lanczos iteration with a Lemma. 
+
+ The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector $v \mapsto Av$ operator. Additionally, since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
+ In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors and $O(1)$ additional storage. We summarize these benefits with a Lemma. 
 \begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
-	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ in $O(\mathcal{M}(n)r)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
+	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\mathcal{M}(n)\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
 \end{lemma}
-
-
-% Rayleigh-Ritz discussion
-Even before an $A$-invariant subspace is obtained, intermediate spectral information is readily available in $T_j$, for $j < \mathrm{rank}(A)$. 
-%If $T_j$ represents projection of $A$ onto the $j$-th Krylov subspace $\mathcal{K}_j(A, q_1)$, 
-Diagonalizing $T_j = Y \Theta Y^T$ yields value/vector pairs $\{  (\theta_1^{(j)}, y_1^{(j)}), \dots, (\theta_j^{(j)}, y_j^{(j)}) \}$, called \emph{Ritz pairs}. The values $\theta$ are called \emph{Ritz values} and their associated vectors $v = Q y$ in the range of $Q$ are called \emph{Ritz vectors}.
-Ritz pairs satisfy $w^T (Ay - \theta y) = 0$ for all $w \in \mathcal{K}_j(A, q_1)$, and thus are intimately connected to the underlying Krylov subspace. 
-From the Ritz perspective, the Lanczos iteration implicitly maintains two orthonormal basis for $K_j(A, q_1)$---a Lanczos basis $Q$ and the Ritz basis $Y$:
-$$ A = Q T Q^T = Q Y \Theta Y^T Q^T \Longleftrightarrow A Q Y = Q Y \Theta $$
-In principle, the Lanczos basis $\{q_i\}_{i=1}^j$ changes each iteration, while the Ritz basis $\{ Q y_i^{(j)} \}_{i=1}^{j}$ changes after each subspace projection. The way in which the Ritz values approach the spectrum of $A$ is well-studied~\cite{}, as they are known to be Rayleigh-Ritz approximations of $A$'s eigenpairs $\Lambda(A) = \{  (\lambda_1, v_1), \dots, (\lambda_j, v_j) \}$, and they are collectively known to be optimal in the sense that $T_k = B$ is the matrix that minimizes $\lVert A Q_k - Q_k B \rVert_2$ over the space of all $k \times k$ matrices. 
-Moreover, Ritz values contain intrinsic information of the distance between $\Lambda(T_j)$ and $\Lambda(A)$. To see this, note that: 
-\begin{equation}
-	\lVert A v_i^{(j)} - v_i^{(j)} \theta_i^{(j)} \rVert = \beta_i^{(j)} = \beta_{j+1} \cdot \lvert \langle e_j, y_i^{(j)} \rangle   \rvert 
-\end{equation}
-Thus, we need not necessarily keep the Lanczos vectors $Q$ in memory to monitor how close the spectra of the $T_j$'s approximate $\Lambda(A)$. In fact, it is known that the Ritz values $\{ \theta_1^{(1)}, \theta_1^{(2)}, \dots, \theta_1^{(j)} \}$ of $T_j$ satisfy: 
- \begin{equation}
- 	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
- \end{equation}
+\noindent As in~\cite{parlett1994we}, the assumption exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, this is unrealistic, and we must use finite-precision arithmetic. Nonetheless, the assumption of exact arithmetic gives use the a useful corollary. 
+\begin{corollary}\label{cor:finite_arith_lanczos}
+	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
+\end{corollary}
+\noindent
+Extending the Lanczos to retain similar complexity guarantees using finite-precision arithmetic is a complex and multifaceted topic; we defer its discussion to section~\ref{subsec:rounding}. 
+As Lemma~\ref{lemma:exact_arith_lanczos} makes clear, the usefulness of the Lanczos iteration hinges on the availability of a fast matrix-vector product. 
+For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
+In the next section, we demonstrate how to reduce this complexity using the structure of the boundary operator. 
+%The Lanczos iteration's widespread adoption is due in part to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations.  
+%Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
 % The Rayleigh-Ritz properties are preserved under semi-orthogonality w_j \approx \sqrt{\epsilon}
  %% , then the Lanczos method can be quite efficient. 
 %% Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 %% such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
-
-\subsection{An $O(m)$ \texttt{matvec} operator}
-% The Lanczos iteration's widespread adoption is in part due to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations. .  
- The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---from the interfacing side, obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a $v \mapsto Av$ operator. In particular, since $A$ is not modified at all during the computation, one need necessarily involve explicitly storing $A$ in memory. Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors.
-Indeed, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
-However, the sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. 
-In what follows, we take advantage of the the simplicial structure of $K$ and the fact that $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$ to both elucidate the structured form of the matrix vector operator and highlight connections to other areas of applied mathematics.
+\subsection{Laplacian}
+% https://www.ams.org/journals/tran/2002-354-11/S0002-9947-02-03082-9/S0002-9947-02-03082-9.pdf
+In principle, the Lanczos method may only be effectively applied to sparse, symmetric matrices. Though the boundary matrix $\partial$ is not symmetric, it is well known that the spectrum of $\partial_p \partial_p^T$ contains the same information as the singular values of $\partial_p$, since the latter are by definition the nonnegative square roots of former and thus $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$. 
+Moreover, the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}. 
+Thus, we can consider the study of spectra of combinatorial Laplacians as the study of singular values of boundary operators. 
+%The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. 
+%In what follows, we take advantage of the the simplicial structure of $K$ and the fact that  to both elucidate the structured form of the matrix vector operator and highlight connections to other areas of applied mathematics.
 For simplicity, we focus on the case where $p = 0$, and defer higher dimensions for later. 
  
 Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
@@ -501,9 +506,10 @@ The graph Laplacian is heavily structured matrix that is known to capture the co
 \end{flalign}
 where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. 
 Moreover, $L$ is symmetric, positive semi-definite, and the connection between $L$ and $\partial_1$ via~\eqref{eq:L_form} suggests the elementary chain modifications from~\eqref{eq:param_boundary_matrix} can be adapted to the linear and quadratic forms from~\eqref{eq:lap_quad_from}. 
+The entries in~\ref{def:time_boundary_matrix2} are parameterized using functions which defined over face and coface pairs, and thus to extend the structure of the graph Laplacian to our setting we require three Laplacian variants: Laplacians whose $p$-chains are parameterized by their $(p-1)$ faces, Laplacians whose $p$-chains are parameterized by their $p$-faces, and the hadamard product between the two. 
 %$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
 %The formulation of the boundary matrix given in~\eqref{def:time_boundary_matrix} also lends to a structured interpretation with the graph Laplacian and its various operators. 
-Consider boundary matrices $\partial_1^E$ and $\partial_1^V$ whose chain entries are parameterized by edge and vertex functions, $f_E : V \times V \to \mathbb{R}$ and $f_v : V \to \mathbb{R}$, respectively:
+Consider boundary matrices $\partial_1^E$ and $\partial_1^V$ whose chain entries are parameterized by edge and vertex functions, $f_E : V \times V \to \mathbb{R}$ and $f_v : V \to \mathbb{R}$:
 \begin{equation}
 	\partial_1^E[k,l] = \begin{cases}
 	\pm \, f_E(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -532,18 +538,17 @@ Ignoring sign cancellations, the $(i,j)$-th entry of the Laplacian matrix $L^{VE
 		0 & i \nsim j 	
 	\end{cases}
 \end{equation}
-In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. We end this section with a proposition, which essentially follows by combing the above observations with Proposition~\ref{prop:exact_arith_lanczos}.
+In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. We end this section with a proposition, which essentially follows by combining the above observations with Lemma~\ref{lemma:exact_arith_lanczos}.
 \begin{proposition}\label{prop:exact_arith_matvec}
-	Given a simplicial complex $K$ with $m = \lvert K^{(p+1)} \rvert$ and $n = \lvert K^{(p)} \rvert$. Without loss of generality, assume $n < m$, and that $\mathrm{rank}(\partial_p) = r$. 
-	Then the Lanczos iteration from~\cite{} yields the quantity:
+	Given a filtration $(K, f)$ of maximum dimension $1$ with $n$ vertices and $m$ edges, 
+	%Without loss of generality, assume $n < m$ and $\mathrm{rank}(\partial_1) = r$. 
+	the Lanczos iteration on the graph Laplacian $L = \partial_1 \partial_1^T$ computes:
 	\begin{equation}
-		\mathrm{dim}(B_{p}(K; \mathbb{R})) = \mathrm{rank}(\partial_{p+1}(K))
+		\mathrm{dim}(B_{0}(K; \mathbb{R})) = \mathrm{rank}(L) = \mathrm{rank}(\partial_{1}(K))
 	\end{equation}
 	in $O(mr)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
 	%	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
 \end{proposition}
-\noindent A proof of this proposition is given in the appendix. 
-
 % It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
 
 %In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
@@ -568,7 +573,32 @@ In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^
 %Let $K$ denote a simplicial complex with $(m, n)$ simplices of dimension $(p, p - 1)$. Assume $m > n$. For any fixed $p \geq 0$ and arbitrary vector $v \in \mathbb{R}^n$, the operation $v \mapsto \partial_p \partial_p^T v$ can be evaluated $O(m)$ time and $O(m)$ memory. 
 %\end{lemma}
 
-\subsection{Convergence Rate \& Rounding \& SDD} TODO
+\subsection{Finite-precision arithmetic}\label{subsec:rounding} 
+It is well established in the literature that the Lanczos iteration, as given in its original form, it effectively useless in practice due to significant rounding and cancellation errors. Such errors manifest as loss of orthogonality between the computed Lanczos vectors, which drastically affects the convergence of the method. 
+At first glance, this seems to be a simple numerical issue, however the analysis from Parlett~\cite{parlett1994we} showed, loss of orthogonality is not merely the result of gradual accumulation of roundoff error---it is in fact is intricately connected to the convergence behavior of Lanczos iteration. 
+One obvious remedy to this is to reorthogonalize the current Lanczos vectors $\{q_{j-1}, q_{j}, q_{j+1}\}$ against all previous vectors using Householder matrices~\cite{golub2013matrix}---a the \emph{complete reorthogonalization} scheme. This process guarantees orthogonality to working precision, but incurs a cost of $O(jn)$ for each Lanczos step, effectively placing the iteration back into the cubic time and quadratic memory regimes the direct methods exhibit. 
+A variety of orthogonality enforcement schemes have been introduced over years, including implicit restart schemes, selective reorthogonalization, thick restarts, block methods, and so on; see~\cite{} for an overview.  
+
+
+% Rayleigh-Ritz discussion
+% Maybe move to convergence section  
+Though the Lanczos iterations may be used to obtain the full tridiagonalization $A = Q T Q^T$,  intermediate spectral information is readily available in $T_j$, for $j < \mathrm{rank}(A)$.
+% Even before an $A$-invariant subspace is obtained, 
+%If $T_j$ represents projection of $A$ onto the $j$-th Krylov subspace $\mathcal{K}_j(A, q_1)$, 
+Diagonalizing $T_j = Y \Theta Y^T$ yields value/vector pairs $\{  (\theta_1^{(j)}, y_1^{(j)}), \dots, (\theta_j^{(j)}, y_j^{(j)}) \}$ satisfying $w^T (Ay - \theta y) = 0$ for all $w \in \mathcal{K}_j(A, q_1)$, called \emph{Ritz pairs}. The values $\theta$ are called \emph{Ritz values} and their associated vectors $v = Q y$ in the range of $Q$ are called \emph{Ritz vectors}.
+From the Ritz perspective, the Lanczos iteration implicitly maintains two orthonormal basis for $K_j(A, q_1)$---a Lanczos basis $Q$ and the Ritz basis $Y$:
+$$ A = Q T Q^T = Q Y \Theta Y^T Q^T \Longleftrightarrow A Q Y = Q Y \Theta $$
+In principle, the Lanczos basis $\{q_i\}_{i=1}^j$ changes each iteration, while the Ritz basis $\{ Q y_i^{(j)} \}_{i=1}^{j}$ changes after each subspace projection. The way in which the Ritz values approach the spectrum of $A$ is well-studied~\cite{}, as they are known to be Rayleigh-Ritz approximations of $A$'s eigenpairs $\Lambda(A) = \{  (\lambda_1, v_1), \dots, (\lambda_j, v_j) \}$, and they are collectively known to be optimal in the sense that $T_k = B$ is the matrix that minimizes $\lVert A Q_k - Q_k B \rVert_2$ over the space of all $k \times k$ matrices. 
+Moreover, Ritz values contain intrinsic information of the distance between $\Lambda(T_j)$ and $\Lambda(A)$. To see this, note that: 
+\begin{equation}
+	\lVert A v_i^{(j)} - v_i^{(j)} \theta_i^{(j)} \rVert = \beta_i^{(j)} = \beta_{j+1} \cdot \lvert \langle e_j, y_i^{(j)} \rangle   \rvert 
+\end{equation}
+Thus, we need not necessarily keep the Lanczos vectors $Q$ in memory to monitor how close the spectra of the $T_j$'s approximate $\Lambda(A)$. In fact, it is known that the Ritz values $\{ \theta_1^{(1)}, \theta_1^{(2)}, \dots, \theta_1^{(j)} \}$ of $T_j$ satisfy: 
+ \begin{equation}
+ 	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
+ \end{equation}
+ Thus, these 
+
 %\< TODO \> 
 % For expository purposes, the preceding sections assumed exact arithmetic. 
 % SDD
@@ -598,109 +628,173 @@ In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^
 % Spectral graph theory plug
 % Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
-\begin{figure}
-\centering
-%	\includegraphics[width=0.45\textwidth]{mult_both}
-	\includegraphics[width=0.45\textwidth]{smoothstep}
-	\caption{The step and smoothstep functions, respectively. Note that }
-	\label{fig:mult}
-\end{figure}
-
 % --- Generic Rank approximation via eigenvalues --- 
 \section{Continuous PBN Relaxation}
 %In the spirit of~\cite{chen1996class}, 
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
-On one hand, equation~\eqref{eq:pbn_stability} shows that PBN functions \emph{are} stable with respect to the extended matching distance: if the two filter functions are $\epsilon$-close in the sense that $\lVert f - f' \lVert_\infty \leq \epsilon$, then the PBN functions have distance $d(\beta_f, \beta_{f'}) \leq \epsilon$. 
-On the other hand, computationally, the extending matching distance $d(\beta_f, \beta_{f'})$ requires finding the optimal matching $\phi$ between the points $p \in \Lambda_+$ with non-zero multiplicity, which effectively requires the persistence diagrams of $f$ and $f'$ to compute. Since both (a) computing the full persistence diagram and (b) obtaining the optimal matching are both  high complexity algorithms, we would like to avoid them while still retaining some information contained in them, if possible. 
-We tackled the form by fixing specific \emph{regions} of $\Lambda_+$ a-priori; we now focus on on the latter.
+%On one hand, equation~\eqref{eq:pbn_stability} shows that PBN functions \emph{are} stable with respect to the extended matching distance: if the two filter functions $f, f'$ are $\epsilon$-close in the sense that $\lVert f - f' \lVert_\infty \leq \epsilon$, then the PBN functions have distance $d(\beta_f, \beta_{f'}) \leq \epsilon$. 
+%On the other hand, computationally, the extending matching distance $d(\beta_f, \beta_{f'})$ requires finding the optimal matching between the points $p \in \Lambda_+$ with non-zero multiplicity, and determining the locations of these points effectively requires obtaining the persistence diagrams of both $f$ and $f'$---both of which are high complexity algorithms. 
+%We would like to avoid both. The counting variants studied thus far are natural combinatorial invariants that 
+%We tackled the form by fixing specific \emph{regions} of $\Lambda_+$ a-priori; we now focus on on the latter.
+%persistence information contained in them, if possible. 
 
-One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are not smooth. 
-Namely, if $(K, f_h)$ is a parameterized filtration where $K$ is a fixed simplicial complex and $f : \mathcal{H} \times K \to \mathbb{R}$, it's possible to construct counter examples where $\mu_p^R(K, f_h) \sim O(\lvert K^{(p)} \rvert)$ and $\mu_p^R(K, f_{h'}) = 0$, for some choice $h, h' \in \mathcal{H}$ with $\lvert h - h' \rvert$ arbitrarily small~\cite{}.
-Intuitively, as both of the invariants studied so far are counting type invariants restricted to a portion of $\Lambda_+$, it's always possible to encounter such situations where small changes in the input  affect the corresponding invariant in a non-Lipshitz way.
-
+One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are integer-valued and thus not smooth. 
+Namely, if $(K, f_h)$ is an $\mathcal{H}$-parameterized filtration where $K$ is a fixed simplicial complex and $f_h : K \to \mathbb{R}$ is a filter function that is perturbed by some small $\epsilon > 0$, for the multiplicity function $\mu_p^R$ to be considered stable we would need to show 
+%$\lVert \mu_p^R(h,K) - \mu_p^R(h + \epsilon,K) \rVert \leq \epsilon$
+there exists a non-negative constant $C$ such that $\lVert \mu_h^R - \mu_{h + \epsilon}^R \rVert \leq \epsilon \cdot C$, where $\mu^R_{h} = \mu_p^R(K,h)$.
+%$1/\epsilon \leq C$
+%for $\mu_p(K, h)$ to be stable with respect to the matching distance from~\eqref{eq:pbn_stability} we need to show there exists a non-negative constant $C$ such that $1/\epsilon \leq C$
+However, it is easy to construct counter examples where $\lVert \mu_h^R - \mu_{h + \epsilon}^R \rVert \sim O(\lvert K_p \rvert )$ for any arbitrarily small $\epsilon$;
+intuitively, it's always possible to encounter such situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way.
  
-Like the PBN, the discontinuous nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. Several other authors~\cite{}, have confronted this discontinuity by relaxing $\mathrm{rank}(X)$ with the nuclear norm $\lVert X\rVert_\ast$. This is partially motivated by the fact that, if $x = (\sigma_1, \dots, \sigma_n)$ is a vector containing the singular values of $X$, then: 
+Like the PBN, the discontinuous nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. 
+Several other authors~\cite{}, have confronted this discontinuity by relaxing $\mathrm{rank}(X)$ with the nuclear norm $\lVert X\rVert_\ast$. To see the motivation for this, let $X \in \mathbb{R}^{n \times m}$ denote a given real matrix with SVD $X = U \Sigma V^T$, and let $\vec{\sigma} = (\sigma_1, \dots, \sigma_n)$ denote a vector containing the singular values of $X$.  
 \begin{equation}\label{eq:pseudo_norm}
-	\mathrm{rank}(X) = \lVert x \rVert_0  \approx \lVert x \rVert_1 = \lVert X \rVert_\ast 
+	\mathrm{rank}(X) = \lVert \vec{\sigma} \rVert_0  \approx \lVert \vec{\sigma} \rVert_1 = \lVert X \rVert_\ast 
 \end{equation}
 In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
-Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems became an active area of research, which lead to many fruitful results in the area of compressed sensing and matrix completion. 
+Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 
-In the spirit of~\cite{}, we consider a family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy. Given a positive $\epsilon > 0$, the basic quality we want out of such a relaxation is:
+We consider a family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy. Given a positive $\epsilon > 0$, the basic qualities we want out of $\phi$ are:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x > 0 \,)  & & \quad\quad\quad 
 %\begin{equation}
-	\lim_{\epsilon \to 0^+} \phi(x, \epsilon) = \mathrm{sgn}_+(x),\quad \quad & \mathrm{rank}(X) \approx \sum\limits_{i=1}^n \phi(\sigma_i(X), \epsilon) & &&
+	\mathrm{rank}(X) \approx \sum\limits_{i=1}^n \phi(\sigma_i(X), \epsilon), \quad \quad &  \lim_{\epsilon \to 0^+} \phi(x, \epsilon) = \mathrm{sgn}_+(x) &&
 \end{flalign}
 %\end{equation}
-Following~\cite{}, Bi et al.~\cite{} give a framework for constructing such smoothing functions which is motivated by the fact that $\mathrm{sgn}_+(x)$ may be equivalently expressed as an integral of the Dirac delta function.  
+Following the seminal work done by Chen et al.~\cite{chen1996class} on parameterizing smooth approximations of the one-sided sign function $\mathrm{sgn}_+$, Bi et al.~\cite{bi2013approximation} give a framework for constructing such functions via integration of smoothed versions $\hat{\delta}$ of the Dirac delta function $\delta$:  
 %an integral $\mathrm{sgn}_+(x) = \int_{-\infty}^x \delta(z) dz$, where the $\delta$ is a Dirac delta function satisfying $\int\limits_{-\infty}^\infty \delta(z) dz = 1$. In particular, for any $\epsilon > 0$, we define $\phi(\cdot, \epsilon)$ as:
-\begin{equation}
-	\phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \forall \, z \geq 0
+\begin{equation}\label{eq:phi}
+	\phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \forall \, z \geq 0, \epsilon > 0 
 \end{equation}
-where $\hat{\delta}(z, \epsilon) = \nu(\epsilon)^{\text{-}1} p \left ( u \nu(\epsilon)^{\text{-}1} \right )$ for some continuous density function $p: \mathbb{R}_+ \to \mathbb{R}_+$ and some choice of continuous increasing $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
-These function were shown to satisfy a number of nice properties of these functions; namely, if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
-Moreover, given a real matrix $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, one obtains an continuously differentiable operator $\Phi_\epsilon$ for any fixed $\epsilon > 0$ by replacing $\sigma \mapsto \phi(\sigma, \epsilon)$ and mapping $X$ as follows:
+where $\hat{\delta}(z, \epsilon) = \nu(\epsilon)^{\text{-}1} p \big( z \nu \cdot (\epsilon)^{\text{-}1} \big )$ for some continuous density function $p: \mathbb{R}_+ \to \mathbb{R}_+$ and some choice of continuous increasing $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
+In contrast to the rank function, if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
+Moreover, consider the operator $\Phi_\epsilon$ defined as: 
+%This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
 %$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
-\begin{align*}
- \Phi_\epsilon : \quad & \mathbb{R}^{n \times m}  & \to \quad & \mathbb{R}^{n \times m}  \\
-						           & X & \mapsto \quad &  U \, \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon)) \, V^T \numberthis
+\begin{align*}\label{eq:lowner}
+ \Phi_\epsilon : \quad \mathbb{R}^{n \times m}  & \; \to \; \mathbb{R}^{n \times m}  \\
+						           X & \; \mapsto \; U \, \mathrm{diag}( \tilde{\phi}(\sigma_1, \epsilon), \tilde{\phi}(\sigma_2, \epsilon), \dots, \tilde{\phi}(\sigma_n, \epsilon)) \, V^T \numberthis
 \end{align*}
+where $\tilde{\phi}(x, \epsilon) = \phi(\lvert x \rvert, \epsilon)$ and $\epsilon > 0$ is fixed. Since $\phi(0,0) = 0$, $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ and one can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. We summarize this with a definition:
+\begin{definition}[Continuous Rank Approximation]
+	Given $X \in \mathbb{R}^{n \times m}$, a fixed approximation parameter $\epsilon > 0$, and a choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{continuous rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ as: 
+	\begin{equation}\label{def:cont_rank}
+		\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \epsilon)
+	\end{equation}
+\end{definition}
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
-we summarize the main points: 
-\begin{proposition}[Continuous Rank Relaxation~\cite{}]
+\noindent Compared to the rank function, this operator turns out to have a variety of attractive properties related to monotonicity and differentiability. Moreover, as desired, it serves as a smooth approximation of the $\mathrm{rank}$ function. 
+We summarize a few properties below. 
+\begin{proposition}[\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
 	\begin{enumerate}
+		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
+		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
+		$$ 0 \leq r - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(r) $$
+		where $c(r)$ is a positive constant that depends only on $r$. 
+		\item The function $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth on $\mathbb{R}^{n \times m}$.
 %		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
 %		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
 	\end{enumerate}
 \end{proposition}
-
-
-To adapt these relaxations to the PBN functions as defined via~\eqref{}, we need to modify the chain entries in~\eqref{} to vary continuously as functions of $\mathcal{H}$. 
-The 
-Fortunately, our $\mathcal{H}$-parameterized formulation admits a simple augmentation, similar to this change in the sign function. In particular, we simply swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ in ~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
-These are sigmoid-like functions whose ranges are clamped to the unit interval which interpolate between a prescribed lower and upper bounds $(a,b)$ via a Hermite polynomial. : 
-\begin{equation}
-\mathcal{S}_n^{a,b} (x) = \begin{cases}
+\noindent It's worth noting that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, and that the notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{} for more details. 
+\\
+\\
+\noindent \textbf{Smoothstep:} To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
+Fortunately, this requires a simple augmentation to the step function from~\eqref{def:time_boundary_matrix2}, similar to this change in the sign function. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ in ~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
+\begin{figure}
+\centering
+%	\includegraphics[width=0.45\textwidth]{mult_both}
+	\includegraphics[width=0.90\textwidth]{cont_relax}
+	\caption{From left to right: 
+	the $\ell_1$ norm (red) forms a convex envelope over the $\ell_0$ (black) pseudo-norm on the interval $[-1, 1]$; 
+	$\tilde{\phi}(\cdot, \epsilon)$ at various values of $\epsilon$, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu(\epsilon) = \sqrt{\epsilon}$ (red) and at $\epsilon = 0$ (black); 
+	the step function $S_i(x)$ from definition~\ref{def:time_boundary_matrix}; 
+	the smoothstep relaxation $\mathcal{S}_i^{\omega}$ from~\eqref{eq:smoothstep}.
+	}
+	\label{fig:smoothstep}
+\end{figure}
+These are clamped sigmoid-like functions  which interpolate between a prescribed lower and upper bounds $(a,a+\omega)$ via an ``S-curve'': 
+\begin{equation}\label{eq:smoothstep}
+\mathcal{S}_a^{\omega} (x) = \begin{cases}
 	0 & x \leq a \\
-	S_n( (b - x)(b - a)^{\text{-}1}) & a < x < b \\
-	1 & b \leq x
+	S_n\big( \omega^{-1}((a + \omega) - x) \big) & a < x < a + \omega \\
+	1 & a + \omega \leq x
 \end{cases}
 \end{equation} 
-where $S_n: [0,1] \to [0,1]$ are generic $n$-th order polynomials of the form: 
-\begin{equation}
-S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
-\end{equation} 
-whose coefficients are fixed such that $S_n(0) = 0$ and $S_n(1) = 1$. These polynomials have found applications in compute graphics and machine learning applications~\cite{}. 
-Our motivation to use them here is based on the observations shown in Figure~\ref{}: by substituting $\mathcal{S}_n^{a,b}$ for the step functions in~\eqref{eq:param_boundary_matrix}, we have a version of the parameterized boundary matrix whose entries varies continuously in $\mathcal{H}$. Moreover, by composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we have $\epsilon$-approximate, continuously-varying approximation $\hat{\mu}_p^R$ of $\mu_p^R$ is given as: 
-\begin{equation}
-	\mu_P^R = \phi(\hat{L})
+%% TODO: Why does the smooth-step call these Hermite polynomials?
+where $S_n: [0,1] \to [0,1]$ is a generic $n$-th order polynomial whose coefficients are fixed such that $S_n(0) = 0$ and $S_n(1) = 1$.
+%\begin{equation}
+%S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
+%\end{equation} 
+These polynomials have found applications computer graphics and machine learning applications~\cite{}. 
+Our motivation to use them here is based on the observations shown in Figure~\ref{fig:smoothstep}: by substituting $\mathcal{S}_n^{\omega}$ for the step functions 	in~\eqref{eq:param_boundary_matrix}, we have a version of the parameterized boundary matrix whose entries varies continuously in $\mathcal{H}$ but which retain the same rank as their discontinuous counterparts. 
+%We include a short definition:
+%\begin{definition}[Continuously Parameterized boundary matrix]\label{def:time_boundary_matrix2}
+%Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Assume both respect the same conditions outlined in definition~\ref{def:time_boundary_matrix}. 
+%For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\tilde{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ as the matrix whose entries $(k,l)$ satisfy:
+%\begin{equation}\label{eq:param_boundary_matrix_cont}
+%	\tilde{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
+%	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+%	\pm \, (\mathcal{S}^\omega_{i} \circ f_h)(\sigma_k)) \cdot (\tilde{\mathcal{S}}^\omega_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+%	%, \text{ where } \epsilon = f(\sigma_l) \\
+%	0 & \text{otherwise}
+%\end{cases}
+%\end{equation}
+%where $\mathcal{S}_{i}^\omega : \mathbb{R} \to \{0, 1\}$ is a \emph{smoothstep} function satisfying~\eqref{eq:smoothstep} and $\tilde{\mathcal{S}}_{i}^\omega = 1 -\mathcal{S}_{i}^\omega$, and $f_h(\sigma) = f(\sigma, h)$.
+%\end{definition}
+%We summarize the previous 
+By composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we have $\epsilon$-approximate, continuously-varying multiplicity function. 
+\begin{definition}
+	\begin{equation}\label{eq:mu_cont}
+	\hat{\mu}_{p,\epsilon}^R(h) = 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast - 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast -  
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast + 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast \numberthis
 \end{equation}
-where 
-\begin{equation}
-	L
-\end{equation}
+The formulation of the PBN relaxation is synonymous.
+\end{definition}
+\noindent Since the sum of two Lipshitz functions $f$ and $g$ results in another Lipshitz function $f + g$, by the continuity of $\mathcal{S}_\ast^\omega$ and the global Lipshitz continuity of~\eqref{def:cont_rank}, it is clear that $\hat{\mu}_p^R$ is Lipshitz continuous. 
+%\begin{corollary}
+%	For every matrix $$ any $\epsilon > 0$, the approximations $\beta_p$ and $\tilde{\mu}_p^\ast$ vary continuously in $\mathcal{H}$. Moreover, there exists some $\bar{\epsilon} > 0$ such that: 
+%	$$ \lfloor \tilde{\beta}_p^{\ast}(K) \rfloor = $$
+%\end{corollary}
+%These approximations are also "betti-like". 
 
 \subsection{(1-$\epsilon$) Approximations}
-Note that when $\nu(\epsilon) = \sqrt[\leftroot{-2}\uproot{2}p]{\epsilon}$ and $p = 2$, Equation~\eqref{} reduces to: 
-\begin{equation}
-	\phi_\epsilon(X) = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[X (X X^T + \epsilon \, I_n) X^T\right]
-\end{equation}
-The cyclic property of the trace operator implies...
+Note that when $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$, Equation~\eqref{def:cont_rank} reduces to: 
+\begin{equation*}
+	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[X^T (X X^T + \epsilon \, I_n) X \right] 
+\end{equation*}
+which is the generic rank approximation studied by~\cite{}. Moreover, by the cyclic property of the trace operator, since $X = \partial_1$ here and $L = \partial_1 \partial_1^T = [l_1, l_2, \dots, l_n]$ we have: 
+\begin{equation*}
+	\lVert \Phi_\epsilon(X) \rVert_\ast = \mathrm{Tr}[(L + \epsilon I_n)^{-1} L] = \sum\limits_{i=1}^n (L_\epsilon^{-1} l_i)_i
+\end{equation*}
+Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. Since this nonsingular, positive definite, strictly diagonally dominant matrix, thus we may apply the famous Conjugate Gradient (CG) algorithm to solve such a system. It's well known that CG converges to the solution of $A x = b$ in exactly $O(n)$ iterations (and often much earlier), of which each iteration requires one $O(m)$ matrix-vector product, implying a runtime of $O(mn^2)$ (compare with...).  
+%http://www.cs.yale.edu/homes/spielman/561/2009/lect16-09.pdf
+Moreover, and since this is a Laplacian matrix, the wealth of tools developed for said matrices may also be used.
+In particular, ~\cite{} showed that \emph{low-stretch spanning trees} act as good preconditioners to accelerate Laplacian solvers, wherein it's been shown that the preconditioned Conjugate Gradient (PCG) requires as most $O(\sqrt{m} \log n)$ iterations, each of which requires one matrix-vector product using $L_G$ and in $O(m^{1/3} \log n \, \mathrm{ln} 1/\epsilon)$ iterations. 
+This was later improved by, who showed that one can solve Laplacian systems effectively in $O(m \log^{O(1)} n)$ time, giving a bound of $O(r m \log^{O(1)} n)$ time to obtain.... 
+
+Of course, if one wants to compute either of the counting invariants in... exactly for $p = 0$, of course, the fastest algorithm is to reduce the problem to the well-known elder-rule problem, which takes $O(m \log m + m \alpha(n))$ time for a general filtration. It is unlikely that we may beat this bound, either in theory or in practice, for $p = 0$.
+However, the fastest known algorithm for computing the full persistence diagram for $p \geq 1$ is $O()$, which is quite a jump in complexity; there is no generalization of disjoint-set algorithm for the case where $p \geq 1$. 
+Moreover, these direct methods tend to be memory bound operations, pushing researchers who want to compute these diagrams in practice to focus on ways of reducing the memory usage, such as using $\mathbb{Z}_2$ field coefficients. 
+In contrast, the means by which we compute these invariants scales quite well with larger $p$, it produces a stronger invariant, and is far more reaching to other areas of mathematics. 
 
 
 % The stability of the spectral relaxation proposed in~\eqref{} lends some stability the computation of the Betti and Multiplicity computations we have discussed in parameterized setting. 
 
 \section{Parameterized setting \& Perturbation theory}
-On the other hand, for $f$ a real-valued filter function that various smoothly in $\mathcal{H}$, one would expect the \emph{spectra} of the constitutive terms in $\beta_p^\ast$ and $\mu_p^\ast$ to also vary smoothly as functions of $\mathcal{H}$.
+For $f$ a real-valued filter function that various smoothly in $\mathcal{H}$, one would expect the \emph{spectra} of the constitutive terms in $\beta_p^\ast$ and $\mu_p^\ast$ to also vary smoothly as functions of $\mathcal{H}$.
 Indeed, since Laplacian matrices are normal matrices, we expect their spectra to be quite stable under perturbations~\cite{}. 
 
 % The spectrum of Normal matrices are stable: if A is normal and is perturbed by a perturbation w/ norm at most \epsilon, then the spectrum moves by at most \epsilon. And Laplacian matrices are normal matrices
 % https://terrytao.wordpress.com/2008/10/28/when-are-eigenvalues-stable/
-In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th up Laplacian at time $h \in \mathcal{H}$.
+%In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th up Laplacian at time $h \in \mathcal{H}$.
 %Let $\hat{\partial}_h$
 
 \newpage
@@ -709,7 +803,7 @@ In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th 
 
 \section{Applications}\label{sec:applications}
 
-
+% TODO: See seminar "Persistent Homology with Random Graph Laplacians"
 
 % --- APPLICATION 1: Fast Dgm computation ---
 %\subsection*{Complexity}
@@ -720,7 +814,7 @@ In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th 
 % --- APPLICATION 2: Continuous Persistent Betti Curves (PBCs) as Shape Signatures --- 
 % Benefits of rank(A) \approx < nuclear norm of A >
 %\subsection*{Application: Relaxation}
-\subfile{spectral_relaxation}
+%\subfile{spectral_relaxation}
 % TODO: ask Jose + Luis how to describe this better
 As topological invariants, Betti numbers are invariant under homeomorphisms: any pair of filtrations $(K, f)$ and $(K', f')$ that are homotopy equivalent have identical homology classes and thus isomorphic persistence diagrams. 
 This invariance can be a useful thing at the level of homology, as non-homeomorphic spaces can sometimes be differentiated by inspecting differences between their corresponding homology classes. 
@@ -780,7 +874,7 @@ Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the e
 \appendix
 \section{Appendix}
 
-\section{Laplacian Interpretation}
+\subsection{Laplacian Interpretation}
 We adapt an example from~\cite{newman2001laplacian} to better convey the information carried by the Laplacian form of the boundary matrices. 
 \begin{example}[Adapted from~\cite{newman2001laplacian}]\label{ex:laplacian}
 Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set. By $L$'s definition, we have:

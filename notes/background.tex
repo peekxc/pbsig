@@ -1,7 +1,7 @@
 %\section{Background \& Notation}\label{sec:background_notation}
 A \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a vertex set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$.
 %The $p$-skeleton of $\mathrm{skel}_p(K)$ is the the restriction of $K$ to its simplices with dimension $\leq p$. 
-We denote with $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$. 
+We denote with $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$ and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
 A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$ and $K_\bullet$ is called \emph{essential} if $i \neq j$ implies $K_i \neq K_j$:
 %Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
 \begin{equation}
