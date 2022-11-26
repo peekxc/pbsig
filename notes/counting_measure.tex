@@ -53,7 +53,7 @@ was shown by demonstrating that one may recover the diagram of a persistence mod
 % The diagram exists wherever the measure takes finite values. 
 Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in their work studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} in the persistence diagram are points $x = (i,j) \in \Delta_+$ satisfying:
 \begin{equation}\label{eq:pbn_cont}
-	x = (i,j) \in \mathrm{dgm}_p(f) \; \Longleftrightarrow \; \mu_p(x) > 0 \; \Longleftrightarrow \; \min_{\epsilon > 0} \left(\beta_p^{i \+ \epsilon, j \shortminus \epsilon} - \beta_p^{i \+ \epsilon, j \+ \epsilon} \right) - \left(\beta_p^{i \shortminus \epsilon, j \shortminus \epsilon} - \beta_p^{i \shortminus \epsilon, j \+ \epsilon} \right) > 0
+	x = (i,j) \in \mathrm{dgm}_p(f) \; \Longleftrightarrow \; \mu_p(x) > 0 \; \Longleftrightarrow \; \min_{\delta > 0} \left(\beta_p^{i \+ \delta, j \shortminus \delta} - \beta_p^{i \+ \delta, j \+ \delta} \right) - \left(\beta_p^{i \shortminus \delta, j \shortminus \delta} - \beta_p^{i \shortminus \delta, j \+ \delta} \right) > 0
 \end{equation}
 One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem akin to~\eqref{eq:betti_mult} (Theorem 3.11) expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N}\cup \{\infty\}$ as a sum of multiplicity functions. 
 A consequence of this theorem is that distances between diagrams induces a distance between PBN functions---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:

@@ -7,6 +7,25 @@ from typing import *
 from numpy.typing import ArrayLike
 from math import comb
 
+
+## From: https://stackoverflow.com/questions/492519/timeout-on-a-function-call
+def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
+  import signal
+  class TimeoutError(Exception): pass
+  def handler(signum, frame): raise TimeoutError()
+  # set the timeout handler
+  signal.signal(signal.SIGALRM, handler) 
+  signal.alarm(timeout_duration)
+  result = default
+  try:
+    result = func(*args, **kwargs)
+  except TimeoutError as exc:
+    result = default
+  finally:
+    signal.alarm(0)
+  return result
+
+
 def pairwise(S: Iterable): 
   a, b = tee(S)
   next(b, None)
@@ -114,9 +133,10 @@ def is_sorted(L: Iterable, compare: Callable = le):
 #       return False
 #   return True
 
+
 def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = False):
   """
-  Maps [lb, ub] -> [0, 1] via a smoother version of a (up) step function. When down=False and lb=ub, the step functions look like: 
+  Maps [lb, ub] -> [0, 1] via a smoother version of a step function. When down=False and lb=ub, the step functions look like: 
 
   down = False       |    down = True
   1:      o------    |    1: -----* 
@@ -149,6 +169,14 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
       y = (x-lb)/d 
       return (1.0 - (3*y**2 - 2*y**3)) if down else 3*y**2 - 2*y**3
   return(np.vectorize(_ss))
+
+## Convenience wrapper
+def smooth_upstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
+  return smoothstep(lb=lb, ub=ub, order=order, down=False)
+
+## Convenience wrapper
+def smooth_dnstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
+  return smoothstep(lb=lb, ub=ub, order=order, down=True)
 
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)

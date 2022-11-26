@@ -597,12 +597,13 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
   return(U)
 
 
+from pbsig.utility import smooth_upstep, smooth_dnstep
 
-def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0, ):
+def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0):
   nv, ne = len(f), E.shape[0]
-  eps = tol(np.sqrt(E.shape[0]*2)) # use bound on spectral norm to get tol instead of np.finfo(float).eps?
-  ss_b = smoothstep(lb = b-w, ub = b+eps, down = True)     # 1 (b-w) -> 0 (b), includes (-infty, b]
-  ss_ac = smoothstep(lb = a-w, ub = a+eps, down = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
+  # delta = tol(np.sqrt(E.shape[0]*2)) # TODO: use bound on spectral norm to get tol instead of eps?
+  ss_b = smooth_dnstep(lb = b-w, ub = b+np.finfo(float).eps)    # STEP DOWN: 1 (b-w) -> 0 (b), includes (-infty, b]
+  ss_ac = smooth_upstep(lb = a, ub = a+w)                       # STEP UP:   0 (a-w) -> 1 (a), includes (a, infty)
   # A_exc = ss_ac(f[E]).flatten()
   # B_inc = np.repeat(ss_b(edge_f), 2)
   # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])

@@ -80,11 +80,19 @@
 
 
 \section{Introduction}
-\subsection*{Motivation}
-
+\subsection*{Motivation} TODO 
 %\subfile{intro_feature}
-
 %\subfile{overview} % Contributions, Main result overview, etc. 
+\\
+\noindent 
+\textbf{Contributions: }
+In this effort, we introduce an iterative method capable of approximating both topological invariants $\mu_p^{\ast}$ and $\beta_p^\ast$---\emph{the counting invariants}---in essentially $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively. 
+The approximation obeys certain stability properties which allow it to be particularly efficient when [re]computation is required on slightly perturbed inputs, which we call the \emph{parameterized setting}. 
+The accuracy parameter $\epsilon > 0$ on which the approximation depends recovers both invariants exactly when $\epsilon$ is made small enough.
+In deriving the approximation, we naturally obtain continuous variations of both counting invariants which are both globally Lipshitz in the space of real-valued matrices and differentiable on the positive semi-definite cone, which we believe to be of independent interest. 
+Moreover, the approximation does not modify $\partial$ (as in~\cite{edelsbrunner2022computational}) and is permutation invariant is a certain sense, forgoing the need to complicated $O(m^2)$ filtration-maintenance procedures (as in~\cite{cohen2006vines}). Indeed, the algorithm need not store $\partial$ in memory, nor does it require the underlying complex $K$ to be explicitly filtered.
+We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
+Interestingly, our results also imply the existence of an subcubic, output-sensitive algorithm for computing persistence diagrams (via~\cite{chen2011output}) that inherits all of the aforementioned benefits and requires as its only input an boundary matrix-vector operator $x \mapsto \partial x$. 
 
 \subsection{Organization}
 
@@ -123,7 +131,7 @@ The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $Z_p(K_i) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a matrix rank computation, the intersection term (the persistence part) is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; the subsequent Theorem (5.1) reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
+While $\mathrm{dim}(Z_p(K_i)) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a rank computation, the intersection term---the persistence part---is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; their subsequent Theorem 5.1 reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
 However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
 
 % Golub and Van Loan 
@@ -131,8 +139,8 @@ However, the standard homology computations require $O(m^2)$ space and $O(m^3)$ 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 
-In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is both simpler and computationally more attractive. 
-To illustrate our approach, we require more notation. If $A$ is a $m \times n$ matrix, let $A^{i, j}$ denote the lower-left submatrix defined by last $m - i + 1$ rows (rows $i$ through $m$, inclusive) and the first $j$ columns. 
+In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
+To illustrate our approach, we require more notation. If $A$ is a $m \times n$ matrix, let $A^{i, j}$ denote the lower-left submatrix defined by the first $j$ columns and the last $m - i + 1$ rows (rows $i$ through $m$, inclusive). 
 %Given an $n \times m$ matrix $A$, let $A[I, J]$ refer to the submatrix formed by taking rows in the set $I$ and taking columns in the set $J \subseteq [m]$. Let $L_{, j}$
 %\begin{equation}
 %	\begin{bNiceMatrix}[first-row,first-col]
@@ -144,8 +152,9 @@ To illustrate our approach, we require more notation. If $A$ is a $m \times n$ m
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
-	\includegraphics[width=0.75\textwidth]{fig1}
-	\caption{(Left) the persistent Betti number $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$. (Middle) The additivity of PBNs can be used to express multiplicity $\mu_p^{i,j}$ of any given box. (Right) The computational interpretation of the Pairing Uniqueness Lemma; in this case $r_R(i,j) = 3 - 2 + 1 - 2 = 0$ yields whether the entry $R[i,j]$ is non-zero.}
+	\includegraphics[width=0.85\textwidth]{betti_add}
+	\caption{From left to right: $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$, where $i,j \in \Delta_+^m$; the same $\beta_p^{i,j}$  with $i,j \in \Delta_+$; the additivity of $\beta_p^{\ast}$ implies $\mu_p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of the Pairing Uniqueness Lemma---in this case 	$\mu_p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}
+	%$r_R(i,j) = 3 - 2 + 1 - 2 = 0$ yields whether the entry $R[i,j]$ is non-zero.}
 	\label{fig:mult}
 \end{figure}
 For any $1 \leq i < j \leq m$, define the quantity $r_A(i,j)$ as follows:
@@ -166,10 +175,11 @@ Let $R = \partial V$ denote the matrix decomposition of a given filtered boundar
 	\end{equation}
 Equivalently, all lower-left submatrices of $\partial$ have the same rank as their corresponding submatrices in $R$. 
 \end{lemma}
-\noindent Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex. %with the filter function $f : K_\bullet \to [m]$. 
-Though~\eqref{eq:lower_left_rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in extending this lemma to $p$-dimensional homology, for any fixed choice $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains, we may simply ignore all $q$-chains for $q \neq p$. That is, if the $p$-chain of a $p$-simplex $\sigma_j$ corresponds to column $j$ in $\partial$, the only columns that may be added to $j$ must correspond to simplices of dimension $p$. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ represents the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
+\noindent \textbf{Remark: } Though Lemma~\ref{lemma:rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in extending this lemma to $p$-dimensional homology, for any fixed $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ recovers the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
+In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
 
-In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. The first fact we prove is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number as a sum of rank functions. 
+Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
+The first fact we prove is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number as a sum of rank functions. 
 \begin{proposition}\label{prop:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^m$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
@@ -184,31 +194,30 @@ As a result, the $p$-th multiplicity function can also be defined in a rank-base
 \begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq m$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
 	\begin{equation}\label{eq:mu_four}
-	\mu^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
+	\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent Computationally, the complexity of computing the PBN reduces the complexity of computing the rank of a set of boundary matrices. We summarize this with the following corollary:
+\noindent In summary, the complexity of computing either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ can be reduced to the complexity of computing the rank of a set of ``lower-left'' submatrices of $\partial$. We summarize this fact with two corollaries.
 \begin{corollary}
 	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and indices $i,j \in \Delta_+^m$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O(\mathrm{R}_{p}(j))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+2)k)$ non-zero $\mathbb{F}$ entries. 
 	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
-\noindent Observe the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the  dominant cost of computing~\eqref{eq:betti_four} lies in computing either $\mathrm{rank}(\partial_p^{1,i})$ or $\mathrm{rank}(\partial_{p+1}^{1,j})$. As a result, we get a more localized bound for computing $\mu_p^R$. 
+\noindent Observe the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the  dominant cost of computing~\eqref{eq:betti_four} lies in computing either $\mathrm{rank}(\partial_p^{1,i})$ or $\mathrm{rank}(\partial_{p+1}^{1,j})$. As a result, we obtain a tighter bound for computing $\mu_p^R$ that is localized to the pair $(K_i, K_l)$. 
 \begin{corollary}
-	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq m$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p}(l - i))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+1)k)$ non-zero $\mathbb{F}$ entries.
+	Given a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq m$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p}(l - i))$ time, where $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with $O((p+2)k)$ non-zero $\mathbb{F}$ entries.
 	%$ j(p+1) - i$
 	%time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
 
 \noindent Compared to other classical methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$, such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. 
+We dedicate the rest of the paper to exploring the consequences of this fact. 
+
 %We exploit various properties of the rank function to 
 %Using various properties of the rank function, this accelerate the computation of both invariants. 
 %Combined with various properties of the rank function, we exploit this aspect of to accelerate the computation of both invariants in~\eqref{eq:betti_four} and~\eqref{eq:mu_four}. 
-Exploiting this, we show how to compute both topological invariants in essentially $O(m)$ memory, while also accelerating their re-computation in parameterized settings. 
-Moreover, we achieve these computations all without performing any reductions to $\partial$ as used in the standard algorithm~\cite{edelsbrunner2022computational}, without using any $O(m^2)$ combinatorial preprocessing procedure as in~\cite{cohen2006vines}, and without reducing the computation matrix multiplication time $O(n^\omega)$ with Strassen-like reductions~\cite{milosavljevic2011zigzag}.
-Indeed, our formulation need not even have $\partial$ in memory explicitly. We dedicate the rest of the paper to exploring the consequences of this fact. 
 
 %To get some intuition on what the structure and size of these matrices, we include a picture of each of the terms in Equation~\eqref{eq:betti_four}. 
 %\begin{figure}[!h]
@@ -274,7 +283,7 @@ Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^
 \begin{equation}\label{eq:param_boundary_matrix}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
-	\pm \, (S_{i} \circ f_h)(\sigma_k)) \cdot (\tilde{S}_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
+	\pm \, (S_{i} \circ f_h)(\sigma_k) \cdot (\tilde{S}_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
 	%, \text{ where } \epsilon = f(\sigma_l) \\
 	0 & \text{otherwise}
 \end{cases}
@@ -374,7 +383,7 @@ By Proposition~\ref{prop:mu_reduction}, we also have a parameterized multiplicit
 
 
 \section*{An quadratic-time rank computation}
-In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. Given a matrix $X \in \mathbb{R}^{n \times m}$ satisfying $n < m$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
+In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. We start general by working with arbitrary matrices. Given a matrix $X \in \mathbb{R}^{n \times m}$ satisfying $n < m$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -383,7 +392,7 @@ In this section we discuss the computational details involved in evaluating the 
 	\end{cases}
 \end{equation}
 where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of Hermitian matrices. 
-In particular, we focus on the Lanczos iteration applied to positive semi-definite matrices, diagonally dominant (DD) and strictly diagonally dominant (SDD) matrices, and combinatorial Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
+%In particular, we focus on the Lanczos iteration applied to positive semi-definite matrices, diagonally dominant (DD) and strictly diagonally dominant (SDD) matrices, and combinatorial Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}
@@ -399,10 +408,10 @@ Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of
 \end{equation}
 % Insert similarity transforms  
 Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
-Computing the eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+Computing eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full rank matrices using non-Strassen-like operations, and thus this reduction to tridiagonal form dominates the computation. 
-Lanczos~\cite{} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form, and thus revealing its spectrum.
+Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using non-Strassen-like operations, and thus this reduction to tridiagonal form dominates the computation. 
+Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum.
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -442,7 +451,7 @@ However, there is a connection between the iterates $K_j(A,v)$ and the full trid
 \begin{equation}
 	K_n(A, q_1) = Q Q^T K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]
 \end{equation}
-\emph{is} the QR factorization of $K_n(A, q_1)$. Thus, tridiagonalizing $A$ with respect to a unit-norm $q_1$ completely characterizes $Q$. 
+\emph{is} the QR factorization of $K_n(A, q_1)$. Thus, tridiagonalizing $A$ with respect to a unit-norm $q_1$ determines $Q$. 
 %that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
 Indeed, the Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
 As a result, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we may restrict and project $A$ to its $j$-th Krylov subspace $T_j$ via: 
@@ -465,18 +474,18 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
  The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector $v \mapsto Av$ operator. Additionally, since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
- In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors and $O(1)$ additional storage. We summarize these benefits with a Lemma. 
+ In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors and $O(1)$ additional storage. We summarize the main take-a-ways of the Lanczos method we've discussed thus far with a Lemma. 
 \begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\mathcal{M}(n)\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
 \end{lemma}
-\noindent As in~\cite{parlett1994we}, the assumption exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, this is unrealistic, and we must use finite-precision arithmetic. Nonetheless, the assumption of exact arithmetic gives use the a useful corollary. 
+\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, this is unrealistic, and we must use finite-precision arithmetic. Extending the Lanczos method to retain similar complexity guarantees using finite-precision arithmetic is a non-trivial and multifaceted topic; each such extension of the iteration essentially to control for loss of orthogonality between the Lanczos vectors or improve convergence rate (or both), which typically involves increasing either the time or storage complexities by non-trivial factors. We defer its discussion to section~\ref{subsec:rounding}. 
+Independent of orthogonality-enforcement scheme of choice, the assumption of exact arithmetic gives us a grounded expectation of what is possible to achieve with any such scheme. 
 \begin{corollary}\label{cor:finite_arith_lanczos}
 	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
-Extending the Lanczos to retain similar complexity guarantees using finite-precision arithmetic is a complex and multifaceted topic; we defer its discussion to section~\ref{subsec:rounding}. 
 As Lemma~\ref{lemma:exact_arith_lanczos} makes clear, the usefulness of the Lanczos iteration hinges on the availability of a fast matrix-vector product. 
-For any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
+In general, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. For dense matrices, we recover the same $O(r n^2)$ complexity required by direct methods. 
 In the next section, we demonstrate how to reduce this complexity using the structure of the boundary operator. 
 %The Lanczos iteration's widespread adoption is due in part to its computational simplicity at reaching tridiagonal form: each step consists of a single matrix-vector product and a few vector operations.  
 %Thus, if $A$ is sparse and/or has special structure, the iteration may be carried in far fewer than $\approx n^3$ operations and with far less than the $\approx n^2$ memory---the typical time and storage complexities exhibited by direct methods. 
@@ -484,71 +493,52 @@ In the next section, we demonstrate how to reduce this complexity using the stru
  %% , then the Lanczos method can be quite efficient. 
 %% Whereas direct methods typically require $O(n^3)$ operations before any output is derived, 
 %% such as those tridiagonalizations that destroy the sparsity structure of the matrix that Householder reflectors.
-\subsection{Laplacian}
-% https://www.ams.org/journals/tran/2002-354-11/S0002-9947-02-03082-9/S0002-9947-02-03082-9.pdf
-In principle, the Lanczos method may only be effectively applied to sparse, symmetric matrices. Though the boundary matrix $\partial$ is not symmetric, it is well known that the spectrum of $\partial_p \partial_p^T$ contains the same information as the singular values of $\partial_p$, since the latter are by definition the nonnegative square roots of former and thus $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$. 
-Moreover, the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}. 
-Thus, we can consider the study of spectra of combinatorial Laplacians as the study of singular values of boundary operators. 
-%The sparsity pattern $\partial_p$ inherits from the simplicial structure of $K$ confers a few computational advantages compared to more general linear operators. 
-%In what follows, we take advantage of the the simplicial structure of $K$ and the fact that  to both elucidate the structured form of the matrix vector operator and highlight connections to other areas of applied mathematics.
-For simplicity, we focus on the case where $p = 0$, and defer higher dimensions for later. 
- 
-Given a graph $G = (V, E)$ with edge set $E \subseteq V \times V$, let $A \in \mathbb{R}^{n \times n}$ denote its \emph{adjacency matrix} with non-zero entries $A[i,j] = 1$ for every $(i, j) \in E$, and $0$ otherwise. The \emph{graph Laplacian} $L$ is defined as: 
-\begin{equation}\label{eq:L_form}
-	L = D - A = \partial_1 \partial_1^T
-\end{equation} 
-where $D$ is a diagonal matrix whose entries $d_{ii} = \{ \, \mathrm{deg}(v_i) \, \}$ are the vertex degrees $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$. 
-The graph Laplacian is heavily structured matrix that is known to capture the connectivity structure of $G$. In particular, the structure of the graph Laplacian imply linear and quadratic forms which have particular graph interpretations:
+
+% ----- Laplacian's encoding geometry: https://arxiv.org/pdf/1105.2712.pdf ----
+% "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
+
+\subsection{Combinatorial Laplacians}
+In principle, the three-term recurrence that drives the Lanczos method only occurs with symmetric matrices. Though the boundary matrix $\partial$ is not symmetric, it is well known that the spectrum of $AA^T$ contains the same information as the singular values of $A$, for general $A \in \mathbb{R}^{n \times m}$, and that $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$. % up to a change in the multiplicity of the zero 
+%since the latter are by definition the nonnegative square roots of former and thus . 
+Moreover, since the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of combinatorial Laplacians as the study of singular values of boundary operators. 
+
+For an abstract simplicial complex $K$ defined over vertex set $V = [n]$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 
+%The \emph{coboundary operator} $\delta_p : C_{p}(K, \mathbb{R}) \to C_{p+1}(K, \mathbb{R})$ that sends $p$-chains to $p+1$-chains is the well known dual of $\partial_p$. 
+The $p$-th \emph{combinatorial Laplacian} $\Delta_p$ is given by: 
+\begin{equation}
+	\Delta_p(K) = 
+	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
+%	\simeq H() 
+\end{equation}
+Observe when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ is the well studied \emph{graph Laplacian} $L = D - A$ of a graph $G = (V, E)$, where $A \in \mathbb{R}^{n \times n}$ denote the graphs adjacency matrix $D$ is the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$. A discrete version of the Hodge theorem shows that: 
+$$ H_p(K; \mathbb{R}) \simeq \mathrm{Null}(\Delta_p) $$
+Thus, for each $p \geq 0$ the $p$-th Betti number of $K$ is given by $\beta_p = \mathrm{nullity}(\Delta_p)$.
+This result suggests the Laplacian a connection or alternative way to obtaining the persistent Betti number $\beta_p^{\ast}$  
+% Persistent laplacian 
+% Shwo the sptrums are the same
+
+Given a $G = (V, E)$, its corresponding graph Laplacian is a heavily structured matrix known to capture the connectivity structure of $G$. In particular, $L$ is symmetric, positive semi-definite, and it's linear and quadratic forms have particular graph-theoretic interpretations:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
-where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. 
-Moreover, $L$ is symmetric, positive semi-definite, and the connection between $L$ and $\partial_1$ via~\eqref{eq:L_form} suggests the elementary chain modifications from~\eqref{eq:param_boundary_matrix} can be adapted to the linear and quadratic forms from~\eqref{eq:lap_quad_from}. 
-The entries in~\ref{def:time_boundary_matrix2} are parameterized using functions which defined over face and coface pairs, and thus to extend the structure of the graph Laplacian to our setting we require three Laplacian variants: Laplacians whose $p$-chains are parameterized by their $(p-1)$ faces, Laplacians whose $p$-chains are parameterized by their $p$-faces, and the hadamard product between the two. 
-%$\mathrm{rank}(L)$ is given by $n - \mathrm{cc}(G)$, where $\mathrm{cc}(G)$ is the number of connected components of $G$ (and thus, $0 \in \Lambda(L)$ with multiplicity $\mathrm{cc}(G)$). 
-%The formulation of the boundary matrix given in~\eqref{def:time_boundary_matrix} also lends to a structured interpretation with the graph Laplacian and its various operators. 
-Consider boundary matrices $\partial_1^E$ and $\partial_1^V$ whose chain entries are parameterized by edge and vertex functions, $f_E : V \times V \to \mathbb{R}$ and $f_v : V \to \mathbb{R}$:
-\begin{equation}
-	\partial_1^E[k,l] = \begin{cases}
-	\pm \, f_E(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
-	0 & \text{otherwise}
-	\end{cases}, \quad \quad 
-	\partial_1^V[k,l] = \begin{cases}
-	\pm \, f_V(\sigma_k) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
-	0 & \text{otherwise}
+where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+Moreover, since $L = \Delta_0(K) = L_0^{\text{up}}$, it is curious whether this operation generalizes.  
+To demonstrate this, we require more notation. let $\pi$
+\begin{align}
+	L_p^{\text{up}}[i,j] = \begin{cases}
+		& \text{ if } i \sim j \\ 
 	\end{cases}
-\end{equation}
-Both parameterizations generate two kinds of weighted graph Laplacians via~\eqref{eq:L_form}.
-In the edge-weighted case, the Laplacian matrix-vector form is given by: 
-\begin{equation}\label{eq:lap_edge}
-	\left ( (\partial_1^E)(\partial_1^E)^T x \right )_i = (L^E x)_i =  x_i \cdot d_f(v_i) -  \sum\limits_{i \sim j} x_j \cdot f_E(v_i, v_j)^2
-\end{equation}
-where $d_f(v_i) = \sum\limits_{j \sim i} f_E(v_i, v_j)^2$. In the vertex-weighted case, it is given by: 
-\begin{equation}\label{eq:lap_vertex}
-	\left ( (\partial_1^V)(\partial_1^V)^T x \right )_i = (L^V x)_i =  x_i \cdot d(v_i) \cdot f_V(v_i)^2 -  \sum\limits_{i \sim j} x_j \cdot f_V(v_i) \cdot  f_V(v_j)
-\end{equation}
-Ignoring sign cancellations, the $(i,j)$-th entry of the Laplacian matrix $L^{VE}$ formed by combining~\eqref{eq:L_form} with the hadamard product $\partial_1^{VE} = \partial_1^V \circ \partial_1^E$ has the following form: 
-\begin{equation}\label{eq:lap_hadamard}
-	L^{VE}[i,j] = \left((\partial_1^{VE}) (\partial_1^{VE})^T\right)[i,j] = 
-	\begin{cases}
-		d_f(v_i) \cdot f_V(v_i)^2	& i = j \\
-		-(f_E(v_i, v_j)^2 \cdot f_V(v_i) \cdot f_V(v_j)) & i \sim j \\
-		0 & i \nsim j 	
-	\end{cases}
-\end{equation}
-In all cases, if $L = \partial_1 \partial_1^T$ where $\partial_1 \in \mathbb{R}^{n \times m}$ and $n < m$, then one may observe that the corresponding matrix-vector product for equations~\eqref{eq:lap_edge}-\eqref{eq:lap_hadamard} can all be evaluated in $O(m)$ time. We end this section with a proposition, which essentially follows by combining the above observations with Lemma~\ref{lemma:exact_arith_lanczos}.
-\begin{proposition}\label{prop:exact_arith_matvec}
-	Given a filtration $(K, f)$ of maximum dimension $1$ with $n$ vertices and $m$ edges, 
-	%Without loss of generality, assume $n < m$ and $\mathrm{rank}(\partial_1) = r$. 
-	the Lanczos iteration on the graph Laplacian $L = \partial_1 \partial_1^T$ computes:
-	\begin{equation}
-		\mathrm{dim}(B_{0}(K; \mathbb{R})) = \mathrm{rank}(L) = \mathrm{rank}(\partial_{1}(K))
-	\end{equation}
-	in $O(mr)$ time and $O(m)$ storage complexity, when computation is done in exact arithmetic. 
-	%	Moreover, assume we may carry out the computation $v \mapsto \partial_p \partial_p^T v$ with coefficients in $\mathbb{F} = \mathbb{R}$ in exact arithmetic in $O(m)$ time. 
-\end{proposition}
+\end{align}
+
+We consider weighted versions of the Laplacian whose weights are given by the filter function $f$. To make this clear, let $\mathcal{F} : K^p \to \mathbb{R}$ and $\mathcal{C} : K^{p+1} \to \mathbb{R}$ denote restrictions of $f$ to $p$ and $p+1$ dimensional faces of $K$. We 
+
+%the connection between $L$ and $\partial_1$ via~\eqref{eq:L_form} suggests the elementary chain modifications from~\eqref{eq:param_boundary_matrix} can be adapted to the linear and quadratic forms from~\eqref{eq:lap_quad_from}. 
+% Shwo the sptrums are the same
+
+
+
 % It turns out that the residual error between $\theta$ and $\lambda$ can be easily computed, so we may assess the quality of $\Lambda(T_j)$ during the iteration.   
 
 %In principle, if the Lanczos iteration doesn't break down due to rounding errors, then the characteristic polynomial of $T_k$ is the unique polynomial $p^k \in P^k$ that achieves~\cite{}:
@@ -597,7 +587,8 @@ Thus, we need not necessarily keep the Lanczos vectors $Q$ in memory to monitor 
  \begin{equation}
  	\lvert \lambda - \theta_i^{(j)} \rvert \leq \big ( \beta_i^{(j)} \big )^2 / \big( \min_\mu \; \lvert \mu - \theta_i^{(j)} \rvert \big ) 
  \end{equation}
- Thus, these 
+The full convergence of the Ritz values to the eigenvalues of $A$ is known to converge at a rate that depends on the ratio between $\lambda_1/\lambda_n$. A full analysis is done in terms of Chebychev Polyonomials in~\cite{golub2013matrix}. In practice, it has been observed that the Lanczos iteration converges super-linearly towards the extremal eigenvalues of the spectrum, whereas for interior eigenvalues one typically must apply a shifting scheme.
+
 
 %\< TODO \> 
 % For expository purposes, the preceding sections assumed exact arithmetic. 
@@ -704,7 +695,7 @@ We summarize a few properties below.
 \\
 \\
 \noindent \textbf{Smoothstep:} To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
-Fortunately, this requires a simple augmentation to the step function from~\eqref{def:time_boundary_matrix2}, similar to this change in the sign function. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ in ~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
+Fortunately, this requires a simple augmentation to the step function from~\eqref{def:time_boundary_matrix2}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ in ~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
@@ -748,15 +739,16 @@ Our motivation to use them here is based on the observations shown in Figure~\re
 %\end{definition}
 %We summarize the previous 
 By composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we have $\epsilon$-approximate, continuously-varying multiplicity function. 
-\begin{definition}
+\begin{definition}[Continuous Multiplicity]
+Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Let $\tilde{\partial}_p$ denote the $\mathcal{H}$-parameterized $p$-th boundary matrix from~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$. Define the \emph{continuous multiplicity function} over some fixed $R = [i,j] \times [k,l]$ as:
 	\begin{equation}\label{eq:mu_cont}
 	\hat{\mu}_{p,\epsilon}^R(h) = 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast - 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast -  
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast + 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{q}^{j \+ \epsilon, k}) \rVert_\ast \numberthis
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast - 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast -  
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast + 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast \numberthis
 \end{equation}
-The formulation of the PBN relaxation is synonymous.
+where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$. The formulation of the PBN relaxation is synonymous.
 \end{definition}
 \noindent Since the sum of two Lipshitz functions $f$ and $g$ results in another Lipshitz function $f + g$, by the continuity of $\mathcal{S}_\ast^\omega$ and the global Lipshitz continuity of~\eqref{def:cont_rank}, it is clear that $\hat{\mu}_p^R$ is Lipshitz continuous. 
 %\begin{corollary}
@@ -774,7 +766,21 @@ which is the generic rank approximation studied by~\cite{}. Moreover, by the cyc
 \begin{equation*}
 	\lVert \Phi_\epsilon(X) \rVert_\ast = \mathrm{Tr}[(L + \epsilon I_n)^{-1} L] = \sum\limits_{i=1}^n (L_\epsilon^{-1} l_i)_i
 \end{equation*}
-Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. Since this nonsingular, positive definite, strictly diagonally dominant matrix, thus we may apply the famous Conjugate Gradient (CG) algorithm to solve such a system. It's well known that CG converges to the solution of $A x = b$ in exactly $O(n)$ iterations (and often much earlier), of which each iteration requires one $O(m)$ matrix-vector product, implying a runtime of $O(mn^2)$ (compare with...).  
+Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
+From this expression, it's clear that $\epsilon$ not only plays the role of an accuracy parameter, but as a smoothing parameter. Indeed, define the condition number
+
+Small condition numbers often improve the convergence of iterative solvers and improve stability of spectrum with respect to perturbations in the entries of the matrix. 
+$\kappa(M^{-1} A)$
+
+% the desired effect in applying a preconditioner is to make the quadratic form of the preconditioned operator {\displaystyle P^{-1}A}P^{{-1}}A with respect to the {\displaystyle P}P-based scalar product to be nearly spherical.
+$$
+M^{-1} A x = M^{-1}b 
+$$
+where $M$ is symmetric positive definite. 
+\begin{equation}
+	\min_{x \perp \mathbf{1} } \frac{1}{2} x^T (L + \epsilon I_n) x - b^T x
+\end{equation}
+Since this nonsingular, positive definite, strictly diagonally dominant matrix, thus we may apply the famous Conjugate Gradient (CG) algorithm to solve such a system. It's well known that CG converges to the solution of $A x = b$ in exactly $O(n)$ iterations (and often much earlier), of which each iteration requires one $O(m)$ matrix-vector product, implying a runtime of $O(mn^2)$ (compare with...).  
 %http://www.cs.yale.edu/homes/spielman/561/2009/lect16-09.pdf
 Moreover, and since this is a Laplacian matrix, the wealth of tools developed for said matrices may also be used.
 In particular, ~\cite{} showed that \emph{low-stretch spanning trees} act as good preconditioners to accelerate Laplacian solvers, wherein it's been shown that the preconditioned Conjugate Gradient (PCG) requires as most $O(\sqrt{m} \log n)$ iterations, each of which requires one matrix-vector product using $L_G$ and in $O(m^{1/3} \log n \, \mathrm{ln} 1/\epsilon)$ iterations. 
