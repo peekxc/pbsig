@@ -481,7 +481,7 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, this is unrealistic, and we must use finite-precision arithmetic. Extending the Lanczos method to retain similar complexity guarantees using finite-precision arithmetic is a non-trivial and multifaceted topic; each such extension of the iteration essentially to control for loss of orthogonality between the Lanczos vectors or improve convergence rate (or both), which typically involves increasing either the time or storage complexities by non-trivial factors. We defer its discussion to section~\ref{subsec:rounding}. 
 Independent of orthogonality-enforcement scheme of choice, the assumption of exact arithmetic gives us a grounded expectation of what is possible to achieve with any such scheme. 
 \begin{corollary}\label{cor:finite_arith_lanczos}
-	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_n \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
+	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
 As Lemma~\ref{lemma:exact_arith_lanczos} makes clear, the usefulness of the Lanczos iteration hinges on the availability of a fast matrix-vector product. 
@@ -498,11 +498,11 @@ In the next section, we demonstrate how to reduce this complexity using the stru
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
 \subsection{Combinatorial Laplacians}
-In principle, the three-term recurrence that drives the Lanczos method only occurs with symmetric matrices. Though the boundary matrix $\partial$ is not symmetric, it is well known that the spectrum of $AA^T$ contains the same information as the singular values of $A$, for general $A \in \mathbb{R}^{n \times m}$, and that $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$. % up to a change in the multiplicity of the zero 
+In principle, the three-term recurrence that drives the Lanczos method only be exploited with symmetric matrices, and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product. Though the boundary matrix $\partial$ is not symmetric, it is well known that the non-zero part of the spectrum of $\partial \partial^T$ contains the same information as the singular values of $\partial$. By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
-Moreover, since the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of combinatorial Laplacians as the study of singular values of boundary operators. 
+Moreover, since the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of combinatorial Laplacians---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators. In what follows, we examine the form of $\partial_p \partial_p^T$ for more general $p > 1$ towards revealing exploitable structure in accelerating the rank computation.
 
-For an abstract simplicial complex $K$ defined over vertex set $V = [n]$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 
+For an abstract simplicial complex $K$ defined over vertex set $V$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 
 %The \emph{coboundary operator} $\delta_p : C_{p}(K, \mathbb{R}) \to C_{p+1}(K, \mathbb{R})$ that sends $p$-chains to $p+1$-chains is the well known dual of $\partial_p$. 
 The $p$-th \emph{combinatorial Laplacian} $\Delta_p$ is given by: 
 \begin{equation}
@@ -510,29 +510,48 @@ The $p$-th \emph{combinatorial Laplacian} $\Delta_p$ is given by:
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
-Observe when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ is the well studied \emph{graph Laplacian} $L = D - A$ of a graph $G = (V, E)$, where $A \in \mathbb{R}^{n \times n}$ denote the graphs adjacency matrix $D$ is the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$. A discrete version of the Hodge theorem shows that: 
-$$ H_p(K; \mathbb{R}) \simeq \mathrm{Null}(\Delta_p) $$
-Thus, for each $p \geq 0$ the $p$-th Betti number of $K$ is given by $\beta_p = \mathrm{nullity}(\Delta_p)$.
-This result suggests the Laplacian a connection or alternative way to obtaining the persistent Betti number $\beta_p^{\ast}$  
-% Persistent laplacian 
-% Shwo the sptrums are the same
-
-Given a $G = (V, E)$, its corresponding graph Laplacian is a heavily structured matrix known to capture the connectivity structure of $G$. In particular, $L$ is symmetric, positive semi-definite, and it's linear and quadratic forms have particular graph-theoretic interpretations:
+When $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ is the \emph{graph Laplacian} $L = D - A$ of a graph $G = (V, E)$, where $A \in \mathbb{R}^{n \times n}$ denote the graphs adjacency matrix $D$ is the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$. 
+The graph Laplacian is a heavily structured matrix known to capture the connectivity structure of $G$. In particular, $L$ is symmetric, positive semi-definite, and it's linear and quadratic forms have particular graph-theoretic interpretations:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
 where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
-Moreover, since $L = \Delta_0(K) = L_0^{\text{up}}$, it is curious whether this operation generalizes.  
-To demonstrate this, we require more notation. let $\pi$
+As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether this procedure generalizes for $p > 0$.
+In particular, writing down the quadratic form of $L_p^{\text{up}}$ requires an explicit expression for the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
+As one can see from~\eqref{eq:oriented_simplex}, there are effectively only two classes of orientations, and thus this task is equivalent to having an explicit expression for the position of $[\tau]$ as a summand in~\eqref{eq:alt_sum}, modulo 2.
+To make this clear, we require more notation. 
+
+Given a simplicial complex $K$, we denote with $\tau \overset{\sigma}{\sim} \tau'$ the relation where $\tau \neq \tau'$ are two distinct $p$-simplices in $K$ that share a proper coface $\sigma \in K^{p+1}$.
+It may be shown that such a coface containing two distinct faces $\tau, \tau' \in K^p$ is unique~\cite{}, and thus we refer to this simplex $\sigma$ as the \emph{common upper simplex} of $(\tau, \tau')$.   
+Notice that signs of the coefficients of $(\tau, \tau')$ in $\partial[\sigma]$ does not depend on the orientation of $\sigma$, only on the orientations $[\tau]$ and $[\tau']$. 
+% similarly oriented vs dissimilarity oriented
+%We denote with $\mathrm{deg}_U(\tau)$ the number of codim-1 cofaces of $\tau$.  
+Since we do not need the matrices to be in filtration order, we assume a fixed ordering on the vertex set $(V, \leq)$ and an induced ordering on the corresponding simplices $(K, \preceq^\ast)$ given by the linear extension of this order. 
+Since each simplex thus inherits an orientation induced by the ordering of its vertices, we may write down entries of $L_p^{up}$ explicitly:  
 \begin{align}
 	L_p^{\text{up}}[i,j] = \begin{cases}
-		& \text{ if } i \sim j \\ 
+		\mathrm{deg}(\sigma_i) & \text{ if } i = j \\ 
+		(-1)^{\lvert \pi \rvert} & \text{ if } \sigma_i \sim_U \sigma_j \\
+		0 & \text{ otherwise} 
 	\end{cases}
 \end{align}
 
-We consider weighted versions of the Laplacian whose weights are given by the filter function $f$. To make this clear, let $\mathcal{F} : K^p \to \mathbb{R}$ and $\mathcal{C} : K^{p+1} \to \mathbb{R}$ denote restrictions of $f$ to $p$ and $p+1$ dimensional faces of $K$. We 
+
+%% --- Hodge theorem
+%A discrete version of the Hodge theorem, due to Eckmann~\cite{}, shows that: 
+%$$ H_p(K; \mathbb{R}) \simeq \mathrm{Null}(\Delta_p) $$
+%Since $\partial_{p} \partial_{p+1} = 0$ and $\partial_{p+1}^T \partial_p^T = 0$, we have $\mathrm{Im}(L_p^{\text{dn}}) \subset \mathrm{ker}(L_p^{\text{up}})$ and $\mathrm{Im}(L_p^{\text{up}}) \subset \mathrm{ker}(L_p^{\text{dn}})$, thus if $\lambda \neq 0$ is an eigenvalue of $\Delta_p(K)$, it must be an eigenvalue of $L_p^{\text{dn}}$ or $L_p^{\text{up}}$. Indeed, ~\cite{} showed that the pair $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_p^{\text{dn}})$ determines $\Lambda(\Delta_p)$ and vice versa. 
+%Thus, for each $p \geq 0$ the $p$-th Betti number of $K$ is given by $\beta_p = \mathrm{nullity}(\Delta_p)$.
+%This result suggests the Laplacian a connection or alternative way to obtaining the persistent Betti number $\beta_p^{\ast}$ by first forming a persistent version of $\Delta_p(K)$ whose nullspace 
+
+  
+% Persistent laplacian 
+% Shwo the sptrums are the same
+
+
+%We consider weighted versions of the Laplacian whose weights are given by the filter function $f$. To make this clear, let $\mathcal{F} : K^p \to \mathbb{R}$ and $\mathcal{C} : K^{p+1} \to \mathbb{R}$ denote restrictions of $f$ to $p$ and $p+1$ dimensional faces of $K$. We 
 
 %the connection between $L$ and $\partial_1$ via~\eqref{eq:L_form} suggests the elementary chain modifications from~\eqref{eq:param_boundary_matrix} can be adapted to the linear and quadratic forms from~\eqref{eq:lap_quad_from}. 
 % Shwo the sptrums are the same
@@ -756,6 +775,8 @@ where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h
 %	$$ \lfloor \tilde{\beta}_p^{\ast}(K) \rfloor = $$
 %\end{corollary}
 %These approximations are also "betti-like". 
+
+%% REVISIT LAPLACIAN!
 
 \subsection{(1-$\epsilon$) Approximations}
 Note that when $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$, Equation~\eqref{def:cont_rank} reduces to: 
