@@ -207,6 +207,7 @@ def unrank_combs(R: Iterable, k: int, n: int):
 def rank_comb(c: Tuple, k: int, n: int):
   c = np.array(c, dtype=int)
   #index = np.sum(comb((n-1)-c, np.flip(range(1, k+1))))
+  #print([(cc, kk) for cc,kk in zip((n-1)-c, np.flip(range(1, k+1)))])
   index = np.sum([comb(cc, kk) for cc,kk in zip((n-1)-c, np.flip(range(1, k+1)))])
   return(int((comb(n, k)-1) - int(index)))
 
@@ -215,6 +216,32 @@ def rank_combs(C: Iterable, k: int, n: int):
     return(np.array([rank_C2(c[0], c[1], n) for c in C], dtype=int))
   else: 
     return(np.array([rank_comb(c, k, n) for c in C], dtype=int))
+
+sorting_nets = { 
+  1 : [[0]],
+  2 : [[0,1]],
+  3 : [[0,1],[0,2],[1,2]],
+  4 : [[0,1],[2,3],[0,2],[1,3],[1,2]],
+  5 : [[0,1],[2,3],[0,2],[1,4],[0,1],[2,3],[1,2],[3,4],[2,3]],
+  6 : [[0,1],[2,3],[4,5],[0,2],[1,4],[3,5],[0,1],[2,3],[4,5],[1,2],[3,4],[2,3]]
+}
+def parity(X: Collection):
+  """ 
+  Finds the number of inversions of any collection of comparable numbers of size <= 6. 
+  
+  On the implementation side, sorts 'X' using sorting networks to find the number of inversions. 
+  """
+  X = np.array(X, copy=True)
+  if len(X) == 1: return 0
+  nt: int = 0
+  for i,j in sorting_nets[len(X)]:
+    X[[i,j]], nt = (X[[j,i]], nt+abs(i-j)) if X[i] > X[j] else (X[[i,j]], nt)
+  return nt
+
+# https://math.stackexchange.com/questions/415970/how-to-determine-the-parity-of-a-permutation-by-its-cycle-decomposition
+# TODO: find number of cycles w/o Sympy
+def sgn_permutation(p):
+  return int((-1)**(len(p)-Permutation(p).cycles))
 
 def edges_from_triangles(triangles: ArrayLike, nv: int):
   ER = np.array([[rank_C2(*t[[0,1]], n=nv), rank_C2(*t[[0,2]], n=nv), rank_C2(*t[[1,2]], n=nv)] for t in triangles])

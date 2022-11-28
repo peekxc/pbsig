@@ -74,6 +74,9 @@ plt.plot(stats['hist']['numMatvecs'])
 plt.plot(stats['hist']['nconv'])
 plt.plot(np.cumsum(stats['hist']['resNorm']))
 
+## Ranking p-faces of a (p+1)-simplex yields the orientations
+# rank_combs([[0,1], [0,2], [1,2]], n=3, k=2) % 2
+
 
 ## Record stats 
 STATS = {}

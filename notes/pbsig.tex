@@ -520,10 +520,11 @@ The graph Laplacian is a heavily structured matrix known to capture the connecti
 where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
 As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether this procedure generalizes for $p > 0$.
 In particular, writing down the quadratic form of $L_p^{\text{up}}$ requires an explicit expression for the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
-As one can see from~\eqref{eq:oriented_simplex}, there are effectively only two classes of orientations, and thus this task is equivalent to having an explicit expression for the position of $[\tau]$ as a summand in~\eqref{eq:alt_sum}, modulo 2.
 To make this clear, we require more notation. 
 
 Given a simplicial complex $K$, we denote with $\tau \overset{\sigma}{\sim} \tau'$ the relation where $\tau \neq \tau'$ are two distinct $p$-simplices in $K$ that share a proper coface $\sigma \in K^{p+1}$.
+The sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in the boundary of $\sigma$. 
+As one can see from~\eqref{eq:oriented_simplex}, there are effectively only two classes of orientations, and thus this task is equivalent to having an explicit expression for the position of $[\tau]$ as a summand in~\eqref{eq:alt_sum}, modulo 2.
 It may be shown that such a coface containing two distinct faces $\tau, \tau' \in K^p$ is unique~\cite{}, and thus we refer to this simplex $\sigma$ as the \emph{common upper simplex} of $(\tau, \tau')$.   
 Notice that signs of the coefficients of $(\tau, \tau')$ in $\partial[\sigma]$ does not depend on the orientation of $\sigma$, only on the orientations $[\tau]$ and $[\tau']$. 
 % similarly oriented vs dissimilarity oriented
@@ -532,8 +533,8 @@ Since we do not need the matrices to be in filtration order, we assume a fixed o
 Since each simplex thus inherits an orientation induced by the ordering of its vertices, we may write down entries of $L_p^{up}$ explicitly:  
 \begin{align}
 	L_p^{\text{up}}[i,j] = \begin{cases}
-		\mathrm{deg}(\sigma_i) & \text{ if } i = j \\ 
-		(-1)^{\lvert \pi \rvert} & \text{ if } \sigma_i \sim_U \sigma_j \\
+		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
+		(-1)^{s_{ij}} & \text{ if } \tau_i \overset{\sigma}{\sim} \tau_j \\
 		0 & \text{ otherwise} 
 	\end{cases}
 \end{align}
