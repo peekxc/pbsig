@@ -5,6 +5,18 @@ from itertools import *
 from numpy.typing import ArrayLike
 from scipy.spatial import Delaunay
 from .utility import edges_from_triangles, cycle_window
+import networkx as nx
+from networkx import Graph 
+from scipy.sparse import diags, csc_matrix, issparse
+from scipy.linalg import issymmetric
+from pbsig.utility import lexsort_rows
+
+
+def edge_iterator(A):
+  assert issparse(A), "Must be a sparse matrix"
+  for i,j in zip(*A.nonzero()):
+    if i < j: 
+      yield (i,j)
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
@@ -12,8 +24,8 @@ def delaunay_complex(X: ArrayLike):
   T = dt.simplices
   K = {
     'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
-    'edges' : E,
-    'triangles' : T
+    'edges' : lexsort_rows(E),
+    'triangles' : lexsort_rows(T)
   }
   return(K)
 
@@ -22,10 +34,62 @@ def cycle_graph(X: ArrayLike):
   E = np.array(list(cycle_window(range(X.shape[0]))))
   K = {
     'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
-    'edges' : E,
+    'edges' : lexsort_rows(E),
     'triangles' : np.empty(shape=(0,3))
   }
   return(K)
+
+def complete_graph(n: int):
+  "Creates the complete graph from an integer n" 
+  from itertools import combinations
+  K = {
+    'vertices' : np.fromiter(range(n), dtype=np.int32),
+    'edges' : np.array(list(combinations(range(n), 2)), dtype=np.int32),
+    'triangles' : np.empty(shape=(0,3), dtype=np.int32)
+  }
+  return(K)
+
+
+def is_symmetric(A):
+  if issparse(A):
+    r, c = A.nonzero()
+    ri = np.argsort(r)
+    ci = np.argsort(c)
+    return all(r[ri] == c[ci]) and not(any((A != A.T).data))
+  else: 
+    return issymmetric(A)
+
+def laplacian_DA(L):
+  """ Converts graph Laplacian L to Adjacency + diagonal degree """
+  D = diags(L.diagonal())
+  A = L - D
+  return D, A
+
+def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = False):
+  if isinstance(G, Graph):
+    A = nx.adjacency_matrix(G)
+    D = diags([G.degree(i) for i in range(G.number_of_nodes())])
+    L = D - A
+  elif isinstance(G, dict) and 'vertices' in G.keys():
+    E, n = G['edges'], len(G['vertices'])
+    L = np.zeros(shape=(n,n))
+    for i,j in E: 
+      L[i,j] = L[j,i] = -1
+    L = diags(abs(L.sum(axis=0))) + csc_matrix(L)
+  elif isinstance(G, np.ndarray) or issparse(G): # adjacency matrix 
+    L = diags(np.ravel(G.sum(axis=0))) - G
+  elif isinstance(G, Iterable):
+    E, n = G
+    L = np.zeros(shape=(n,n))
+    for i,j in E: 
+      L[i,j] = L[j,i] = -1
+    L = diags(abs(L.sum(axis=0))) + csc_matrix(L)
+  else: 
+    raise ValueError("Invalid input")
+  if normalize: 
+    D = diags(1.0/np.sqrt(L.diagonal()))
+    L = D @ L @ D
+  return L
 
 @runtime_checkable
 class SimplexLike(Collection, Protocol):
@@ -37,9 +101,13 @@ class SimplexLike(Collection, Protocol):
 ## Simplicial complex duck type
 @runtime_checkable
 class ComplexLike(Collection, Protocol):
-  def boundary(self) -> Iterable['SimplexLike']: 
+  def __iter__(self) -> Iterable['SimplexLike']: 
     raise NotImplementedError 
+  def __next__(self) -> SimplexLike:
+    raise NotImplementedError
   def dimension(self) -> int: 
+    raise NotImplementedError
+  def simplices(self, p: int) -> Iterable['SimplexLike']:
     raise NotImplementedError
 
 

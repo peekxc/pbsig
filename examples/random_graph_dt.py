@@ -4,20 +4,234 @@ from numpy.typing import ArrayLike
 from scipy.sparse.linalg import LinearOperator
 import networkx as nx 
 import primme
-
+from scipy.sparse.linalg import * 
+from scipy.sparse import * 
 from pbsig.persistence import boundary_matrix
 from pbsig.linalg import lanczos
 from pbsig.simplicial import cycle_graph
 from pbsig.pht import rotate_S1, uniform_S1
 from pbsig.datasets import mpeg7
 from pbsig.pht import pht_preprocess_pc
+from pbsig.simplicial import *
 
 default_opts = dict(tol=1e-6, printLevel=0, return_eigenvectors=False, return_stats=True, return_history=True)
 
 # G = nx.connected_watts_strogatz_graph(130, k=7, p=0.20)
-G = nx.newman_watts_strogatz_graph(n=130, k=10, p=0.20)
+# G = nx.newman_watts_strogatz_graph(n=150, k=20, p=0.30)
+G = nx.connected_watts_strogatz_graph(n=150, k=5, p=0.10)
+str(G)
+from pbsig.linalg import eigsh_family
+L = laplacian(nx.adjacency_matrix(G), form='lo')
+list(eigsh_family([L, L, L], reduce=sum))
+
+from pbsig.lsst import sparsify, low_stretch_st
+A = nx.adjacency_matrix(G)
+W = diags(np.random.uniform(size=A.shape[0], low=1.0, high=5.0))
+AW = np.sqrt(W) @ A @ np.sqrt(W)
+LW = laplacian(AW)
+#AS = sparsify(AW, epsilon=1.5)
+AS = sparsify(AW, epsilon=3.7, ensure_connected=True)
+assert nx.is_connected(nx.from_scipy_sparse_array(AS)) 
+ST = csc_matrix(low_stretch_st(AS, "akpw"))
+assert nx.is_connected(nx.from_scipy_sparse_array(ST)) 
+LS = laplacian(AS)
+
+## Applies MINRES to solve min |x| such that x ~= A^+ b
+def benchmark_minres(A, b, **kwargs):
+  cc = Counter()
+  tol = 1e-05 if not 'tol' in kwargs else kwargs['tol']
+  xs = minres(A=A, b=b, callback=cc, **kwargs)[0]
+  assert max(abs((A @ xs) - b)) <= np.sqrt(tol)
+  print(cc)
+  return xs
+
+## random vector
+x = np.random.uniform(size=AW.shape[0], low=0.0, high=1.0)
+
+## Test whether ER sparsification helps as a preconditioner
+b = LW @ x
+xs = benchmark_minres(LW, b, tol=1e-8)
+# xs = benchmark_minres(LW, b, tol=1e-8, M=laplacian(AS))
+xs = benchmark_minres(LW, b, tol=1e-8, M=sparse_pinv(LW))
+xs = benchmark_minres(LW, b, tol=1e-8, M=sparse_pinv(laplacian(AS)))
+
+## Test whether low stretch ST works as preconditioner for graph
+b = LW @ x
+xs = benchmark_minres(LS, b, tol=1e-8)
+#xs = benchmark_minres(LS, b, tol=1e-8, M=laplacian(ST))
+xs = benchmark_minres(LS, b, tol=1e-8, M=sparse_pinv(LS))
+xs = benchmark_minres(LS, b, tol=1e-8, M=sparse_pinv(laplacian(ST)))
+
+## Test whether low stretch ST works as preconditioner for sparsified graph
+b = LS @ x
+xs = benchmark_minres(LS, b, tol=1e-8)
+#xs = benchmark_minres(LS, b, tol=1e-8, M=laplacian(ST))
+xs = benchmark_minres(LS, b, tol=1e-8, M=sparse_pinv(LS))
+xs = benchmark_minres(LS, b, tol=1e-8, M=sparse_pinv(laplacian(ST)))
+
+
+## Visualize the multi-structure 
+import matplotlib.pyplot as plt
+from scipy.sparse.csgraph import floyd_warshall
+G = nx.Graph()
+G.add_nodes_from(range(LW.shape[0]))
+G.add_weighted_edges_from([(i,j,R) for (i,j), R in zip(edge_iterator(LW), er)])
+AR = nx.adjacency_matrix(G).todense()
+floyd_warshall(AR, directed=False, unweighted=False, overwrite=True)
+
+from pbsig.linalg import cmds
+X = cmds(AR)
+
+layout = nx.planar_layout(nx.from_scipy_sparse_array(ST))
+layout = nx.spring_layout(nx.from_scipy_sparse_array(ST))
+layout = nx.kamada_kawai_layout(nx.from_scipy_sparse_array(ST))
+layout = nx.kamada_kawai_layout(nx.from_scipy_sparse_array(AS))
+layout = nx.kamada_kawai_layout(nx.from_scipy_sparse_array(A))
+# layout = nx.spring_layout(G)
+X = np.array([layout[i] for i in range(LW.shape[0])])
+
+fig = plt.figure(figsize=(3,3), dpi=250)
+ax = plt.gca()
+ax.scatter(np.asarray(X[:,0]), np.asarray(X[:,1]), zorder=10, s=1.5)
+
+for i,j in G.edges():
+  ax.plot(X[[i,j],0], X[[i,j],1], linewidth=1.5, color='blue', zorder=1)
+
+for i,j in edge_iterator(AS):
+  ax.plot(X[[i,j],0], X[[i,j],1], linewidth=1.0, color='green', zorder=2)
+
+for i,j in edge_iterator(ST):
+  ax.plot(X[[i,j],0], X[[i,j],1], linewidth=0.5, color='red', zorder=3)
+
+
+
+
+
+
+
+## Benchmark with PRIMME
+import primme
+from pbsig.utility import timeout
+from pbsig.precon import Minres, Jacobi, ssor, ShiftedJacobi
+
+def trace_threshold(L, t=0.80):
+  ev_cs = np.cumsum(L.diagonal())
+  thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) > t)[0] # index needed to obtain 80% of the spectrum
+  return thresh_ind
+
+nev = trace_threshold(LW, 0.10)
+
+# https://www.cs.wm.edu/~andreas/software/doc/appendix.html#c.primme_params.correctionParams.projectors.SkewX
+ew, stats = primme.eigsh(
+  A=LW, k=nev, method="PRIMME_Arnoldi", which="LM",
+  #maxiter=nev,        # Max num. of *outer* iterations
+  ncv=20,              # Max basis size / Lanczos vectors to keep in-memory; use minimum three for 3-term recurrence 
+  maxBlockSize = 5,    # Max num of vectors added at every iteration. This affects the num. of shifts given to the preconditioner
+  minRestartSize = 0,  # Num. of approx. eigenvectors (Ritz vectors) kept during restart
+  maxPrevRetain = 0,   # Num. approx eigenvectors kept *from previous iteration* in restart; the +k in GD+k
+  #convtest=lambda eval, evec, resNorm: True,
+  **default_opts
+)
+
+from pbsig.precon import Jacobi, ssor, ShiftedJacobi
+shift_f = lambda: primme.get_eigsh_param('ShiftsForPreconditioner')
+# OPinv = Minres(LW, shift_f)
+OPinv = Minres(laplacian(ST), lambda: primme.get_eigsh_param('ShiftsForPreconditioner'))
+# Minres(LW, tol=1e-6)
+# OPinv = Jacobi(LW)
+# OPinv = ssor(LW)
+# OPinv = ShiftedJacobi(LW, lambda: primme.get_eigsh_param('ShiftsForPreconditioner'))
+# OPinv = sparse_pinv(LW)
+# OPinv = sparse_pinv(laplacian(ST))
+# OPinv = sparse_pinv(laplacian(AS))
+
+ew, stats = primme.eigsh(
+  A=LW, k=nev, method="PRIMME_GD", which="LM",
+  #maxiter=nev,        # Max num. of *outer* iterations
+  ncv=3,               # Max basis size / Lanczos vectors to keep in-memory; use minimum three for 3-term recurrence 
+  maxBlockSize = 0,    # Max num of vectors added at every iteration. This affects the num. of shifts given to the preconditioner
+  minRestartSize = 0,  # Num. of approx. eigenvectors (Ritz vectors) kept during restart
+  maxPrevRetain = 0,   # Num. approx eigenvectors kept *from previous iteration* in restart; the +k in GD+k
+  OPinv=OPinv,
+  #convtest=lambda eval, evec, resNorm: True,
+  **default_opts
+)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Solve minimum residual via minres
+from scipy.sparse.linalg import minres
+from pbsig.utility import Counter
+cc = Counter()
+b = L @ x
+xs = minres(A=L, b=b, tol=1e-15, maxiter=1000, callback=cc)[0]
+assert max(abs((L @ xs) - b)) <= 1e-7
+
+from pbsig.simplicial import laplacian_DA
+D, A = laplacian_DA(L)
+T = csc_matrix(low_stretch_st(A))
+
+## Assert we can solve systems like this
+from pbsig.linalg import sparse_pinv
+from scipy.sparse.csgraph import laplacian
+ST = laplacian(T) # diags(T.diagonal()) - T
+assert x.T @ ST @ x >= 0, "must be positive semi-definite!"
+b = ST @ x
+xs = minres(A=ST, b=b, tol=1e-15, maxiter=1000)[0]
+assert max(abs((ST @ xs) - b)) <= 1e-7
+
+## Assert we can solve the systems using a pseudo-inverse, and in one-call
+from pbsig.precon import Minres
+cc2 = Counter()
+b = ST @ x
+xs = minres(A=ST, b=b, tol=1e-15, maxiter=1000, M = sparse_pinv(ST), callback=cc2)[0]
+assert max(abs((ST @ xs) - b)) <= 1e-7
+assert cc2.num_calls() == 1
+
+## See if the pseudo-inverse of ST works as a preconditioner for L
+cc1, cc2 = Counter(), Counter()
+b = L @ x
+x1 = minres(A=L, b=b, tol=1e-6, maxiter=1000, callback=cc1)[0]
+x2 = minres(A=L, b=b, tol=1e-6, maxiter=1000, M = sparse_pinv(ST), callback=cc2)[0]
+assert max(abs((L @ x1) - b)) <= 1e-7
+assert max(abs((L @ x2) - b)) <= 1e-7
+assert cc1.num_calls() >= cc2.num_calls()
+
+
+eigsh(L, return_eigenvectors=False)
+
+# # b = (L + 0.01*eye(AW.shape[0])) @ x
+# factor = cholesky(L, beta=0.01)
+# factor(b) - x
+
 # G = nx.random_geometric_graph(n=130, radius=0.10, dim=3)
 # G = nx.erdos_renyi_graph(n=100, p=0.10)
+# eigsh(AW, k=50, return_eigenvectors=False)
+
+for epsilon in [0.1, 0.5, 0.8, 1.0, 1.2, 1.4, 1.6, 1.8, 2.0, 2.5, 3.0]:
+  AS = sparsify(AW, epsilon=epsilon)
+  s1 = svds(AS, k=50, return_singular_vectors=False)
+  s2 = svds(AW, k=50, return_singular_vectors=False)
+  print(f"Max diff: {max(abs(s1 - s2)) }")
+
 
 K = { 'vertices': np.array(list(G.nodes)), 'edges': np.array(list(G.edges)) }
 X = pht_preprocess_pc(np.array(list(nx.fruchterman_reingold_layout(G).values())))
@@ -42,9 +256,8 @@ L = weighted_graph_Laplacian(K, X, [1,0])
 
 ## Get threshold needed to obtain some percentage of the spectrum 
 def trace_threshold(L, t=0.80):
-  sum_ev2 = sum(L.diagonal())
-  ev = primme.eigsh(L, k=L.shape[0]-1, ncv=L.shape[0], method="PRIMME_STEEPEST_DESCENT", return_eigenvectors=False, return_stats=False)
-  thresh_ind = np.flatnonzero(np.cumsum(ev)/sum_ev2 > t)[0] # index needed to obtain 80% of the spectrum
+  ev_cs = np.cumsum(L.diagonal())
+  thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) > t)[0] # index needed to obtain 80% of the spectrum
   return thresh_ind
 
 from pbsig.utility import timeout
@@ -407,4 +620,9 @@ all(np.ravel(((L @ L.T) == (L.T @ L)).flatten()))
 ## PRIMME_JDQR := Jacobi-Davidson with fixed number of inner steps.
 ## PRIMME_GD_plusK := GD with locally optimal restarting.
 ## PRIMME_JDQMR := Jacobi-Davidson with adaptive stopping criterion for inner Quasi Minimum Residual (QMR).
-## (min matvec's) PRIMME_GD_Olsen_plusK := GD+k and the cheap Olsen’s Method. 
+## (min matvec's) PRIMME_GD_Olsen_plusK := GD+k and the cheap Olsen’s Method. LW_P = sparse_pinv(LW, method="psvd_sqrt")
+# def characteristic(i, n):
+#   I = np.zeros(n)
+#   I[i] = 1.0
+#   return I.reshape((n,1))
+# F = np.array([LW_P @ characteristic(i, LW.shape[0]) for i in range(LW.shape[0])])

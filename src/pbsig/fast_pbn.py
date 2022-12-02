@@ -23,3 +23,4 @@ def pbc_ls(fv: ArrayLike, E: ArrayLike, collapse: bool = True, lex_sort: bool = 
   f = next(  rotate_S1(X, nd = 132, include_direction=False))
   f[E].max(axis=1)
 
+

@@ -51,11 +51,6 @@ def cond(A):
   r = sum(S >= tol)
   return S.max()/S[r-1]
 
-class Counter():
-  def __init__(self): self.cc = 0
-  def __call__(self, *args, **kwargs): self.cc += 1
-  def __repr__(self): return f"Number of calls: {self.cc}"
-
 ## Note this should'nt be possible to solve as L is not invertible! 
 from scipy.sparse.linalg import cg
 x = np.random.uniform(size=L.shape[0], low=-0.50, high=0.50)
@@ -220,43 +215,6 @@ while len(list(ds.to_sets())) > 1:
 
 # nfft?
 
-
-def edge_iter(A):
-  for i,j in zip(*A.nonzero()):
-    if i < j: 
-      yield (i,j)
-
-## Given a graph Laplacian, calculate the effective resistance of every edge
-def effective_resistance(L: ArrayLike, method: str = "pinv"):
-  eff_resist = lambda x: x
-  if method == "psvd_sqrt":
-    u,s,vt = np.linalg.svd(L.todense(), hermitian=True)
-    tol = s.max() * max(L.shape) * np.finfo(float).eps
-    r = sum(s > tol)
-    LS = vt[:(r-1),:].T @ np.diag(1/np.sqrt(s[:(r-1)])) @ u[:,:(r-1)].T
-    eff_resist = lambda x: np.linalg.norm(LS @ x)**2
-  elif method == "pinv":
-    from scipy.linalg import pinvh
-    LP, r = pinvh(L.todense(), return_rank=True)
-    eff_resist = lambda x: (x.T @ LP @ x).item()
-  elif method == "psvd":
-    u,s,vt = np.linalg.svd(L.todense(), hermitian=True)
-    tol = s.max() * max(L.shape) * np.finfo(float).eps
-    r = np.sum(abs(s) > tol)
-    LS = vt[:(r-1),:].T @ np.diag(1/s[:(r-1)]) @ u[:,:(r-1)].T
-    eff_resist = lambda x: (x.T @ LS @ x).item()
-  elif method == "randomized":
-    raise NotImplementedError("Haven't done yet")
-  else: 
-    raise ValueError("Unknown method")
-  nv = L.shape[0]
-  cv, er = np.zeros(shape=(nv,1)), []
-  for (i,j) in edge_iter(L):
-    cv[i] = 1
-    cv[j] = -1
-    er.append(eff_resist(cv))
-    cv[i] = cv[j] = 0
-  return np.array(er)
 
 ## Spectral sparsifer 
 def spectral_sparsifier(G, eps = 0.80):

@@ -7,6 +7,12 @@ from typing import *
 from numpy.typing import ArrayLike
 from math import comb
 
+# Simple counter mechanism to count evaluation calls
+class Counter():
+  def __init__(self): self.cc = 0
+  def __call__(self, *args, **kwargs): self.cc += 1
+  def __repr__(self): return f"Number of calls: {self.cc}"
+  def num_calls(self): return self.cc
 
 ## From: https://stackoverflow.com/questions/492519/timeout-on-a-function-call
 def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
@@ -25,6 +31,10 @@ def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
     signal.alarm(0)
   return result
 
+def lexsort_rows(A):
+  """ Returns A with its rows in sorted, lexicographical order. Each row is also ordered. """
+  A = np.array([np.sort(a) for a in A])
+  return A[np.lexsort(np.rot90(A))] 
 
 def pairwise(S: Iterable): 
   a, b = tee(S)

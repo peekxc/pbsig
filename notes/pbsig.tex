@@ -517,28 +517,34 @@ The graph Laplacian is a heavily structured matrix known to capture the connecti
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
-where we use the notation $i \sim j$ to indicate vertices $i,j \in V$ are path-connected in $G$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+where we use the notation $i \sim j$ to indicate vertices $v_i,v_j \in V$ are path-connected in $G$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
 As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether this procedure generalizes for $p > 0$.
-In particular, writing down the quadratic form of $L_p^{\text{up}}$ requires an explicit expression for the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
+In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
 To make this clear, we require more notation. 
 
-Given a simplicial complex $K$, we denote with $\tau \overset{\sigma}{\sim} \tau'$ the relation where $\tau \neq \tau'$ are two distinct $p$-simplices in $K$ that share a proper coface $\sigma \in K^{p+1}$.
-The sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in the boundary of $\sigma$. 
-As one can see from~\eqref{eq:oriented_simplex}, there are effectively only two classes of orientations, and thus this task is equivalent to having an explicit expression for the position of $[\tau]$ as a summand in~\eqref{eq:alt_sum}, modulo 2.
-It may be shown that such a coface containing two distinct faces $\tau, \tau' \in K^p$ is unique~\cite{}, and thus we refer to this simplex $\sigma$ as the \emph{common upper simplex} of $(\tau, \tau')$.   
-Notice that signs of the coefficients of $(\tau, \tau')$ in $\partial[\sigma]$ does not depend on the orientation of $\sigma$, only on the orientations $[\tau]$ and $[\tau']$. 
+Given a simplicial complex $K$, we denote with $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}.
+We would like to generalize the path-connected notation in~\eqref{eq:lap_quad_from} to the setting where $p \geq 1$. 
+Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{co}(\tau') \neq \emptyset$, then the $\tau, \tau'$ not only share a cofacet $\sigma$, but this cofacet is \emph{unique}~\cite{}. Thus, given two distinct $p$-simplices $\tau \neq \tau'$ in $K^p$, we use the notation $\tau \overset{\sigma}{\sim} \tau'$ to denote the cofacet $\{\sigma\} = \mathrm{co}(\tau) \cap \mathrm{co}(\tau')$, and we use $\mathrm{d_f}(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} f(\sigma)$.
 % similarly oriented vs dissimilarity oriented
 %We denote with $\mathrm{deg}_U(\tau)$ the number of codim-1 cofaces of $\tau$.  
-Since we do not need the matrices to be in filtration order, we assume a fixed ordering on the vertex set $(V, \leq)$ and an induced ordering on the corresponding simplices $(K, \preceq^\ast)$ given by the linear extension of this order. 
-Since each simplex thus inherits an orientation induced by the ordering of its vertices, we may write down entries of $L_p^{up}$ explicitly:  
+%Since we do not need the matrices to be in filtration order, we assume a fixed ordering on the vertex set $(V, \leq)$ and an induced ordering on the corresponding simplices $(K, \preceq^\ast)$ given by the linear extension of this order. 
+%Since each simplex thus inherits an orientation induced by the ordering of its vertices, we may write down entries of $L_p^{up}$ explicitly:  
 \begin{align}
-	L_p^{\text{up}}[i,j] = \begin{cases}
-		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
-		(-1)^{s_{ij}} & \text{ if } \tau_i \overset{\sigma}{\sim} \tau_j \\
+	(W \partial_p W^2 \partial_p^T W)[i,j] = L_p^{\text{up}}[i,j] = \begin{cases}
+		f(\tau_i)^2 \cdot d_f(\sigma)^2 & \text{ if } i = j \\ 
+%		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
+		(-1)^{s_{ij}} f(\tau_j)f(\tau_j)f(\sigma)^2 & \text{ if } \tau_i \overset{\sigma}{\sim} \tau_j \\
 		0 & \text{ otherwise} 
 	\end{cases}
 \end{align}
+where $s_{ij} = \mathrm{sgn}([\tau_i], \partial[\sigma]) \cdot \mathrm{sgn}([\tau_j], \partial[\sigma])$.
+The sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in the boundary of $\sigma$. 
+As one can see from~\eqref{eq:oriented_simplex}, there are effectively only two classes of orientations, and thus this task is equivalent to having an explicit expression for the position of $[\tau]$ as a summand in~\eqref{eq:alt_sum}, modulo 2.
+However, notice that the signs of the coefficients of $(\tau, \tau')$ in $\partial[\sigma]$ do not depend on the orientation of $[\sigma]$. 
+%Thus, we may evaluate the  
 
+
+%It may be shown that such a coface containing two distinct faces $\tau, \tau' \in K^p$ is unique~\cite{}, and thus we refer to this simplex $\sigma$ as the \emph{common upper simplex} of $(\tau, \tau')$.   
 
 %% --- Hodge theorem
 %A discrete version of the Hodge theorem, due to Eckmann~\cite{}, shows that: 

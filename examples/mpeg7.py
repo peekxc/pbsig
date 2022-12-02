@@ -1,45 +1,46 @@
 import numpy as np 
 from pbsig import * 
-from PIL import Image, ImageFilter
-import cv2
+from pbsig.datasets import mpeg7
+from pbsig.pht import pht_preprocess_pc, rotate_S1
+from pbsig.persistence import boundary_matrix
+from pbsig.simplicial import cycle_graph
 import matplotlib.pyplot as plt 
-from os.path import exists
-from PIL import Image
+import primme
 
-# base_dir = "/Users/mpiekenbrock/Downloads/original"
-# shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
-# shape_nums = [1,2] #3,4,5
-
-# normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
-
-# def largest_contour(img: ArrayLike, threshold: int = 180):
-#   _, thresh_img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
-#   contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-#   contours = (contours[np.argmax([len(c) for c in contours])])
-#   S = contours[:,0,:]
-#   return(S)
-
-# from pbsig.pht import pht_preprocess_pc
-# from pbsig.utility import simplify_outline
-# dataset = {}
-# for st in shape_types:
-#   for sn in shape_nums:
-#     img_dir = base_dir + f"/{st}-{sn}.gif"
-#     assert exists(img_dir), "Image not found"
-#     im = Image.open(img_dir)
-#     img_gray = normalize(np.array(im)).astype(np.uint8)
-#     S = largest_contour(img_gray)
-#     S = largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
-#     assert len(S) > 4
-#     S_path = simplify_outline(S, 150)
-#     X_shape = np.array([l.start for l in S_path])
-#     X_shape = pht_preprocess_pc(X_shape, nd=64) # defined w.r.t number of directions! 
-#     dataset[(st, sn)] = X_shape
-
+# %% Load dataset 
 dataset = mpeg7(simplify=150)
 for k, S in dataset.items():
   dataset[k] = pht_preprocess_pc(S, nd=64)
 
+# %% Generate vertex-edge weighted Laplacian spectrum signature
+X = dataset[('turtle',1)]
+K = cycle_graph(X)
+D1 = boundary_matrix(K, p=1).tocsc()
+
+E = K['edges']
+S = np.sign(D1.data)
+nev = 120
+# fv = X @ np.array([1,0])
+# D1.data = S * np.repeat(fv[E].max(axis=1), 2)
+# LE = D1 @ D1.T
+# nev = np.flatnonzero(np.cumsum(LE.diagonal()) > 0.90*sum(LE.diagonal()))[0]
+
+SS = np.zeros(shape=(nev, 132))
+for j, fv in enumerate(rotate_S1(X, nd=132, include_direction=False)):
+  D1.data = S * np.repeat(fv[E].max(axis=1), 2)
+  LE = D1 @ D1.T
+  SS[:,j] = np.sqrt(primme.eigsh(LE, k=nev, which='LM', tol=1e-6, return_eigenvectors=False))
+
+## Signature across the rotation
+# plt.plot(SS.sum(axis=0))
+# plt.plot((SS**2).sum(axis=0))
+plt.plot(((SS**2)/(SS**2 + 1.2)).sum(axis=0))
+ax = plt.gca()
+ax.set_ylim(0, 120)
+
+
+
+# %% 
 dataset[('turtle',1)].mean(axis=0)
 
 # V = [v for fv, v in rotate_S1(X_shape, 32)]
@@ -659,3 +660,33 @@ axs[1].legend()
 
 
 
+# base_dir = "/Users/mpiekenbrock/Downloads/original"
+# shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
+# shape_nums = [1,2] #3,4,5
+
+# normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
+
+# def largest_contour(img: ArrayLike, threshold: int = 180):
+#   _, thresh_img = cv2.threshold(img, threshold, 255, cv2.THRESH_BINARY)
+#   contours, _ = cv2.findContours(thresh_img, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+#   contours = (contours[np.argmax([len(c) for c in contours])])
+#   S = contours[:,0,:]
+#   return(S)
+
+# from pbsig.pht import pht_preprocess_pc
+# from pbsig.utility import simplify_outline
+# dataset = {}
+# for st in shape_types:
+#   for sn in shape_nums:
+#     img_dir = base_dir + f"/{st}-{sn}.gif"
+#     assert exists(img_dir), "Image not found"
+#     im = Image.open(img_dir)
+#     img_gray = normalize(np.array(im)).astype(np.uint8)
+#     S = largest_contour(img_gray)
+#     S = largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
+#     assert len(S) > 4
+#     S_path = simplify_outline(S, 150)
+#     X_shape = np.array([l.start for l in S_path])
+#     X_shape = pht_preprocess_pc(X_shape, nd=64) # defined w.r.t number of directions! 
+#     dataset[(st, sn)] = X_shape
+# %%
