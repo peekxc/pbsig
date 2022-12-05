@@ -83,12 +83,6 @@ Cornelius Lanczos.
   linear differential and integral operators.
 \newblock 1950.
 
-\bibitem{milosavljevic2011zigzag}
-Nikola Milosavljevi{\'c}, Dmitriy Morozov, and Primoz Skraba.
-\newblock Zigzag persistent homology in matrix multiplication time.
-\newblock In {\em Proceedings of the twenty-seventh Annual Symposium on
-  Computational Geometry}, pages 216--225, 2011.
-
 \bibitem{newman2001laplacian}
 Michael~William Newman.
 \newblock The laplacian spectrum of graphs.

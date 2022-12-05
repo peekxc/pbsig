@@ -1,8 +1,9 @@
 ## Tests various closed-form expressions for Laplacian matrices
 import numpy as np 
 from itertools import combinations
+from scipy.sparse import diags
 from pbsig.persistence import boundary_matrix
-from pbsig.simplicial import delaunay_complex
+from pbsig.simplicial import delaunay_complex, graph_laplacian, edge_iterator
 from pbsig.utility import lexsort_rows
 
 ## Generate random geometric complex
@@ -75,7 +76,6 @@ assert np.allclose((LT_ET - (We @ D2 @ Wt**2 @ D2.T @ We)).data, 0)
 ## (e) Formulate the O(m) matrix-vector product that enumerates triangles
 er = rank_combs(E, n=len(K['vertices']), k=2)
 x = np.random.uniform(size=E.shape[0], low=0.0, high=1.0)
-y = np.zeros(len(x))
 deg_e = np.zeros(len(x)) 
 for t_ind, (i,j,k) in enumerate(T):
   e_ind = np.searchsorted(er, rank_combs([[i,j], [i,k], [j,k]], k=2, n=nv)) ## Can be cast using minimal perfect hashing function
@@ -83,12 +83,24 @@ for t_ind, (i,j,k) in enumerate(T):
 deg_e *= (fe**2)
 assert np.allclose(deg_e - LT_ET.diagonal(), 0.0), "Collecting diagonal terms failed!"
 
+y = np.zeros(len(x))
 for t_ind, (i,j,k) in enumerate(T):
   e_ind = np.searchsorted(er, rank_combs([[i,j], [i,k], [j,k]], k=2, n=nv))
-  y[e_ind] += x[e_ind] * (fe[e_ind]**2) * (ft[t_ind]**2)
+  for (ii,jj),s_ij in zip(combinations(e_ind, 2), [-1,1,-1]):
+    ## The sign pattern is deterministic! 
+    v = (fe[ii]) * (fe[jj]) * (ft[t_ind]**2)
+    y[ii] += x[jj] * v * s_ij
+    y[jj] += x[ii] * v * s_ij
+  # for ii in e_ind:
+  #   y[ii] += x[jj] * (fe[ii]) * (fe[jj]) * (ft[t_ind]**2)
+
+    #y[jj] += x[ii] * (fe[jj]**2) * (ft[t_ind]**2)
   # for ii,jj in combinations(e_ind, 2):
   #   y[ii] += x[ii] * S[ii,jj]*fe[ii]*fe[jj]*ft[t_ind]**2
   #   y[jj] += x[jj] * S[ii,jj]*fe[ii]*fe[jj]*ft[t_ind]**2
+
+assert max(abs((LT_ET @ x) - (y + deg_e*x))) <= np.sqrt(1e-16), "Weighted up-Laplacian matrix-vector product failed"
+# (abs(LT_ET.todense()) @ x)[:5]
 
 z = LT_ET @ x
 
