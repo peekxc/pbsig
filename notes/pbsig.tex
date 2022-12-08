@@ -560,6 +560,12 @@ Moreover, since we assume the poset order on $K$ is induced from the vertex orde
 From a practical perspective, $p \geq 0$ is generally a very small constant---typically no more than $2$---thus we conclude that we can evaluate $x \mapsto \partial_{p+1} \partial_{p+1}^T x$ is $\approx O(m)$ time, essentially linear in the number of $p+1$ simplices. 
  
 \subsection{Rank computation}
+The ability of the Krylov subspace iteration to capture the extremal portions of the spectrum remains unparalleled, and by using $O(n)$ memory, the Lanczos iteration uses optimal memory. 
+If the supplied matrix-vector product operation is fast, the main bottleneck in time complexity of estimating the spectrum of $A$ is the number of iterations needed for convergence. 
+As an iterative method, 
+
+% https://www.cs.wm.edu/~andreas/publications/optimal_many.pdf
+% Newton steps, RQI, etc 
 
 % TODO: Convergence rates, SDD+ "the Laplacian Paradigm", the persistent Betti Number complexity 
  
@@ -700,8 +706,8 @@ where $\tilde{\phi}(x, \epsilon) = \phi(\lvert x \rvert, \epsilon)$ and $\epsilo
 	\end{equation}
 \end{definition}
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
-\noindent Compared to the rank function, this operator turns out to have a variety of attractive properties related to monotonicity and differentiability. Moreover, as desired, it serves as a smooth approximation of the $\mathrm{rank}$ function. 
-We summarize a few properties below. 
+\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this operator turns out to have a variety of attractive properties related to monotonicity and differentiability.
+We summarize a few such properties below. 
 \begin{proposition}[\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.

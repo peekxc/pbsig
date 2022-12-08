@@ -677,7 +677,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
   return(valid)
 
 ## TODO: redo with filtration class at some point
-def barcodes(K: Dict, p: int, f: Tuple, **kwargs):
+def barcodes(K: Dict, p: int, f: Tuple, index: bool = False, **kwargs):
   """
   Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
   """
@@ -691,7 +691,8 @@ def barcodes(K: Dict, p: int, f: Tuple, **kwargs):
     D0, D1 = boundary_matrix(K, p=(0,1))
     D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
     R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-    P0 = persistence_pairs(R0, R1, f=(VF0,EF0))
+    P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
+
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
   return(P0)
 

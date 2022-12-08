@@ -1,5 +1,5 @@
 import numpy as np 
-
+from numbers import Number
 from typing import *
 from itertools import *
 from numpy.typing import ArrayLike
@@ -49,6 +49,14 @@ def complete_graph(n: int):
   }
   return(K)
 
+def graph2complex(G):
+  K = {
+    'vertices' : np.array([i for i in G.nodes()], dtype=int),
+    'edges' : np.array([[i,j] for i,j in G.edges()], dtype=int),
+    'triangles' : np.empty(shape=(0,3), dtype=int)
+  }
+  return K
+
 
 def is_symmetric(A):
   if issparse(A):
@@ -64,6 +72,7 @@ def laplacian_DA(L):
   D = diags(L.diagonal())
   A = L - D
   return D, A
+
 
 def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = False):
   if isinstance(G, Graph):
@@ -91,8 +100,22 @@ def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = Fal
     L = D @ L @ D
   return L
 
+
+
+## Contains definitions and utilities for prescribing a structural type system on the 
+## space of abstract simplicial complexes and on [essential simplexwise] simplicial filtrations
+## 
+## In practice, since Python is interpreted, this is typically implemented as a duck-typing system enforced via Protocol classes. 
+## In the future, a true structural subtype system is preferable via e.g. mypy to enable optimizations such as mypy-c
+
+
 @runtime_checkable
 class SimplexLike(Collection, Protocol):
+  ''' 
+  An object is *simplex-like* if it (minimally) implements a boundary operator and has a dimension  
+
+  Inherited Abstract Methods: __contains__, __iter__, __len__
+  '''
   def boundary(self) -> Iterable['SimplexLike']: 
     raise NotImplementedError 
   def dimension(self) -> int: 
@@ -101,6 +124,14 @@ class SimplexLike(Collection, Protocol):
 ## Simplicial complex duck type
 @runtime_checkable
 class ComplexLike(Collection, Protocol):
+  ''' 
+  An object is *complex-like* if it is a collection and it can iterate through [p- or all-] simplex-like objects and it has a dimension 
+  
+  Inherits Collection => ComplexLike are Sized, Iterable, Containers 
+  Implements:
+    __contains__, __iter__, __len__
+  
+  '''
   def __iter__(self) -> Iterable['SimplexLike']: 
     raise NotImplementedError 
   def __next__(self) -> SimplexLike:
@@ -116,54 +147,102 @@ class Sequence(Collection, Sized, Protocol):
   def __getitem__(self, index): raise NotImplementedError
 
 @runtime_checkable
+class FiltrationLike(ComplexLike, Sequence[SimplexLike], Protocol):
+  """ """
+  def __reversed__(self):
+    raise NotImplementedError
+  def index(self, other: SimplexLike):
+    raise NotImplementedError
+
+@runtime_checkable
 class MutableSequence(Sequence, Protocol):
   def __delitem__(self, index): raise NotImplementedError
   def __setitem__(self, key, newvalue): raise NotImplementedError
 
 ## Filtrations need not have delitem / be MutableSequences to match dionysus...
 @runtime_checkable
-class FiltrationLike(MutableSequence[SimplexLike], Protocol):
+class MutableFiltrationLike(MutableSequence[SimplexLike], Protocol):
   """ """
   def sort(self, key: Callable[[SimplexLike, SimplexLike], bool]) -> None: raise NotImplementedError 
   def rearrange(self, indices: Collection) -> None: raise NotImplementedError
 
 from itertools import combinations
 import numpy as np
-class Simplex(Collection):
-  def __init__(self, v: Collection) -> None:
-    self.vertices = tuple(v)
-  # def __hash__() -> np.int_:
-  #   return(0)
+class Simplex(Set):
+  '''
+  Implements: 
+    __contains__(self, v: int) <=> Returns whether integer 'v' is a vertex in 'self'
+  '''
+  def __init__(self, v: Collection[int]) -> None:
+    self.vertices = tuple(np.ravel(tuple(v)))
   def __eq__(self, other) -> bool: 
     return(all(v == w for (v,w) in zip(iter(self.vertices), iter(other))))
   def __len__(self):
     return len(self.vertices)
-  def __lt__(self, other: SimplexLike) -> bool:
+  def __lt__(self, other: Collection[int]) -> bool:
     ''' Returns whether self is a face of other '''
     if len(self) >= len(other): 
       return(False)
-    # elif len(self) == len(other)-1: 
-    #   return(self in other.boundary())
     else:
-      #return(any(self < face for face in other.boundary()))
-      return(all([v in other.vertices for v in self.vertices]))
+      return(all([v in other for v in self.vertices]))
+  def __le__(self, other: Collection) -> bool: 
+    if len(self) > len(other): 
+      return(False)
+    elif len(self) == len(other):
+      return self.__eq__(other)
+    else:
+      return self < other
+  def __ge__(self, other: Collection[int]) -> bool:
+    if len(self) < len(other): 
+      return(False)
+    elif len(self) == len(other):
+      return self.__eq__(other)
+    else:
+      return self > other
+  def __gt__(self, other: Collection[int]) -> bool:
+    if len(self) <= len(other): 
+      return(False)
+    else:
+      return(all([v in self.vertices for v in other]))
   def __contains__(self, __x: int) -> bool:
     """ Reports vertex-wise inclusion """
+    if not isinstance(__x, Number): 
+      return False
     return self.vertices.__contains__(__x)
   def __iter__(self) -> Iterator:
     return iter(self.vertices)
-  def boundary(self) -> Iterable['SimplexLike']: 
+  def boundary(self) -> Iterable['Simplex']: 
     if len(self.vertices) == 0: 
       return self.vertices
     for s in combinations(self.vertices, len(self.vertices)-1):
-      yield as_simplex(s) 
+      yield Simplex(s) 
   def dimension(self) -> int: 
     return len(self.vertices)-1
   def __repr__(self):
     return str(self.vertices).replace(',','') if self.dimension() == 0 else str(self.vertices).replace(' ','')
+  def __getitem__(self, index: int) -> int:
+    return self.vertices[index] # auto handles IndexError exception 
+  def __sub__(self, other) -> 'Simplex':
+    return Simplex(set(self.vertices) - set(other))
+  def __hash__(self):
+    # Because Python has no idea about mutability of an object.
+    return hash(self.vertices)
+    
 
-def as_simplex(vertices: Collection) -> SimplexLike:
-  return(Simplex(vertices))
+class AbstractSimplicialComplex(Set['SimplexLike']):
+  def __init__(self, simplices = []):
+    self.dimension = 0
+    self.simplices = set([Simplex(s) for s in simplices])
+  def __iter__(self) -> Iterable['SimplexLike']: 
+    return iter(self.simplices)
+  def __next__(self) -> SimplexLike:
+    raise NotImplementedError
+  def dimension(self) -> int: 
+    return self.dimension 
+  def simplices(self, p: int) -> Iterable['SimplexLike']:
+    yield from filter(lambda s: s.dimension() == p, iter(self.simplices))
+# def as_simplex(vertices: Collection) -> SimplexLike:
+#   return(Simplex(vertices))
     
 def less_lexicographic_refinement(S1: Tuple[SimplexLike, Any], S2: Tuple[SimplexLike, Any]) -> bool:
   (s1,i1), (s2,i2) = S1, S2
@@ -219,15 +298,15 @@ class Filtration(Collection):
 
 def as_filtration(simplices: Collection[SimplexLike]) -> SimplexLike:
   ## Construct a mutable sequence (list in this case) of simplices
-  F = [as_simplex(s) for s in simplices]
+  F = [Simplex(s) for s in simplices]
   assert isinstance(F, MutableSequence), "simplices must be a mutable sequence"
   return(Filtration(F))
 
-def lower_star_filtration(simplices: Collection[SimplexLike], heights: Collection[float]) -> FiltrationLike:
-  """
-  Returns a Filtration 
-  """
-  # filtration([as_simplex(s) for s in [[0], [1], [0,1]]])
-  as_filtration(simplices)
-  S = [np.fromiter(s, dtype=int) for s in simplices]
-  return(0)
+# def lower_star_filtration(simplices: Collection[SimplexLike], heights: Collection[float]) -> FiltrationLike:
+#   """
+#   Returns a Filtration 
+#   """
+#   # filtration([as_simplex(s) for s in [[0], [1], [0,1]]])
+#   as_filtration(simplices)
+#   S = [np.fromiter(s, dtype=int) for s in simplices]
+#   return(0)

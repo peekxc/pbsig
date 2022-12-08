@@ -104,6 +104,7 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 # from pbsig.utility import timeout
 # from pbsig.precon import Minres, Jacobi, ssor, ShiftedJacobi
 
+
 ## Returns number of largest eigenvalues needed to capture t% of the spectrum 
 def trace_threshold(A, p=0.80):
   assert p >= 0.0 and p <= 1.0, "Proportion must be in [0,1]"
@@ -134,11 +135,19 @@ def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[Array
     A, args = (A[0], args | A[1]) if isinstance(A, tuple) and len(A) == 2 else (A, args)
     nev = trace_threshold(A, p)
     if default_opts['return_stats']:
-      ew, stats = primme.eigsh(A=A, k=nev, **default_opts)
-      yield reduce(ew), stats
+      if default_opts['return_eigenvectors']:
+        ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        yield reduce(ew), ev, stats
+      else:
+        ew, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        yield reduce(ew), stats
     else: 
-      ew = primme.eigsh(A=A, k=nev, **default_opts)
-      yield reduce(ew)
+      if default_opts['return_eigenvectors']:
+        ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        yield reduce(ew), ev
+      else:
+        ew = primme.eigsh(A=A, k=nev, **default_opts)
+        yield reduce(ew)
   # else: 
   #   #n = len(M)
   #   return list(yield from eigsh_family(M, p, False, reduce, **kwargs))
@@ -149,3 +158,21 @@ def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[Array
   #   #   result[i] = reduce(ew)
   #   return result
     
+def as_linear_operator(A, stats=True):
+  from scipy.sparse.linalg import aslinearoperator, LinearOperator
+  class LO(LinearOperator):
+    def __init__(self, A):
+      self.n_calls = 0
+      self.A = A
+      self.dtype = A.dtype
+      self.shape = A.shape
+
+    def _matvec(self, x):
+      self.n_calls += 1
+      return self.A @ x
+
+    def _matmat(self, X):
+      self.n_calls += X.shape[1]
+      return self.A @ X
+    lo = LO(L)
+    w = eigsh(lo)

@@ -598,6 +598,32 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
 
 
 from pbsig.utility import smooth_upstep, smooth_dnstep
+from scipy.sparse import diags
+class Laplacian_DT_2D:
+  def __init__(self, X: ArrayLike, K, nd: 132):
+    self.theta = np.linspace(0, 2*np.pi, nd, endpoint=False)
+    self.X = X 
+    self.cc = 0
+    self.D1 = boundary_matrix(K, p=1).tocsc()
+    self.D1.sort_indices() # ensure !
+    self.W = np.zeros(shape=(1,self.D1.shape[0]))
+  
+  def __len__(self) -> int: 
+    return len(self.theta)
+
+  def __iter__(self):
+    self.cc = 0
+    return self
+
+  def __next__(self):
+    if self.cc >= len(self.theta):
+      raise StopIteration
+    v = np.cos(self.theta[self.cc]), np.sin(self.theta[self.cc])
+    self.W = diags(self.X @ v)
+    self.cc += 1
+    return self.W @ self.D1 @ self.D1.T @ self.W
+
+
 
 def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0):
   nv, ne = len(f), E.shape[0]
