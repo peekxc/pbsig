@@ -51,8 +51,8 @@ def complete_graph(n: int):
 
 def graph2complex(G):
   K = {
-    'vertices' : np.array([i for i in G.nodes()], dtype=int),
-    'edges' : np.array([[i,j] for i,j in G.edges()], dtype=int),
+    'vertices' : np.sort(np.array([i for i in G.nodes()], dtype=int)),
+    'edges' : lexsort_rows(np.array([[i,j] for i,j in G.edges()], dtype=int)),
     'triangles' : np.empty(shape=(0,3), dtype=int)
   }
   return K
@@ -167,14 +167,20 @@ class MutableFiltrationLike(MutableSequence[SimplexLike], Protocol):
   def rearrange(self, indices: Collection) -> None: raise NotImplementedError
 
 from itertools import combinations
+from functools import total_ordering
 import numpy as np
+
+# @total_ordering
 class Simplex(Set):
   '''
   Implements: 
     __contains__(self, v: int) <=> Returns whether integer 'v' is a vertex in 'self'
   '''
   def __init__(self, v: Collection[int]) -> None:
-    self.vertices = tuple(np.ravel(tuple(v)))
+    if isinstance(v, Number):
+      self.vertices = tuple([int(v)])
+    else:
+      self.vertices = tuple(np.unique(np.sort(np.ravel(tuple(v)))))
   def __eq__(self, other) -> bool: 
     return(all(v == w for (v,w) in zip(iter(self.vertices), iter(other))))
   def __len__(self):
@@ -209,13 +215,22 @@ class Simplex(Set):
     if not isinstance(__x, Number): 
       return False
     return self.vertices.__contains__(__x)
-  def __iter__(self) -> Iterator:
+  
+  def __iter__(self) -> Iterable[int]:
     return iter(self.vertices)
+
+  def faces(self, p: Optional[int] = None) -> Iterable['Simplex']:
+    dim = len(self.vertices)
+    if p is None:
+      yield from map(Simplex, chain(*[combinations(self.vertices, d) for d in range(1, dim+1)]))
+    else: 
+      yield from filter(lambda s: len(s) == p+1, self.faces(None))
+
   def boundary(self) -> Iterable['Simplex']: 
     if len(self.vertices) == 0: 
       return self.vertices
-    for s in combinations(self.vertices, len(self.vertices)-1):
-      yield Simplex(s) 
+    yield from map(Simplex, combinations(self.vertices, len(self.vertices)-1))
+
   def dimension(self) -> int: 
     return len(self.vertices)-1
   def __repr__(self):
@@ -228,58 +243,157 @@ class Simplex(Set):
     # Because Python has no idea about mutability of an object.
     return hash(self.vertices)
     
+from collections.abc import Set, Hashable
 
-class AbstractSimplicialComplex(Set['SimplexLike']):
-  def __init__(self, simplices = []):
-    self.dimension = 0
-    self.simplices = set([Simplex(s) for s in simplices])
-  def __iter__(self) -> Iterable['SimplexLike']: 
-    return iter(self.simplices)
-  def __next__(self) -> SimplexLike:
-    raise NotImplementedError
+# https://stackoverflow.com/questions/798442/what-is-the-correct-or-best-way-to-subclass-the-python-set-class-adding-a-new
+class SimplicialComplex(set):
+  """ Abstract Simplicial Complex"""
+  __hash__ = Set._hash
+  wrapped_methods = ('difference', 'intersection', 'symmetric_difference', 'union', 'copy')
+  
+  @classmethod
+  def _wrap_methods(cls, names):
+    def wrap_method_closure(name):
+      def inner(self, *args):
+        result = getattr(super(cls, self), name)(*args)
+        result = cls(result) if isinstance(result, set) else result 
+        return result
+      inner.fn_name = name
+      setattr(cls, name, inner)
+    for name in names: wrap_method_closure(name)
+
+  def __new__(cls, iterable=None):
+    selfobj = super(SimplicialComplex, cls).__new__(SimplicialComplex)
+    cls._wrap_methods(cls.wrapped_methods)
+    return selfobj
+
+  def __init__(self, iterable = None):
+    """"""
+    self_set = super(SimplicialComplex, self)
+    self_set.__init__()
+    if iterable is not None: 
+      self.update(iterable)
+
+  def update(self, iterable):
+    self_set = super(SimplicialComplex, self)
+    for item in iterable:
+      self.add(item)
+
+  def add(self, item: Collection[int]):
+    self_set = super(SimplicialComplex, self)
+    self_set.update(Simplex(item).faces())
+  
+  def remove(self, item: Collection[int]):
+    self_set = super(SimplicialComplex, self)
+    self_set.difference_update(set(self.cofaces(item)))
+  
+  def discard(self, item: Collection[int]):
+    self_set = super(SimplicialComplex, self)
+    self_set.discard(Simplex(item))
+
+  def cofaces(self, item: Collection[int]):
+    s = Simplex(item)
+    yield from filter(lambda t: t >= s, iter(self))
+
+  def __contains__(self, item: Collection[int]):
+    self_set = super(SimplicialComplex, self)
+    return self_set.__contains__(Simplex(item))
+
+  def faces(self, p: Optional[int] = None) -> Iterable['Simplex']:
+    if p is None:
+      yield from iter(self)
+    else: 
+      assert isinstance(p, Number)
+      yield from filter(lambda s: len(s) == p + 1, iter(self))
+
   def dimension(self) -> int: 
-    return self.dimension 
-  def simplices(self, p: int) -> Iterable['SimplexLike']:
-    yield from filter(lambda s: s.dimension() == p, iter(self.simplices))
-# def as_simplex(vertices: Collection) -> SimplexLike:
-#   return(Simplex(vertices))
-    
-def less_lexicographic_refinement(S1: Tuple[SimplexLike, Any], S2: Tuple[SimplexLike, Any]) -> bool:
-  (s1,i1), (s2,i2) = S1, S2
-  if i1 != i2: return(i1 < i2)
-  if len(s1) != len(s2): return(len(s1) < len(s2))
-  return(tuple(iter(s1)) < tuple(iter(s2)))
+    return max([s.dimension() for s in iter(self)])
 
-class Filtration(Collection):
-  def __init__(self, simplices: MutableSequence[SimplexLike], I: Optional[Collection] = None) -> None:
-    # isinstance([0,1,2], MutableSequence)
-    assert all([isinstance(s, SimplexLike) for s in simplices]), "Must all be simplex-like"
-    self.simplices = simplices
-    self.indices = range(len(simplices)) if I is None else I
-  def __getitem__(self, index) -> SimplexLike:
-    return(self.simplices[index])
-  def __delitem__(self, index): 
-    # raise NotImplementedError
-    if index < len(self.simplices):
-      del self.simplices[index]
-  def __setitem__(self, key, newvalue): 
-    #raise NotImplementedError
-    assert isinstance(newvalue, SimplexLike), "Value-type must be simplex-like"
-    self.simplices[key] = newvalue 
-  def __len__(self):
-    return len(self.simplices)
-  def __contains__(self, __x: object) -> bool:
-    return self.simplices.__contains__(__x)
+  def __repr__(self) -> str:
+    self_set = super(SimplicialComplex, self)
+    if self_set.__len__() <= 10:
+      return str(self_set)
+    else:
+      return "Large complex"
+
+  def print(self) -> None:
+    d = self.dimension()
+    ST = np.zeros(shape=(self.__len__(), d+1), dtype='<U15')
+    ST.fill(' ')
+    for i,s in enumerate(self):
+      ST[i,:len(s)] = str(s)[1:-1].split(',')
+    SC = np.apply_along_axis(lambda x: ' '.join(x), axis=0, arr=ST)
+    for s in SC: print(s, sep='', end='\n')
+
+# def less_lexicographic_refinement(S1: Tuple[SimplexLike, Any], S2: Tuple[SimplexLike, Any]) -> bool:
+#   (s1,i1), (s2,i2) = S1, S2
+#   if i1 != i2: return(i1 < i2)
+#   if len(s1) != len(s2): return(len(s1) < len(s2))
+#   return(tuple(iter(s1)) < tuple(iter(s2)))
+
+class Filtration(Mapping):
+  """
+  Simplicial Filtration 
+
+  Implements: __getitem__, __iter__, __len__, __contains__, keys, items, values, get, __eq__, and __ne__
+  """
+  def __init__(self, simplices: Sequence[SimplexLike], I: Optional[Collection] = None) -> None:
+
+    # assert all([isinstance(s, SimplexLike) for s in simplices]), "Must all be simplex-like"
+    if I is not None: assert len(simplices) == len(I)
+    self.simplices = [Simplex(s) for s in simplices]
+    self.index_set = np.arange(0, len(simplices)) if I is None else np.asarray(I)
+    # self.dtype = [('s', Simplex), ('index', I.dtype)]
+
+
+    # np.fromiter(zip(), self.dtype)
+    # self.simplices = simplices
+    # self.indices = range(len(simplices)) if I is None else I
+
+  ## --- Collection methods ---
+  def __contains__(self, __x: Collection[int]) -> bool:
+    return self.simplices.__contains__(Simplex(__x))
   def __iter__(self) -> Iterator:
     return iter(self.simplices)
-  def sort(self, key: Optional[Callable[[SimplexLike, SimplexLike], bool]] = None) -> None: 
-    #raise NotImplementedError 
-    if key is None: 
-      key = less_lexicographic_refinement 
-    self.simplices = sorted(self.simplices, key=key)
-  def rearrange(self, indices: Collection) -> None:
-    #self.simplices = sorted(self.simplices, key=lambda s1, s2: )
-    raise NotImplementedError
+  def __len__(self):
+    return len(self.simplices)
+
+  ## --- Mapping methods ---
+  def __getitem__(self, index: Any) -> Tuple[Simplex, Any]:
+    idx = self.index_set.searchsorted(index)
+    return self.simplices[idx]
+
+  def keys(self):
+    return self.index_set
+  
+  def values(self):
+    return self.simplices
+
+  def items(self):
+    return zip(self.keys, self.simplices)
+
+  # def __eq__(self, other):
+  #   return self.
+  def get(self, key, value = None):
+    return self[key] if key in self.index_set else value
+
+  # def __delitem__(self, index): 
+  #   # raise NotImplementedError
+  #   if index < len(self.simplices):
+  #     del self.simplices[index]
+  # def __setitem__(self, key, newvalue): 
+  #   #raise NotImplementedError
+  #   assert isinstance(newvalue, SimplexLike), "Value-type must be simplex-like"
+  #   self.simplices[key] = newvalue 
+
+  # def sort(self, key: Optional[Callable[[SimplexLike, SimplexLike], bool]] = None) -> None: 
+  #   #raise NotImplementedError 
+  #   if key is None: 
+  #     key = less_lexicographic_refinement 
+  #   self.simplices = sorted(self.simplices, key=key)
+  # def rearrange(self, indices: Collection) -> None:
+  #   #self.simplices = sorted(self.simplices, key=lambda s1, s2: )
+  #   raise NotImplementedError
   def __validate__(self):
     """ Checks the face poset is valid, and asserts that the corresponding indices align as well """
     for (i, s), idx in zip(enumerate(self.simplices), self.indices):
@@ -296,11 +410,11 @@ class Filtration(Collection):
   def __repr__(self):
     return "F: "+str(self.simplices)
 
-def as_filtration(simplices: Collection[SimplexLike]) -> SimplexLike:
-  ## Construct a mutable sequence (list in this case) of simplices
-  F = [Simplex(s) for s in simplices]
-  assert isinstance(F, MutableSequence), "simplices must be a mutable sequence"
-  return(Filtration(F))
+# def as_filtration(simplices: Collection[SimplexLike]) -> SimplexLike:
+#   ## Construct a mutable sequence (list in this case) of simplices
+#   F = [Simplex(s) for s in simplices]
+#   assert isinstance(F, MutableSequence), "simplices must be a mutable sequence"
+#   return(Filtration(F))
 
 # def lower_star_filtration(simplices: Collection[SimplexLike], heights: Collection[float]) -> FiltrationLike:
 #   """

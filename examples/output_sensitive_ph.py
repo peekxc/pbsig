@@ -23,12 +23,13 @@ ax.plot(X[[7,8],0], X[[7,8],1], c='red', linewidth=2.5, zorder=5)
 ax.plot(X[[8,10],0], X[[8,10],1], c='red', linewidth=2.5, zorder=5)
 
 # D1 = boundary_matrix(graph2complex(G), p = 1)
-V, E = np.array(G.nodes()), np.array(G.edges())
 
 from pbsig.persistence import barcodes
+K = graph2complex(G)
+V, E = K['vertices'], K['edges']
 fv = W.diagonal()
 fe = fv[E].max(axis=1)
-ph0_f = barcodes(graph2complex(G), p = 0, f=(fv,fe), collapse=False, index=True)
+ph0_f = barcodes(K, p = 0, f=(fv,fe), collapse=True, index=False)
 
 FV, FE = V[np.argsort(fv)], E[np.argsort(fe),:]
 
@@ -92,7 +93,31 @@ F = sorted(chain(zip(VL, fv), zip(EL, fe)), key=filt_face_lex)
 F = { tuple(s) : f for s,f in F }
 m = len(F)
 fi,fj = -1.1, -0.5
-fk,fl = -0.62, 1.0
+fk,fl = -0.49, 1.0
+
+fig, ax = plot_dgm(dgm0_fun['dgm'])
+ax.plot([fi,fj],[fk,fk],linewidth=0.25)
+ax.plot([fi,fj],[fl,fl],linewidth=0.25)
+ax.plot([fi,fi],[fk,fl],linewidth=0.25)
+ax.plot([fj,fj],[fk,fl],linewidth=0.25)
+
+
+boundary_matrix(K)
+
+## Build full filtered boundary matrix
+from array import array 
+Sgn = { 1 : np.array([1, -1]), 2: np.array([1, -1, 1]) }
+s_hashes = [hash(Simplex(s)) for s, fs in F.items()]
+m = len(F)
+ri,ci,dv = array('I'), array('I'), array('f')
+for i, s in enumerate(F.keys()):
+  s = Simplex(s)
+  if s.dimension() >= 1:
+    ind = np.sort([s_hashes.index(hash(b)) for b in s.boundary()])
+    ri.extend(ind)
+    ci.extend(np.repeat(i, len(ind)))
+    dv.extend(Sgn[s.dimension()])
+D = coo_array((dv, (ri,ci)), shape=(m,m))
 
 filter_values = np.fromiter(iter(F.values()), float)
 i = np.searchsorted(filter_values, fi, side='left')
@@ -100,9 +125,74 @@ j = np.searchsorted(filter_values, fj, side='right')-1
 k = np.searchsorted(filter_values, fk, side='left')
 l = np.searchsorted(filter_values, fl, side='right')-1
 
-int(np.floor((i+j)/2))
+
+D = D.tocsc()
+
+# persistence_pairs(R)
+np.array(list(filter(lambda x: x != -1, low_entry(R))))
 
 
+from scipy.sparse import coo_array
+IJ = np.array([(j,i) for i,j in enumerate(low_entry(R)) if j != -1])
+S = coo_array((np.repeat(1, len(IJ)), (IJ[:,0],IJ[:,1])), shape=R.shape).tocsc()
+
+plt.spy(S, markersize=3.5)
+plt.spy(R, markersize=3.5)
+
+n = S.shape[0]
+S[i:n,1:(k+1)]
+
+def mu_query(D,i,j,k,l):
+  A1,A2,A3,A4 = D[i:(l+1),i:(l+1)], D[i:k,i:k], D[(j+1):(l+1),(j+1):(l+1)], D[(j+1):k,(j+1):k]
+  #assert A1.shape == ((l-i+1), (l-i+1))
+  t1 = 0 if A1.shape == (0,0) else np.linalg.matrix_rank(A1.todense())
+  t2 = 0 if A2.shape == (0,0) else np.linalg.matrix_rank(A2.todense())
+  t3 = 0 if A3.shape == (0,0) else np.linalg.matrix_rank(A3.todense())
+  t4 = 0 if A4.shape == (0,0) else np.linalg.matrix_rank(A4.todense())
+  return t1 - t2 - t3 + t4
+  #np.linalg.matrix_rank(D[i:(j+1),k:(l+1)].todense())
+mu_query(D,i,j,k,l)
+
+def bisection_tree_top_down(M,rank_f,ind,mu,splitrows=True):
+  i,j,k,l = ind 
+  if mu == 1 and (i == j if splitrows else k == l):
+    piv = i if splitrows else k
+    print(f"[{mu}]: ({i},{j},{k},{l}): creator = {i}, destroyer = {k} ({piv})")
+    yield piv
+  else:
+    p = int(np.floor((i+j)/2)) if splitrows else int(np.floor((k+l)/2)) # pivot
+    ind_lc = (i,p,k,l) if splitrows else (i,j,k,p)
+    ind_rc = (p+1,j,k,l) if splitrows else (i,j,p+1,l)
+    mu_lc = rank_f(*ind_lc) #np.linalg.matrix_rank(M[i:(piv+1),k:(l+1)].todense())
+    mu_rc = rank_f(*ind_rc) #np.linalg.matrix_rank(M[(piv+1):(j+1),k:(l+1)].todense())
+    print(f"[{mu}]: ({i},{j},{k},{l}), L:{mu_lc}, R:{mu_rc}")
+    assert mu == mu_lc + mu_rc
+    if mu_lc > 0:
+      yield from bisection_tree_top_down(M,rank_f,ind_lc,mu_lc,splitrows)
+    if mu_rc > 0:
+      yield from bisection_tree_top_down(M,rank_f,ind_rc,mu_rc,splitrows)
+
+mu = mu_query(i,j,k,l)
+creators = list(bisection_tree_top_down(D,mu_query,(i,j,k,l),mu,splitrows=True))
+
+creators = list(bisection_tree_top_down(D,mu_query,(0,0,k,l),1,splitrows=False))
+list(bisection_tree_top_down(D,mu_query,(1,1,k,l),splitrows=False))
+list(bisection_tree_top_down(D,mu_query,(2,2,k,l),splitrows=False))
+
+creators = []
+bisection_tree(D,i,j,k,l,creators)
+
+destroyers = []
+bisection_tree2(D,2,2,k,l,destroyers)
+# for c in creators:
+  
+
+
+mu_ij = np.linalg.matrix_rank(D[i:(j+1),k:(l+1)].todense())
+piv = int(np.floor((i+j)/2))
+mu_lc = np.linalg.matrix_rank(D[i:(piv+1),k:(l+1)].todense())
+mu_rc = np.linalg.matrix_rank(D[piv+1:(j+1),k:(l+1)].todense())
+assert mu_lc + mu_rc == mu_ij
 
 
 vi = [i for i,(s,sf) in enumerate(F) if len(s) == 1]
@@ -123,3 +213,44 @@ np.arange(G.number_of_nodes())[np.argsort(W.diagonal())][0]
 
 
 
+## binary search 
+def binary_search(a, P: Callable, lo=0, hi=len(a)): 
+  """ imitates bisection, doing binary search until a given predicate P(a) is True """
+  if P(a[lo]):
+    return lo
+  else:
+    piv = int(np.floor(lo+hi))
+    return binary_search(a, P, piv, hi)
+
+## TODO: fix via additivity 
+def bisection_tree(M,i,j,k,l,results):
+  if i > j: 
+    return 0
+  elif i == j:
+    mu_ij = np.linalg.matrix_rank(M[i:(j+1),k:(l+1)].todense())
+    if mu_ij == 1:
+      results.append(i) # is a creator
+    return mu_ij
+  else:
+    assert j-i > 0
+    piv = int(np.floor((i+j)/2))
+    print(f"{i},{piv},{j}")
+    mu_lc = bisection_tree(M,i,piv,k,l,results)
+    mu_rc = bisection_tree(M,piv+1,j,k,l,results)
+    return mu_lc + mu_rc
+    
+def bisection_tree2(M,i,j,k,l,results):
+  if k > l: 
+    return 0
+  elif k == l:
+    mu_ij = np.linalg.matrix_rank(M[i:(j+1),k:(l+1)].todense())
+    if mu_ij == 1:
+      results.append(k) # is a creator
+    return mu_ij
+  else:
+    assert l-k > 0
+    piv = int(np.floor((l+k)/2))
+    print(f"{k},{piv},{l}")
+    mu_lc = bisection_tree2(M,i,j,k,piv,results)
+    mu_rc = bisection_tree2(M,i,j,piv+1,l,results)
+    return mu_lc + mu_rc

@@ -72,7 +72,7 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
   #   D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
-def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
+def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]] = None, f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
   from collections.abc import Sized
   if isinstance(p, Iterable):
     if f is None: 
@@ -82,26 +82,30 @@ def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Opti
     if p == 0:
       nv = len(K['vertices'])
       D = csc_matrix((0, nv), dtype=np.float64).tolil()
+      return D
     elif p == 1: 
       D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
+      return D
     elif p == 2:
       D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
+      return D
     elif p == 3:
       nt = len(K['triangles'])
       assert not('quads' in K)
       D = csc_matrix((nt, 0), dtype=np.float64).tolil()
+      return D
+    elif p is None:
+      # Return full boundary matrix
+      nv, ne, nt = len(K['vertices']), K['edges'].shape[0], K['triangles'].shape[0]
+      m = nv + ne + nt
+      D1 = H1_boundary_matrix(K['vertices'], K['edges'])
+      D2 = H2_boundary_matrix(K['edges'], K['triangles'])
+      from scipy.sparse import bmat, dok_array
+      B0, B1, B2 = dok_array((nv,nv)), dok_array((ne,ne)), dok_array((nt,nt))
+      D = bmat([[B0, D1, dok_array((nv,nt))], [dok_array(D1.shape).T, B1, D2], [dok_array((nt, nv)), dok_array((nt,ne)), B2]])
+      return D 
     else: 
-      raise NotImplementedError
-      #raise ValueError(f"Invalid p={p} for boundary matrix")
-    if not(f is None): # isinstance(f, Sized)
-      if isinstance(f, Tuple) and len(f) == 2:
-        ind0, ind1 = np.argsort(f[0]), np.argsort(f[1])
-        D = D[np.ix_(ind0,ind1)]
-      elif isinstance(f, Sequence):
-        raise NotImplementedError
-      else: 
-        raise NotImplementedError
-    return(D)
+      raise ValueError(f"Unknown value p={p} supplied")
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
 #   pw_dist = pdist(X)
@@ -428,7 +432,7 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
     return(D, (fw, cw)) # face, coface weights
 
 def low_entry(D: lil_array, j: Optional[int] = None):
-  """ Provides O(1) access to all the low entries of D """
+  """ Provides O(1) access to all the low entries of D, if D is CSC """
   #assert isinstance(D, csc_matrix)
   if j is None: 
     return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
@@ -683,15 +687,21 @@ def barcodes(K: Dict, p: int, f: Tuple, index: bool = False, **kwargs):
   """
   
   if p == 0:
-    f0, e0 = f
+    v0, e0 = f
     V_names = [str(v) for v in K['vertices']]
     E_names = [str(tuple(e)) for e in K['edges']]
-    VF0 = dict(zip(V_names, f0))
+    VF0 = dict(zip(V_names, v0))
     EF0 = dict(zip(E_names, e0))
     D0, D1 = boundary_matrix(K, p=(0,1))
-    D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+    D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
     R0, R1, V0, V1 = reduction_pHcol(D0, D1)
     P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
+  elif p is None:
+    D = boundary_matrix(K)
+    V = sps.identity(D.shape[1]).tolil()
+    R = D.copy().tolil()
+    pHcol(R, V)
+    validate_decomp(D, R, V)
 
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
   return(P0)
