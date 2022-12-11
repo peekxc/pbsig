@@ -2,13 +2,20 @@
 from pbsig.simplicial import Simplex, SimplicialComplex
 
 s = Simplex([0,1,2,3])
-
+S = SimplicialComplex([(0),(1),(0,1)])
 S = SimplicialComplex([[0,1,2,3,4]])
 
+from pbsig.simplicial import MutableFiltration
+F = MutableFiltration([(0, s), (1, s)])
+
+from sortedcontainers import SortedDict
+d = SortedDict([(0, s), (1, s)])
+
+reversed()
 
 Simplex(0)
 
-S = SimplicialComplex([(0), (1), (0,1)])
+
 
 S.remove(0)
 
@@ -24,6 +31,9 @@ print(SC[3])
 '{0: <5}'.format('0123')
 
 
+
+s = Simplex([0,1,2,3])
+F = MutableFiltration([(0, s)])
 
 
 K = SimplicialComplex([0,2,[0,2]])

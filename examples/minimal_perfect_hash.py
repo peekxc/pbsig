@@ -102,9 +102,9 @@ from scipy.sparse.csgraph import structural_rank
  
 # N := len(S)
 
-for cc in range(30):
+for cc in range(1500):
   ## Sample uniformly random universal hash functions
-  HF = [random_hash_function(N, 10) for i in range(5)]
+  HF = [random_hash_function(N, 10) for i in range(3)]
   
   ## Build the hash matrix 
   I, J = [], []
@@ -113,17 +113,34 @@ for cc in range(30):
     J += [h(s) for h in HF]
   H = coo_array(([1]*(N*len(HF)), (I,J)), shape=(N, N))
   
+  ## Compute determinant and rank
+  d = np.linalg.det(H.todense())
+  r = np.linalg.matrix_rank(H.todense())
+
+  ## Full rank constraint
+  if r == N:
+    print(f"H is full-rank @ {cc}")
+    break 
+
+  ## If we insist on a solution comprised of integers, we need H to be unimodular
+  # if d in [-1, 1, 0] and r == N:
+  #   print(f"H is full-rank and unimodular @ {cc}")
+  #   break 
+
   ## Quick tentative check: is H has full structural rank, 
   ## we may be able to solve for a perfect minimal hash
-  if structural_rank(H) == N and np.linalg.matrix_rank(H.todense()) == N:
-    print(f"H might be full rank @ {cc}")
-    break
+  # if structural_rank(H) == N and np.linalg.matrix_rank(H.todense()) == N:
+  #   print(f"H might be full rank @ {cc}")
+  #   break
 
 
 
-def perfect_hash(g, HF):
+def perfect_hash(g, HF, integral: bool = False):
   def _hash_key_(x: int) -> int:
-    return round(sum([g[h(x)] for h in HF]))
+    if integral: 
+      return round(sum([np.ceil(g[h(x)]) for h in HF]))
+    else:
+      return round(sum([g[h(x)] for h in HF]))
   return _hash_key_
 
 ## The 'closed form' expression of 
@@ -290,3 +307,52 @@ print(mont.reduce(prod))
 # mod53.multiply(30, 19)
 
 # 71 % 8
+
+
+
+
+##
+from numbers import Number
+class Int(Number):
+  def __init__(self, x: int = 0):
+    self.x = x
+  def __hash__(self):
+    return 0
+  def __repr__(self): 
+    return str(self.x)
+
+S = [Int(i) for i in np.random.choice(range(100), size=10)]
+h = { s : i for i,s in enumerate(S) }
+
+## Indeed, this does work 
+[h[s] for s in S]
+
+
+from numbers import Integral
+from dataclasses import dataclass
+import numpy as np 
+
+
+@dataclass
+class Int():
+  val: int = 0
+  def __int__(self) -> int:
+    return self.val
+
+integers = np.random.choice(range(100000*2), size=100000, replace=False)
+S = [Int(i) for i in integers]
+
+
+# import types
+# types.MethodType(lambda: 0, Int)
+import timeit
+Int.__hash__ = lambda self: hash(self.val)
+
+h = { s : i for i,s in enumerate(S) }
+timeit.timeit(lambda: [h[s] for s in S], number=100)/100
+
+Int.__hash__ = lambda self: 0
+h = { s : i for i,s in enumerate(S) }
+timeit.timeit(lambda: [h[s] for s in S], number=100)/100
+
+  
