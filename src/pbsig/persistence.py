@@ -19,6 +19,7 @@ from scipy.spatial.distance import pdist, cdist, squareform
 import _boundary as boundary
 from .apparent_pairs import *
 from .utility import *
+from .simplicial import *
 
 _perf = {
   "n_col_adds" : 0,
@@ -74,7 +75,20 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
 
 def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]] = None, f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
   from collections.abc import Sized
-  if isinstance(p, Iterable):
+  if isinstance(K, MutableFiltration):
+    assert p is None
+    from scipy.sparse import coo_array
+    # K.validate() ## needed to ensure faces exist
+    I,J,X = [],[],[] # row, col, data 
+    simplices = list(K.values(expand=True))
+    for (j,s) in enumerate(simplices):
+      if s.dimension() > 0:
+        I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+        J.extend(repeat(j, s.dimension()+1))
+        X.extend(islice(cycle([1,-1]), s.dimension()+1))
+    D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
+    return D
+  elif isinstance(p, Iterable):
     if f is None: 
       f = [None]*len(p)
     return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
@@ -685,23 +699,48 @@ def barcodes(K: Dict, p: int, f: Tuple, index: bool = False, **kwargs):
   """
   Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
   """
-  
-  if p == 0:
-    v0, e0 = f
-    V_names = [str(v) for v in K['vertices']]
-    E_names = [str(tuple(e)) for e in K['edges']]
-    VF0 = dict(zip(V_names, v0))
-    EF0 = dict(zip(E_names, e0))
-    D0, D1 = boundary_matrix(K, p=(0,1))
-    D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
-    R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-    P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
-  elif p is None:
-    D = boundary_matrix(K)
-    V = sps.identity(D.shape[1]).tolil()
-    R = D.copy().tolil()
-    pHcol(R, V)
-    validate_decomp(D, R, V)
+  if isinstance(K, dict):
+    if p == 0:
+      v0, e0 = f
+      V_names = [str(v) for v in K['vertices']]
+      E_names = [str(tuple(e)) for e in K['edges']]
+      VF0 = dict(zip(V_names, v0))
+      EF0 = dict(zip(E_names, e0))
+      D0, D1 = boundary_matrix(K, p=(0,1))
+      D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
+      R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+      P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
+    elif p is None:
+      D = boundary_matrix(K)
+      V = sps.identity(D.shape[1]).tolil()
+      R = D.copy().tolil()
+      pHcol(R, V)
+      assert validate_decomp(D, R, V)
+  elif isinstance(K, MutableFiltration):
+    if p is None:
+      D = boundary_matrix(K)
+      V = sps.identity(D.shape[1]).tolil()
+      R = D.copy().tolil()
+      pHcol(R, V)
+      assert validate_decomp(D, R, V)
+      rlow = low_entry(R)
+      sdim = np.array([s.dimension() for s in iter(K.values(expand=True))])
+      
+      ## Get the indices of the creators and destroyers
+      creator_mask = rlow == -1
+      creator_dim = sdim[creator_mask]
+      birth = np.flatnonzero(creator_mask)
+      death = np.repeat(np.inf, len(birth))
+      death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
+
+      ## Persistence diagram (index persistence)
+      dgm_index = [np.c_[birth[creator_dim == d], death[creator_dim == d]] for d in np.unique(creator_dim)]
+
+      ## Generators 
+      # V[np.ix_(creator_mask,creator_mask)]
+      # [simplices[int(i)] for i in dgm_index[0][:,0]]
+      # [simplices[int(i)] for i in dgm_index[0][:,1] if i != np.inf]
+      # b = np.flatnonzero(rlow[rlow != -1])
 
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
   return(P0)

@@ -1,12 +1,70 @@
-
-from pbsig.simplicial import Simplex, SimplicialComplex
+import numpy as np 
+from pbsig.simplicial import Simplex, SimplicialComplex, MutableFiltration
 
 s = Simplex([0,1,2,3])
 S = SimplicialComplex([(0),(1),(0,1)])
 S = SimplicialComplex([[0,1,2,3,4]])
 
-from pbsig.simplicial import MutableFiltration
-F = MutableFiltration([(0, s), (1, s)])
+x = np.random.uniform(size=5, low = 0, high=5)
+F = MutableFiltration(S, lambda s: max(x[s]))
+
+
+S = SimplicialComplex([[0,1,2]])
+x = np.random.uniform(size=3, low = 0, high=5)
+F = MutableFiltration(S, lambda s: max(x[s]))
+
+from pbsig.persistence import boundary_matrix, barcodes
+D = boundary_matrix(F)
+
+barcodes(D, p )
+F.print()
+
+
+
+
+
+
+
+# def boundary_matrix(Union[SimplicialComplex, MutableFiltration]):
+# from scipy.sparse import coo_array
+
+# F.validate() ## needed to ensure faces exist
+# I,J,X = [],[],[] # row, col, data 
+# simplices = list(F.values(expand=True))
+# for (j,s) in enumerate(simplices):
+#   if s.dimension() > 0:
+#     I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+#     J.extend(repeat(j, s.dimension()+1))
+#     X.extend(islice(cycle([1,-1]), s.dimension()+1))
+# D = coo_array((X, (I,J)), shape=(len(F), len(F)))
+
+  
+
+
+L = list(((f(s), s) for s in iterable))
+F += [L[0]]
+
+list(F.values(expand=True))
+list(F.keys(expand=True))
+
+
+[Simplex(0), Simplex(1), Simplex([0,1])].index(Simplex([0,1]))
+
+print((x[0], s))
+F[x[0]] = s
+type(F[x[0]])
+
+
+
+' ↪ '.join(fs_s)
+terminal.get_terminal_size()
+
+
+
+F += [(x[0],s)]
+F.setdefault(x[0]).add(s)
+F[x[0]]
+
 
 from sortedcontainers import SortedDict
 d = SortedDict([(0, s), (1, s)])

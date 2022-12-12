@@ -480,17 +480,24 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
- The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector $v \mapsto Av$ operator. Additionally, since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
- In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration may be carried out with just three $O(n)$-sized vectors and $O(1)$ additional storage. We summarize the main take-a-ways of the Lanczos method we've discussed thus far with a Lemma. 
+ The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector $v \mapsto Av$ operator. 
+ Observe that since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
+ In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations. We summarize these benefits with a Lemma. 
 \begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
-	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\mathcal{M}(n)\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
+	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\mathcal{M}(n), n\}\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
 \end{lemma}
-\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, this is unrealistic, and we must use finite-precision arithmetic. Extending the Lanczos method to retain similar complexity guarantees using finite-precision arithmetic is a non-trivial and multifaceted topic; each such extension of the iteration essentially to control for loss of orthogonality between the Lanczos vectors or improve convergence rate (or both), which typically involves increasing either the time or storage complexities by non-trivial factors. We defer its discussion to section~\ref{subsec:rounding}. 
-Independent of orthogonality-enforcement scheme of choice, the assumption of exact arithmetic gives us a grounded expectation of what is possible to achieve with any such scheme. 
+\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
+Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any algorithm based on the Lanczos method.
 \begin{corollary}\label{cor:finite_arith_lanczos}
 	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
+In practice, we must use finite-precision arithmetic, which introduces both rounding and cancellation errors into the computation.
+These errors manifest as loss of orthogonality between the Lanczos vectors, which not only affects convergence towards an in invariant subspace, but muddles the termination condition. 
+Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
+Because these extensions are varied, non-trivial, and multifaceted, we defer their discussion to section~\ref{subsec:rounding}. 
+%Independent of orthogonality-enforcement scheme of choice,
+
 As Lemma~\ref{lemma:exact_arith_lanczos} makes clear, the usefulness of the Lanczos iteration hinges on the availability of a fast matrix-vector product. 
 In general, for any symmetric $A \in \mathbb{R}^{n \times n}$ rank-$r$ matrix with an average of $\nu$ nonzeros per row, approximately $(2\nu + 8)n$ flops are needed for a single Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. For dense matrices, we recover the same $O(r n^2)$ complexity required by direct methods. 
 In the next section, we demonstrate how to reduce this complexity using the structure of the boundary operator. 
@@ -505,11 +512,16 @@ In the next section, we demonstrate how to reduce this complexity using the stru
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
 \subsection{Combinatorial Laplacians}
-In principle, the three-term recurrence that drives the Lanczos method only be exploited with symmetric matrices, and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product. Though the boundary matrix $\partial$ is not symmetric, it is well known that the non-zero part of the spectrum of $\partial \partial^T$ contains the same information as the singular values of $\partial$. By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
+The efficiency of the Lanczos method depends on two crucial components: the three-term recurrence and fast matrix-vector product. 
+The former only arises in the decomposition of symmetric matrices and the latter depends the existence of combinatorial structure in the $x \mapsto A x$ operation. 
+Though $\partial$ is not symmetric, it is well known that the non-zero part of the spectrum of both $\partial \partial^T$ and $\partial^T \partial$ contain the same information as the singular values of $\partial$~\cite{}. 
+%Thus, the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$.
+Indeed, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators.
+In contrast, whereas $x \mapsto Lx$ can be carried out in essentially linear time time in the number of edges of the underlying graph, it is not immediately clear whether $x \mapsto \partial_p \partial_p^T x$ can be carried out in a time linear in the number of $p+1$ simplices for more general $p > 1$. Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
+% and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
-Moreover, since the matrix $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of combinatorial Laplacians---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators. In what follows, we examine the form of $\partial_p \partial_p^T$ for more general $p > 1$ towards revealing exploitable structure to accelerate the rank computation.
 
-Given a graph $G = (V, E)$, let $A \in \mathbb{R}^{n \times n}$ denote the graphs adjacency matrix $D$ is the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$.
+Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its (binary) adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$ . $0$ otherwise and let $D$ denote the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$.
 The \emph{graph Laplacian}  $L = D - A = \partial_p \partial_p^T$ is a heavily structured matrix known to capture the connectivity structure of $G$.
  In particular, $L$ is symmetric positive semi-definite and it's linear and quadratic forms have particular graph-theoretic interpretations:
 \begin{flalign}\label{eq:lap_quad_from}
@@ -737,7 +749,7 @@ Fortunately, this requires a simple augmentation to the step function from~\eqre
 	}
 	\label{fig:smoothstep}
 \end{figure}
-These are clamped sigmoid-like functions  which interpolate between a prescribed lower and upper bounds $(a,a+\omega)$ via an ``S-curve'': 
+These are clamped ``S-curve'' functions which interpolate the discontinuous step portion of $S$ between fixed lower and upper bounds $(a,a+\omega)$. They are given by:  
 \begin{equation}\label{eq:smoothstep}
 \mathcal{S}_a^{\omega} (x) = \begin{cases}
 	0 & x \leq a \\
@@ -767,7 +779,7 @@ Our motivation to use them here is based on the observations shown in Figure~\re
 %where $\mathcal{S}_{i}^\omega : \mathbb{R} \to \{0, 1\}$ is a \emph{smoothstep} function satisfying~\eqref{eq:smoothstep} and $\tilde{\mathcal{S}}_{i}^\omega = 1 -\mathcal{S}_{i}^\omega$, and $f_h(\sigma) = f(\sigma, h)$.
 %\end{definition}
 %We summarize the previous 
-By composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we have $\epsilon$-approximate, continuously-varying multiplicity function. 
+By composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
 \begin{definition}[Continuous Multiplicity]
 Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Let $\tilde{\partial}_p$ denote the $\mathcal{H}$-parameterized $p$-th boundary matrix from~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$. Define the \emph{continuous multiplicity function} over some fixed $R = [i,j] \times [k,l]$ as:
 	\begin{equation}\label{eq:mu_cont}
@@ -779,7 +791,7 @@ Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \math
 \end{equation}
 where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$. The formulation of the PBN relaxation is synonymous.
 \end{definition}
-\noindent Since the sum of two Lipshitz functions $f$ and $g$ results in another Lipshitz function $f + g$, by the continuity of $\mathcal{S}_\ast^\omega$ and the global Lipshitz continuity of~\eqref{def:cont_rank}, it is clear that $\hat{\mu}_p^R$ is Lipshitz continuous. 
+\noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify that $\hat{\mu}_p^R$ is Lipshitz continuous by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
 %\begin{corollary}
 %	For every matrix $$ any $\epsilon > 0$, the approximations $\beta_p$ and $\tilde{\mu}_p^\ast$ vary continuously in $\mathcal{H}$. Moreover, there exists some $\bar{\epsilon} > 0$ such that: 
 %	$$ \lfloor \tilde{\beta}_p^{\ast}(K) \rfloor = $$

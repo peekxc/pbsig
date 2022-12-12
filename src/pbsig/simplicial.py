@@ -9,7 +9,7 @@ import networkx as nx
 from networkx import Graph 
 from scipy.sparse import diags, csc_matrix, issparse
 from scipy.linalg import issymmetric
-from pbsig.utility import lexsort_rows
+from pbsig.utility import lexsort_rows, pairwise
 
 
 def edge_iterator(A):
@@ -172,7 +172,7 @@ import numpy as np
 
 from numbers import Integral
 # @total_ordering
-class Simplex(Set):
+class Simplex(Set, Hashable):
   '''
   Implements: 
     __contains__(self, v: int) <=> Returns whether integer 'v' is a vertex in 'self'
@@ -181,6 +181,8 @@ class Simplex(Set):
     self.vertices = tuple([int(v)]) if isinstance(v, Number) else tuple(np.unique(np.sort(np.ravel(tuple(v)))))
     assert all([isinstance(v, Integral) for v in self.vertices]), "Simplex must be comprised of integral types."
   def __eq__(self, other) -> bool: 
+    if len(self) != len(other):
+      return False
     return(all(v == w for (v,w) in zip(iter(self.vertices), iter(other))))
   def __len__(self):
     return len(self.vertices)
@@ -237,7 +239,9 @@ class Simplex(Set):
   def __getitem__(self, index: int) -> int:
     return self.vertices[index] # auto handles IndexError exception 
   def __sub__(self, other) -> 'Simplex':
-    return Simplex(set(self.vertices) - set(other))
+    return Simplex(set(self.vertices) - set(Simplex(other).vertices))
+  def __add__(self, other) -> 'Simplex':
+    return Simplex(set(self.vertices) | set(Simplex(other).vertices))
   def __hash__(self):
     # Because Python has no idea about mutability of an object.
     return hash(self.vertices)
@@ -350,7 +354,7 @@ class SimplicialComplex(set):
 
 # Pythonic version: https://grantjenks.com/docs/sortedcontainers/#features
 
-from sortedcontainers import SortedDict
+from sortedcontainers import SortedDict, SortedSet
 # SortedDict()
 
 from collections import OrderedDict # nah 
@@ -384,16 +388,40 @@ class MutableFiltration(MutableMapping):
   #   return selfobj
 
   # _key = int.__le__
+  @classmethod
+  def _key_dim_lex_poset(cls, s: Simplex) -> bool:
+    return (len(s), tuple(s), s)
+
+  ## Returns a newly allocated Sorted Set w/ lexicographical poset ordering
+  def _sorted_set(self, iterable: Iterable[Collection[Integral]] = None) -> SortedSet:
+    if iterable is None:
+      return SortedSet(None, key=MutableFiltration._key_dim_lex_poset)
+    else:
+      return SortedSet(iter(map(Simplex, iterable)), key=MutableFiltration._key_dim_lex_poset)
 
   # simplices: Sequence[SimplexLike], I: Optional[Collection] = None
-  def __init__(self, iterable = None, index_set = None) -> None:
+  def __init__(self, iterable: Union[SimplicialComplex, Iterable] = None, f: Optional[Callable] = None) -> None:
     self.data = SortedDict()
     if isinstance(iterable, SimplicialComplex):
-      if index_set is None:
+      if isinstance(f, Callable):
+        self += ((f(s), s) for s in iterable)
+      elif f is None:
         index_set = np.arange(len(iterable))  
-        lex_iter = sorted(iter(iterable), key=lambda s: (len(s), tuple(s)))
-      self.update(zip(iter(index_set), lex_iter))
-    elif isinstance(iterable, ):
+        iterable = sorted(iter(iterable), key=lambda s: (len(s), tuple(s), s)) # dimension, lex, face poset
+        self += zip(iter(index_set), iterable)
+      else:
+        raise ValueError("Invalid input for simplicial complex")
+    elif isinstance(iterable, Iterable):
+      # if index_set is None:
+      #   index_set = np.arange(len(iterable))  
+      # assert len(index_set) == len(iterable)
+      #self.data.update(zip(iter(index_set), iterable))
+      self += iterable ## accept pairs, like a normal dict
+    elif iterable is None:
+      pass
+    else: 
+      raise ValueError("Invalid input")
+
 
     # self_dict.__init__(*args, **kwargs)
     # np.fromiter(zip(), self.dtype)
@@ -404,13 +432,42 @@ class MutableFiltration(MutableMapping):
     # self.simplices = [Simplex(s) for s in simplices]
     # self.index_set = np.arange(0, len(simplices)) if I is None else np.asarray(I)
     # self.dtype = [('s', Simplex), ('index', I.dtype)]
+  ## TODO: maybe this shouldn't add, but retain dict-like properties
+  ## delegate new behavior to new methods: __iadd__, __isub__
+  def update(self, other: Iterable[Tuple[Any, Collection[Integral]]]):
+    for k,v in other:
+      #print(f"key={str(k)}, val={str(v)}")
+      # self._sorted_set()
+      self.data.__setitem__(k, self._sorted_set(v))
+      # ss.(Simplex(v))
+
+
 
   def __getitem__(self, key: Any) -> Simplex: 
-    return self.data[key]
+    return self.data.__getitem__(key)
 
-  def __setitem__(self, k: Any, v: Collection[Integral]):
-    self.data.__setitem__(k, Simplex(v))
-    
+  def __setitem__(self, k: Any, v: Union[Collection[Integral], SortedSet]):
+    self.data.__setitem__(k, self._sorted_set(v))
+    # if isinstance(v, SortedSet):
+    #   self.data.__setitem__(k, v)
+    # else:
+    #   assert isinstance(v, Collection)
+      # self.data.setdefault(k, self._sorted_set())
+      # print("here")
+      # ss = self._empty_set()
+      # ss.add(Simplex(v))
+      # print(ss)
+      # self.data.__setitem__(k, ss)
+  
+  ## Returns the value of the item with the specified key.
+  ## If key doesn't exist, set's F[key] = default and returns default
+  def setdefault(self, key, default=None):
+    if key in self.data:
+      return self[key] # value type 
+    else:
+      self.__setitem__(key, default)
+      return self[key]   # value type   
+
   def __delitem__(self, k: Any):
     self.data.__del__(k)
   
@@ -418,18 +475,108 @@ class MutableFiltration(MutableMapping):
     return iter(self.data.keys())
 
   def __len__(self) -> int:
-    return self.data.__len__()
-   
-  def setdefault(self, key, default=None):
-    self_dict = super(MutableFiltration, self)
-    if key in self_dict:
-      return self[key]
-    else:
-      self.__setitem__(key, default)
-      return default
+    return sum((len(v) for v in self.data.values()))
+    #return self.data.__len__()
 
-  def __repr__(self):
-    return "Filtration"
+  # https://peps.python.org/pep-0584/
+  def __or__(self, other: Union[Iterable[Tuple[int, int]], Mapping]):
+    new = self.copy()
+    new.update(SortedDict(other))
+    return new
+
+  def __ror__(self, other: Union[Iterable[Tuple[int, int]], Mapping]):
+    new = SortedDict(other)
+    new.update(self.data)
+    return new
+
+  ## In-place union '|=' operator 
+  # TODO: map Collection[Integral] -> SimplexLike? 
+  def __ior__(self, other: Union[Iterable[Tuple[int, int]], Mapping]):
+    self.data.update(other)
+    return self
+  
+  ## In-place append '+=' operator ; true dict union/merge, retaining values
+  def __iadd__(self, other: Iterable[Tuple[int, int]]):
+    for k,v in other:
+      if len(Simplex(v)) >= 1:
+        # print(f"key={str(k)}, val={str(v)}")
+        self.setdefault(k, self._sorted_set()).add(Simplex(v))
+    return self
+
+  ## Copy-add '+' operator 
+  def __add__(self, other: Iterable[Tuple[int, int]]):
+    new = self.copy()
+    new += other 
+    return new
+
+  ## Simple copy operator 
+  def copy(self) -> 'MutableFiltration':
+    new = MutableFiltration()
+    new.data = self.data.copy()
+    return new 
+
+  ## Keys yields the index set. Set expand = True to get linearized order. 
+  ## TODO: Make view objects
+  def keys(self, expand: bool = False):
+    if not expand:
+      return self.data.keys()
+    else:
+      it_keys = chain()
+      for k,v in self.data.items():
+        it_keys = chain(it_keys, repeat(k, len(v)))
+      return it_keys
+  def values(self, expand: bool = False):
+    if not expand:
+      return self.data.values()
+    else: 
+      it_vals = chain()
+      for v in self.data.values():
+        it_vals = chain(it_vals, iter(v))
+      return it_vals
+  def items(self, expand: bool = False):
+    if not expand:
+      return self.data.items()
+    else:
+      it_keys, it_vals = chain(), chain()
+      for k,v in self.data.items():
+        it_keys = chain(it_keys, repeat(k, len(v)))
+        it_vals = chain(it_vals, iter(v))
+      return zip(it_keys, it_vals)
+
+  def __repr__(self) -> str:
+    from collections import Counter
+    cc = Counter([len(s)-1 for s in self.values(expand=True)])
+    cc = dict(sorted(cc.items()))
+    return f"{max(cc)}-d filtered complex with {tuple(cc.values())}-simplices of dimension {tuple(cc.keys())}"
+
+  def print(self, **kwargs) -> None:
+    import sys
+    fv_s, fs_s = [], []
+    for k,v in self.items(expand=True):
+      ks = len(str(v))
+      fv_s.append(f"{str(k):<{ks}.{ks}}")
+      fs_s.append(f"{str(v): <{ks}}")
+      assert len(fv_s[-1]) == len(fs_s[-1])
+    sym_le, sym_inc = (' ≤ ', ' ⊆ ') if sys.getdefaultencoding()[:3] == 'utf' else (' <= ', ' <= ') 
+    print(repr(self))
+    print("I: " + sym_le.join(fv_s[:5]) + sym_le + ' ... ' + sym_le + sym_le.join(fv_s[-2:]), **kwargs)
+    print("S: " + sym_inc.join(fs_s[:5]) + sym_inc + ' ... ' + sym_inc + sym_inc.join(fs_s[-2:]), **kwargs)
+
+  def validate(self, light: bool = True) -> bool:
+    fs = list(self.values(expand=True))
+    for i, s in enumerate(fs): 
+      p = s.dimension() - 1 if light and len(s) >= 2 else None
+      assert all([fs.index(face) <= i for face in s.faces(p)])
+    assert all([k1 <= k2 for k1, k2 in pairwise(self.keys(expand=False))])
+
+  def __format__(self, format_spec = "default") -> str:
+    from io import StringIO
+    s = StringIO()
+    self.print(file=s)
+    res = s.getvalue()
+    s.close()
+    return res
+
   # def update(self, E, *args):
 
 
