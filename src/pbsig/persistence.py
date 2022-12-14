@@ -695,7 +695,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
   return(valid)
 
 ## TODO: redo with filtration class at some point
-def barcodes(K: Dict, p: int, f: Tuple, index: bool = False, **kwargs):
+def barcodes(K: Dict, p: Optional[int] = None, f: Tuple= None, index: bool = False, **kwargs):
   """
   Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
   """
@@ -733,8 +733,28 @@ def barcodes(K: Dict, p: int, f: Tuple, index: bool = False, **kwargs):
       death = np.repeat(np.inf, len(birth))
       death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
 
-      ## Persistence diagram (index persistence)
-      dgm_index = [np.c_[birth[creator_dim == d], death[creator_dim == d]] for d in np.unique(creator_dim)]
+      ## If 
+      if not(index): 
+        # key_dtype = type(next(F.keys(expand=True)))
+        filter_vals = np.fromiter(K.keys(expand=True), dtype=float)
+        index2f = {i:fv for i, fv in zip(np.arange(len(F)), filter_vals)} | { np.inf : np.inf}
+        birth = np.array([index2f[i] for i in birth])
+        death = np.array([index2f[i] for i in death])
+      
+      ## Assemble the diagram
+
+      dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
+      
+      # dgm = np.fromiter(zip(creator_dim, birth, death), dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
+      # dgm = dgm[np.argsort(dgm, order=['dim', 'birth', 'death'])]
+      # assert all(dgm['birth'] <= dgm['death'])
+      # dgm = np.vstack([np.c_[
+      #   np.fromiter(repeat(d, sum(creator_dim == d)), dtype='i2'), 
+      #   birth[creator_dim == d].astype('f4'), 
+      #   death[creator_dim == d].astype('f4')
+      # ] for d in np.unique(creator_dim)])
+      # np.array(dgm, dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
+
 
       ## Generators 
       # V[np.ix_(creator_mask,creator_mask)]

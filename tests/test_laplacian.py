@@ -79,8 +79,9 @@ x = np.random.uniform(size=E.shape[0], low=0.0, high=1.0)
 deg_e = np.zeros(len(x)) 
 for t_ind, (i,j,k) in enumerate(T):
   e_ind = np.searchsorted(er, rank_combs([[i,j], [i,k], [j,k]], k=2, n=nv)) ## Can be cast using minimal perfect hashing function
-  deg_e[e_ind] += ft[t_ind]**2
-deg_e *= (fe**2)
+  deg_e[e_ind] += ft[t_ind]**2 * (fe[e_ind]**2) ## added fe
+
+# deg_e *= (fe**2)
 assert np.allclose(deg_e - LT_ET.diagonal(), 0.0), "Collecting diagonal terms failed!"
 
 y = np.zeros(len(x))

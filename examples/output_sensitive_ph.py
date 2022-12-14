@@ -25,21 +25,20 @@ ax.plot(X[[8,10],0], X[[8,10],1], c='red', linewidth=2.5, zorder=5)
 # D1 = boundary_matrix(graph2complex(G), p = 1)
 
 from pbsig.persistence import barcodes
-K = graph2complex(G)
-V, E = K['vertices'], K['edges']
+from pbsig.simplicial import * 
 fv = W.diagonal()
-fe = fv[E].max(axis=1)
-ph0_f = barcodes(K, p = 0, f=(fv,fe), collapse=True, index=False)
+K = graph2complex(G)
+K = SimplicialComplex(chain(chain(iter(K['vertices']), iter(K['edges'])), iter(K['triangles'])))
+F = MutableFiltration(K, f=lambda s: fv[s].max())
+ph0_f = barcodes(F)
 
-FV, FE = V[np.argsort(fv)], E[np.argsort(fe),:]
-
-
-fv_int = np.argsort(np.argsort(fv))
-fe_int = fv_int[E].max(axis=1)
-#fe_int = len(fv)+np.argsort(np.argsort(fe))
-ph0_I = barcodes(graph2complex(G), p = 0, f=(fv_int, fe_int), collapse=False)
-dgm0 = ph0_I['dgm']
-dgm0[:,1] -= len(fv)
+# FV, FE = V[np.argsort(fv)], E[np.argsort(fe),:]
+# fv_int = np.argsort(np.argsort(fv))
+# fe_int = fv_int[E].max(axis=1)
+# #fe_int = len(fv)+np.argsort(np.argsort(fe))
+# ph0_I = barcodes(graph2complex(G), p = 0, f=(fv_int, fe_int), collapse=False)
+# dgm0 = ph0_I['dgm']
+# dgm0[:,1] -= len(fv)
 
 V = np.array(G.nodes())[np.argsort(fv)]
 E = np.array(G.edges())[np.argsort(fe),:]

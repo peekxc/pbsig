@@ -9,9 +9,13 @@
 \usepackage{setspace}
 \usepackage{scalefnt}
 
+\numberwithin{equation}{section}
+
 %\usepackage{titlesec}
 
-
+\usepackage{algorithm}
+\PassOptionsToPackage{noend}{algpseudocode}
+\usepackage{algpseudocode}
 \RequirePackage{fix-cm}
 
 \usepackage{nicematrix}
@@ -489,7 +493,7 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
 Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any algorithm based on the Lanczos method.
 \begin{corollary}\label{cor:finite_arith_lanczos}
-	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\mathcal{M}(n) \cdot r)$ time and $\Omega(n)$ storage complexity. 
+	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\mathcal{M}(n), n\} \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
 In practice, we must use finite-precision arithmetic, which introduces both rounding and cancellation errors into the computation.
@@ -511,7 +515,7 @@ In the next section, we demonstrate how to reduce this complexity using the stru
 % ----- Laplacian's encoding geometry: https://arxiv.org/pdf/1105.2712.pdf ----
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
-\subsection{Combinatorial Laplacians}
+\subsubsection{Combinatorial Laplacians}
 The efficiency of the Lanczos method depends on two crucial components: the three-term recurrence and fast matrix-vector product. 
 The former only arises in the decomposition of symmetric matrices and the latter depends the existence of combinatorial structure in the $x \mapsto A x$ operation. 
 Though $\partial$ is not symmetric, it is well known that the non-zero part of the spectrum of both $\partial \partial^T$ and $\partial^T \partial$ contain the same information as the singular values of $\partial$~\cite{}. 
@@ -558,7 +562,7 @@ Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{
 %Since each simplex thus inherits an orientation induced by the ordering of its vertices, we may write down entries of $L_p^{up}$ explicitly:  
 %The $(i,j)$-th entry of $L_p^{\text{up}}$ is given as:
 %where $W_{p} = \mathrm{diag}\{\,f(\tau_1), f(\tau_2), \dots, f(\tau_n) \}$ and $W_{p} = \mathrm{diag}\{\,f(\sigma_1), f(\sigma_2), \dots, f(\sigma_n) \}$ are diagonal $n \times n$ and $m \times m$ matrices whose entries store the value of the filtration function $f$ restricted to $K^p$, $K^{p+1}$, respectively.
-\begin{align}
+\begin{align}\label{eq:up_laplace_ij}
 	 L_p^{\text{up}}[i,j] = \begin{cases}
 		f(\tau_i)^2 \cdot d_f(\sigma) & \text{ if } i = j \\ 
 %		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
@@ -568,13 +572,65 @@ Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{
 \end{align}
 where $s_{ij} = \mathrm{sgn}([\tau_i], \partial[\sigma]) \cdot \mathrm{sgn}([\tau_j], \partial[\sigma])$.
 In general, the sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in $\partial[\sigma]$, which itself depends on the orientation of $[\sigma]$. However, observe that regardless of the orientation $\sigma$ takes, the sign of the product $s_{ij}$ is invariant. 
-Moreover, since we assume the poset order on $K$ is induced from the vertex order, the sign pattern each $[\sigma]$ takes induced by $(V, \preceq)$ is constant, and since a $p$-simplex has $p+1$ proper faces in its boundary we deduce that if $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1}\rvert$ then we may compute the matrix-vector product $x \mapsto L_p^{\text{up}} \, x$ in $O(m(p+1))$ time and $O(n)$ memory.  
-From a practical perspective, $p \geq 0$ is generally a very small constant---typically no more than $2$---thus we conclude that we can evaluate $x \mapsto \partial_{p+1} \partial_{p+1}^T x$ is $\approx O(m)$ time, essentially linear in the number of $p+1$ simplices. 
- 
-\subsection{Rank computation}
+Moreover, since we assume the poset order on $K$ is induced from the vertex order, the sign pattern each $[\sigma]$ takes induced by $(V, \preceq)$ is constant, thus we may access $s_{ij}$ in $O(1)$ time.
+
+Consider the operation $x \mapsto L_p^{\text{up}} x$ for any $x \in \mathbb{R}^n$, where $n = \lvert K^p \rvert$. Let $m = \lvert K^{p+1}\rvert$, and as before assuming the simplices of $K$ are ordered by some fixed linear extension $(V, \preceq)$ of the vertex set.
+Observe that, for any pair $\tau, \tau' \in K^p$ satisfying $\tau \overset{\sigma}{\sim} \tau$ with proper coface $\sigma$, evaluating any individual term from~\eqref{eq:up_laplace_ij} in $O(1)$ requires knowing the positions $i,j \in [n]$ of the $p$-simplices in total order $K^p = (\tau_1, \tau_2, \dots, \tau_n)$. Using the theory of universal hashing functions, we could build a perfect hash table $h : K^p \to [n]$ which requires $O(1)$ average time complexity, but this would still exhibit $O(n)$ worst case. Alternatively, we could also use binary search to reduce this to $O(\log n)$. Instead, we take advantage of the fact that again the order on $K^p$ is fixed by building a \emph{perfect minimal hash function}. 
+
+%Suppose we have access to an efficient way of enumerating 
+Since a $p$-simplex has $p+1$ proper faces in its boundary, and we need to iterate through the simplices $\sigma \in K^{p+1}$ at most a constant number of times, we may combine the above observations into a lemma. 
+% we may compute the matrix-vector product $x \mapsto L_p^{\text{up}} \, x$ in $O(m(p+1))$ time and $O(n)$ memory.  
+\begin{lemma}
+	For any $p \geq 0$ and simplicial pair $(K, f)$, there exists a two-phase algorithm for computing the product: 
+	\begin{equation}
+		x \mapsto L_p^{\text{up}} x = (W_p \circ \partial_{p+1} \circ W_{p+1}^2 \circ \partial_{p+1}^T \circ W_p)x
+	\end{equation}
+	in $O(m(p+1))$ time, $O(n)$ storage. 
+	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
+\end{lemma}
+\noindent From a practical perspective, $p \geq 0$ is generally a very small constant---typically no more than $2$---thus we conclude that we can evaluate $x \mapsto \partial_{p+1} \partial_{p+1}^T x$ is $\approx O(m)$ time, essentially linear in the number of $p+1$ simplices. 
+More details on this, along with pseudocode of the two-phase algorithm for general $p \geq 0$, is given in appendix~\ref{sec:up_laplace_matvec}.
+
+
+  
+\subsubsection{Convergence rate}
 The ability of the Krylov subspace iteration to capture the extremal portions of the spectrum remains unparalleled, and by using $O(n)$ memory, the Lanczos iteration uses optimal memory. 
-If the supplied matrix-vector product operation is fast, the main bottleneck in time complexity of estimating the spectrum of $A$ is the number of iterations needed for convergence. 
-As an iterative method, 
+As mentioned in section~\ref{}, when the computation is carried out in finite-precision arithmetic, one may observe loss of orthogonality in the Lanczos vectors. 
+Fortunately, the connection between the Lanczos method and the Rayleigh quotient ensures \emph{eventual} termination of the procedure under by restarting the Lanczos method, and continue with the iteration until the spectrum has been approximated to some prescribed accuracy. 
+Unfortunately, if the number of iterations $k$ is e.g. larger than $n^2$, then the method may approach to $O(r\max(\mathcal{M}(n), n), n) \approx O(n^3)$ complexity one starts with. 
+If the supplied matrix-vector product operation is fast, the number of iterations $k$ needed for convergence of the Lanczos method becomes the main bottleneck estimating the spectrum of $A$.
+
+% Rate of convergence definition
+Loss of orthogonality can be mitigated by re-orthogonalizaing against all previous Lanczos vectors, but this increases the Lanczos complexity to $\approx O(n^2)$ per iteration. 
+Thus, the goal is strike a balance: find a way to keep all $n$ Lanczos numerically orthonormal, so as to ensure super-linear convergence of the Ritz values $\theta$, but do so using $c \cdot n$ memory, where $c$ is a relatively small constant.
+
+Since rates of convergence $\alpha$ increases the number of correct digits by an expoentnial rate with factor $alpha$, any super-linear convergent ($\alpha > 1$) method needs at most $c$ terms to approximate an eigen-pair up to numerical precision. 
+In the context of the Lanczos method, achieving even quadratic convergence would imply the number of iterations needed to obtain machine-precision is bounded by $T(c \cdot \mathcal{M}(n) \cdot r)$, where $c$ is a small constant. We say that a method which achieves \emph{superlinear} convergence has complexity \emph{essentially} $O(c\cdot n) \approx O(n)$.
+
+
+Among the more powerful methods for achieving super linear convergence towards a given eigenvalue $\lambda$ is the Jacobi-Davidson method. This method seeks to correct:
+
+Solving for $t$ results in the \emph{correction equation}
+\begin{equation}
+	(I - u u^T)(A - \sigma I )(I - u u^T) t = \theta u - A u 
+\end{equation}
+where, since $u$ is unit-norm, $I - u u^T$ is a projector onto the complement of $\mathrm{span}(u)$. 
+It's been shown that solving exactly for this correction term essentially constructs an cubically-convergent sequence towards some $\theta \mapsto \lambda$ in the vicinity of $\sigma$. Solving for the correction equation exactly is too expensive, sparking efforts to approximate it. It turns out that, just as the Lanczos method in exact arithmetic is highly related to the conjugate gradient method for solving linear systems, solving for the correction equation exactly is in some ways conceptually similar to making an Newton step in the famous Newtons method from nonlinear optimization. Since~\eqref{} is approximated, the JD method is often called in the literature akin to making an ``inexact newton step''~\cite{}.
+
+
+The JD method with inexact Newton steps yields an individual eigenvalue estimate with quadratic convergence---\emph{essentially} $O(m)$ time after some constant number matrix-vector products and $O(n)$ memory.
+The Lanczos method, in contrast, estimates all eigenvalues in essentially quadratic time if the convergence rate is superlinear. Pairing these two methods is a non-trivial endeavor. 
+In a sequence of papers, Stathopoulos et al~\cite{} investigated various strategies for approximately solving the correction equation. 
+In , they give both theoretical and empricial evidence to suggest that by employing generalized Davidson and Jacobi-Davidson like solvers within an overarching Lanczos paradigm, they achieve nearly optimal methods for estimating large portions of the spectrum using $O(1)$ number of basis vectors. By approximating the inner iterations with the symmetric Quasi-Minimal Residual (QMR) method, they argue that JD cannot converge more than three times slower than the optimal method, and empirically they find the constant factor to be less than $2$. 
+%usually are significantly less than two times slower 
+%If we fast forward several decades of research, one finds that there is no longer just 
+
+\subsubsection*{Effective Resistance \& The Laplacian Paradigm}
+We now turn to our main result. 
+
+
+
+
 
 % https://www.cs.wm.edu/~andreas/publications/optimal_many.pdf
 % Newton steps, RQI, etc 
@@ -736,7 +792,7 @@ We summarize a few such properties below.
 \\
 \\
 \noindent \textbf{Smoothstep:} To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
-Fortunately, this requires a simple augmentation to the step function from~\eqref{def:time_boundary_matrix2}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ in ~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
+Fortunately, this requires a simple augmentation to the step function from the one in definition~\ref{def:time_boundary_matrix}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
@@ -749,7 +805,7 @@ Fortunately, this requires a simple augmentation to the step function from~\eqre
 	}
 	\label{fig:smoothstep}
 \end{figure}
-These are clamped ``S-curve'' functions which interpolate the discontinuous step portion of $S$ between fixed lower and upper bounds $(a,a+\omega)$. They are given by:  
+These are clamped ``S-curve'' functions which interpolate the discontinuous step portion of $S$ along fixed bounds $(a,a+\omega)$, which are given by:  
 \begin{equation}\label{eq:smoothstep}
 \mathcal{S}_a^{\omega} (x) = \begin{cases}
 	0 & x \leq a \\
@@ -779,15 +835,15 @@ Our motivation to use them here is based on the observations shown in Figure~\re
 %where $\mathcal{S}_{i}^\omega : \mathbb{R} \to \{0, 1\}$ is a \emph{smoothstep} function satisfying~\eqref{eq:smoothstep} and $\tilde{\mathcal{S}}_{i}^\omega = 1 -\mathcal{S}_{i}^\omega$, and $f_h(\sigma) = f(\sigma, h)$.
 %\end{definition}
 %We summarize the previous 
-By composing with~\eqref{eq:lap_hadamard} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some appropriately chosen $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
+Moreover, by composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
 \begin{definition}[Continuous Multiplicity]
 Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Let $\tilde{\partial}_p$ denote the $\mathcal{H}$-parameterized $p$-th boundary matrix from~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$. Define the \emph{continuous multiplicity function} over some fixed $R = [i,j] \times [k,l]$ as:
 	\begin{equation}\label{eq:mu_cont}
 	\hat{\mu}_{p,\epsilon}^R(h) = 
 		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast - 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast -  
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast + 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast \numberthis
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{i \+ \delta, k}) \rVert_\ast -  
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, l}) \rVert_\ast + 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
 where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$. The formulation of the PBN relaxation is synonymous.
 \end{definition}
@@ -1175,6 +1231,40 @@ Equation~\eqref{eq:lap_rayleigh} may be used to show that the spectrum $\Lambda(
 Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathcal{L}(G)$, with multiplicity $\mathrm{cc}(G)$. Moreover, if $G$ is the union of disjoint graphs $G_1, G_2, \dots, G_k$, then it has as its spectrum the union of the spectra $ \Lambda(G_1), \Lambda(G_2), \dots, \Lambda(G_k)$. 
 Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
 For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
+
+\section{Laplacian \texttt{matvec} products}\label{sec:up_laplace_matvec}
+\begin{algorithm}
+\caption{Two-pass \texttt{matvec} operator for combinatorial up-Laplacians in $O(m(p+1)) \approx O(m)$ time }	
+\begin{algorithmic}
+\Require $x \in \mathbb{R}^n, \, f: K \to \mathbb{R}_{+}, \, h: K^p \to [\; \lvert K^p\rvert \;]$
+\Ensure $y = \langle L_p^{\mathrm{up}}(K, f), x \rangle$
+%\State $(n,m) \gets (\lvert K^p\rvert, \lvert K^{p+1}\rvert)$
+\vspace{0.25em}
+\Function{UpLaplacianMatvec}{x}
+\State $(z, y) \gets (\mathbf{0}, \mathbf{0})$ \Comment{$(\in \mathbb{R}^n)$}
+\For{$\sigma \in K^{p+1}$}: 
+	\For{$\tau \in \partial[\sigma]$}:
+		\State $i \gets h(\tau)$
+   	 	\State $z_{i} \mathrel{{+}{=}} f(\sigma)^2 \cdot f(\tau)^2$
+   	\EndFor
+\EndFor
+%\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
+\For{$\sigma \in K^{p+1}$}:
+    %\For{$(\, [\tau], \, [\tau'] \,) \in \partial[\sigma]$}
+    \For{$\tau, \, \tau' \in \partial[\sigma]^{(2)}$}: %\Comment{$A^{(2)} = \{ (a, a') : a,a' \in A \times A \text{ s.t. }a < a' \}$ }
+%    	\If{$\tau \neq \tau'$}
+	    	\State $i, j \gets h(\tau), \; h(\tau')$ % \mathrm{sgn}([\tau],\partial[\sigma]) \cdot \mathrm{sgn}([\tau'],\partial[\sigma])
+	    	%\State $v \gets f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
+    		\State $y_{i} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot z_{j} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
+    		\State $y_{j} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot z_{i} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
+%    	\EndIf
+    	%\State $y_{h_p(\tau)} \mathrel{{+}{=}} z_{h_p(\tau')} \cdot v \cdot sgn(\tau,\partial[\sigma]) $
+    \EndFor 
+\EndFor
+\Return y 
+\EndFunction
+\end{algorithmic}
+\end{algorithm}
 
 
 % ----- Junk ------
