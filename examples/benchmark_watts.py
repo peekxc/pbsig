@@ -1,21 +1,21 @@
 
 from typing import * 
-import numpy as np 
 from numpy.typing import ArrayLike
-from scipy.sparse.linalg import LinearOperator
+
+import numpy as np 
 import networkx as nx 
 import primme
+
 from scipy.sparse.linalg import * 
 from scipy.sparse import * 
+from scipy.sparse.csgraph import laplacian
 from pbsig.persistence import boundary_matrix
 from pbsig.linalg import lanczos
 from pbsig.simplicial import cycle_graph
 from pbsig.pht import rotate_S1, uniform_S1
-from pbsig.datasets import mpeg7
 from pbsig.pht import pht_preprocess_pc
 from pbsig.simplicial import *
 from pbsig.linalg import eigsh_family
-from scipy.sparse.csgraph import laplacian
 
 ## Data set 
 G = nx.connected_watts_strogatz_graph(n=100, k=5, p=0.10)
@@ -53,10 +53,10 @@ from pbsig.linalg import eigsh_family
 opts = primme_opts | { 'ncv' : 20 }
 res_lanczos = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_Arnoldi"))))              # non-locking + no inner method
 res_jd = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_JDQMR"))))                     # non-locking + "robust shifts" preconditioner via QMR
-results_gd = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_GD_Olsen_plusK"))))        # non-locking + projector for correction equation; uses locally optimal restarting
+res_gd = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_GD_Olsen_plusK"))))        # non-locking + projector for correction equation; uses locally optimal restarting
 # results_sd = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_STEEPEST_DESCENT"))))      # locking + projector for correction equation
-results_lobpcg = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_LOBPCG_OrthoBasis_Window")))) # non-locking + locally optimal preconditioned CG 
-results_dyn = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_DYNAMIC"))))  
+res_lobpcg = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_LOBPCG_OrthoBasis_Window")))) # non-locking + locally optimal preconditioned CG 
+res_dyn = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_DYNAMIC"))))  
 
 ## The residual norm plot
 import matplotlib.pyplot as plt
@@ -67,38 +67,23 @@ nec = np.array(res_lanczos[0][1]['hist']['nconv'])
 #rgb = bin_color()
 # plt.plot(mvs, nec)
 
-## Estimating rank quickly 
-sigma = primme.eigsh(L, k=1, which='LM', return_eigenvectors=False).item()
-LS = L - sigma*eye(L.shape[0])
-
-primme.eigsh(L, k=1, which='LM', tol=1e-6, return_eigenvectors=False, method="PRIMME_Arnoldi", return_stats=True)
-primme.eigsh(L, k=1, which='SM', tol=1e-6, return_eigenvectors=False, method="PRIMME_Arnoldi", return_stats=True).item()
-primme.eigsh(LS, k=1, which='LM', tol=1e-6, return_eigenvectors=False, method="PRIMME_Arnoldi", return_stats=True).item()
-from scipy.sparse.linalg import eigsh
-eigsh(L, k=1, which='SM', tol=1e-6, return_eigenvectors=False)
-
-primme.eigsh(LS, k=1, which='LM', return_eigenvectors=False).item()
-
-
-eigsh(L, k=1, which='LM', sigma=0, return_eigenvectors=False, maxiter=0)
-
 ## Estimate convergence rate
 # https://www.math-cs.gordon.edu/courses/ma342/handouts/rate.pdf
-from pbsig.utility import window
-from pbsig.utility import pairwise
-seq_counts = np.cumsum(np.append([-1], np.bincount(nec)))+1
-alpha, ns = 0, 0
-for i,j in pairwise(seq_counts):
-  if abs(j-i) > 4:
-    #break
-    rn = np.array(ren[i:j])
-    plt.plot(np.array(ren[i:j]))
-    plt.yscale("log")
-    alpha += np.mean([np.log(abs((x4-x3)/(x3-x2)))/np.log(abs((x3-x2)/(x2-x1))) for x1,x2,x3,x4 in window(rn, 4)])
-    ns += 1
+# from pbsig.utility import window
+# from pbsig.utility import pairwise
+# seq_counts = np.cumsum(np.append([-1], np.bincount(nec)))+1
+# alpha, ns = 0, 0
+# for i,j in pairwise(seq_counts):
+#   if abs(j-i) > 4:
+#     #break
+#     rn = np.array(ren[i:j])
+#     plt.plot(np.array(ren[i:j]))
+#     plt.yscale("log")
+#     alpha += np.mean([np.log(abs((x4-x3)/(x3-x2)))/np.log(abs((x3-x2)/(x2-x1))) for x1,x2,x3,x4 in window(rn, 4)])
+#     ns += 1
 
-## Mean convergence rate    
-alpha/ns
+# ## Mean convergence rate    
+# alpha/ns
 
 
 ## Alternate basis sizes
@@ -146,7 +131,7 @@ for p in [0.05, 0.10, 0.25, 0.50, 0.75, 1.0]:
 axs[1].legend(loc='upper right', prop={'size': 8})
 axs[1].set_xlabel('Maximum basis size')
 axs[1].set_ylabel('Matvecs/n')
-axs[1].set_title("Percent of Spectra computed", fontsize=10)
+axs[1].set_title("Memory Useage", fontsize=10)
 
 ## Time plot 
 mvs_per_ew = lambda x: np.cumsum(np.bincount(x[0][1]['hist']['nconv']))/L.shape[0]
@@ -162,6 +147,7 @@ axs[2].set_xlabel('Num. converged eigenvalues')
 axs[2].set_title("Method Performance @ p=50%", fontsize=10)
 axs[2].set_ylim(0.0, 4.0)
 
+
 axs[3].plot(np.array(HIST)/L.shape[0], label="Cold start")
 axs[3].plot(np.array(HIST_V0)/L.shape[0], label="Warm start")
 axs[3].set_title("Full spectrum Directional Transform", fontsize=10)
@@ -169,6 +155,19 @@ axs[3].set_ylabel('Matvecs/n')
 axs[3].set_xlabel('Index of consecutive Laplacian')
 axs[3].legend(loc='upper right', prop={'size': 8})
 axs[3].set_ylim(np.floor(min(min(np.array(HIST)/L.shape[0]), min(np.array(HIST_V0)/L.shape[0])))-1, np.ceil(max(np.array(HIST)/L.shape[0])*1.2))
+
+
+L_dt = Laplacian_DT_2D(X, K, 132)
+HIST_V0, HIST = [], []
+v0 = None
+eigsh_opts['p'] = 1.0
+for L in L_dt:
+  res_jd_local_fresh = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_JDQMR", return_eigenvectors=False, v0=None, return_history=False))))
+  res_jd_local_v0 = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_JDQMR", return_eigenvectors=True, v0=v0, return_history=False))))
+  v0 = res_jd_local_v0[0][1]
+  HIST_V0.append(res_jd_local_v0[0][2]['numMatvecs'])
+  HIST.append(res_jd_local_fresh[0][1]['numMatvecs'])
+
 
 
 L_dt = Laplacian_DT_2D(X, K, 132)
@@ -207,16 +206,7 @@ plt.title("Behavior of eps on Laplacian eigenvalues")
 plt.xlabel("Eigenvalue index")
 plt.ylabel("Contribution to Rank relaxation")
 
-L_dt = Laplacian_DT_2D(X, K, 132)
-HIST_V0, HIST = [], []
-v0 = None
-eigsh_opts['p'] = 1.0
-for L in L_dt:
-  res_jd_local_fresh = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_JDQMR", return_eigenvectors=False, v0=None, return_history=False))))
-  res_jd_local_v0 = list(eigsh_family([L], **eigsh_opts, **(opts | dict(method="PRIMME_JDQMR", return_eigenvectors=True, v0=v0, return_history=False))))
-  v0 = res_jd_local_v0[0][1]
-  HIST_V0.append(res_jd_local_v0[0][2]['numMatvecs'])
-  HIST.append(res_jd_local_fresh[0][1]['numMatvecs'])
+
   
 
 

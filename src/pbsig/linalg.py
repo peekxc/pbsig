@@ -174,5 +174,26 @@ def as_linear_operator(A, stats=True):
     def _matmat(self, X):
       self.n_calls += X.shape[1]
       return self.A @ X
-    lo = LO(L)
-    w = eigsh(lo)
+  lo = LO(L)
+  return lo
+
+from pbsig.simplicial import SimplicialComplex
+def up_laplacian(K: SimplicialComplex, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+    """
+    Returns the combinatorial p-th up-laplacian 
+    Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+    """
+    pass 
+    # r, rz = np.zeros(ne), np.zeros(nv)
+    # def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
+    #   r.fill(0) # r = Ax ~ O(E)
+    #   rz.fill(0)# rz = Ar ~ O(V)
+    #   for cc, (i,j) in enumerate(E):
+    #     ew = max(fv[i], fv[j])
+    #     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
+    #   for cc, (i,j) in enumerate(E):
+    #     ew = max(fv[i], fv[j])
+    #     rz[i] += ew*r[cc] #?? 
+    #     rz[j] -= ew*r[cc]
+    #   return(rz)
+    

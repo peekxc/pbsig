@@ -63,8 +63,8 @@ sI = sigma*eye(L.shape[0])
 ew, stats = primme.eigsh(L-sI, k = 1, ncv=3, which='LM', tol=1e-6, v0=Q, method="PRIMME_Arnoldi", return_stats=True, return_eigenvectors=False)
 stats
 
-#ew, stats = primme.eigsh(L-sI, k = 1, ncv=3, which='LM', tol=1e-6, v0=Q, method="PRIMME_JDQMR", return_stats=True, return_eigenvectors=False)
-ew, stats = primme.eigsh(L-sI, k = 1, ncv=10, which='LM', tol=1e-6, v0=Q, method="PRIMME_DYNAMIC", return_stats=True, return_eigenvectors=False)
+ew, stats = primme.eigsh(L-sI, k = 1, ncv=10, which='LM', tol=1e-6, v0=Q, method="PRIMME_JDQMR", return_stats=True, return_eigenvectors=False)
+# ew, stats = primme.eigsh(L-sI, k = 1, ncv=10, which='LM', tol=1e-6, v0=Q, method="PRIMME_DYNAMIC", return_stats=True, return_eigenvectors=False)
 stats
 
 # https://docs.scipy.org/doc/scipy/tutorial/arpack.html

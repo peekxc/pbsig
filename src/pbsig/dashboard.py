@@ -56,7 +56,9 @@ def update_guide_lines(gr, rx, ry, rw, rh, theta):
 
 from bokeh.events import DoubleTap, Tap, MouseEnter, ButtonClick, SelectionGeometry, Press
 def box_changed_cb(attr: str, old: List[int], new: List[int]) -> None:
-  log_msgs.append(f"boxes modified: {str(old)} -> {str(new)} selected")
+  #log_msgs.append(f"boxes modified: {str(old)} -> {str(new)} selected")
+  # log_msgs.append("Saved rectangles: " + str(R))
+  pass
   # new
   # if gr is not None: 
   #   update_guide_lines(gr, rx, ry, rw, rh, theta)
@@ -194,7 +196,7 @@ directions = Div(text="<b> Control Panel </b>")
 
 ## Add data picking options
 DATA_OPTIONS = [str(k) for k in D.keys()]
-pc_data_source = ColumnDataSource({ 'data_keys' : DATA_OPTIONS[0:3] })
+pc_data_source = ColumnDataSource({ 'data_keys' : DATA_OPTIONS[:6] })
 # def choose_dataset(attr: str, old: List, new: List):
 #   print(old)
 #   print(new)
@@ -203,19 +205,21 @@ pc_data_source = ColumnDataSource({ 'data_keys' : DATA_OPTIONS[0:3] })
 # data_choice.on_change('value', choose_dataset)
 # control_panel.children.append(data_choice)
 # control_panel.children.append(Div(text="<strong>Local options</strong> </hr>")) # style={ 'margin-bottom': '1rem','margin-bottom':'1rem','border' : '1px', 'border-top': '1px solid rgba(0, 0, 0, 0.1)' }
+CONTEXT_PLOTS = {}
 
 ## Get the directional-transform plots
 dt_figs, control_tabs = Tabs(tabs=[]), Tabs(tabs=[])
 for name in pc_data_source.data['data_keys']:
-  # global ds_name, X, E, sp, hp, cp
+  # global ds_name, X, E, sp, hp, cp, lr, vr, vline, br
   ds_name = name
   X = D[eval(ds_name)]
   E = np.array(list(cycle_window(range(X.shape[0]))))
   sp,hp,cp = dt_plots(X, ds_name, E=E)
+  CONTEXT_PLOTS[ds_name] = [sp,hp,cp] # experimental
   lr = cp.select(tags=[ds_name+".unit_vector"])
   vr = cp.select(tags=[ds_name+".v_renderer"])
   vline = sp.select(tags=[ds_name+".vline"])
-  br = hp.select(tags=[ds_name+".boxes"])
+  br = hp.select(tags=[ds_name+".boxes"]) # box renderer 
 
   ## Compute initial diagram
   dgm = ph0_lower_star(X @ np.array([1, 0]), E, max_death="max")
@@ -487,7 +491,7 @@ def update_log():
 # control_panel.children.append(log_div)
 
 dt_dist = np.zeros(shape=(20,20))
-dp = figure(width=w, height=h)
+dp = figure(width=w, height=h) # directional plot
 dp.x_range.range_padding = dp.y_range.range_padding = 0
 dp.image(image=[dt_dist], x=0, y=0, dw=10, dh=10, palette='Viridis256', level="image")
 dp.visible = False
@@ -496,6 +500,9 @@ dp.visible = False
 ## Add (+) operator for boxes + weighting options 
 ## Keep option to display individual box multiplicities?
 weight_select = Select(value="Uniform", options=["Uniform", "Lifetime"], width=int(w/3))
+
+# Button to save or load all boxes
+sl_all = CheckboxGroup(labels=["Apply to all"], active=[1])
 
 srec_button = Button(label="Save boxes", button_type="default", width=int(w/4))
 def save_recs_cb():
@@ -507,17 +514,37 @@ def save_recs_cb():
     R.append([a,b,c,d])
   R = np.array(R)
   import copy 
-  ALL_RECTANGLES = copy.deepcopy(dict(br.data_source.data.items()))
-  log_msgs.append(str(R))
+  ALL_RECTANGLES = copy.deepcopy(dict(br.data_source.data.items())) ## save all rectangles to global 
+  log_msgs.append("Saved rectangles: " + str(R))
+  print(hp)
 srec_button.on_click(save_recs_cb)
 
 lrec_button = Button(label="Load boxes", button_type="default", width=int(w/5))
 def load_recs_cb():
-  br = hp.select(tags=[ds_name+".boxes"])
-  # print("rectangles: " + str(ALL_RECTANGLES))
-  # print("current data: " + str(br.data_source.data))
-  if isinstance(ALL_RECTANGLES, dict):
-    br.data_source.data = ALL_RECTANGLES
+  # global ds_name, hp, br
+  if sl_all.active[0] == 0: # cuz 0 is active  
+    print("Loading boxes")
+    print("Contxt plot keys: "+ str(list(CONTEXT_PLOTS.keys())))
+    print(pc_data_source.data)
+    for name in pc_data_source.data['data_keys']:
+      print('here')
+      sp_local,hp_local,cp_local = CONTEXT_PLOTS[name]
+      print(hp_local)
+      br_local = hp_local.select(tags=[name+".boxes"])
+      if isinstance(ALL_RECTANGLES, dict):
+        br_local.data_source.data = ALL_RECTANGLES
+  else:
+    # global ds_name, X, E, sp, hp, cp, lr, vr, vline, br
+    ## bp,hp already loaded
+    print(ds_name)
+    print(hp)
+    br_ = hp.select(tags=[ds_name+".boxes"])
+    print(br_)
+    # print("rectangles: " + str(ALL_RECTANGLES))
+    # print("current data: " + str(br.data_source.data))
+    if isinstance(ALL_RECTANGLES, dict):
+      print(ALL_RECTANGLES)
+      br_.data_source.data = ALL_RECTANGLES
   # br.update()
   # lb = min(br.data_source.data['x'])
   # sp.x_range.update(start=lb-0.1, end=ub+0.1, bounds=(lb-0.1, ub+0.1))
@@ -531,7 +558,7 @@ dist_button = Button(label="Load boxes", button_type="default", width=int(w/4))
 # for 
 
 ## Aligned plot 
-ap = figure(width=w, height=h)
+ap = figure(width=w, height=h) # Aligned plot 
 data_choice = MultiChoice(value=[], options=DATA_OPTIONS, placeholder="Data set(s) to compare")
 def choose_comparison_cb(attr: str, old: List, new: List):
   from pbsig.signal import phase_align
@@ -564,26 +591,44 @@ def choose_comparison_cb(attr: str, old: List, new: List):
 data_choice.on_change('value', choose_comparison_cb)
 
 
-vy_tab = Panel(child=row(dgms_button, Div(text=" Num. Directions:  "), nd_inp), title="Vineyards")
-dt_tab = Panel(child=row(dt_button, Div(text="Transform: "), dt_select, w_inp), title="DT")
-vis_tab = Panel(child=row(toggle_box_circles, Div(text="Point size: "), size_inp), title="UI")
-controls_tab = Panel(child=row(weight_select, srec_button, lrec_button), title="Controls")
-cmp_tab = Panel(child=row(data_choice), title="Compare")
+# vy_tab = Panel(child=row(dgms_button, Div(text=" Num. Directions:  "), nd_inp), title="Vineyards")
+# dt_tab = Panel(child=row(dt_button, Div(text="Transform: "), dt_select, w_inp), title="DT"
+controls_tab = Panel(title="Controls", child=
+  column(
+    row(weight_select, srec_button, lrec_button, sl_all), 
+    row(dgms_button, Div(text=" Num. Dir:  "), nd_inp),
+    row(dt_button, Div(text="Transform: "), dt_select, w_inp)
+  )
+)
+vis_tab = Panel(title="UI", child=
+  column(
+    row(toggle_box_circles, Div(text="Point size: "), size_inp), 
+  )
+)
 log_tab = Panel(child=row(log_div, sizing_mode='stretch_width'), title = "Log")
+# cmp_tab = Panel(child=row(data_choice), title="Compare")
+
 
 controls = column(
   Div(text="<b> Control Panel </b>"),
   S1_slider, 
   # row(dgms_button, Div(text=" Num. Directions:  "), nd_inp),
-  Tabs(tabs=[vy_tab, dt_tab, vis_tab, controls_tab, cmp_tab, log_tab]), 
+  Tabs(tabs=[controls_tab, vis_tab, log_tab]), 
   #row(dt_button, Div(text="Transform: "), dt_select, w_inp),
   #row(toggle_box_circles, Div(text="Point size: "), size_inp),
   #row(weight_select, srec_button, lrec_button)
+  width=400
 )
 
 ## Form the final layout
-P = column(
-  row(controls, dt_figs, dp)
+## column(*) := "put the results in a column"
+## row(*) := 
+P = row(
+  column(controls),
+  column(
+    row(dt_figs, dp), 
+    row(ap)
+  )
 )
 
 curdoc().add_periodic_callback(update_log, 200)

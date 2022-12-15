@@ -19,6 +19,10 @@ D = boundary_matrix(F)
 barcodes(D, p )
 F.print()
 
+K_lex = sorted(iter(S), key=lambda s: (len(s), tuple(s), s))
+
+D1, D2 = boundary_matrix(S, p = (1,2))
+
 
 
 

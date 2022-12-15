@@ -1,6 +1,8 @@
 from typing import *
 import numpy as np 
 
+from pbsig.utility import smooth_upstep, smooth_dnstep
+from scipy.sparse import diags
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import structural_rank
 from .persistence import * 
@@ -550,7 +552,8 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable], R: Collection[tuple], p: int = 0, method: str = ["rank", "nuclear"], **kwargs):
+# E: Union[ArrayLike, Iterable],
+def lower_star_multiplicity(F: Iterable[ArrayLike], K: SimplicialComplex, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank", "nuclear"], **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
@@ -561,44 +564,51 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], E: Union[ArrayLike, Iterable
   Specialization/overloads: 
     * Use (-inf,a,a,inf) to calculate the Betti number at index a
     * Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
+
+  Parameters: 
+    F := Iterable whose items represent vertex functions. Each item should be a collection of length 'n'.
+    K := Fixed simplicial complex. 
+    R := Collection of 4-tuples representing rectangles r=(a,b,c,d) in the upper half-plane
+    p := Homology dimension to compute. Must be non-negative. Default to 0. 
+    method := either "exact" or "singular"
+
   """
   from pbsig.persistence import ph0_lower_star
   if p != 0:
     raise NotImplemented("p > 0 hasn't been implemented yet")
   R = np.array(R)
-  U = np.zeros(shape=(len(F), len(R)))
-  if method == ["rank", "nuclear"] or method == "exact":
+  # U = np.zeros(shape=(len(F), len(R)))
+  if method == "exact":
+    mu_r = [0]*len(R)
     for i, f in enumerate(F):
       dgm = ph0_lower_star(f, E, max_death="max") # O(m*a(n) + mlogm) since E is unsorted
-
       for j, (a,b,c,d) in enumerate(R):
         assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
         if len(dgm) > 0:
           born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
           died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
-          U[i,j] = sum(np.logical_and(born_mu, died_mu))
+          mu_r[j] = sum(np.logical_and(born_mu, died_mu))
+      yield mu_r
   else: 
-    assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
-    F = list(iter(F))
-    nv = len(F[0])
-    version = 1
-    for j, (a,b,c,d) in enumerate(R):
-      for i, f in enumerate(F):
-        if version == 1:
-          t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
-          t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
-          t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
-          t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
-          U[i,j] = t1 - t2 - t3 + t4 
-        elif version == 2: 
-          lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
+    # assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
+    pass 
+    # F = list(iter(F))
+    # nv = len(F[0])
+    # version = 1
+    # for j, (a,b,c,d) in enumerate(R):
+    #   for i, f in enumerate(F):
+    #     if version == 1:
+    #       t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
+    #       t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
+    #       t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
+    #       t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
+    #       U[i,j] = t1 - t2 - t3 + t4 
+    #     elif version == 2: 
+    #       lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
+  # return(U)
 
 
-  return(U)
 
-
-from pbsig.utility import smooth_upstep, smooth_dnstep
-from scipy.sparse import diags
 class Laplacian_DT_2D:
   def __init__(self, X: ArrayLike, K, nd: 132):
     self.theta = np.linspace(0, 2*np.pi, nd, endpoint=False)

@@ -40,7 +40,7 @@
 % \titleformat{<command>}[<shape>]{<format>}{<label>}{<sep>}{<before-code>}[<after-code>]
 \usepackage[small]{titlesec}
 %\titlelabel{\thetitle.\;}
-\titleformat{\subsection}[runin]{\normalfont\bfseries}{}{1pt}{}[:]
+%\titleformat{\subsection}[runin]{\normalfont\bfseries}{}{1pt}{}[:]
 
 %\titleformat*{\section}{\large\bfseries}
 %\titleformat*{\subsection}{\normal\bfseries}
@@ -479,7 +479,7 @@ where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \al
 % See (3.3) "Connections between Lanczos iteration and orthogonal polynomials"
 Equation~\eqref{eq:three_term_rec} is a variable-coefficient second-order linear difference equation, and it is a known fact that such equations have unique solutions: if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined. 
 % One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. 
-The sequential process that iteratively builds $T_j$ by exploiting the recurrence from~\eqref{eq:three_term_rec} is called the \emph{Lanczos iteration}. 
+The sequential process that iteratively builds $T_j$ by via the recurrence from~\eqref{eq:three_term_rec} is called the \emph{Lanczos iteration}. 
 Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we have solved the symmetric eigenvalue problem~\eqref{eq:eigen_decomp}: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
@@ -496,7 +496,7 @@ Although this assumption is unrealistic in practical settings, it gives us a gro
 	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\mathcal{M}(n), n\} \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
-In practice, we must use finite-precision arithmetic, which introduces both rounding and cancellation errors into the computation.
+In practice, finite-precision arithmetic introduces rounding and cancellation errors into the computation.
 These errors manifest as loss of orthogonality between the Lanczos vectors, which not only affects convergence towards an in invariant subspace, but muddles the termination condition. 
 Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
 Because these extensions are varied, non-trivial, and multifaceted, we defer their discussion to section~\ref{subsec:rounding}. 
@@ -534,14 +534,14 @@ The \emph{graph Laplacian}  $L = D - A = \partial_p \partial_p^T$ is a heavily s
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
 where we use the notation $i \sim j$ to indicate vertices $v_i,v_j \in V$ are path-connected in $G$. 
+Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
 The generalization of the graph laplacian is $p$-th \emph{combinatorial Laplacian} $\Delta_p$ given by: 
 \begin{equation}
 	\Delta_p(K) = 
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
-Note when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$. Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
-As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether this procedure generalizes for $p > 0$.
+Note when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$. As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
 In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
 To make this clear, we require more notation. 
 
@@ -717,7 +717,7 @@ We now turn to our main result.
 % Due to its connection as the discrete analogue of the Laplace differential operator, the graph Laplacian and its spectrum have been studied in many areas of mathematical research as they often have particular geometric interpretations in physical chemistry, and financial mathematics~\cite{}. Since the investigation of the question ``can you hear the shape of a drum?'' by~\cite{}, the question of what geometric properties of a manifold are determined by its Laplace operator has been of pertinent interest to practitioners and theoreticians alike. 
 
 % --- Generic Rank approximation via eigenvalues --- 
-\subsection{Continuous PBN Relaxation}
+\section{Continuous PBN Relaxation}
 %In the spirit of~\cite{chen1996class}, 
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
