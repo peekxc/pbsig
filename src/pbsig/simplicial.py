@@ -10,6 +10,7 @@ from networkx import Graph
 from scipy.sparse import diags, csc_matrix, issparse
 from scipy.linalg import issymmetric
 from pbsig.utility import lexsort_rows, pairwise
+from itertools import chain 
 
 
 def edge_iterator(A):
@@ -20,13 +21,15 @@ def edge_iterator(A):
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
-  E = edges_from_triangles(dt.simplices, X.shape[0])
+  # E = edges_from_triangles(dt.simplices, X.shape[0])
   T = dt.simplices
-  K = {
-    'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
-    'edges' : lexsort_rows(E),
-    'triangles' : lexsort_rows(T)
-  }
+  V = np.fromiter(range(X.shape[0]), dtype=np.int32)
+  K = SimplicialComplex(chain(V, T))
+  # K = {
+  #   'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
+  #   'edges' : lexsort_rows(E),
+  #   'triangles' : lexsort_rows(T)
+  # }
   return(K)
 
 def cycle_graph(X: ArrayLike):
@@ -73,7 +76,7 @@ def laplacian_DA(L):
   A = L - D
   return D, A
 
-
+## TODO: remove/replace with up_laplacian interface 
 def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = False):
   if isinstance(G, Graph):
     A = nx.adjacency_matrix(G)

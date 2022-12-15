@@ -59,6 +59,7 @@ inline sz_t rank_lex_k(InputIter s, const size_t k, const size_t n, const sz_t N
   return(combinadic);
 }
 
+// Somehow this converts a vertex-function 'W' and a threshold 'diam' into a weighted D1 boundary matrix
 py::tuple lower_star_boundary_1(const py::array_t< double >& W, const double diam){
   auto w = W.unchecked< 1 >();
   vector< int > col_indices;

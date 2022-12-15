@@ -178,10 +178,20 @@ def as_linear_operator(A, stats=True):
   return lo
 
 from pbsig.simplicial import SimplicialComplex
+## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
+
 def up_laplacian(K: SimplicialComplex, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
-    Returns the combinatorial p-th up-laplacian 
+    Returns the weighted combinatorial p-th up-laplacian.
     Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+
+    If weights 
+
+    *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting 
+    matrix-free matvec product w/ weights. 
+
+    SciPy accepts weights via K/in the sparse matrix input. 
+
     """
     pass 
     # r, rz = np.zeros(ne), np.zeros(nv)
