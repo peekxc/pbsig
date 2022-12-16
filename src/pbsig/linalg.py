@@ -5,6 +5,7 @@ from pbsig.simplicial import edge_iterator
 import primme
 from typing import * 
 from numpy.typing import ArrayLike
+from numbers import *
 
 def testing_l():
   lanczos.lower_star_lanczos()
@@ -180,46 +181,87 @@ def as_linear_operator(A, stats=True):
 from pbsig.simplicial import SimplicialComplex
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
 
+# class UpLaplacian(LinearOperator):
+#   def __init__(self):
+
+#   def __matvec__(self):
+# from types import MappingProxyType
+
+# No F needed because faces are assumed to be vertices in sorted order, V = [n]
+def _up_laplacian_matvec_1(S: Collection['Simplex'],  w0: ArrayLike, w1: ArrayLike):
+  # .shape and .matvec and .dtype attributes
+  n,m = len(F), len(S)
+  v = np.zeros(n) # note the O(n) memory
+  def _matvec(x: ArrayLike): 
+    nonlocal v
+    v.fill(0)
+    for cc, (i,j) in enumerate(S):
+      v[i] += w1[cc]**2
+      v[j] += w1[cc]**2
+    v = w0**2 * v * x
+    for cc, (i,j) in enumerate(S):
+      v[i] -= x[j]*w0[i]*w0[j]*w1[cc]**2
+      v[j] -= x[i]*w0[i]*w0[j]*w1[cc]**2
+    return v
+  return _matvec
+
+  def _up_laplacian_matvec_p(S: Iterable['Simplex'], F: Sequence['Simplex'],  w0: ArrayLike, w1: ArrayLike, p: int, sgn_pattern = "default"):
+    sgn_pattern = list(islice(cycle([1,-1]), p+2)) if sgn_pattern == "default" else sgn_pattern
+    lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(sgn_pattern,2)])
+    n = len(F) # F must have an index method, so it must be at least a Sequence
+    assert n == len(w0), "Invalid w0"
+    if hasattr(S, '__len__'): assert len(S) == len(w1), "Invalid w1"
+    #n,m = len(F), len(S)
+    #assert len(w0) == n and len(w1) == m, "Invalid weight array"
+    v = np.zeros(n) # workspace
+    def _matvec(x: ArrayLike):
+      nonlocal v
+      v.fill(0)
+      for t_ind, t in enumerate(S):
+        for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
+          ii, jj = F.index(e1), F.index(e2)
+          c = w0[ii] * w0[jj] * w1[t_ind]**2
+          v[ii] += x[jj] * c * s_ij
+          v[jj] += x[ii] * c * s_ij
+      for t_ind, t in enumerate(S):
+        for e in t.boundary():
+          ii = F.index(e)
+          v[ii] += x[ii] * w1[t_ind]**2 * w0[ii]**2
+      return v
+    return _matvec
+
+
 def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
-    Returns the weighted combinatorial p-th up-laplacian.
-    Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+    Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex K. 
 
-    If weights 
+    Given D = boundary_matrix(K, p), the weighted p-th up-laplacian L is defined as: 
+
+    Lp := W0 @ D @ W1 @ D^T @ W0 
+    
+    Where W0, W1 = diag(w0), diag(w1) are diagonal matrices weighting the p and p+1 simplices, respectively.
+
+    Note p = 0 (default), the results represents the graph laplacians operator. 
 
     *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting 
     matrix-free matvec product w/ weights. 
 
     SciPy accepts weights by accepting potentially sparse adjacency matrix input. 
 
+    Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
     """
-    pass
+    assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     ns = K.dim() 
     w0 = np.repeat(1, ns[p]) if w0 is None else w0
     w1 = np.repeat(1, ns[p+1]) if w1 is None else w1
+    assert len(w0) == ns[p] and len(w1) == ns[p+1], "Invalid weight arrays given."
     if form == 'array':
       B = boundary_matrix(K, p = p+1)
       L = (diags(w0) @ B @ diags(w1) @ B.T @ diags(w0)).tocoo()
       return L
-    elif form == 'lo':
-      if p == 0: # no hash is needed if vertices are ordered 0..n-1
-        # V = sorted(K.faces(p=0), key=lambda s: tuple(s)) # how to imbue the order into w0,w1
-        # E = sorted(K.faces(p=1), key=lambda s: tuple(s))
-        #V, E = K.faces(0), K.faces(1) # nah we lose V[i] = i
-         # .shape and .matvec attributes
-        r, rz = np.zeros(ns[1]), np.zeros(ns[0])
-        def _mat_vec(x: ArrayLike): # x ~ O(V)
-          r.fill(0) # r = Ax ~ O(E)
-          rz.fill(0)# rz = Ar ~ O(V)
-          for cc, (i,j) in enumerate(K.faces(1)):
-            r[cc] = w1[cc]*w0[i]*x[i] - w1[cc]*w0[j]*x[j]
-          for cc, (i,j) in enumerate(K.faces(1)):
-            rz[i] += w1[cc]*r[cc] #?? 
-            rz[j] -= w1[cc]*r[cc]
-          return rz
-
-
-    # A = abs(L) - diags(L.diagonal())
-  
-
-    #   return(rz)
+    elif form == 'lo' or form == 'function':
+      p_faces = list(K.faces(1)) ## need to make a view 
+      p_simplices = list(K.faces(2)) ## need to make a view 
+      f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
+      lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f,dtype=np.dtype(float))
+      return lo

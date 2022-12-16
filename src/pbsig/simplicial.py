@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import numpy as np 
 from numbers import Number
 from typing import *
@@ -12,6 +14,22 @@ from scipy.linalg import issymmetric
 from pbsig.utility import lexsort_rows, pairwise
 from itertools import chain 
 
+from abc import abstractmethod
+from typing import MutableSequence, Protocol, TypeVar
+
+@runtime_checkable
+class Comparable(Protocol):
+    """Protocol for annotating comparable types."""
+    @abstractmethod
+    def __lt__(self, other) -> bool:
+        pass
+
+@runtime_checkable
+class SetLike(Protocol):
+    """Protocol for annotating set-like types."""
+    @abstractmethod
+    def __lt__(self: CT, other: CT) -> bool:
+        pass
 
 def edge_iterator(A):
   assert issparse(A), "Must be a sparse matrix"
@@ -113,11 +131,19 @@ def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = Fal
 
 
 @runtime_checkable
-class SimplexLike(Collection, Protocol):
+class SimplexLike(Set, Hashable, Protocol):
   ''' 
-  An object is *simplex-like* if it (minimally) implements a boundary operator and has a dimension  
+  An object is *simplex-like* if it is a Hashable Set
 
-  Inherited Abstract Methods: __contains__, __iter__, __len__
+  By definition, this implies a simplex is sized, iterable, and acts as a container (supports vertex containment queries)
+
+  Moreover, a simplex is also immutable and Set-like: 
+  
+  a boundary operator and has a dimension  
+
+  Inherited Abstract Methods: __hash__, __contains__, __iter__, __len__
+
+  
   '''
   def boundary(self) -> Iterable['SimplexLike']: 
     raise NotImplementedError 
@@ -174,7 +200,17 @@ from functools import total_ordering
 import numpy as np
 
 from numbers import Integral
-# @total_ordering
+
+## The Python data model doesn't exactly allow for immutable, hashable, ordered set-like objects
+## https://stackoverflow.com/questions/66874287/python-data-model-type-protocols-magic-methods
+## A few typles come close but have limitations: 
+## - bytes are comparable and immutable, but values are limited to [0, 255], and not set-like
+## - array & np.array are homogeous collections, but they are mutable not set-like
+## - tuples are comparable and immutable, but they are not set-like
+## - frozensets are comparable, immutable, have unique entries, and are set-like, but are *unordered*. Order affects the simplices orientation.   
+## We conclude there is no base Python representation implementation. 
+## SortedSet is close, however it is mutable and not hashable. 
+## So we make our own Simplex representation!
 class Simplex(Set, Hashable):
   '''
   Implements: 
@@ -245,11 +281,12 @@ class Simplex(Set, Hashable):
     return Simplex(set(self.vertices) - set(Simplex(other).vertices))
   def __add__(self, other) -> 'Simplex':
     return Simplex(set(self.vertices) | set(Simplex(other).vertices))
-  def __hash__(self):
+  def __hash__(self) -> int:
     # Because Python has no idea about mutability of an object.
     return hash(self.vertices)
     
 from collections.abc import Set, Hashable
+
 
 # https://stackoverflow.com/questions/798442/what-is-the-correct-or-best-way-to-subclass-the-python-set-class-adding-a-new
 class SimplicialComplex(MutableSet):
@@ -369,6 +406,10 @@ from typing import Any
 
 # The OrderedDict was designed to be good at reordering operations. Space efficiency, iteration speed, and the performance of update operations were secondary.
 # A mapping object maps hashable values to arbitrary objects
+
+# MutableMapping abc 
+# Requires: __getitem__, __delitem__, __setitem__ , __iter__, and __len__ a
+# Inferred: pop, clear, update, and setdefault
 # https://treyhunner.com/2019/04/why-you-shouldnt-inherit-from-list-and-dict-in-python/
 class MutableFiltration(MutableMapping):
   """
@@ -661,3 +702,59 @@ class MutableFiltration(MutableMapping):
 #   as_filtration(simplices)
 #   S = [np.fromiter(s, dtype=int) for s in simplices]
 #   return(0)
+
+
+# See: https://stackoverflow.com/questions/70381559/ensure-that-an-argument-can-be-iterated-twice
+from scipy.sparse import coo_array
+def _boundary(S: Iterable[SimplexLike], F: Sequence[SimplexLike]):
+  list(set(chain.from_iterable([combinations(s, len(s)-1) for s in S])))
+
+## TODO: replace with (S,F) pair where S := iterable of cofaces, F := Sequence of faces
+## If S 
+# x is iter(x) <=> x is not repeatable
+def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tuple]], p: Optional[Union[int, tuple]] = None):
+  """
+  Returns the ordered p-th boundary matrix of a simplicial complex 'K'
+
+  Return: 
+    D := sparse matrix representing either the full or p-th boundary matrix (as List-of-Lists format)
+  """
+  from collections.abc import Sized
+  if isinstance(K, MutableFiltration):
+    assert p is None
+    I,J,X = [],[],[] # row, col, data 
+    simplices = list(K.values())
+    for (j,s) in enumerate(simplices):
+      if s.dimension() > 0:
+        I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+        J.extend(repeat(j, s.dimension()+1))
+        X.extend(islice(cycle([1,-1]), s.dimension()+1))
+    D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
+    return D
+  elif isinstance(K, SimplicialComplex):
+    if p is None:
+      I,J,X = [],[],[] # row, col, data 
+      simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
+      for (j,s) in enumerate(simplices):
+        if s.dimension() > 0:
+          I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+          J.extend(repeat(j, s.dimension()+1))
+          X.extend(islice(cycle([1,-1]), s.dimension()+1))
+      D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
+      return D
+    elif isinstance(p, Integral):
+      K_lex = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
+      p_simplices = list(filter(lambda s: s.dimension() == p, K_lex))
+      p_faces = list(filter(lambda s: s.dimension() == p - 1, K_lex))
+      I,J,X = [],[],[] # row, col, data 
+      for (j,s) in enumerate(p_simplices):
+        if s.dimension() > 0:
+          I.extend([p_faces.index(f) for f in s.faces(s.dimension()-1)])
+          J.extend(repeat(j, s.dimension()+1))
+          X.extend(islice(cycle([1,-1]), s.dimension()+1))
+      D = coo_array((X, (I,J)), shape=(len(p_faces), len(p_simplices))).tolil(copy=False)
+      return D
+    elif isinstance(p, tuple):
+      return (boundary_matrix(K, pi) for pi in p)
+    else: 
+      raise ValueError("Invalid input")

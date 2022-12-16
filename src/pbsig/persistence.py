@@ -73,57 +73,57 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
   #   D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
-from scipy.sparse import coo_array
-def boundary_matrix(K: Union[List, ArrayLike], p: Optional[Union[int, tuple]] = None):
-  """
-  Returns the ordered p-th boundary matrix of 'K'
-  """
-  from collections.abc import Sized
-  if isinstance(K, MutableFiltration):
-    assert p is None
-    # K.validate() ## needed to ensure faces exist
-    I,J,X = [],[],[] # row, col, data 
-    simplices = list(K.values(expand=True))
-    for (j,s) in enumerate(simplices):
-      if s.dimension() > 0:
-        I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-        J.extend(repeat(j, s.dimension()+1))
-        X.extend(islice(cycle([1,-1]), s.dimension()+1))
-    D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-    return D
-  elif isinstance(K, SimplicialComplex):
-    if p is None:
-      I,J,X = [],[],[] # row, col, data 
-      simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
-      for (j,s) in enumerate(simplices):
-        if s.dimension() > 0:
-          I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-          J.extend(repeat(j, s.dimension()+1))
-          X.extend(islice(cycle([1,-1]), s.dimension()+1))
-      D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-      return D
-    elif isinstance(p, Integral):
-      K_lex = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
-      p_simplices = list(filter(lambda s: s.dimension() == p, K_lex))
-      p_faces = list(filter(lambda s: s.dimension() == p - 1, K_lex))
-      I,J,X = [],[],[] # row, col, data 
-      for (j,s) in enumerate(p_simplices):
-        if s.dimension() > 0:
-          I.extend([p_faces.index(f) for f in s.faces(s.dimension()-1)])
-          J.extend(repeat(j, s.dimension()+1))
-          X.extend(islice(cycle([1,-1]), s.dimension()+1))
-      D = coo_array((X, (I,J)), shape=(len(p_faces), len(p_simplices))).tolil(copy=False)
-      return D
-    elif isinstance(p, tuple):
-      return (boundary_matrix(K, pi) for pi in p)
-    else: 
-      raise ValueError("Invalid input")
-  elif isinstance(p, Iterable):
-    if f is None: 
-      f = [None]*len(p)
-    return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
-  else:
-    print("why is this portion called? ")
+# from scipy.sparse import coo_array
+# def boundary_matrix(K: Union[List, ArrayLike], p: Optional[Union[int, tuple]] = None):
+#   """
+#   Returns the ordered p-th boundary matrix of 'K'
+#   """
+#   from collections.abc import Sized
+#   if isinstance(K, MutableFiltration):
+#     assert p is None
+#     # K.validate() ## needed to ensure faces exist
+#     I,J,X = [],[],[] # row, col, data 
+#     simplices = list(K.values(expand=True))
+#     for (j,s) in enumerate(simplices):
+#       if s.dimension() > 0:
+#         I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+#         J.extend(repeat(j, s.dimension()+1))
+#         X.extend(islice(cycle([1,-1]), s.dimension()+1))
+#     D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
+#     return D
+#   elif isinstance(K, SimplicialComplex):
+#     if p is None:
+#       I,J,X = [],[],[] # row, col, data 
+#       simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
+#       for (j,s) in enumerate(simplices):
+#         if s.dimension() > 0:
+#           I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
+#           J.extend(repeat(j, s.dimension()+1))
+#           X.extend(islice(cycle([1,-1]), s.dimension()+1))
+#       D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
+#       return D
+#     elif isinstance(p, Integral):
+#       K_lex = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
+#       p_simplices = list(filter(lambda s: s.dimension() == p, K_lex))
+#       p_faces = list(filter(lambda s: s.dimension() == p - 1, K_lex))
+#       I,J,X = [],[],[] # row, col, data 
+#       for (j,s) in enumerate(p_simplices):
+#         if s.dimension() > 0:
+#           I.extend([p_faces.index(f) for f in s.faces(s.dimension()-1)])
+#           J.extend(repeat(j, s.dimension()+1))
+#           X.extend(islice(cycle([1,-1]), s.dimension()+1))
+#       D = coo_array((X, (I,J)), shape=(len(p_faces), len(p_simplices))).tolil(copy=False)
+#       return D
+#     elif isinstance(p, tuple):
+#       return (boundary_matrix(K, pi) for pi in p)
+#     else: 
+#       raise ValueError("Invalid input")
+  # elif isinstance(p, Iterable):
+  #   if f is None: 
+  #     f = [None]*len(p)
+  #   return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
+  # else:
+  #   print("why is this portion called? ")
     # if p == 0:
     #   nv = len(K['vertices'])
     #   D = csc_matrix((0, nv), dtype=np.float64).tolil()

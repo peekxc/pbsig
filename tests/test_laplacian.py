@@ -63,12 +63,62 @@ assert max(abs((diags(L2.diagonal()) @ x) - z*x)) < 1e-13
 
 x = np.random.uniform(size=ns[1])
 y = np.zeros(ns[1])
+del_sgn_pattern = [1,-1,1]
+lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(del_sgn_pattern,2)])
 for t_ind, t in enumerate(K.faces(p=2)):
-  for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), [1,-1,1]):
+  for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
     ii, jj = p_faces.index(e1), p_faces.index(e2)
     c = w0[ii] * w0[jj] * w1[t_ind]**2
-    y[ii] += x[jj] * s_ij * c
-    y[jj] += x[ii] * s_ij * c
+    y[ii] += x[jj] * c * s_ij
+    y[jj] += x[ii] * c * s_ij
+    if ii == 0:
+      print(f"ii: xi={x[ii]}, xj={x[jj]}, L[i,j]={c}, s_ij={s_ij}")
+    if jj == 0:
+      print("jj:" + str(x[jj] * c))
+
+#assert max(abs((abs(L2) @ x) - (y + z*x))) <= 1e-13, "Failed signless comparison"
+assert max(abs((L2 @ x) - (y + x*z))) <= 1e-13, "Failed matrix vector"
+
+## Using only one O(n) vector!
+x = np.random.uniform(size=ns[1])
+y = np.zeros(ns[1])
+del_sgn_pattern = [1,-1,1]
+lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(del_sgn_pattern,2)])
+for t_ind, t in enumerate(K.faces(p=2)):
+  for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
+    ii, jj = p_faces.index(e1), p_faces.index(e2)
+    c = w0[ii] * w0[jj] * w1[t_ind]**2
+    y[ii] += x[jj] * c * s_ij
+    y[jj] += x[ii] * c * s_ij
+for t_ind, t in enumerate(K.faces(p=2)):
+  for e in t.boundary():
+    ii = p_faces.index(e)
+    y[ii] += x[ii] * w1[t_ind]**2 * w0[ii]**2
+
+
+up_laplacian(K, w0=w0,w1=w1, p=1)
+
+(L2 @ x)[0] # 0.04441226236190962
+L2[0,:].data
+L2[0,:].nonzero()[1]
+
+
+(L2 @ x)[0] - z[0]*x[0] # -0.004266920739521819
+np.dot(x[np.array([1,  3, 17, 19])], L2[0,:].data[1:]) # -0.004266920739521823
+
+x[np.array([1,  3, 17, 19])] # 0.73375187, 0.91341295, 0.68312572, 0.52781124
+L2[0,:].data[1:] # -0.03905382, -0.0917068 , 0.1269227 , 0.04064125
+
+y[0] + z[0]*x[0] # 0.2692562458376791
+
+# [ 0,  4],
+      #  [ 0,  6],
+      #  [ 0, 12],
+      #  [ 4,  6],
+      #  [ 4, 12]
+# it is a sign problem!
+abs(L2) @ x
+
 
 
 G = {

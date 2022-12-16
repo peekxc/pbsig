@@ -1243,18 +1243,12 @@ For a list of additional properties the graph and normalized Laplacians satisfy,
 \begin{algorithm}
 \caption{Two-pass \texttt{matvec} operator for combinatorial up-Laplacians in $O(m(p+1)) \approx O(m)$ time }	
 \begin{algorithmic}
-\Require $x \in \mathbb{R}^n, \, f: K \to \mathbb{R}_{+}, \, h: K^p \to [\; \lvert K^p\rvert \;]$
+\Require $x \in \mathbb{R}^n, \, f: K \to \mathbb{R}_{+}, \, h: K^p \to [\,n\,]$
 \Ensure $y = \langle L_p^{\mathrm{up}}(K, f), x \rangle$
 %\State $(n,m) \gets (\lvert K^p\rvert, \lvert K^{p+1}\rvert)$
 \vspace{0.25em}
 \Function{UpLaplacianMatvec}{x}
-\State $(z, y) \gets (\mathbf{0}, \mathbf{0})$ \Comment{$(\in \mathbb{R}^n)$}
-\For{$\sigma \in K^{p+1}$}: 
-	\For{$\tau \in \partial[\sigma]$}:
-		\State $i \gets h(\tau)$
-   	 	\State $z_{i} \mathrel{{+}{=}} f(\sigma)^2 \cdot f(\tau)^2$
-   	\EndFor
-\EndFor
+\State $y \gets \mathbf{0}$ \Comment{$(\in \mathbb{R}^n)$}
 %\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
 \For{$\sigma \in K^{p+1}$}:
     %\For{$(\, [\tau], \, [\tau'] \,) \in \partial[\sigma]$}
@@ -1262,13 +1256,19 @@ For a list of additional properties the graph and normalized Laplacians satisfy,
 %    	\If{$\tau \neq \tau'$}
 	    	\State $i, j \gets h(\tau), \; h(\tau')$ % \mathrm{sgn}([\tau],\partial[\sigma]) \cdot \mathrm{sgn}([\tau'],\partial[\sigma])
 	    	%\State $v \gets f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
-    		\State $y_{i} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot z_{j} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
-    		\State $y_{j} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot z_{i} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
+    		\State $y_{i} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot x_{j} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
+    		\State $y_{j} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot x_{i} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
 %    	\EndIf
     	%\State $y_{h_p(\tau)} \mathrel{{+}{=}} z_{h_p(\tau')} \cdot v \cdot sgn(\tau,\partial[\sigma]) $
     \EndFor 
 \EndFor
-\Return y 
+\For{$\sigma \in K^{p+1}$}: 
+	\For{$\tau \in \partial[\sigma]$}:
+		\State $i \gets h(\tau)$
+   	 	\State $y_{i} \mathrel{{+}{=}} x_i \cdot f(\sigma)^2 \cdot f(\tau)^2$
+   	\EndFor
+\EndFor
+\Return $y$
 \EndFunction
 \end{algorithmic}
 \end{algorithm}
