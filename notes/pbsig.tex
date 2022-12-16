@@ -525,17 +525,24 @@ In contrast, whereas $x \mapsto Lx$ can be carried out in essentially linear tim
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
-Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its (binary) adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$ . $0$ otherwise and let $D$ denote the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$.
-The \emph{graph Laplacian}  $L = D - A = \partial_p \partial_p^T$ is a heavily structured matrix known to capture the connectivity structure of $G$.
- In particular, $L$ is symmetric positive semi-definite and it's linear and quadratic forms have particular graph-theoretic interpretations:
+Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its (binary) adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and let $D$ denote the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$.
+The \emph{graph Laplacian}  $L = D - A = \partial_1 \partial_1^T$ is a heavily structured matrix known to capture the connectivity structure of $G$. It is element-wise defined as: 
+\begin{equation}
+	L[i,j] = \begin{cases}
+		\mathrm{deg}(v_i) & \text{ if } i = j \\
+		-1 & \text{ if } i \sim j \\
+		0 & \text{ otherwise }
+	\end{cases}
+\end{equation}
+where we use the notation $i \sim j$ to indicate vertices $v_i,v_j \in V$ are path-connected in $G$. 
+Its known that $L$ is symmetric, positive semi-definite, and it's linear and quadratic forms have graph-theoretic interpretations:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
-where we use the notation $i \sim j$ to indicate vertices $v_i,v_j \in V$ are path-connected in $G$. 
 Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
-The generalization of the graph laplacian is $p$-th \emph{combinatorial Laplacian} $\Delta_p$ given by: 
+For simplicial complexes, the generalization of the graph laplacian is $p$-th \emph{combinatorial Laplacian} $\Delta_p$, which is given by: 
 \begin{equation}
 	\Delta_p(K) = 
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
@@ -564,7 +571,7 @@ Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{
 %where $W_{p} = \mathrm{diag}\{\,f(\tau_1), f(\tau_2), \dots, f(\tau_n) \}$ and $W_{p} = \mathrm{diag}\{\,f(\sigma_1), f(\sigma_2), \dots, f(\sigma_n) \}$ are diagonal $n \times n$ and $m \times m$ matrices whose entries store the value of the filtration function $f$ restricted to $K^p$, $K^{p+1}$, respectively.
 \begin{align}\label{eq:up_laplace_ij}
 	 L_p^{\text{up}}[i,j] = \begin{cases}
-		f(\tau_i)^2 \cdot d_f(\sigma) & \text{ if } i = j \\ 
+		 d_f(\sigma) \cdot f(\tau_i)^2 & \text{ if } i = j \\ 
 %		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
 		(-1)^{s_{ij}} f(\tau_i)f(\tau_j)f(\sigma)^2 & \text{ if } \tau_i \overset{\sigma}{\sim} \tau_j \\
 		0 & \text{ otherwise} 
@@ -746,7 +753,7 @@ Paired with the observation that the rank function can be equivalently expressed
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 
 We consider a family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy. Given a positive $\epsilon > 0$, the basic qualities we want out of $\phi$ are:
-\begin{flalign}\label{eq:lap_quad_from}
+\begin{flalign}\label{eq:rank_sgn}
 	(\, \forall \, x > 0 \,)  & & \quad\quad\quad 
 %\begin{equation}
 	\mathrm{rank}(X) \approx \sum\limits_{i=1}^n \phi(\sigma_i(X), \epsilon), \quad \quad &  \lim_{\epsilon \to 0^+} \phi(x, \epsilon) = \mathrm{sgn}_+(x) &&

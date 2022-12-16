@@ -180,7 +180,7 @@ def as_linear_operator(A, stats=True):
 from pbsig.simplicial import SimplicialComplex
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
 
-def up_laplacian(K: SimplicialComplex, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
     Returns the weighted combinatorial p-th up-laplacian.
     Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
@@ -190,20 +190,36 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, normed=False, return_diag=Fal
     *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting 
     matrix-free matvec product w/ weights. 
 
-    SciPy accepts weights via K/in the sparse matrix input. 
+    SciPy accepts weights by accepting potentially sparse adjacency matrix input. 
 
     """
-    pass 
-    # r, rz = np.zeros(ne), np.zeros(nv)
-    # def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
-    #   r.fill(0) # r = Ax ~ O(E)
-    #   rz.fill(0)# rz = Ar ~ O(V)
-    #   for cc, (i,j) in enumerate(E):
-    #     ew = max(fv[i], fv[j])
-    #     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
-    #   for cc, (i,j) in enumerate(E):
-    #     ew = max(fv[i], fv[j])
-    #     rz[i] += ew*r[cc] #?? 
-    #     rz[j] -= ew*r[cc]
+    pass
+    ns = K.dim() 
+    w0 = np.repeat(1, ns[p]) if w0 is None else w0
+    w1 = np.repeat(1, ns[p+1]) if w1 is None else w1
+    if form == 'array':
+      B = boundary_matrix(K, p = p+1)
+      L = (diags(w0) @ B @ diags(w1) @ B.T @ diags(w0)).tocoo()
+      return L
+    elif form == 'lo':
+      if p == 0: # no hash is needed if vertices are ordered 0..n-1
+        # V = sorted(K.faces(p=0), key=lambda s: tuple(s)) # how to imbue the order into w0,w1
+        # E = sorted(K.faces(p=1), key=lambda s: tuple(s))
+        #V, E = K.faces(0), K.faces(1) # nah we lose V[i] = i
+         # .shape and .matvec attributes
+        r, rz = np.zeros(ns[1]), np.zeros(ns[0])
+        def _mat_vec(x: ArrayLike): # x ~ O(V)
+          r.fill(0) # r = Ax ~ O(E)
+          rz.fill(0)# rz = Ar ~ O(V)
+          for cc, (i,j) in enumerate(K.faces(1)):
+            r[cc] = w1[cc]*w0[i]*x[i] - w1[cc]*w0[j]*x[j]
+          for cc, (i,j) in enumerate(K.faces(1)):
+            rz[i] += w1[cc]*r[cc] #?? 
+            rz[j] -= w1[cc]*r[cc]
+          return rz
+
+
+    # A = abs(L) - diags(L.diagonal())
+  
+
     #   return(rz)
-    

@@ -252,58 +252,61 @@ class Simplex(Set, Hashable):
 from collections.abc import Set, Hashable
 
 # https://stackoverflow.com/questions/798442/what-is-the-correct-or-best-way-to-subclass-the-python-set-class-adding-a-new
-class SimplicialComplex(set):
+class SimplicialComplex(MutableSet):
   """ Abstract Simplicial Complex"""
   __hash__ = Set._hash
   wrapped_methods = ('difference', 'intersection', 'symmetric_difference', 'union', 'copy')
   
-  @classmethod
-  def _wrap_methods(cls, names):
-    def wrap_method_closure(name):
-      def inner(self, *args):
-        result = getattr(super(cls, self), name)(*args)
-        result = cls(result) if isinstance(result, set) else result 
-        return result
-      inner.fn_name = name
-      setattr(cls, name, inner)
-    for name in names: wrap_method_closure(name)
+  # @classmethod
+  # def _wrap_methods(cls, names):
+  #   def wrap_method_closure(name):
+  #     def inner(self, *args):
+  #       result = getattr(super(cls, self), name)(*args)
+  #       result = cls(result) if isinstance(result, set) else result 
+  #       return result
+  #     inner.fn_name = name
+  #     setattr(cls, name, inner)
+  #   for name in names: wrap_method_closure(name)
 
-  def __new__(cls, iterable=None):
-    selfobj = super(SimplicialComplex, cls).__new__(SimplicialComplex)
-    cls._wrap_methods(cls.wrapped_methods)
-    return selfobj
+  # def __new__(cls, iterable=None):
+  #   selfobj = super(SimplicialComplex, cls).__new__(SimplicialComplex)
+  #   cls._wrap_methods(cls.wrapped_methods)
+  #   return selfobj
 
   def __init__(self, iterable = None):
     """"""
-    self_set = super(SimplicialComplex, self)
-    self_set.__init__()
-    if iterable is not None: 
-      self.update(iterable)
+    #self.data = set() 
+    self.data = SortedSet([], key=lambda s: (len(s), tuple(s), s)) # for now, just use the lex/dim/face order 
+    self.update(iterable)
+    # self_set.__init__()
+    # if iterable is not None: 
+    #   self.update(iterable)
+  def __iter__(self) -> Iterator:
+    return iter(self.data)
+  
+  def __len__(self) -> int:
+    return self.data.__len__()
 
   def update(self, iterable):
-    self_set = super(SimplicialComplex, self)
     for item in iterable:
       self.add(item)
 
   def add(self, item: Collection[int]):
-    self_set = super(SimplicialComplex, self)
-    self_set.update(Simplex(item).faces())
+    # self_set = super(SimplicialComplex, self)
+    self.data.update(Simplex(item).faces())
   
   def remove(self, item: Collection[int]):
-    self_set = super(SimplicialComplex, self)
-    self_set.difference_update(set(self.cofaces(item)))
+    self.data.difference_update(set(self.cofaces(item)))
   
   def discard(self, item: Collection[int]):
-    self_set = super(SimplicialComplex, self)
-    self_set.discard(Simplex(item))
+    self.data.discard(Simplex(item))
 
   def cofaces(self, item: Collection[int]):
     s = Simplex(item)
     yield from filter(lambda t: t >= s, iter(self))
 
   def __contains__(self, item: Collection[int]):
-    self_set = super(SimplicialComplex, self)
-    return self_set.__contains__(Simplex(item))
+    return self.data.__contains__(Simplex(item))
 
   def faces(self, p: Optional[int] = None) -> Iterable['Simplex']:
     if p is None:
@@ -316,9 +319,8 @@ class SimplicialComplex(set):
     return max([s.dimension() for s in iter(self)])
 
   def __repr__(self) -> str:
-    self_set = super(SimplicialComplex, self)
-    if self_set.__len__() <= 15:
-      return super().__repr__()
+    if self.data.__len__() <= 15:
+      return repr(self.data)
     else:
       from collections import Counter
       cc = Counter([s.dimension() for s in iter(self)])
@@ -333,6 +335,12 @@ class SimplicialComplex(set):
     s.close()
     return res
 
+  def dim(self) -> tuple:
+    from collections import Counter
+    cc = Counter([len(s)-1 for s in self.data])
+    cc = dict(sorted(cc.items()))
+    return cc
+
   def print(self, **kwargs) -> None:
     d = self.dimension()
     ST = np.zeros(shape=(self.__len__(), d+1), dtype='<U15')
@@ -344,10 +352,6 @@ class SimplicialComplex(set):
     for i, s in enumerate(SC): 
       ending = '\n' if i != (len(SC)-1) else ''
       print(s, sep='', end=ending, **kwargs)
-
-  def _set(self):
-    self_set = super(SimplicialComplex, self)
-    return self_set
 
 # def less_lexicographic_refinement(S1: Tuple[SimplexLike, Any], S2: Tuple[SimplexLike, Any]) -> bool:
 #   (s1,i1), (s2,i2) = S1, S2
@@ -520,7 +524,7 @@ class MutableFiltration(MutableMapping):
 
   ## Keys yields the index set. Set expand = True to get linearized order. 
   ## TODO: Make view objects
-  def keys(self, expand: bool = False):
+  def keys(self, expand: bool = True):
     if not expand:
       return self.data.keys()
     else:
@@ -528,7 +532,7 @@ class MutableFiltration(MutableMapping):
       for k,v in self.data.items():
         it_keys = chain(it_keys, repeat(k, len(v)))
       return it_keys
-  def values(self, expand: bool = False):
+  def values(self, expand: bool = True):
     if not expand:
       return self.data.values()
     else: 
@@ -536,7 +540,7 @@ class MutableFiltration(MutableMapping):
       for v in self.data.values():
         it_vals = chain(it_vals, iter(v))
       return it_vals
-  def items(self, expand: bool = False):
+  def items(self, expand: bool = True):
     if not expand:
       return self.data.items()
     else:

@@ -11,11 +11,96 @@ X = np.random.uniform(size=(15,2))
 K = delaunay_complex(X)
 D1, D2 = boundary_matrix(K, p=(1,2))
 
-## Test quadratic form
+## Test unweighted/combinatorial quadratic form
 x = np.random.uniform(low=-0.50, high=0.50, size=D1.shape[0])
-v0 = sum([(x[i] - x[j])**2 for i,j in K['edges']])
+v0 = sum([(x[i] - x[j])**2 for i,j in K.faces(1)])
 v1 = x @ (D1 @ D1.T) @ x
-assert np.isclose(v0, v1), "Quadratic form failed!"
+assert np.isclose(v0, v1), "Unweighted Quadratic form failed!"
+
+## Test unweighted/combinatorial linear form
+ns = K.dim()
+w0,w1 = np.ones(ns[0]), np.ones(ns[1])
+r, v0 = np.zeros(ns[1]), np.zeros(ns[0])
+for cc, (i,j) in enumerate(K.faces(1)):
+  r[cc] = w1[cc]*w0[i]*x[i] - w1[cc]*w0[j]*x[j]
+for cc, (i,j) in enumerate(K.faces(1)):
+  v0[i] += w1[cc]*r[cc] #?? 
+  v0[j] -= w1[cc]*r[cc]
+v1 = (D1 @ D1.T) @ x
+assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+
+## Test weighted linear form (only takes one O(n) vector!)
+ns = K.dim()
+w0,w1 = np.random.uniform(size=ns[0]), np.random.uniform(size=ns[1])
+v0 = np.zeros(ns[0]) # note the O(n) memory
+for cc, (i,j) in enumerate(K.faces(1)):
+  v0[i] += w1[cc]**2
+  v0[j] += w1[cc]**2
+v0 = w0**2 * v0 * x # O(n)
+for cc, (i,j) in enumerate(K.faces(1)):
+  v0[i] -= x[j]*w0[i]*w0[j]*w1[cc]**2
+  v0[j] -= x[i]*w0[i]*w0[j]*w1[cc]**2
+v1 = (diags(w0) @ D1 @ diags(w1**2) @ D1.T @ diags(w0)) @ x
+assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+
+# def up_laplacian(K: Union[SparseMatrix, SimplicialComplex], p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+## Up Laplacian - test weighted linear form (only takes one O(n) vector!) 
+ns = K.dim()
+w0,w1 = np.random.uniform(size=ns[1]), np.random.uniform(size=ns[2])
+
+P = np.sign((D2 @ D2.T).tocsc().data)
+L2 = (diags(w0) @ D2 @ diags(w1**2) @ D2.T @ diags(w0)).tocsc()
+assert all(np.sign(L2.data) == P)
+
+p_faces = list(K.faces(p=1))
+z = np.zeros(ns[1]) 
+for t_ind, t in enumerate(K.faces(p=2)):
+  for e in t.boundary():
+    e_ind = p_faces.index(e)
+    z[e_ind] += w1[t_ind]**2 * w0[e_ind]**2
+assert max(abs(L2.diagonal() - z)) < 1e-13
+assert max(abs((diags(L2.diagonal()) @ x) - z*x)) < 1e-13
+
+x = np.random.uniform(size=ns[1])
+y = np.zeros(ns[1])
+for t_ind, t in enumerate(K.faces(p=2)):
+  for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), [1,-1,1]):
+    ii, jj = p_faces.index(e1), p_faces.index(e2)
+    c = w0[ii] * w0[jj] * w1[t_ind]**2
+    y[ii] += x[jj] * s_ij * c
+    y[jj] += x[ii] * s_ij * c
+
+
+G = {
+  'vertices' : np.ravel(np.array(list(K.faces(0)))),
+  'edges' : np.array(list(K.faces(1))),
+  'triangles' : np.array(list(K.faces(2)))
+}
+
+y + z*x
+
+# np.sign(L2.tocsc().data)
+
+v1 = L2 @ x
+
+
+# e_ind = np.searchsorted(er, rank_combs([[i,j], [i,k], [j,k]], k=2, n=nv)) ## Can be cast using minimal perfect hashing function
+# deg_e *= (fe**2)
+assert np.allclose(deg_e - LT_ET.diagonal(), 0.0), "Collecting diagonal terms failed!"
+
+y = np.zeros(len(x))
+for t_ind, (i,j,k) in enumerate(T):
+  e_ind = np.searchsorted(er, rank_combs([[i,j], [i,k], [j,k]], k=2, n=nv))
+  for (ii,jj),s_ij in zip(combinations(e_ind, 2), [-1,1,-1]):
+    ## The sign pattern is deterministic! 
+    v = (fe[ii]) * (fe[jj]) * (ft[t_ind]**2)
+    y[ii] += x[jj] * v * s_ij
+    y[jj] += x[ii] * v * s_ij
+
+
+
+
+
 
 ## Test linear form
 L = graph_laplacian(K)
@@ -42,8 +127,8 @@ for cc, (i,j) in enumerate(K['edges']):
 assert np.allclose(y, LE @ x), "edge-weighted Laplacian linear form wrong!"
 
 ## Test L_2^up entry-wise
-nv = len(K['vertices'])
-E, T = K['edges'], K['triangles']
+nv = len(G['vertices'])
+E, T = G['edges'], G['triangles']
 S = (D2 @ D2.T).copy() ## Precompute sign matrix
 S.data = np.sign(S.data)
 fe = np.random.uniform(size=E.shape[0], low=0.0, high=1.0)
@@ -74,7 +159,11 @@ assert np.allclose((LT_ET - (We @ D2 @ Wt**2 @ D2.T @ We)).data, 0)
 ## (d) Formulate the naive matrix-vector product that enumerates edges 
 
 ## (e) Formulate the O(m) matrix-vector product that enumerates triangles
-er = rank_combs(E, n=len(K['vertices']), k=2)
+from pbsig.utility import *
+nv = len(G['vertices'])
+E, T = G['edges'], G['triangles']
+fe,ft = w0,w1
+er = rank_combs(E, n=len(G['vertices']), k=2)
 x = np.random.uniform(size=E.shape[0], low=0.0, high=1.0)
 deg_e = np.zeros(len(x)) 
 for t_ind, (i,j,k) in enumerate(T):

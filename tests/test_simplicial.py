@@ -5,6 +5,15 @@ s = Simplex([0,1,2,3])
 S = SimplicialComplex([(0),(1),(0,1)])
 S = SimplicialComplex([[0,1,2,3,4]])
 
+## TODO: investigate gray code for fast iteration of ranks of simplices! 
+# x = np.argsort([int(format(int(s.dimension()), 'b') + format(rank_comb(s.vertices, k=4,n=10), 'b'),2) for s in S])
+# np.array(list(S))[x]
+
+sorted(list(S), key=lambda s: s)[:10]
+
+from pbsig.persistence import boundary_matrix
+boundary_matrix(S)
+
 x = np.random.uniform(size=5, low = 0, high=5)
 F = MutableFiltration(S, lambda s: max(x[s]))
 
@@ -151,3 +160,20 @@ from pbsig.utility import unrank_combs, unrank_comb
 np.argsort(R, order=['r', 'd'])
 
 w[:-1] <= w[1:]
+
+
+## Simplex Tests 
+from itertools import product
+
+## Reflexivity 
+for s in S: assert s <= s
+
+## Antisymmetry 
+for x, y in product(S, S):
+  if x <= y and y <= x:
+    assert x == y
+
+## Transitivity
+for x, y, z in product(S, S, S):
+  if x <= y and y <= z:
+    assert x <= z

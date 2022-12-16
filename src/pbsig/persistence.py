@@ -94,7 +94,7 @@ def boundary_matrix(K: Union[List, ArrayLike], p: Optional[Union[int, tuple]] = 
   elif isinstance(K, SimplicialComplex):
     if p is None:
       I,J,X = [],[],[] # row, col, data 
-      simplices = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
+      simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
       for (j,s) in enumerate(simplices):
         if s.dimension() > 0:
           I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
@@ -123,33 +123,34 @@ def boundary_matrix(K: Union[List, ArrayLike], p: Optional[Union[int, tuple]] = 
       f = [None]*len(p)
     return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
   else:
-    if p == 0:
-      nv = len(K['vertices'])
-      D = csc_matrix((0, nv), dtype=np.float64).tolil()
-      return D
-    elif p == 1: 
-      D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
-      return D
-    elif p == 2:
-      D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
-      return D
-    elif p == 3:
-      nt = len(K['triangles'])
-      assert not('quads' in K)
-      D = csc_matrix((nt, 0), dtype=np.float64).tolil()
-      return D
-    elif p is None:
-      # Return full boundary matrix
-      nv, ne, nt = len(K['vertices']), K['edges'].shape[0], K['triangles'].shape[0]
-      m = nv + ne + nt
-      D1 = H1_boundary_matrix(K['vertices'], K['edges'])
-      D2 = H2_boundary_matrix(K['edges'], K['triangles'])
-      from scipy.sparse import bmat, dok_array
-      B0, B1, B2 = dok_array((nv,nv)), dok_array((ne,ne)), dok_array((nt,nt))
-      D = bmat([[B0, D1, dok_array((nv,nt))], [dok_array(D1.shape).T, B1, D2], [dok_array((nt, nv)), dok_array((nt,ne)), B2]])
-      return D 
-    else: 
-      raise ValueError(f"Unknown value p={p} supplied")
+    print("why is this portion called? ")
+    # if p == 0:
+    #   nv = len(K['vertices'])
+    #   D = csc_matrix((0, nv), dtype=np.float64).tolil()
+    #   return D
+    # elif p == 1: 
+    #   D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
+    #   return D
+    # elif p == 2:
+    #   D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
+    #   return D
+    # elif p == 3:
+    #   nt = len(K['triangles'])
+    #   assert not('quads' in K)
+    #   D = csc_matrix((nt, 0), dtype=np.float64).tolil()
+    #   return D
+    # elif p is None:
+    #   # Return full boundary matrix
+    #   nv, ne, nt = len(K['vertices']), K['edges'].shape[0], K['triangles'].shape[0]
+    #   m = nv + ne + nt
+    #   D1 = H1_boundary_matrix(K['vertices'], K['edges'])
+    #   D2 = H2_boundary_matrix(K['edges'], K['triangles'])
+    #   from scipy.sparse import bmat, dok_array
+    #   B0, B1, B2 = dok_array((nv,nv)), dok_array((ne,ne)), dok_array((nt,nt))
+    #   D = bmat([[B0, D1, dok_array((nv,nt))], [dok_array(D1.shape).T, B1, D2], [dok_array((nt, nv)), dok_array((nt,ne)), B2]])
+    #   return D 
+    # else: 
+    #   raise ValueError(f"Unknown value p={p} supplied")
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
 #   pw_dist = pdist(X)
