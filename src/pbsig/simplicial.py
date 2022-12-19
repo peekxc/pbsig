@@ -86,14 +86,14 @@ def graph2complex(G):
   return K
 
 
-def is_symmetric(A):
-  if issparse(A):
-    r, c = A.nonzero()
-    ri = np.argsort(r)
-    ci = np.argsort(c)
-    return all(r[ri] == c[ci]) and not(any((A != A.T).data))
-  else: 
-    return issymmetric(A)
+# def is_symmetric(A):
+#   if issparse(A):
+#     r, c = A.nonzero()
+#     ri = np.argsort(r)
+#     ci = np.argsort(c)
+#     return all(r[ri] == c[ci]) and not(any((A != A.T).data))
+#   else: 
+#     return issymmetric(A)
 
 def laplacian_DA(L):
   """ Converts graph Laplacian L to Adjacency + diagonal degree """
@@ -294,7 +294,7 @@ class Simplex(Set, Hashable):
     
 from collections.abc import Set, Hashable
 
-
+## TODO: implement a simplex |-> attribute system like networkx graphs
 # https://stackoverflow.com/questions/798442/what-is-the-correct-or-best-way-to-subclass-the-python-set-class-adding-a-new
 class SimplicialComplex(MutableSet):
   """ Abstract Simplicial Complex"""

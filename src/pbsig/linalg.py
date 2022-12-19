@@ -11,10 +11,60 @@ import primme
 ## Local imports
 from .simplicial import * 
 
+# def testing_l():
+#   lanczos.lower_star_lanczos()
+#   print(dir(lanczos))
 
-def testing_l():
-  lanczos.lower_star_lanczos()
-  print(dir(lanczos))
+def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, **kwargs):
+  """ 
+  Computes the numerical rank of a positive semi-definite 'A' via thresholding its eigenvalues.
+
+  The eps-numerical rank r_eps(A) is the largest integer 'r' such that: 
+
+
+  See: https://math.stackexchange.com/questions/2238798/numerically-determining-rank-of-a-matrix
+  """
+  if isinstance(A, np.ndarray):
+    return np.linalg.matrix_rank(A, tol, hermitian)
+  elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+    # assert hermitian, "Numerical rank only supports symmetric matrices currently"
+    
+    ## Get numerical epsilon tolerance 
+    if tol is None: 
+      sn = eigsh(A, k=1, which='LM', return_eigenvectors=False).item() # spectral norm
+      tol = sn * max(A.shape) * np.finfo(float).eps
+    
+    ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
+    rank_lb = sum(np.sort(diagonal(A)) >= tol) # rank lower bound
+    k = max(A.shape) - rank_lb
+    
+    ## Overload .matvec operator to add small constant mass to diagonal for better conditioning
+    PD = type('pd_operator', (type(A),), { '_matvec' : lambda self, x: (A @ x) + tol*x })
+    PD_A = aslinearoperator(PD(A))
+
+    primme.eigsh(A, k = 1, which='LM', method='PRIMME_STEEPEST_DESCENT', return_eigenvectors=False)
+    eigsh(A, k=1, which='LM', return_eigenvectors=False)
+    eigsh(aslinearoperator(A), k=1, which='LM', return_eigenvectors=False)
+
+    eigsh(A + tol*eye(A.shape[0]), k=k, sigma=0, which='LM', v0=np.repeat(1, A.shape[0]), tol=tol, return_eigenvectors=False)
+    A_LO = aslinearoperator(A)
+    cI = aslinearoperator(tol*eye(A.shape[0]))
+    eigsh(A_LO-cI, k=k, sigma=0, which='LM', v0=np.repeat(1, A.shape[0]), maxiter=5000, tol=1e-6, return_eigenvectors=False)
+
+    ## Estimate the dimension of the nullspace w/ shift-invert mode
+    smallest_k = eigsh(A, k=k, sigma=0, which='LM', tol=tol, return_eigenvectors=False) ## needed! 
+    dim_nullspace = sum(np.isclose(np.maximum(smallest_k - tol, 0.0), 0.0))
+    
+    ## Use rank-nullity to obtain the numerical rank
+    return max(A.shape) - dim_nullspace
+  else: 
+    raise ValueError("Invalid input type supplied")
+
+## is_positive_definite
+# First check if symmetric 
+# then see if strictly diagonally dominant 
+# then compute eigenvalues
+# For linear operators: row sums == L @ np.repeat(1, L.shape[0]) 
 
 def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
   ''' 
@@ -110,6 +160,9 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 # from pbsig.utility import timeout
 # from pbsig.precon import Minres, Jacobi, ssor, ShiftedJacobi
 
+# def as_positive_definite(A: Union[ArrayLike, LinearOperator], c: float = 0.0):
+  
+
 def diagonal(A: Union[ArrayLike, LinearOperator]):
   if hasattr(A, 'diagonal'):
     return A.diagonal()
@@ -192,7 +245,7 @@ def as_linear_operator(A, stats=True):
     def _matmat(self, X):
       self.n_calls += X.shape[1]
       return self.A @ X
-  lo = LO(L)
+  lo = LO(A)
   return lo
 
 from pbsig.simplicial import SimplicialComplex
@@ -255,15 +308,46 @@ def _up_laplacian_matvec_p(S: Iterable['Simplex'], F: Sequence['Simplex'],  w0: 
   return _matvec
 
 
-def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+
+
+## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
+def is_symmetric(A) -> bool:
+  """Check if a matrix is Hermitian and/or symmetric.
+  """
+  from scipy.sparse import issparse
+  if isinstance(A, np.ndarray):
+    return np.allclose(A, A.T)
+  assert issparse(A)
+  if A.shape[0] != A.shape[1]:
+    raise ValueError('m must be a square matrix')
+  A = coo_array(A) if not isinstance(A, coo_array) else A
+
+  r, c, v = A.row, A.col, A.data
+  tril_no_diag = r > c
+  triu_no_diag = c > r
+
+  if not np.isclose(triu_no_diag.sum(), tril_no_diag.sum()):
+    return False
+
+  rl, cl, vl = r[tril_no_diag], c[tril_no_diag], v[tril_no_diag]
+  ru, cu, vu = r[triu_no_diag], c[triu_no_diag], v[triu_no_diag]
+
+  sortl = np.lexsort((cl, rl))
+  sortu = np.lexsort((ru, cu))
+  vl = vl[sortl]
+  vu = vu[sortu]
+  return np.allclose(vl, vu)
+
+## TODO: change weight to optionally be a string when attr system added to SC's
+def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
     Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex K. 
 
     Given D = boundary_matrix(K, p), the weighted p-th up-laplacian L is defined as: 
 
-    Lp := W0 @ D @ W1 @ D^T @ W0 
+    Lp := W_p @ D @ W_{p+1} @ D^T @ W_p 
     
-    Where W0, W1 = diag(w0), diag(w1) are diagonal matrices weighting the p and p+1 simplices, respectively.
+    Where W_p, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively.
 
     Note p = 0 (default), the results represents the graph laplacians operator. 
 
@@ -274,9 +358,10 @@ def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=
     Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
     """
     assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
+    assert isinstance(weight, Callable) if weight is not None else True
     ns = K.dim() 
-    w0 = np.repeat(1, ns[p]) if w0 is None else w0
-    w1 = np.repeat(1, ns[p+1]) if w1 is None else w1
+    w0 = np.array([weight(s) for s in K.faces(p)]) if weight is not None else np.repeat(1, ns[p]) 
+    w1 = np.array([weight(s) for s in K.faces(p+1)]) if weight is not None else np.repeat(1, ns[p+1])
     assert len(w0) == ns[p] and len(w1) == ns[p+1], "Invalid weight arrays given."
     if form == 'array':
       B = boundary_matrix(K, p = p+1)

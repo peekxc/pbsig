@@ -1,8 +1,76 @@
-from multiprocessing.dummy import Array
 import numpy as np
 import matplotlib.pyplot as plt
-from persistence import * 
-from apparent_pairs import * 
+from pbsig.persistence import * 
+from pbsig.apparent_pairs import * 
+
+
+from pbsig.datasets import mpeg7
+
+MPEG = mpeg7()
+
+
+from pbsig.pht import pht_transformer, shape_center
+preprocess = pht_transformer()
+X = preprocess(MPEG[('turtle',1)])
+
+from pbsig.utility import cycle_window
+from pbsig.simplicial import SimplicialComplex, MutableFiltration
+S = SimplicialComplex(cycle_window(np.arange(X.shape[0])))
+
+fv = X @ np.array([1,0])
+fv += abs(min(fv))
+
+D = boundary_matrix(S)
+from pbsig.linalg import up_laplacian
+L = up_laplacian(S, weight = lambda s: max(fv[s]))
+assert is_symmetric(L)
+assert all(np.linalg.eigvalsh(L.todense()) >= -1e-14) # positive semi-definite check
+
+
+from pbsig.linalg import numerical_rank
+numerical_rank(L)
+
+
+
+eigsh(L + (1e-12)*eye(L.shape[0]), which='LM', sigma = 0, return_eigenvectors=False)
+
+import primme
+primme.eigsh(L, k=1, which='LM')
+primme.eigsh(L, k=L.shape[0]-1, ncv=500, which='LM', method="PRIMME_STEEPEST_DESCENT", return_eigenvectors=False, printLevel=5)
+eigsh(L + (1e-6)*eye(L.shape[0]), which='SM', return_eigenvectors=False)
+eigsh(L, k=1, which='SM', return_eigenvectors=False)
+eigsh(L, k=1, sigma=0, which='LM', return_eigenvectors=False)
+primme.eigsh(L, k=1, which='SM', maxiter=5000)
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, sigma=0, which='CGT', maxiter=5000, v0=np.c_[np.repeat(1, L.shape[0])])
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, sigma=0, which='LM', maxiter=5000, v0=np.c_[np.repeat(1, L.shape[0])])
+
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, tol=tol, which='LM', maxiter=15000, return_eigenvectors=False)
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, tol=tol, which='LM', maxiter=15000, method="PRIMME_STEEPEST_DESCENT", return_eigenvectors=False)
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, tol=tol, which='SM', maxiter=15000, method="PRIMME_STEEPEST_DESCENT", return_eigenvectors=False)
+primme.eigsh(L+tol*eye(L.shape[0]), k=1, tol=tol, which='SA', maxiter=15000, method="PRIMME_GD", return_eigenvectors=False)
+
+
+# from scipy.sparse.csgraph import structural_rank
+# r = structural_rank(LS)
+
+
+eigsh(LS, which='LM', return_eigenvectors=False)[0]
+eigsh(LS + (1e-6)*eye(LS.shape[0]), which='SM', return_eigenvectors=False)
+
+## Add a fraction of identity to the diagonal! Def!
+
+L = L.tocsc()
+max([abs(L[r,c] - L[c,r]) for r,c in zip(*L.nonzero())])
+
+from pbsig.persistence import ph0_lower_star, lower_star_multiplicity
+E = np.array(list(S.faces(1)))
+dgm0 = ph0_lower_star(fv, E)
+
+i,j = 0.0, 0.25
+k,l = 0.28, 0.40
+
+
+up_laplacian(S, w0=fv, w1=fv[E].max(axis=1), p=0)
 
 
 X = np.random.uniform(size=(8, 2))

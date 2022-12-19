@@ -496,7 +496,7 @@ Although this assumption is unrealistic in practical settings, it gives us a gro
 	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\mathcal{M}(n), n\} \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
-In practice, finite-precision arithmetic introduces rounding and cancellation errors into the computation.
+In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation.
 These errors manifest as loss of orthogonality between the Lanczos vectors, which not only affects convergence towards an in invariant subspace, but muddles the termination condition. 
 Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
 Because these extensions are varied, non-trivial, and multifaceted, we defer their discussion to section~\ref{subsec:rounding}. 
@@ -525,23 +525,27 @@ In contrast, whereas $x \mapsto Lx$ can be carried out in essentially linear tim
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
-Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its (binary) adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and let $D$ denote the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \}$.
-The \emph{graph Laplacian}  $L = D - A = \partial_1 \partial_1^T$ is a heavily structured matrix known to capture the connectivity structure of $G$. It is element-wise defined as: 
+Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
+The \emph{graph Laplacian} $L$, defined in terms of adjacency, incidence, and element-wise relations, is defined as: 
 \begin{equation}
-	L[i,j] = \begin{cases}
+L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
+	L\,[i,j] = \begin{cases}
 		\mathrm{deg}(v_i) & \text{ if } i = j \\
 		-1 & \text{ if } i \sim j \\
 		0 & \text{ otherwise }
 	\end{cases}
 \end{equation}
-where we use the notation $i \sim j$ to indicate vertices $v_i,v_j \in V$ are path-connected in $G$. 
-Its known that $L$ is symmetric, positive semi-definite, and it's linear and quadratic forms have graph-theoretic interpretations:
+where we use the notation $i \sim j$ to denote vertices $v_i,v_j \in V$ which are path-connected in $G$. 
+Its well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$. 
+Moreover, the linear and quadratic forms of $L$ may be succinctly expressed using the above path-connected relation:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 \end{flalign}
-Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge scans: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+% forget about combinatorial laplacian, mention rank and lanczos! 
+We would like to generalize this procedure for simplicial complexes. 
 For simplicial complexes, the generalization of the graph laplacian is $p$-th \emph{combinatorial Laplacian} $\Delta_p$, which is given by: 
 \begin{equation}
 	\Delta_p(K) = 
@@ -847,10 +851,10 @@ Moreover, by composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\
 Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Let $\tilde{\partial}_p$ denote the $\mathcal{H}$-parameterized $p$-th boundary matrix from~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$. Define the \emph{continuous multiplicity function} over some fixed $R = [i,j] \times [k,l]$ as:
 	\begin{equation}\label{eq:mu_cont}
 	\hat{\mu}_{p,\epsilon}^R(h) = 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, k}) \rVert_\ast - 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{i \+ \delta, k}) \rVert_\ast -  
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{j \+ \delta, l}) \rVert_\ast + 
-		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
+		 \lVert \Phi_\epsilon^h(\tilde{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
 where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$. The formulation of the PBN relaxation is synonymous.
 \end{definition}

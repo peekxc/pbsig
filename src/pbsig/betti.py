@@ -591,6 +591,7 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], K: SimplicialComplex, R: Col
       yield mu_r
   else: 
     # assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
+    up_laplacian
     pass 
     # F = list(iter(F))
     # nv = len(F[0])
@@ -633,13 +634,21 @@ class Laplacian_DT_2D:
     self.cc += 1
     return self.W @ self.D1 @ self.D1.T @ self.W
 
+from pbsig.linalg import up_laplacian
 
+def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, alpha: float = 0.0, w: float = 0.0):
+  """
+  rank lower-left
 
-def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: float = 0.0):
-  nv, ne = len(f), E.shape[0]
+  i := threshold 
+  """
   # delta = tol(np.sqrt(E.shape[0]*2)) # TODO: use bound on spectral norm to get tol instead of eps?
-  ss_b = smooth_dnstep(lb = b-w, ub = b+np.finfo(float).eps)    # STEP DOWN: 1 (b-w) -> 0 (b), includes (-infty, b]
-  ss_ac = smooth_upstep(lb = a, ub = a+w)                       # STEP UP:   0 (a-w) -> 1 (a), includes (a, infty)
+  delta = np.finfo(float).eps
+  ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
+  smoothed_weight = lambda s: ss_ic(weight(s)) if len(s) == p else ss_j(weight(s))
+  LS = up_laplacian(S, weight = smoothed_weight)
+  
   # A_exc = ss_ac(f[E]).flatten()
   # B_inc = np.repeat(ss_b(edge_f), 2)
   # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
@@ -652,18 +661,18 @@ def T4_0(f: ArrayLike, E: ArrayLike, a: float, b: float, alpha: float = 0.0, w: 
   # else: 
   #   terms[3] = 0.0
   #   nv, ne = shape
-  r, rz = np.zeros(ne), np.zeros(nv)
-  def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
-    r.fill(0) # r = Ax ~ O(E)
-    rz.fill(0)# rz = Ar ~ O(V)
-    for cc, (i,j) in enumerate(E):
-      ew = max(fv[i], fv[j])
-      r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
-    for cc, (i,j) in enumerate(E):
-      ew = max(fv[i], fv[j])
-      rz[i] += ew*r[cc] #?? 
-      rz[j] -= ew*r[cc]
-    return(rz)
+  # r, rz = np.zeros(ne), np.zeros(nv)
+  # def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
+  #   r.fill(0) # r = Ax ~ O(E)
+  #   rz.fill(0)# rz = Ar ~ O(V)
+  #   for cc, (i,j) in enumerate(E):
+  #     ew = max(fv[i], fv[j])
+  #     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
+  #   for cc, (i,j) in enumerate(E):
+  #     ew = max(fv[i], fv[j])
+  #     rz[i] += ew*r[cc] #?? 
+  #     rz[j] -= ew*r[cc]
+  #   return(rz)
     
 # def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
 #   a,b,c,d = next(iter(R))
