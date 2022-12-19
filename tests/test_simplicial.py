@@ -2,7 +2,6 @@ import numpy as np
 from pbsig.simplicial import Simplex, SimplicialComplex, MutableFiltration
 
 s = Simplex([0,1,2,3])
-S = SimplicialComplex([(0),(1),(0,1)])
 S = SimplicialComplex([[0,1,2,3,4]])
 
 ## TODO: investigate gray code for fast iteration of ranks of simplices! 

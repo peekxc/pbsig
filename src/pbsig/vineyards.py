@@ -37,6 +37,76 @@ def cancel_pivot(A, i, j, piv: Optional[int] = None):
   A[:,[j]] += s*A[:,[i]]
   return(s)
 
+def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
+  """ The vineyards algorithm """
+  assert R.shape[0] == V.shape[0], "Must be matching boundary matrices"
+  assert R.shape[0] == R.shape[1] and V.shape[0] == V.shape[1], "Must be square"
+  m = R.shape[1] # num simplices in filtration
+  for i in I:
+    piv = low_entry(R)
+    pos = piv == -1
+    if pos[i] and pos[i+1]:
+      if V[i,i+1] != 0:
+        s = cancel_pivot(V, i, i+1, piv=i) 
+      if any(np.logical_and(piv == i, piv == i+1)):
+        k,l = np.flatnonzero(piv == i).item(), np.flatnonzero(piv == (i+1)).item()
+        if R[i,l] != 0:
+          k,l = (k,l) if k < l else (l,k) # ensure k < l
+          permute_tr(R, i, "both")
+          permute_tr(V, i, "both")
+          s = cancel_pivot(R, k, l)
+          V[:,[l]] += s*V[:,[k]] if s != 0 else V[:,[k]]
+          yield 1
+        else:
+          permute_tr(R, i, "both")
+          permute_tr(V, i, "both")
+          yield 2
+      else:
+        permute_tr(R, i, "both")
+        permute_tr(V, i, "both")
+        yield 3
+    elif not(pos[i]) and not(pos[i+1]):
+      if V[i,i+1] != 0: 
+        if piv[i] < piv[i+1]: # pivot in i is higher than pivot in i+1
+          s = cancel_pivot(V, i, i+1, piv=i) ## V1[:,i+1] |-> s*V1[:,i] + V1[:,i+1], where s := ()
+          R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          permute_tr(R, i, "both")
+          permute_tr(V, i, "both")
+          yield 4
+        else:
+          s = cancel_pivot(V, i, i+1, piv=i)
+          R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          permute_tr(R, i, "both")
+          permute_tr(V, i, "both")
+          s = cancel_pivot(R, i, i+1)
+          V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+          yield 5
+      else: # Case 2.2
+        permute_tr(R, i, "both")
+        permute_tr(V, i, "both")
+        yield 6 
+    elif not(pos[i]) and pos[i+1]:
+      if V[i,i+1] != 0:
+        ## Case 3.1
+        s = cancel_pivot(V, i, i+1, piv=i)
+        R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+        permute_tr(R, i, "both")
+        permute_tr(V, i, "both")
+        s = cancel_pivot(R, i, i+1)
+        V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+        yield 7
+      else:
+        permute_tr(R, i, "both")
+        permute_tr(V, i, "both")
+        yield 8
+    elif pos[i] and not(pos[i+1]):
+      if V[i,i+1] != 0:
+        s = cancel_pivot(V, i, i+1, piv=i)
+      permute_tr(R, i, "both")
+      permute_tr(V, i, "both")
+      yield 9
+    
+
 def transpose_dgm(R1, V1, R2, V2, i: int):
   assert (R1.shape[1] == V1.shape[0]), "Must be matching boundary matrices"
   assert i < (R1.shape[1]-1), "Invalid i"
@@ -284,13 +354,13 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
   These crossings are ordered and reported, such that 'f' is _sorted_ into 'g'.
 
   Parameters: 
-    f := simplex function values, given as numpy array or dict[Any, float], starting at interval[0]
-    g := simplex function values, given as numpy array or dict[Any, float], ending at interval[1]
+    f := function values, given as numpy array or dict[Any, float], starting at interval[0]
+    g := function values, given as numpy array or dict[Any, float], ending at interval [1]
     interval := the interval to simulate the homotopy across. Defaults to [0,1].
     plot := whether to plot the the homotopy. Useful for debugging/visualizing small cases. 
 
   Returns: 
-    tr := array of integers (a, b, ...) giving the adjacent transposition (a, a+1), (b, b+1), ... which sort f -> g
+    tr := array of integers (a, b, ...) giving the adjacent transposition (a, a+1), (b, b+1), ... which sorts f |-> g
 
   If f,g are arrays, then the homotopy occurs between (f[i], g[i]) for all i. Otherwise the key of f are matched with those of g.  
   """

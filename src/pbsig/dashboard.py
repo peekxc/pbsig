@@ -331,7 +331,8 @@ dgms_button.on_click(dgm_cb)
 dt_select = Select(value="Betti", options=["Euler", "Betti", "BettiNuclear", "BettiGeneric"], width=int(w/3))
 # dt_dropdown = Dropdown(label="Transform", button_type="warning", menu=menu)
 def dt_drop_cb(attr, old, new):
-  print(new)
+  print(f"Selected transform: {new} (from {old})")
+  
   # print(event.item)
   # print(str(event))
 # dt_dropdown.on_change('value', dt_drop_cb)
@@ -343,6 +344,14 @@ def dt_cb(new):
   # box_renderer = hp.select(tags=[ds_name+".boxes"])
   # box_source = box_renderer.data_source
   # box_source.selected
+  # global_methods = ["Laplacian", "WeightedLaplacian"]
+  # if dt_select.value == "Laplacian":
+  ## First step: compute eigenvalues of weighted Laplacian on DT-family. Save as a sparse matrix. 
+  ## Second step: To see effects of different smoothing methods, add a slider w/ a parameter eps 
+  ## Third step: If user selects a set of rectilinear shapes + hits a compute button, replace the signature plot with smoothed versions of those 
+  
+
+  # else: 
   n_boxes = len(br.data_source.data['x'])
   if n_boxes > 0: 
     selected_ind = br.data_source.selected.indices
@@ -387,7 +396,7 @@ def dt_cb(new):
   else: 
     print("No boxes created")
     M = []
-    # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
+      # log_msgs.append(''.join([str(box_glyph) for box_glyph in box_tool.renderers]))
 
 dt_button = Button(label="DT", button_type="danger", width=int(w/6))
 dt_button.on_click(dt_cb)

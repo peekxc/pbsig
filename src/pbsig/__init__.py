@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import numpy as np
 from numpy.typing import ArrayLike
 #from . import boundary
@@ -11,6 +12,12 @@ from .persistence import *
 from .betti import *
 from .linalg import *
 from .fast_pbn import *
+
+
+
+_ROOT = os.path.abspath(os.path.dirname(__file__))
+def _package_data(path: str = ""):
+    return os.path.join(_ROOT, 'data', path)
 
 def plot_dgm(dgm: ArrayLike):
   import matplotlib.pyplot as plt

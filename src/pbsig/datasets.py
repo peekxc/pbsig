@@ -12,7 +12,7 @@ from pathlib import Path
 from .utility import *
 
 # def random_graph(n: int, p: float):
-
+from .__init__ import _package_data
 
 
 def animal_svgs():
@@ -121,11 +121,13 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   
 def mpeg7(contour: bool = True, simplify: int = 150):
   import io
+  # from . import *
   from os.path import exists
   from pbsig import data as package_data_mod
   from pbsig.utility import simplify_outline
   from PIL import Image, ImageFilter
-  base_dir = package_data_mod.__path__._path[0] + '/mpeg7'
+  #base_dir = package_data_mod.__path__._path[0] + '/mpeg7'
+  base_dir = _package_data('mpeg7')
   mpeg7 = []
   # for fn in os.listdir(base_dir):
   #   if fn[-3:] == 'gif':

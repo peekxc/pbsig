@@ -1,11 +1,16 @@
-import numpy as np
-import _lanczos as lanczos
-from numpy.typing import ArrayLike
-from pbsig.simplicial import edge_iterator
-import primme
 from typing import * 
 from numpy.typing import ArrayLike
 from numbers import *
+
+from scipy.sparse import *
+from scipy.sparse.linalg import * 
+import numpy as np
+import _lanczos as lanczos
+import primme
+
+## Local imports
+from .simplicial import * 
+
 
 def testing_l():
   lanczos.lower_star_lanczos()
@@ -105,11 +110,23 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 # from pbsig.utility import timeout
 # from pbsig.precon import Minres, Jacobi, ssor, ShiftedJacobi
 
+def diagonal(A: Union[ArrayLike, LinearOperator]):
+  if hasattr(A, 'diagonal'):
+    return A.diagonal()
+  else: 
+    assert hasattr(A, 'shape')
+    I = np.zeros(A.shape[0])
+    d = np.zeros(A.shape[0])
+    for i in range(A.shape[0]):
+      I[i] = 1
+      I[i-1] = 0
+      d[i] = (A @ I)[i]
+    return d 
 
 ## Returns number of largest eigenvalues needed to capture t% of the spectrum 
 def trace_threshold(A, p=0.80):
   assert p >= 0.0 and p <= 1.0, "Proportion must be in [0,1]"
-  ev_cs = np.cumsum(A.diagonal())
+  ev_cs = np.cumsum(diagonal(A))
   thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) >= p)[0] # index needed to obtain 80% of the spectrum
   return thresh_ind
 
@@ -131,24 +148,24 @@ def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[Array
   """
   default_opts = dict(tol=1e-6, printLevel=0, return_eigenvectors=False, return_stats=False, return_history=False) | kwargs
   args = {} 
-  reduce, aggregate = (lambda x: x, False) if reduce is None else (reduce, True)
+  reduce_f, is_aggregate = (lambda x: x, False) if reduce is None else (reduce, True)
   for A in M: 
     A, args = (A[0], args | A[1]) if isinstance(A, tuple) and len(A) == 2 else (A, args)
     nev = trace_threshold(A, p)
     if default_opts['return_stats']:
       if default_opts['return_eigenvectors']:
         ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
-        yield reduce(ew), ev, stats
+        yield reduce_f(ew), ev, stats
       else:
         ew, stats = primme.eigsh(A=A, k=nev, **default_opts)
-        yield reduce(ew), stats
+        yield reduce_f(ew), stats
     else: 
       if default_opts['return_eigenvectors']:
         ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
-        yield reduce(ew), ev
+        yield reduce_f(ew), ev
       else:
         ew = primme.eigsh(A=A, k=nev, **default_opts)
-        yield reduce(ew)
+        yield reduce_f(ew)
   # else: 
   #   #n = len(M)
   #   return list(yield from eigsh_family(M, p, False, reduce, **kwargs))
@@ -205,30 +222,37 @@ def _up_laplacian_matvec_1(S: Collection['Simplex'],  w0: ArrayLike, w1: ArrayLi
     return v
   return _matvec
 
-  def _up_laplacian_matvec_p(S: Iterable['Simplex'], F: Sequence['Simplex'],  w0: ArrayLike, w1: ArrayLike, p: int, sgn_pattern = "default"):
-    sgn_pattern = list(islice(cycle([1,-1]), p+2)) if sgn_pattern == "default" else sgn_pattern
-    lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(sgn_pattern,2)])
-    n = len(F) # F must have an index method, so it must be at least a Sequence
-    assert n == len(w0), "Invalid w0"
-    if hasattr(S, '__len__'): assert len(S) == len(w1), "Invalid w1"
-    #n,m = len(F), len(S)
-    #assert len(w0) == n and len(w1) == m, "Invalid weight array"
-    v = np.zeros(n) # workspace
-    def _matvec(x: ArrayLike):
-      nonlocal v
-      v.fill(0)
-      for t_ind, t in enumerate(S):
-        for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
-          ii, jj = F.index(e1), F.index(e2)
-          c = w0[ii] * w0[jj] * w1[t_ind]**2
-          v[ii] += x[jj] * c * s_ij
-          v[jj] += x[ii] * c * s_ij
-      for t_ind, t in enumerate(S):
-        for e in t.boundary():
-          ii = F.index(e)
-          v[ii] += x[ii] * w1[t_ind]**2 * w0[ii]**2
-      return v
-    return _matvec
+def _up_laplacian_matvec_p(S: Iterable['Simplex'], F: Sequence['Simplex'],  w0: ArrayLike, w1: ArrayLike, p: int, sgn_pattern = "default"):
+  ## Ensure S is repeatable and faces 'F' is indexable
+  assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
+  assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
+
+  ## Length checks
+  n = len(F) # F must have an index method, so it must be at least a Sequence
+  assert n == len(w0), "Invalid w0"
+  if hasattr(S, '__len__'): assert len(S) == len(w1), "Invalid w1"
+
+  ## Get sgn patterns / allocate workspace 
+  sgn_pattern = list(islice(cycle([1,-1]), p+2)) if sgn_pattern == "default" else sgn_pattern
+  lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(sgn_pattern,2)])
+  v = np.zeros(n) # workspace
+  
+  ## Define the matvec operator as a closure
+  def _matvec(x: ArrayLike):
+    nonlocal v
+    v.fill(0)
+    for t_ind, t in enumerate(S):
+      for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
+        ii, jj = F.index(e1), F.index(e2)
+        c = w0[ii] * w0[jj] * w1[t_ind]
+        v[ii] += x[jj] * c * s_ij
+        v[jj] += x[ii] * c * s_ij
+    for t_ind, t in enumerate(S):
+      for e in t.boundary():
+        ii = F.index(e)
+        v[ii] += x[ii] * w1[t_ind] * w0[ii]**2
+    return v
+  return _matvec
 
 
 def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
@@ -243,8 +267,7 @@ def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=
 
     Note p = 0 (default), the results represents the graph laplacians operator. 
 
-    *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting 
-    matrix-free matvec product w/ weights. 
+    *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting matrix-free matvec product w/ weights. 
 
     SciPy accepts weights by accepting potentially sparse adjacency matrix input. 
 
@@ -260,8 +283,10 @@ def up_laplacian(K: SimplicialComplex, w0 = None, w1 = None, p: int = 0, normed=
       L = (diags(w0) @ B @ diags(w1) @ B.T @ diags(w0)).tocoo()
       return L
     elif form == 'lo' or form == 'function':
-      p_faces = list(K.faces(1)) ## need to make a view 
-      p_simplices = list(K.faces(2)) ## need to make a view 
+      p_faces = list(K.faces(p))        ## need to make a view 
+      p_simplices = list(K.faces(p+1))  ## need to make a view 
       f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
-      lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f,dtype=np.dtype(float))
+      lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
       return lo
+    else: 
+      raise ValueError(f"Unknown form '{form}'.")

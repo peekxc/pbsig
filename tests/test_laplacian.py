@@ -8,7 +8,7 @@ from pbsig.utility import lexsort_rows
 
 ## Generate random geometric complex
 X = np.random.uniform(size=(15,2))
-K = delaunay_complex(X)
+K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
 D1, D2 = boundary_matrix(K, p=(1,2))
 
 ## Test unweighted/combinatorial quadratic form
@@ -49,7 +49,7 @@ ns = K.dim()
 w0,w1 = np.random.uniform(size=ns[1]), np.random.uniform(size=ns[2])
 
 P = np.sign((D2 @ D2.T).tocsc().data)
-L2 = (diags(w0) @ D2 @ diags(w1**2) @ D2.T @ diags(w0)).tocsc()
+LW = (diags(w0) @ D2 @ diags(w1**2) @ D2.T @ diags(w0)).tocsc()
 assert all(np.sign(L2.data) == P)
 
 p_faces = list(K.faces(p=1))
@@ -58,8 +58,7 @@ for t_ind, t in enumerate(K.faces(p=2)):
   for e in t.boundary():
     e_ind = p_faces.index(e)
     z[e_ind] += w1[t_ind]**2 * w0[e_ind]**2
-assert max(abs(L2.diagonal() - z)) < 1e-13
-assert max(abs((diags(L2.diagonal()) @ x) - z*x)) < 1e-13
+assert max(abs(LW.diagonal() - z)) < 1e-13
 
 x = np.random.uniform(size=ns[1])
 y = np.zeros(ns[1])
@@ -71,10 +70,6 @@ for t_ind, t in enumerate(K.faces(p=2)):
     c = w0[ii] * w0[jj] * w1[t_ind]**2
     y[ii] += x[jj] * c * s_ij
     y[jj] += x[ii] * c * s_ij
-    if ii == 0:
-      print(f"ii: xi={x[ii]}, xj={x[jj]}, L[i,j]={c}, s_ij={s_ij}")
-    if jj == 0:
-      print("jj:" + str(x[jj] * c))
 
 #assert max(abs((abs(L2) @ x) - (y + z*x))) <= 1e-13, "Failed signless comparison"
 assert max(abs((L2 @ x) - (y + x*z))) <= 1e-13, "Failed matrix vector"
@@ -94,32 +89,55 @@ for t_ind, t in enumerate(K.faces(p=2)):
   for e in t.boundary():
     ii = p_faces.index(e)
     y[ii] += x[ii] * w1[t_ind]**2 * w0[ii]**2
+assert max(abs((LW @ x) - y)) <= 1e-13, "Failed matrix vector"
+
+## Test the up-laplacian matrices and matrix free methods yield the same results 
+from pbsig.linalg import up_laplacian
+L1 = up_laplacian(K, w0=w0, w1=w1**2, p=1)
+assert max(abs((L1 @ x) - y)) <= 1e-13
+
+L1 = up_laplacian(K, w0=w0, w1=w1**2, p=1, form='lo')
+assert max(abs((L1 @ x) - y)) <= 1e-13
 
 
-up_laplacian(K, w0=w0,w1=w1, p=1)
+## Apply a directional trasnform 
+from pbsig.linalg import eigsh_family
+from pbsig.pht import rotate_S1, uniform_S1
 
-(L2 @ x)[0] # 0.04441226236190962
-L2[0,:].data
-L2[0,:].nonzero()[1]
-
-
-(L2 @ x)[0] - z[0]*x[0] # -0.004266920739521819
-np.dot(x[np.array([1,  3, 17, 19])], L2[0,:].data[1:]) # -0.004266920739521823
-
-x[np.array([1,  3, 17, 19])] # 0.73375187, 0.91341295, 0.68312572, 0.52781124
-L2[0,:].data[1:] # -0.03905382, -0.0917068 , 0.1269227 , 0.04064125
-
-y[0] + z[0]*x[0] # 0.2692562458376791
-
-# [ 0,  4],
-      #  [ 0,  6],
-      #  [ 0, 12],
-      #  [ 4,  6],
-      #  [ 4, 12]
-# it is a sign problem!
-abs(L2) @ x
+V, E = np.array(list(K.faces(0))).flatten(), np.array(list(K.faces(1)))
+fv, fe = lambda v: (X @ v)[V] + 1.0, lambda v: (X @ v)[E].max(axis=1) + 1.0
+L0_dt = (up_laplacian(K, fv(v), fe(v), p=0) for v in uniform_S1(32))
+R = list(eigsh_family(L0_dt, p = 0.50))
 
 
+## Make a directional transform class?
+
+## Weights should be non-negative to ensure positive semi definite?
+#np.linalg.eigvalsh(up_laplacian(K, p=0).todense())
+#np.linalg.eigvalsh((diags(w0) @ up_laplacian(K, p=0) @ up_laplacian(K, p=0)).todense())
+
+
+list(eigsh_family(L0_dt, p = 1.0, reduce=sum))
+
+LO = next(L0_dt)
+trace_threshold(LO, 1.0)
+
+LO = up_laplacian(K, w0, w1, p=0, form='lo')
+
+# I = np.zeros(LO.shape[0])
+# d = np.zeros(LO.shape[0])
+# for i in range(LO.shape[0]):
+#   I[i] = 1
+#   I[i-1] = 0
+#   d[i] = (LO @ I)[i]
+
+# I = I.tocsc()
+
+
+
+[(I[:,[i]].T @ LO @ I[:,[i]]).data[0] for i in range(LO.shape[0])]
+
+I[:,[i]].todense()
 
 G = {
   'vertices' : np.ravel(np.array(list(K.faces(0)))),

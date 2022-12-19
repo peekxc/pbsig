@@ -19,17 +19,24 @@ from typing import MutableSequence, Protocol, TypeVar
 
 @runtime_checkable
 class Comparable(Protocol):
-    """Protocol for annotating comparable types."""
-    @abstractmethod
-    def __lt__(self, other) -> bool:
-        pass
+  """Protocol for annotating comparable types."""
+  @abstractmethod
+  def __lt__(self, other) -> bool:
+      pass
 
 @runtime_checkable
-class SetLike(Protocol):
-    """Protocol for annotating set-like types."""
-    @abstractmethod
-    def __lt__(self: CT, other: CT) -> bool:
-        pass
+class SetLike(Comparable, Protocol):
+  """Protocol for annotating set-like types."""
+  @abstractmethod
+  def __contains__(self, item: Any) -> bool: pass
+  
+  @abstractmethod
+  def __iter__(self) -> Iterator[Any]: pass
+  
+  @abstractmethod
+  def __len__(self) -> int: pass
+    
+# isinstance(tuple([0,1,2]), SetLike)
 
 def edge_iterator(A):
   assert issparse(A), "Must be a sparse matrix"
@@ -131,7 +138,7 @@ def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = Fal
 
 
 @runtime_checkable
-class SimplexLike(Set, Hashable, Protocol):
+class SimplexLike(SetLike, Hashable, Protocol):
   ''' 
   An object is *simplex-like* if it is a Hashable Set
 
@@ -188,12 +195,12 @@ class MutableSequence(Sequence, Protocol):
   def __delitem__(self, index): raise NotImplementedError
   def __setitem__(self, key, newvalue): raise NotImplementedError
 
-## Filtrations need not have delitem / be MutableSequences to match dionysus...
-@runtime_checkable
-class MutableFiltrationLike(MutableSequence[SimplexLike], Protocol):
-  """ """
-  def sort(self, key: Callable[[SimplexLike, SimplexLike], bool]) -> None: raise NotImplementedError 
-  def rearrange(self, indices: Collection) -> None: raise NotImplementedError
+# ## Filtrations need not have delitem / be MutableSequences to match dionysus...
+# @runtime_checkable
+# class MutableFiltrationLike(MutableSequence[SimplexLike], Protocol):
+#   """ """
+#   def sort(self, key: Callable[[SimplexLike, SimplexLike], bool]) -> None: raise NotImplementedError 
+#   def rearrange(self, indices: Collection) -> None: raise NotImplementedError
 
 from itertools import combinations
 from functools import total_ordering
@@ -292,7 +299,7 @@ from collections.abc import Set, Hashable
 class SimplicialComplex(MutableSet):
   """ Abstract Simplicial Complex"""
   __hash__ = Set._hash
-  wrapped_methods = ('difference', 'intersection', 'symmetric_difference', 'union', 'copy')
+  # wrapped_methods = ('difference', 'intersection', 'symmetric_difference', 'union', 'copy')
   
   # @classmethod
   # def _wrap_methods(cls, names):
@@ -312,12 +319,9 @@ class SimplicialComplex(MutableSet):
 
   def __init__(self, iterable = None):
     """"""
-    #self.data = set() 
     self.data = SortedSet([], key=lambda s: (len(s), tuple(s), s)) # for now, just use the lex/dim/face order 
     self.update(iterable)
-    # self_set.__init__()
-    # if iterable is not None: 
-    #   self.update(iterable)
+
   def __iter__(self) -> Iterator:
     return iter(self.data)
   
@@ -706,12 +710,28 @@ class MutableFiltration(MutableMapping):
 
 # See: https://stackoverflow.com/questions/70381559/ensure-that-an-argument-can-be-iterated-twice
 from scipy.sparse import coo_array
-def _boundary(S: Iterable[SimplexLike], F: Sequence[SimplexLike]):
-  list(set(chain.from_iterable([combinations(s, len(s)-1) for s in S])))
+def _boundary(S: Iterable[SimplexLike], F: Optional[Sequence[SimplexLike]] = None):
 
-## TODO: replace with (S,F) pair where S := iterable of cofaces, F := Sequence of faces
-## If S 
-# x is iter(x) <=> x is not repeatable
+  ## Load faces. If not given, by definition, the given p-simplices contain their boundary faces.
+  if F is None: 
+    assert not(S is iter(S)), "Simplex iterable must be repeatable (a generator is not sufficient!)"
+    F = list(map(Simplex, set(chain.from_iterable([combinations(s, len(s)-1) for s in S]))))
+  
+  ## Ensure faces 'F' is indexable
+  assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
+
+  ## Build the boundary matrix from the sequence
+  m = 0
+  I,J,X = [],[],[] # row, col, data 
+  for (j,s) in enumerate(map(Simplex, S)):
+    if s.dimension() > 0:
+      I.extend([F.index(f) for f in s.faces(s.dimension()-1)])
+      J.extend(repeat(j, s.dimension()+1))
+      X.extend(islice(cycle([1,-1]), s.dimension()+1))
+    m += 1
+  D = coo_array((X, (I,J)), shape=(len(F), m)).tolil(copy=False)
+  return D 
+
 def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tuple]], p: Optional[Union[int, tuple]] = None):
   """
   Returns the ordered p-th boundary matrix of a simplicial complex 'K'
@@ -720,41 +740,22 @@ def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tupl
     D := sparse matrix representing either the full or p-th boundary matrix (as List-of-Lists format)
   """
   from collections.abc import Sized
-  if isinstance(K, MutableFiltration):
-    assert p is None
-    I,J,X = [],[],[] # row, col, data 
-    simplices = list(K.values())
-    for (j,s) in enumerate(simplices):
-      if s.dimension() > 0:
-        I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-        J.extend(repeat(j, s.dimension()+1))
-        X.extend(islice(cycle([1,-1]), s.dimension()+1))
-    D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-    return D
-  elif isinstance(K, SimplicialComplex):
-    if p is None:
-      I,J,X = [],[],[] # row, col, data 
-      simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
-      for (j,s) in enumerate(simplices):
-        if s.dimension() > 0:
-          I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-          J.extend(repeat(j, s.dimension()+1))
-          X.extend(islice(cycle([1,-1]), s.dimension()+1))
-      D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-      return D
-    elif isinstance(p, Integral):
-      K_lex = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
-      p_simplices = list(filter(lambda s: s.dimension() == p, K_lex))
-      p_faces = list(filter(lambda s: s.dimension() == p - 1, K_lex))
-      I,J,X = [],[],[] # row, col, data 
-      for (j,s) in enumerate(p_simplices):
-        if s.dimension() > 0:
-          I.extend([p_faces.index(f) for f in s.faces(s.dimension()-1)])
-          J.extend(repeat(j, s.dimension()+1))
-          X.extend(islice(cycle([1,-1]), s.dimension()+1))
-      D = coo_array((X, (I,J)), shape=(len(p_faces), len(p_simplices))).tolil(copy=False)
-      return D
-    elif isinstance(p, tuple):
-      return (boundary_matrix(K, pi) for pi in p)
+  if isinstance(p, tuple):
+    return (boundary_matrix(K, pi) for pi in p)
+  else: 
+    assert p is None or isinstance(p, Integral), "p must be integer, or None"
+    if isinstance(K, MutableFiltration):
+      assert p is None
+      simplices = list(K.values())
+      D = _boundary(simplices, simplices)
+    elif isinstance(K, SimplicialComplex):
+      if p is None:
+        simplices = list(iter(K))
+        D = _boundary(simplices, simplices)
+      else:
+        p_simplices = K.faces(p=p)
+        p_faces = list(K.faces(p=p-1))
+        D = _boundary(p_simplices, p_faces)
     else: 
       raise ValueError("Invalid input")
+    return D
