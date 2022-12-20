@@ -2,6 +2,7 @@ from typing import *
 from numpy.typing import ArrayLike
 from numbers import *
 
+from math import prod 
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
 import numpy as np
@@ -14,8 +15,15 @@ from .simplicial import *
 # def testing_l():
 #   lanczos.lower_star_lanczos()
 #   print(dir(lanczos))
+# eigh(L.todense())
 
-def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, **kwargs):
+# def bound_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float):
+#   ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
+#   # return sum(np.sort(diagonal(A)) >= tol) # rank lower bound
+
+
+
+def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:
   """ 
   Computes the numerical rank of a positive semi-definite 'A' via thresholding its eigenvalues.
 
@@ -25,34 +33,63 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
   See: https://math.stackexchange.com/questions/2238798/numerically-determining-rank-of-a-matrix
   """
   if isinstance(A, np.ndarray):
-    return np.linalg.matrix_rank(A, tol, hermitian)
-  elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
-    # assert hermitian, "Numerical rank only supports symmetric matrices currently"
-    
+    if np.allclose(A, 0.0) or prod(A.shape): return 0
+    return np.linalg.matrix_rank(A, tol, hermitian=True)
+  elif isinstance(A, spmatrix):
+    # import importlib.util
+    # if importlib.util.find_spec('sksparse') is not None: 
+    #   from sksparse.cholmod import cholesky
+    #   factor = cholesky(L, beta=tol)
+    #   PD = type('cholmod_solver', (type(LO),), { '_matvec' : lambda self, b: factor(b) })
+    #   solver = PD(L)
+    ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
+    ## this doesn't work for some reason
+    # rank_lb = sum(np.sort(diagonal(A)) >= tol)
+    if np.allclose(A.data, 0.0) or prod(A.shape) == 0: return 0
+
+    ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
+    rank_lb = int(np.ceil((sum(diagonal(A))**2)/sum(A.data**2)))
+    k = A.shape[0]-rank_lb
+
     ## Get numerical epsilon tolerance 
     if tol is None: 
       sn = eigsh(A, k=1, which='LM', return_eigenvectors=False).item() # spectral norm
       tol = sn * max(A.shape) * np.finfo(float).eps
+      if np.isclose(sn, 0.0): return 0
+    assert isinstance(tol, float), "Invalid tolerance"
     
+    ## Use un-shifted operator 'A' + shifted solver to estimate the dimension of the nullspace w/ shift-invert mode
+    smallest_k = eigsh(A + tol*eye(A.shape[0]), k=k, which='LM', sigma=0.0, tol=tol, return_eigenvectors=False)
+    dim_nullspace = sum(np.isclose(np.maximum(smallest_k - tol, 0.0), 0.0))
+    
+    ## Use rank-nullity to obtain the numerical rank
+    return max(A.shape) - dim_nullspace
+  elif isinstance(A, LinearOperator):
+    if prod(A.shape) == 0: return 0 
+
+    ## Get numerical epsilon tolerance 
+    if tol is None: 
+      sn = eigsh(A, k=1, which='LM', return_eigenvectors=False).item() # spectral norm
+      tol = sn * max(A.shape) * np.finfo(float).eps
+      if np.isclose(sn, 0.0): return 0
+    assert isinstance(tol, float), "Invalid tolerance"
+    cI = aslinearoperator(tol * eye(A.shape[0]))
+
+    ## Resolve the Ax = b solver
+    if solver == 'default' or solver == 'cg':
+      solver = lambda self, b: cg(A+cI, b, tol=tol, atol=tol)[0]
+    elif solver == 'lgmres':
+      solver = lambda self, b: lgmres(A+cI, b, tol=tol, atol=tol)[0]
+    else: 
+      raise ValueError(f"Unknown Ax=b solver '{solver}'")
+    solver = aslinearoperator(type('Ax_solver', (type(A),), { '_matvec' : solver })(A))
+
     ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
-    rank_lb = sum(np.sort(diagonal(A)) >= tol) # rank lower bound
-    k = max(A.shape) - rank_lb
-    
-    ## Overload .matvec operator to add small constant mass to diagonal for better conditioning
-    PD = type('pd_operator', (type(A),), { '_matvec' : lambda self, x: (A @ x) + tol*x })
-    PD_A = aslinearoperator(PD(A))
+    rank_lb = sum(np.sort(diagonal(A)) >= tol)
+    k = A.shape[0]-rank_lb
 
-    primme.eigsh(A, k = 1, which='LM', method='PRIMME_STEEPEST_DESCENT', return_eigenvectors=False)
-    eigsh(A, k=1, which='LM', return_eigenvectors=False)
-    eigsh(aslinearoperator(A), k=1, which='LM', return_eigenvectors=False)
-
-    eigsh(A + tol*eye(A.shape[0]), k=k, sigma=0, which='LM', v0=np.repeat(1, A.shape[0]), tol=tol, return_eigenvectors=False)
-    A_LO = aslinearoperator(A)
-    cI = aslinearoperator(tol*eye(A.shape[0]))
-    eigsh(A_LO-cI, k=k, sigma=0, which='LM', v0=np.repeat(1, A.shape[0]), maxiter=5000, tol=1e-6, return_eigenvectors=False)
-
-    ## Estimate the dimension of the nullspace w/ shift-invert mode
-    smallest_k = eigsh(A, k=k, sigma=0, which='LM', tol=tol, return_eigenvectors=False) ## needed! 
+    ## Use un-shifted operator 'A' + shifted solver to estimate the dimension of the nullspace w/ shift-invert mode
+    smallest_k = eigsh(A, k=k, which='LM', sigma=0.0, OPinv = solver, tol=tol, return_eigenvectors=False)
     dim_nullspace = sum(np.isclose(np.maximum(smallest_k - tol, 0.0), 0.0))
     
     ## Use rank-nullity to obtain the numerical rank
@@ -360,8 +397,8 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
     ns = K.dim() 
-    w0 = np.array([weight(s) for s in K.faces(p)]) if weight is not None else np.repeat(1, ns[p]) 
-    w1 = np.array([weight(s) for s in K.faces(p+1)]) if weight is not None else np.repeat(1, ns[p+1])
+    w0 = np.array([float(weight(s)) for s in K.faces(p)]) if weight is not None else np.repeat(1, ns[p]) 
+    w1 = np.array([float(weight(s)) for s in K.faces(p+1)]) if weight is not None else np.repeat(1, ns[p+1])
     assert len(w0) == ns[p] and len(w1) == ns[p+1], "Invalid weight arrays given."
     if form == 'array':
       B = boundary_matrix(K, p = p+1)

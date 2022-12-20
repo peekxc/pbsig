@@ -552,8 +552,39 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
+from pbsig.linalg import up_laplacian, numerical_rank
+
+def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
+  """
+  Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
+
+  The rank is computed by evaluating the given weight function on all p and (p+1)-simplices of S, and then 
+  restricting the entries to non-zero if (p+1)-simplices have weight <= j and p-simplices have weight > than i. 
+
+  S := an abstract simplicial complex. 
+  i := (p-1)-face threshold. Only (p-1)-simplices with weight strictly greater than i are considered.  
+  j := p-face threshold. Only p-simplices with weight less than or equal to j are considered. 
+  p := dimension of the chain group on S with which to construct the boundary matrix.
+  w := non-negative smoothing parameter. If 0, non-zero entries will have value 1, and otherwise they will be in [0,1]. 
+  weight := real-valued weight function on S. 
+  """
+  assert i <= j, "i must be <= j"
+  assert w >= 0, "smoothing parameter mut be non-negative."
+  assert p >= 0, "Invalid homology dimension."
+  weight = weight if weight is not None else lambda s: 1
+  assert isinstance(weight, Callable)
+  delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
+  ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
+  smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+  print(p)
+  LS = up_laplacian(S, p = p-1, weight = smoothed_weight) # 0th up laplacian = D1 @ D1.T
+  # print(LS)
+  # print(LS.data)
+  return numerical_rank(LS)
+
 # E: Union[ArrayLike, Iterable],
-def lower_star_multiplicity(F: Iterable[ArrayLike], K: SimplicialComplex, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank", "nuclear"], **kwargs):
+def lower_star_multiplicity(F: Iterable[ArrayLike], S: SimplicialComplex, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
@@ -566,19 +597,18 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], K: SimplicialComplex, R: Col
     * Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
 
   Parameters: 
-    F := Iterable whose items represent vertex functions. Each item should be a collection of length 'n'.
-    K := Fixed simplicial complex. 
+    F := Iterable of vertex functions. Each item should be a collection of length 'n'.
+    S := Fixed simplicial complex. 
     R := Collection of 4-tuples representing rectangles r=(a,b,c,d) in the upper half-plane
     p := Homology dimension to compute. Must be non-negative. Default to 0. 
     method := either "exact" or "singular"
-
   """
   from pbsig.persistence import ph0_lower_star
-  if p != 0:
-    raise NotImplemented("p > 0 hasn't been implemented yet")
+  if p != 0: raise NotImplemented("p > 0 hasn't been implemented yet")
   R = np.array(R)
-  # U = np.zeros(shape=(len(F), len(R)))
+
   if method == "exact":
+    E = np.array(list(S.faces(p=1)))
     mu_r = [0]*len(R)
     for i, f in enumerate(F):
       dgm = ph0_lower_star(f, E, max_death="max") # O(m*a(n) + mlogm) since E is unsorted
@@ -591,22 +621,18 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], K: SimplicialComplex, R: Col
       yield mu_r
   else: 
     # assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
-    up_laplacian
-    pass 
-    # F = list(iter(F))
-    # nv = len(F[0])
-    # version = 1
-    # for j, (a,b,c,d) in enumerate(R):
-    #   for i, f in enumerate(F):
-    #     if version == 1:
-    #       t1 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=c, method="nuclear", **kwargs)[0]
-    #       t2 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=c, method="nuclear", **kwargs)[0]
-    #       t3 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=b, b=d, method="nuclear", **kwargs)[0]
-    #       t4 = lower_star_betti_sig([f], p_simplices=E, nv=nv, a=a, b=d, method="nuclear", **kwargs)[0]
-    #       U[i,j] = t1 - t2 - t3 + t4 
-    #     elif version == 2: 
-    #       lanczos.UL0_VELS_lanczos(fv, I, J, 5, 6, 100, 1e-14) # nev, num lanczos vectors, max_iter, tol
-  # return(U)
+    mu_r = [0,0,0,0]
+    for c0, f in enumerate(F):
+      for c1, (i,j,k,l) in enumerate(R):
+        assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+        t1 = rank_ll(S, j, k, p=p+1, **kwargs)
+        t2 = rank_ll(S, i, k, p=p+1, **kwargs)
+        t3 = rank_ll(S, j, l, p=p+1, **kwargs)
+        t4 = rank_ll(S, i, l, p=p+1, **kwargs)
+        print(f"{t1-t2-t3+t4}: {t1},{t2},{t3},{t4}")
+        mu_r = [t1,t2,t3,t4]
+      yield mu_r
+    
 
 
 
@@ -634,21 +660,9 @@ class Laplacian_DT_2D:
     self.cc += 1
     return self.W @ self.D1 @ self.D1.T @ self.W
 
-from pbsig.linalg import up_laplacian
 
-def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, alpha: float = 0.0, w: float = 0.0):
-  """
-  rank lower-left
 
-  i := threshold 
-  """
-  # delta = tol(np.sqrt(E.shape[0]*2)) # TODO: use bound on spectral norm to get tol instead of eps?
-  delta = np.finfo(float).eps
-  ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
-  smoothed_weight = lambda s: ss_ic(weight(s)) if len(s) == p else ss_j(weight(s))
-  LS = up_laplacian(S, weight = smoothed_weight)
-  
+
   # A_exc = ss_ac(f[E]).flatten()
   # B_inc = np.repeat(ss_b(edge_f), 2)
   # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])

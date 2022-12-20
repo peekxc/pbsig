@@ -902,6 +902,7 @@ def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
     return(X)
   return(sw)
 
+## TODO: generalize beyond lower stars! 
 # TODO: change E to be iterable, add flag to accept pre-sorted edge iterables
 def ph0_lower_star(fv: ArrayLike, E: ArrayLike, collapse: bool = True, lex_sort: bool = True, max_death: Any = ["inf", "max"]) -> ArrayLike:
   """

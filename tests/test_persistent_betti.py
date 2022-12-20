@@ -2,33 +2,166 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pbsig.persistence import * 
 from pbsig.apparent_pairs import * 
-
-
 from pbsig.datasets import mpeg7
-
-MPEG = mpeg7()
-
-
 from pbsig.pht import pht_transformer, shape_center
-preprocess = pht_transformer()
-X = preprocess(MPEG[('turtle',1)])
-
 from pbsig.utility import cycle_window
 from pbsig.simplicial import SimplicialComplex, MutableFiltration
-S = SimplicialComplex(cycle_window(np.arange(X.shape[0])))
+from pbsig.linalg import up_laplacian
+from pbsig.linalg import numerical_rank
+from scipy.spatial.distance import pdist
+from scipy.sparse.linalg import eigsh
+from scipy.sparse.csgraph import laplacian
+import networkx as nx
 
-fv = X @ np.array([1,0])
-fv += abs(min(fv))
+## Data set 
+MPEG = mpeg7()
+preprocess = pht_transformer()
+X = preprocess(MPEG[('turtle',1)])
+S = SimplicialComplex(cycle_window(np.arange(X.shape[0])))
+fv = X @ np.array([1,0]) + max(pdist(X))
+
+## Start with the exact diagram: create a path in the upper half-plane 
+from pbsig.persistence import ph0_lower_star
+dgm0 = ph0_lower_star(fv, np.array(list(S.faces(1))), max_death='max')
+
+from itertools import combinations
+R = []
+plt.plot(*dgm0.T, marker='o', color='r')
+l, d = min(fv), (max(fv) - min(fv))/15
+for i, j in combinations(range(15), 2):
+  plt.plot(
+    [l+d*i, l+d*(i+1), l+d*(i+1), l+d*i, l+d*i], 
+    [l+d*j, l+d*j, l+d*(j+1), l+d*(j+1), l+d*j], 
+  color='k')
+  R.append([l+d*i, l+d*(i+1), l+d*j, l+d*(j+1)])
+plt.gca().set_aspect('equal')
+plt.show()
+
+from pbsig.betti import lower_star_multiplicity
+
+we = list(lower_star_multiplicity([fv], S, R=R, p = 0, method="exact"))
+wr = list(lower_star_multiplicity([fv], S, R=R, p = 0, method="rank"))
+
+np.flatnonzero(np.array(we[0]) != np.array(wr[0]).sum(axis=1))
+
+
+
+
+
+np.array(wr[0]).sum(axis=1)
+
+np.array(w[0]).sum(axis=1)
+
+xv, yv = np.meshgrid(np.linspace(l-delta, u+delta, 15), np.linspace(l-delta, u+delta, 15))
+
+import matplotlib.pyplot as plt
+plt.plot(xv+delta, yv+delta, marker='o', color='k', linestyle='none')
+plt.plot(*dgm0.T, marker='o', color='r')
+plt.show()
+
+
 
 D = boundary_matrix(S)
-from pbsig.linalg import up_laplacian
 L = up_laplacian(S, weight = lambda s: max(fv[s]))
 assert is_symmetric(L)
 assert all(np.linalg.eigvalsh(L.todense()) >= -1e-14) # positive semi-definite check
+assert np.linalg.matrix_rank(L.todense()) == numerical_rank(L)
 
 
-from pbsig.linalg import numerical_rank
+np.random.seed(1234)
+G = nx.connected_watts_strogatz_graph(150, 2, 0.20)
+A = nx.adjacency_matrix(G)
+L = laplacian(A).astype(float)
+
+tol = 1e-12
+v0 = np.repeat(1.0, L.shape[0])
+cI = aslinearoperator(tol*eye(A.shape[0]))
+
+from sksparse.cholmod import cholesky
+from scipy.sparse.linalg import lgmres
+
 numerical_rank(L)
+
+
+# https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
+# eigsh(L, k=1, which='SM', Minv = lambda b: factor(b), return_eigenvectors=False)
+# eigsh(L, k=1, sigma=0, which='LM', OPinv = lambda b: factor(b), return_eigenvectors=False)
+LO = aslinearoperator(L)
+
+tol = 1e-12
+factor = cholesky(L, beta=tol)
+PD = type('cholmod_solver', (type(LO),), {
+  '_matvec' : lambda self, b: factor(b)
+})
+solver = PD(L)
+eigsh(LO, k=5, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False)
+
+
+PD = type('lgmres_solver', (type(LO),), {
+  '_matvec' : lambda self, b: lgmres(LO, b, tol=tol, atol=tol)[0]
+})
+solver = PD(LO)
+eigsh(LO, k=5, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False) # v0 = np.ones(L.shape[0])
+
+tol = 1e-12
+cI = aslinearoperator(tol * eye(LO.shape[0]))
+PD = type('cg_solver', (type(LO),), {
+  '_matvec' : lambda self, b: cg(LO+cI, b, tol=tol, atol=tol)[0]
+})
+solver = PD(LO)
+eigsh(LO, k=5, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False) # v0 = np.ones(L.shape[0])
+
+
+x = np.random.uniform(size=L.shape[0])
+
+b = (aslinearoperator(L) + cI) @ x
+assert max(abs(x - factor(b))) <= tol
+assert max(abs((solver @ b) - x)) <= tol
+
+
+
+
+eigsh(L, k=1, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False)
+eigsh(aslinearoperator(L), k=5, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False)
+
+eigsh(aslinearoperator(L), k=1, sigma=0, which='LM', OPinv = solver, return_eigenvectors=False)
+
+
+eigsh(L, k=1, which='SM', return_eigenvectors=False)
+eigsh(L, k=1, sigma=0, which='LM', return_eigenvectors=False)
+eigsh(aslinearoperator(L), k=1, sigma=0, which='LM', return_eigenvectors=False)
+
+eigsh(L+(1e-12)*np.eye(L.shape[0]), k=1, sigma=0, which='LM', return_eigenvectors=False)
+eigsh(aslinearoperator(L+(1e-12)*np.eye(L.shape[0])), k=1, sigma=0, which='LM', return_eigenvectors=False)
+
+## All of these work
+eigsh(L, k=5, which='SM', v0=v0, return_eigenvectors=False)
+# 2.67824357e-01,  2.40824234e-01,  2.36075551e-01,  1.70579765e-01, -5.21233650e-17
+eigsh(L, k=5, sigma=0, which='LM', v0=v0, return_eigenvectors=False)
+# -1.62832710e-17,  1.70579765e-01,  2.36075551e-01,  2.40824234e-01, 2.67824357e-01
+eigsh(L + tol*eye(A.shape[0]), k=5, sigma=0, which='LM', v0=v0, return_eigenvectors=False)
+# 1.00013923e-12, 1.70579765e-01, 2.36075551e-01, 2.40824234e-01, 2.67824357e-01
+
+## https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
+
+## This also works 
+eigsh(aslinearoperator(L), k=5, which='SM', v0=v0, return_eigenvectors=False)
+# 2.67824357e-01,  2.40824234e-01,  2.36075551e-01,  1.70579765e-01, -5.21233650e-17
+
+## Yet these does not...?
+
+eigsh(aslinearoperator(L), k=5, sigma=0, which='LM', v0=v0, return_eigenvectors=False)
+eigsh(aslinearoperator(L)+cI, k=5, sigma=0, which='LM', v0=v0, return_eigenvectors=False)
+
+x = np.random.uniform(size=L.shape[0])
+assert np.allclose(aslinearoperator(L) @ x, L @ x)
+
+X = np.random.uniform(size=(L.shape[0], L.shape[0]))
+assert np.allclose(aslinearoperator(L) @ X, L @ X)
+
+A_LO = aslinearoperator(A)
+
+eigsh(A_LO+cI, k=1, sigma=0, which='LM', return_eigenvectors=False)
 
 
 
