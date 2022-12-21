@@ -20,6 +20,12 @@ X = preprocess(MPEG[('turtle',1)])
 S = SimplicialComplex(cycle_window(np.arange(X.shape[0])))
 fv = X @ np.array([1,0]) + max(pdist(X))
 
+lo = up_laplacian(S, form='lo')
+x = np.random.uniform(size=lo.shape[0])
+lo @ x
+lo.simplex_weights = np.random.uniform(size=S.dim()[1])
+lo @ x
+
 ## Start with the exact diagram: create a path in the upper half-plane 
 from pbsig.persistence import ph0_lower_star
 dgm0 = ph0_lower_star(fv, np.array(list(S.faces(1))), max_death='max')
@@ -42,7 +48,7 @@ from pbsig.betti import lower_star_multiplicity
 we = list(lower_star_multiplicity([fv], S, R=R, p = 0, method="exact"))
 wr = list(lower_star_multiplicity([fv], S, R=R, p = 0, method="rank"))
 
-np.flatnonzero(np.array(we[0]) != np.array(wr[0]).sum(axis=1))
+np.flatnonzero(np.array(we) != np.array(wr))
 
 
 

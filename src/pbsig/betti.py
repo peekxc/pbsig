@@ -7,6 +7,7 @@ from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import structural_rank
 from .persistence import * 
 from .apparent_pairs import *
+from .linalg import *
 
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
@@ -552,7 +553,26 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-from pbsig.linalg import up_laplacian, numerical_rank
+def mu_query(UL: LinearOperator, R: tuple, smoothing: str = [""], w: float = 0.0):
+  """
+  Given a weighted up laplacian 'UL', computes
+  """
+  assert len(R) == 4, "Must be a rectangle"
+  if isinstance(UL, LinearOperator):
+    i,j,k,l = R
+    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
+    ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
+    smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+
+    numerical_rank(LS)
+    return 0 
+  elif isinstance(UL, spmatrix):
+    return 0 
+  else: 
+    raise ValueError("")
+
+  return 0 
 
 def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
   """
@@ -571,13 +591,12 @@ def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Option
   assert i <= j, "i must be <= j"
   assert w >= 0, "smoothing parameter mut be non-negative."
   assert p >= 0, "Invalid homology dimension."
-  weight = weight if weight is not None else lambda s: 1
   assert isinstance(weight, Callable)
   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
   ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
   ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
   smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-  print(p)
+  # print(p)
   LS = up_laplacian(S, p = p-1, weight = smoothed_weight) # 0th up laplacian = D1 @ D1.T
   # print(LS)
   # print(LS.data)
@@ -609,29 +628,26 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], S: SimplicialComplex, R: Col
 
   if method == "exact":
     E = np.array(list(S.faces(p=1)))
-    mu_r = [0]*len(R)
     for i, f in enumerate(F):
       dgm = ph0_lower_star(f, E, max_death="max") # O(m*a(n) + mlogm) since E is unsorted
-      for j, (a,b,c,d) in enumerate(R):
-        assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
-        if len(dgm) > 0:
+      if len(dgm) > 0:
+        for j, (a,b,c,d) in enumerate(R):
+          assert a < b and b <= c and c < d, f"Invalid rectangle ({a:.2f}, {b:.2f}, {c:.2f}, {d:.2f}): each rectangle must have positive measure"
           born_mu = np.logical_and(dgm[:,0] >= a, dgm[:,0] <= b)
           died_mu = np.logical_and(dgm[:,1] > c, dgm[:,1] <= d) # < d?
-          mu_r[j] = sum(np.logical_and(born_mu, died_mu))
-      yield mu_r
+          yield sum(np.logical_and(born_mu, died_mu))
   else: 
     # assert isinstance(method, str) and method in ["rank", "nuclear", "generic", "frobenius"], f"Invalid method input {method}"
-    mu_r = [0,0,0,0]
     for c0, f in enumerate(F):
+      weight = lambda s: max(f[s])
       for c1, (i,j,k,l) in enumerate(R):
         assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-        t1 = rank_ll(S, j, k, p=p+1, **kwargs)
-        t2 = rank_ll(S, i, k, p=p+1, **kwargs)
-        t3 = rank_ll(S, j, l, p=p+1, **kwargs)
-        t4 = rank_ll(S, i, l, p=p+1, **kwargs)
+        t1 = rank_ll(S, j, k, p=p+1, weight=weight, **kwargs)
+        t2 = rank_ll(S, i, k, p=p+1, weight=weight, **kwargs)
+        t3 = rank_ll(S, j, l, p=p+1, weight=weight, **kwargs)
+        t4 = rank_ll(S, i, l, p=p+1, weight=weight, **kwargs)
         print(f"{t1-t2-t3+t4}: {t1},{t2},{t3},{t4}")
-        mu_r = [t1,t2,t3,t4]
-      yield mu_r
+        yield t1-t2-t3+t4
     
 
 

@@ -218,6 +218,8 @@ from numbers import Integral
 ## We conclude there is no base Python representation implementation. 
 ## SortedSet is close, however it is mutable and not hashable. 
 ## So we make our own Simplex representation!
+## Should use __slots__! See: https://stackoverflow.com/questions/472000/usage-of-slots
+## and flyweights! https://python-patterns.guide/gang-of-four/flyweight/
 class Simplex(Set, Hashable):
   '''
   Implements: 

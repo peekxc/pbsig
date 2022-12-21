@@ -312,40 +312,115 @@ def _up_laplacian_matvec_1(S: Collection['Simplex'],  w0: ArrayLike, w1: ArrayLi
     return v
   return _matvec
 
-def _up_laplacian_matvec_p(S: Iterable['Simplex'], F: Sequence['Simplex'],  w0: ArrayLike, w1: ArrayLike, p: int, sgn_pattern = "default"):
-  ## Ensure S is repeatable and faces 'F' is indexable
-  assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
-  assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
 
-  ## Length checks
-  n = len(F) # F must have an index method, so it must be at least a Sequence
-  assert n == len(w0), "Invalid w0"
-  if hasattr(S, '__len__'): assert len(S) == len(w1), "Invalid w1"
+class UpLaplacian(LinearOperator):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None, orientation: Union[int, tuple] = 0):
+    ## Ensure S is repeatable and faces 'F' is indexable
+    assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
+    assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
+    p: int = len(F[0]) # 0 => F are vertices, build graph Laplacian
 
-  ## Get sgn patterns / allocate workspace 
-  sgn_pattern = list(islice(cycle([1,-1]), p+2)) if sgn_pattern == "default" else sgn_pattern
-  lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(sgn_pattern,2)])
-  v = np.zeros(n) # workspace
+    ## Resolve the sign pattern
+    if isinstance(orientation, Integral):
+      sgn_pattern = (1,-1) if orientation == 0 else (-1,1)
+      orientation = tuple(islice(cycle(sgn_pattern), p+2))
+    assert isinstance(orientation, tuple)
+    self.sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(orientation,2)])
+    self._v = np.zeros(len(F)) # workspace
+    self.simplices = S
+    self.faces = F
+    self.shape = (len(F), len(F))
+    self.dtype = np.dtype(float) if dtype is None else dtype
+    self._wf = None
+    self._ws = None
+    self.prepare()
   
+  ## Face weights
+  @property 
+  def face_weights(self): 
+    return self._wf
+
+  @face_weights.setter
+  def face_weights(self, value: ArrayLike) -> None:
+    if value is None: 
+      self._wf = None 
+    else: 
+      assert len(value) == self.shape[0], "Invalid value given. Must match shape."
+      assert isinstance(value, np.ndarray)
+      self._wf = value
+
+  ## S-weights
+  @property
+  def simplex_weights(self): 
+    return self._ws
+  
+  @simplex_weights.setter
+  def simplex_weights(self, value: ArrayLike):
+    if value is None: 
+      self._ws = None
+    else:
+      # if hasattr(self.S, '__len__'): assert len(self.S) == len(value), "Invalid weight vector given."
+      assert isinstance(value, np.ndarray) 
+      self._ws = value ## length is unchecked! 
+
+  def prepare(self, level: int = 0) -> None: 
+    # self.index = type('_indexer', (), { '__getitem__' : lambda })
+    if level == 0:
+      self.index = lambda s: self.faces.index(s)
+    elif level == 1:
+      self._index = { f: i for i, f in enumerate(self.faces) }
+      self.index = lambda s: self._index[s]
+    else: 
+      raise NotImplementedError("Not implemented yet")
+
   ## Define the matvec operator as a closure
-  def _matvec(x: ArrayLike):
-    nonlocal v
+  def _matvec(self, x: ArrayLike):
+    v = self._v
     v.fill(0)
-    for t_ind, t in enumerate(S):
-      for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
-        ii, jj = F.index(e1), F.index(e2)
-        c = w0[ii] * w0[jj] * w1[t_ind]
-        v[ii] += x[jj] * c * s_ij
-        v[jj] += x[ii] * c * s_ij
-    for t_ind, t in enumerate(S):
-      for e in t.boundary():
-        ii = F.index(e)
-        v[ii] += x[ii] * w1[t_ind] * w0[ii]**2
+    if self._wf is None and self._wf is None:
+      for s_ind, s in enumerate(self.simplices):
+        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+          ii, jj = self.index(f1), self.index(f2)
+          v[ii] += x[jj] * sgn_ij
+          v[jj] += x[ii] * sgn_ij
+      for s_ind, s in enumerate(self.simplices):
+        for f in s.boundary():
+          ii = self.index(f)
+          v[ii] += x[ii]
+    elif (self._ws is None) and not(self._wf is None):
+      for s_ind, s in enumerate(self.simplices):
+        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+          ii, jj = self.index(f1), self.index(f2)
+          c = self._wf[ii] * self._wf[jj]
+          v[ii] += x[jj] * c * sgn_ij
+          v[jj] += x[ii] * c * sgn_ij
+      for s_ind, s in enumerate(self.simplices):
+        for f in s.boundary():
+          ii = self.index(f)
+          v[ii] += x[ii] * self._wf[ii]**2
+    elif not(self._ws is None) and (self._wf is None):
+      for s_ind, s in enumerate(self.simplices):
+        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+          ii, jj = self.index(f1), self.index(f2)
+          c = self._ws[s_ind]
+          v[ii] += x[jj] * c * sgn_ij
+          v[jj] += x[ii] * c * sgn_ij
+      for s_ind, s in enumerate(self.simplices):
+        for f in s.boundary():
+          ii = self.index(f)
+          v[ii] += x[ii] * self._ws[s_ind]
+    else:
+      for s_ind, s in enumerate(self.simplices):
+        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+          ii, jj = self.index(f1), self.index(f2)
+          c = self._wf[ii] * self._wf[jj] * self._ws[s_ind]
+          v[ii] += x[jj] * c * sgn_ij
+          v[jj] += x[ii] * c * sgn_ij
+      for s_ind, s in enumerate(self.simplices):
+        for f in s.boundary():
+          ii = self.index(f)
+          v[ii] += x[ii] * self._ws[s_ind] * self._wf[ii]**2
     return v
-  return _matvec
-
-
-
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:
@@ -407,8 +482,9 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     elif form == 'lo' or form == 'function':
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
-      f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
-      lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
+      lo = UpLaplacian(p_simplices, p_faces)
+      # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
+      # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
       return lo
     else: 
       raise ValueError(f"Unknown form '{form}'.")

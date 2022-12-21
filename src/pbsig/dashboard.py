@@ -349,7 +349,7 @@ def dt_cb(new):
   ## First step: compute eigenvalues of weighted Laplacian on DT-family. Save as a sparse matrix. 
   ## Second step: To see effects of different smoothing methods, add a slider w/ a parameter eps 
   ## Third step: If user selects a set of rectilinear shapes + hits a compute button, replace the signature plot with smoothed versions of those 
-  
+
 
   # else: 
   n_boxes = len(br.data_source.data['x'])
@@ -533,7 +533,7 @@ def load_recs_cb():
   # global ds_name, hp, br
   if sl_all.active[0] == 0: # cuz 0 is active  
     print("Loading boxes")
-    print("Contxt plot keys: "+ str(list(CONTEXT_PLOTS.keys())))
+    print("Context plot keys: "+ str(list(CONTEXT_PLOTS.keys())))
     print(pc_data_source.data)
     for name in pc_data_source.data['data_keys']:
       print('here')
