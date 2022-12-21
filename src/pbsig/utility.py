@@ -7,35 +7,6 @@ from typing import *
 from numpy.typing import ArrayLike
 from math import comb
 
-# Simple counter mechanism to count evaluation calls
-class Counter():
-  def __init__(self): self.cc = 0
-  def __call__(self, *args, **kwargs): self.cc += 1
-  def __repr__(self): return f"Number of calls: {self.cc}"
-  def num_calls(self): return self.cc
-
-## From: https://stackoverflow.com/questions/492519/timeout-on-a-function-call
-def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
-  import signal
-  class TimeoutError(Exception): pass
-  def handler(signum, frame): raise TimeoutError()
-  # set the timeout handler
-  signal.signal(signal.SIGALRM, handler) 
-  signal.alarm(timeout_duration)
-  result = default
-  try:
-    result = func(*args, **kwargs)
-  except TimeoutError as exc:
-    result = default
-  finally:
-    signal.alarm(0)
-  return result
-
-def lexsort_rows(A):
-  """ Returns A with its rows in sorted, lexicographical order. Each row is also ordered. """
-  A = np.array([np.sort(a) for a in A])
-  return A[np.lexsort(np.rot90(A))] 
-
 def pairwise(S: Iterable): 
   a, b = tee(S)
   next(b, None)
@@ -59,7 +30,7 @@ def rotate(S: Iterable, n: int = 1):
   return iter(items)
 
 def cycle_window(S: Iterable, offset: int = 1, w: int = 2):
-  return window(islice(cycle(S), len(S)+offset), w)
+  return islice(cycle(window(S, w)), (len(S)-1)+offset)
 
 def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), lower: bool = False):
   """
@@ -143,50 +114,25 @@ def is_sorted(L: Iterable, compare: Callable = le):
 #       return False
 #   return True
 
-
-def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = False):
+def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, reverse: bool = False):
   """
-  Maps [lb, ub] -> [0, 1] via a smoother version of a step function. When down=False and lb=ub, the step functions look like: 
-
-  down = False       |    down = True
-  1:      o------    |    1: -----* 
-  0: -----*          |    0:      o------  
-
-  When |lb - ub| > 0, the returned function is a differentiable relaxation the above step function(s). 
-
-  Parameters: 
-    lb := lower bound in the domain to begin the step 
-    ub := upper bound in the domain to end the step 
-    order := smoothness parameter 
-    down := whether to make the step a down step. Default to False (makes an up-step).
-  
-  Returns a vectorized function S(x) satisfying one of: 
-    1. S(x) = 0 for all x <= lb, 0 < S(x) < 1 for all lb < x < ub, and S(x) = 1 for all x >= ub, if down = False
-    2. S(x) = 1 for all x <= lb, 0 < S(x) < 1 for all lb < x < ub, and S(x) = 0 for all x >= ub, if down = True
+  Maps [lb, ub] -> [0, 1] via a smoother version of a step function
   """
   assert ub >= lb, "Invalid input"
   if lb == ub:
-    if down: 
-      def _ss(x: float): return 1.0 if x <= lb else 0.0
-    else:
-      def _ss(x: float): return 0.0 if x <= lb else 1.0
+    def _ss(x: float):
+      if reverse: 
+        return(1.0 if x < lb else 0.0)
+      else: 
+        return(0.0 if x < lb else 1.0)
   else: 
     d = (ub-lb)
-    assert d > 0, "Must be positive distance"
     def _ss(x: float):
-      if (x <= lb): return(1.0 if down else 0.0)
-      if (x >= ub): return(0.0 if down else 1.0)
-      y = (x-lb)/d 
-      return (1.0 - (3*y**2 - 2*y**3)) if down else 3*y**2 - 2*y**3
+      y = (x-lb)/d if not(reverse) else 1.0 - (x-lb)/d
+      if (y <= 0.0): return(0.0)
+      if (y >= 1.0): return(1.0)
+      return(3*y**2 - 2*y**3)
   return(np.vectorize(_ss))
-
-## Convenience wrapper
-def smooth_upstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
-  return smoothstep(lb=lb, ub=ub, order=order, down=False)
-
-## Convenience wrapper
-def smooth_dnstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
-  return smoothstep(lb=lb, ub=ub, order=order, down=True)
 
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
@@ -217,7 +163,6 @@ def unrank_combs(R: Iterable, k: int, n: int):
 def rank_comb(c: Tuple, k: int, n: int):
   c = np.array(c, dtype=int)
   #index = np.sum(comb((n-1)-c, np.flip(range(1, k+1))))
-  #print([(cc, kk) for cc,kk in zip((n-1)-c, np.flip(range(1, k+1)))])
   index = np.sum([comb(cc, kk) for cc,kk in zip((n-1)-c, np.flip(range(1, k+1)))])
   return(int((comb(n, k)-1) - int(index)))
 
@@ -226,32 +171,6 @@ def rank_combs(C: Iterable, k: int, n: int):
     return(np.array([rank_C2(c[0], c[1], n) for c in C], dtype=int))
   else: 
     return(np.array([rank_comb(c, k, n) for c in C], dtype=int))
-
-sorting_nets = { 
-  1 : [[0]],
-  2 : [[0,1]],
-  3 : [[0,1],[0,2],[1,2]],
-  4 : [[0,1],[2,3],[0,2],[1,3],[1,2]],
-  5 : [[0,1],[2,3],[0,2],[1,4],[0,1],[2,3],[1,2],[3,4],[2,3]],
-  6 : [[0,1],[2,3],[4,5],[0,2],[1,4],[3,5],[0,1],[2,3],[4,5],[1,2],[3,4],[2,3]]
-}
-def parity(X: Collection):
-  """ 
-  Finds the number of inversions of any collection of comparable numbers of size <= 6. 
-  
-  On the implementation side, sorts 'X' using sorting networks to find the number of inversions. 
-  """
-  X = np.array(X, copy=True)
-  if len(X) == 1: return 0
-  nt: int = 0
-  for i,j in sorting_nets[len(X)]:
-    X[[i,j]], nt = (X[[j,i]], nt+abs(i-j)) if X[i] > X[j] else (X[[i,j]], nt)
-  return nt
-
-# https://math.stackexchange.com/questions/415970/how-to-determine-the-parity-of-a-permutation-by-its-cycle-decomposition
-# TODO: find number of cycles w/o Sympy
-def sgn_permutation(p):
-  return int((-1)**(len(p)-Permutation(p).cycles))
 
 def edges_from_triangles(triangles: ArrayLike, nv: int):
   ER = np.array([[rank_C2(*t[[0,1]], n=nv), rank_C2(*t[[0,2]], n=nv), rank_C2(*t[[1,2]], n=nv)] for t in triangles])
@@ -278,23 +197,10 @@ def scale_diameter(X: ArrayLike, diam: float = 1.0):
   return(Xs)
 
 
-def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
+def shape_center(X: ArrayLike, method: str = ["barycenter", "directions", "bbox", "hull"], V: Optional[ArrayLike] = None):
   """
   Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
-
-  Each type of center varies in cost and definition, but each can effectively be interpreted as some kind of 'barycenter'. In particular: 
-
-  barycenter := point-wise barycenter of 'X', equivalent to arithmetic mean of the points 
-  box := barycenter of bounding box of 'X' 
-  hull := barycenter of convex hull of 'X'
-  polygon := barycenter of 'X', when 'X' traces out the boundary of a closed polygon in R^2*
-  directions := barycenter of 'X' projected onto a set of rotationally-symmetric direction vectors 'V' in S^1
-  
-  The last options 'directions' uses an iterative process (akin to meanshift) to find the barycenter 'u' satisfying: 
-
-  np.array([min((X-u) @ v)*v for v in V]).sum(axis=0) ~= [0.0, 0.0]
   """
-  import warnings
   n, d = X.shape[0], X.shape[1]
   method = "directions" if V is not None else method 
   if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
@@ -304,12 +210,9 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
     return(X[ConvexHull(X).vertices,:].mean(axis=0))
   elif method == "directions":
     assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
-    ## Check V is rotationally symmetric
-    rot_sym = np.allclose([min(np.linalg.norm(V + v, axis=1)) for v in V], 0.0, atol=atol)
-    warnings.warn("Warning: supplied vectors 'V' not rotationally symmetric up to supplied tolerance")
     original_center = X.mean(axis=0)
     cost: float = np.inf
-    while not(np.isclose(cost, 0.0, atol=atol)):
+    while cost > 1e-12:
       Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
       U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
       center_diff = U.mean(axis=0)
@@ -318,14 +221,15 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
         np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
         np.linalg.norm(center_diff)
       ])
+      #print(cost)
     return(original_center - X.mean(axis=0))
+  # V = np.array([[0,1], [0,-1], [1,0], [-1,0]])
+  # V = np.array([[0,1], [0,-1]])
+  # V = np.array([[1,0], [-1,0]])
+  # np.array([min(X @ vi)*np.array(vi) for vi in V]).mean(axis=0)
   elif method == "bbox":
     min_x, max_x = X.min(axis=0), X.max(axis=0)
     return((min_x + (max_x-min_x)/2))
-  elif method == "polygon":
-    from shapely.geometry import Polygon
-    P = Polygon(X)
-    return np.array(list(P.centroid.coords)).flatten()
   else: 
     raise ValueError("Invalid method supplied")
 
@@ -356,50 +260,6 @@ def winding_distance(X: ArrayLike, Y: ArrayLike):
     ind = ConvexHull([p1,p2,q1,q2]).vertices
     int_diff += Polygon(np.vstack([p1,p2,q1,q2])[ind,:]).area
   return(int_diff)
-
-def shift_curve(line, reference, objective: Optional[Callable] = None):
-  min_, best_offset = np.inf, 0
-  if objective is None: 
-    objective = lambda X,Y: np.linalg.norm(X-Y)
-  for offset in range(len(line)):
-    deviation = objective(reference, np.roll(line, offset, axis=0))
-    if deviation < min_:
-      min_ = deviation
-      best_offset = offset
-  if best_offset:
-    line = np.roll(line, best_offset, axis=0)
-  return line
-
-def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
-  """ Procrustes distance between closed curves """
-  from procrustes.rotational import rotational
-  from pbsig.pht import pht_preprocess_pc
-  from pyflubber.closed import prepare
-  if preprocess:
-    A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
-  if do_reflect:
-    R_refl = np.array([[-1, 0], [0, 1]])
-    A1,B1 = procrustes_cc(A, B, do_reflect=False, matched=matched, preprocess=False)
-    A2,B2 = procrustes_cc(A @ R_refl, B, do_reflect=False, matched=matched, preprocess=False)
-    return (A1, B1) if np.linalg.norm(A1-B1, 'fro') < np.linalg.norm(A2-B2, 'fro') else (A2, B2)
-  else:
-    if matched:
-      R = rotational(A, B, pad=False, translate=False, scale=False)
-      # return np.linalg.norm((A @ R.t) - B, 'fro')
-      return A @ R.t, B
-    else: 
-      ## Fix clockwise / counter-clockwise orientation of points
-      A_p, B_p = prepare(A, B)
-      
-      ## Shift points along shape until minimum procrustes distance is obtained
-      pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
-      os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
-      A, B = A_p, np.roll(B_p, os, axis=0)
-      return procrustes_cc(A, B, matched=True)
-
-def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
-  A_p, B_p = procrustes_cc(A, B, **kwargs)
-  return np.linalg.norm(A_p - B_p, 'fro')
 
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg

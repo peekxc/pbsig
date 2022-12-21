@@ -19,7 +19,6 @@ from scipy.spatial.distance import pdist, cdist, squareform
 import _boundary as boundary
 from .apparent_pairs import *
 from .utility import *
-from .simplicial import *
 
 _perf = {
   "n_col_adds" : 0,
@@ -73,84 +72,36 @@ def H2_boundary_matrix(edges: Iterable, triangles: Iterable, coboundary: bool = 
   #   D = csc_matrix(np.flipud(np.fliplr(D.A)).T)
   return(D)
 
-# from scipy.sparse import coo_array
-# def boundary_matrix(K: Union[List, ArrayLike], p: Optional[Union[int, tuple]] = None):
-#   """
-#   Returns the ordered p-th boundary matrix of 'K'
-#   """
-#   from collections.abc import Sized
-#   if isinstance(K, MutableFiltration):
-#     assert p is None
-#     # K.validate() ## needed to ensure faces exist
-#     I,J,X = [],[],[] # row, col, data 
-#     simplices = list(K.values(expand=True))
-#     for (j,s) in enumerate(simplices):
-#       if s.dimension() > 0:
-#         I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-#         J.extend(repeat(j, s.dimension()+1))
-#         X.extend(islice(cycle([1,-1]), s.dimension()+1))
-#     D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-#     return D
-#   elif isinstance(K, SimplicialComplex):
-#     if p is None:
-#       I,J,X = [],[],[] # row, col, data 
-#       simplices = list(K) ## TODO: check if K has .index() method and use that, if provided
-#       for (j,s) in enumerate(simplices):
-#         if s.dimension() > 0:
-#           I.extend([simplices.index(f) for f in s.faces(s.dimension()-1)])
-#           J.extend(repeat(j, s.dimension()+1))
-#           X.extend(islice(cycle([1,-1]), s.dimension()+1))
-#       D = coo_array((X, (I,J)), shape=(len(simplices), len(simplices))).tolil(copy=False)
-#       return D
-#     elif isinstance(p, Integral):
-#       K_lex = sorted(iter(K), key=lambda s: (len(s), tuple(s), s))
-#       p_simplices = list(filter(lambda s: s.dimension() == p, K_lex))
-#       p_faces = list(filter(lambda s: s.dimension() == p - 1, K_lex))
-#       I,J,X = [],[],[] # row, col, data 
-#       for (j,s) in enumerate(p_simplices):
-#         if s.dimension() > 0:
-#           I.extend([p_faces.index(f) for f in s.faces(s.dimension()-1)])
-#           J.extend(repeat(j, s.dimension()+1))
-#           X.extend(islice(cycle([1,-1]), s.dimension()+1))
-#       D = coo_array((X, (I,J)), shape=(len(p_faces), len(p_simplices))).tolil(copy=False)
-#       return D
-#     elif isinstance(p, tuple):
-#       return (boundary_matrix(K, pi) for pi in p)
-#     else: 
-#       raise ValueError("Invalid input")
-  # elif isinstance(p, Iterable):
-  #   if f is None: 
-  #     f = [None]*len(p)
-  #   return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
-  # else:
-  #   print("why is this portion called? ")
-    # if p == 0:
-    #   nv = len(K['vertices'])
-    #   D = csc_matrix((0, nv), dtype=np.float64).tolil()
-    #   return D
-    # elif p == 1: 
-    #   D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
-    #   return D
-    # elif p == 2:
-    #   D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
-    #   return D
-    # elif p == 3:
-    #   nt = len(K['triangles'])
-    #   assert not('quads' in K)
-    #   D = csc_matrix((nt, 0), dtype=np.float64).tolil()
-    #   return D
-    # elif p is None:
-    #   # Return full boundary matrix
-    #   nv, ne, nt = len(K['vertices']), K['edges'].shape[0], K['triangles'].shape[0]
-    #   m = nv + ne + nt
-    #   D1 = H1_boundary_matrix(K['vertices'], K['edges'])
-    #   D2 = H2_boundary_matrix(K['edges'], K['triangles'])
-    #   from scipy.sparse import bmat, dok_array
-    #   B0, B1, B2 = dok_array((nv,nv)), dok_array((ne,ne)), dok_array((nt,nt))
-    #   D = bmat([[B0, D1, dok_array((nv,nt))], [dok_array(D1.shape).T, B1, D2], [dok_array((nt, nv)), dok_array((nt,ne)), B2]])
-    #   return D 
-    # else: 
-    #   raise ValueError(f"Unknown value p={p} supplied")
+def boundary_matrix(K: Union[List, ArrayLike], p: Union[int, List[int]], f: Optional[Union[ArrayLike, List[ArrayLike]]] = None):
+  from collections.abc import Sized
+  if isinstance(p, Iterable):
+    if f is None: 
+      f = [None]*len(p)
+    return(boundary_matrix(K, p_, f_) for p_, f_ in zip(p, f))
+  else:
+    if p == 0:
+      nv = len(K['vertices'])
+      D = csc_matrix((0, nv), dtype=np.float64).tolil()
+    elif p == 1: 
+      D = H1_boundary_matrix(K['vertices'], K['edges'], coboundary=False)
+    elif p == 2:
+      D = H2_boundary_matrix(K['edges'], K['triangles'], N = len(K['vertices']), coboundary=False)
+    elif p == 3:
+      nt = len(K['triangles'])
+      assert not('quads' in K)
+      D = csc_matrix((nt, 0), dtype=np.float64).tolil()
+    else: 
+      raise NotImplementedError
+      #raise ValueError(f"Invalid p={p} for boundary matrix")
+    if not(f is None): # isinstance(f, Sized)
+      if isinstance(f, Tuple) and len(f) == 2:
+        ind0, ind1 = np.argsort(f[0]), np.argsort(f[1])
+        D = D[np.ix_(ind0,ind1)]
+      elif isinstance(f, Sequence):
+        raise NotImplementedError
+      else: 
+        raise NotImplementedError
+    return(D)
 
 # def rips_boundary(X: ArrayLike, p: int, threshold: float):
 #   pw_dist = pdist(X)
@@ -477,7 +428,7 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
     return(D, (fw, cw)) # face, coface weights
 
 def low_entry(D: lil_array, j: Optional[int] = None):
-  """ Provides O(1) access to all the low entries of D, if D is CSC """
+  """ Provides O(1) access to all the low entries of D """
   #assert isinstance(D, csc_matrix)
   if j is None: 
     return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
@@ -726,73 +677,21 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
   return(valid)
 
 ## TODO: redo with filtration class at some point
-def barcodes(K: Dict, p: Optional[int] = None, f: Tuple= None, index: bool = False, **kwargs):
+def barcodes(K: Dict, p: int, f: Tuple, **kwargs):
   """
   Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
   """
-  if isinstance(K, dict):
-    if p == 0:
-      v0, e0 = f
-      V_names = [str(v) for v in K['vertices']]
-      E_names = [str(tuple(e)) for e in K['edges']]
-      VF0 = dict(zip(V_names, v0))
-      EF0 = dict(zip(E_names, e0))
-      D0, D1 = boundary_matrix(K, p=(0,1))
-      D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
-      R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-      P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
-    elif p is None:
-      D = boundary_matrix(K)
-      V = sps.identity(D.shape[1]).tolil()
-      R = D.copy().tolil()
-      pHcol(R, V)
-      assert validate_decomp(D, R, V)
-  elif isinstance(K, MutableFiltration):
-    if p is None:
-      D = boundary_matrix(K)
-      V = sps.identity(D.shape[1]).tolil()
-      R = D.copy().tolil()
-      pHcol(R, V)
-      assert validate_decomp(D, R, V)
-      rlow = low_entry(R)
-      sdim = np.array([s.dimension() for s in iter(K.values(expand=True))])
-      
-      ## Get the indices of the creators and destroyers
-      creator_mask = rlow == -1
-      creator_dim = sdim[creator_mask]
-      birth = np.flatnonzero(creator_mask)
-      death = np.repeat(np.inf, len(birth))
-      death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
-
-      ## If 
-      if not(index): 
-        # key_dtype = type(next(F.keys(expand=True)))
-        filter_vals = np.fromiter(K.keys(expand=True), dtype=float)
-        index2f = {i:fv for i, fv in zip(np.arange(len(F)), filter_vals)} | { np.inf : np.inf}
-        birth = np.array([index2f[i] for i in birth])
-        death = np.array([index2f[i] for i in death])
-      
-      ## Assemble the diagram
-
-      dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
-      
-      # dgm = np.fromiter(zip(creator_dim, birth, death), dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
-      # dgm = dgm[np.argsort(dgm, order=['dim', 'birth', 'death'])]
-      # assert all(dgm['birth'] <= dgm['death'])
-      # dgm = np.vstack([np.c_[
-      #   np.fromiter(repeat(d, sum(creator_dim == d)), dtype='i2'), 
-      #   birth[creator_dim == d].astype('f4'), 
-      #   death[creator_dim == d].astype('f4')
-      # ] for d in np.unique(creator_dim)])
-      # np.array(dgm, dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
-
-
-      ## Generators 
-      # V[np.ix_(creator_mask,creator_mask)]
-      # [simplices[int(i)] for i in dgm_index[0][:,0]]
-      # [simplices[int(i)] for i in dgm_index[0][:,1] if i != np.inf]
-      # b = np.flatnonzero(rlow[rlow != -1])
-
+  
+  if p == 0:
+    f0, e0 = f
+    V_names = [str(v) for v in K['vertices']]
+    E_names = [str(tuple(e)) for e in K['edges']]
+    VF0 = dict(zip(V_names, f0))
+    EF0 = dict(zip(E_names, e0))
+    D0, D1 = boundary_matrix(K, p=(0,1))
+    D1 = D1[np.ix_(np.argsort(f0), np.argsort(e0))]
+    R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+    P0 = persistence_pairs(R0, R1, f=(VF0,EF0))
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
   return(P0)
 
@@ -902,90 +801,6 @@ def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
     return(X)
   return(sw)
 
-# TODO: change E to be iterable, add flag to accept pre-sorted edge iterables
-def ph0_lower_star(fv: ArrayLike, E: ArrayLike, collapse: bool = True, lex_sort: bool = True, max_death: Any = ["inf", "max"]) -> ArrayLike:
-  """
-  Computes the 0-dim persistence diagram of a lower-star filtration. 
-
-  Parameters: 
-    fv := 1d np.array of vertex function values, i.e. f(v_i) = fv[i] (index ordered)
-    E := (m x 2) np.array of edges in the underlying complex
-    collapse := whether to collapse 0-persistence pairs. Defaults to True. 
-    lex_sort := whether to return the pairs in lexicographical birth-death order. Default to True.
-
-  Return: 
-    barcodes 
-  """
-  from scipy.cluster.hierarchy import DisjointSet
-  if isinstance(max_death, list) and max_death == ["inf", "max"]:
-    max_death = np.inf
-  elif max_death == "max":
-    max_death = max(fv)
-  else:
-    assert isinstance(max_death, float)
-
-  ## Data structures + variables
-  nv = len(fv)
-  ds = DisjointSet(range(nv)) # Set representatives are minimum by *index*
-  elders = np.fromiter(range(nv), dtype=int) # Elder map: needed to maintain minimum set representatives
-  paired = np.zeros(nv, dtype=bool)
-  insert_rule = lambda a,b: not(np.isclose(a,b)) if collapse else True # when to insert a pair
-  
-  ## Compute lower-star edge values; prepare to traverse in order
-  # fe = fv[E].max(axis=1)  # function evaluated on edges
-  ne = E.shape[0]
-  ei = np.fromiter(sorted(range(ne), key=lambda i: (max(fv[E[i,:]]), min(fv[E[i,:]]))), dtype=int)
-  
-  ## Proceed to union components via elder rule
-  dgm = []
-  for (i,j), f in zip(E[ei,:], fv[E[ei,:]].max(axis=1)):
-    ## The 'elder' was born first before the child: has smaller function value
-    # assert i != 7 and j != 8 # should kill 5! 
-    elder, child = (i, j) if fv[i] <= fv[j] else (j, i)
-    # if child == 5 and elder == 6: assert False
-    if not ds.connected(i,j):
-      if not paired[child]: # child unpaired => merged instantly by (i,j)
-        dgm += [(fv[child], f)] if insert_rule(fv[child], f) else []
-        paired[child] = True # kill the child
-        #assert child != 5
-        #print(f"{child}, ({i},{j})")
-      else: # child already paired in component, use elder rule (keep elder alive)
-        #assert elder != 8 # problem child
-        creator = elders[ds[elder]] if fv[elders[ds[child]]] <= fv[elders[ds[elder]]] else elders[ds[child]]
-        dgm += [(fv[creator], f)] if insert_rule(fv[creator], f) else []
-        # assert not(paired[creator])
-        paired[creator] = True
-        #print(f"{creator}, ({i},{j})")
-      
-    ## Merge (i,j) and update elder map
-    elder_i, elder_j = elders[ds[i]], elders[ds[j]]
-    ds.merge(i,j)
-    elders[ds[i]] = elders[ds[j]] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
-
-    ## Representative step: get set-representatives w/ minimum function value
-    # cc_i, cc_j = np.array(list(ds.subset(i))), np.array(list(ds.subset(j)))
-    # elder_i = cc_i[np.argmin(fv[cc_i])]
-    # elder_j = cc_j[np.argmin(fv[cc_j])]
-    
-    # new_elder = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
-    # elders[i] = elders[j] = elders[ds[i]] = elders[ds[j]] = new_elder
-    # elders[i] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
-    # elders[i] = elder_i if fv[elder_i] <= fv[elder_j] else elder_j
-      
-
-    # cc = np.array(list(ds.subset(i)))
-    # elder_ind = cc[np.argmin(fv[cc])]
-    # assert elders[i] == elder_ind and elders[j] == elder_ind
-
-      
-  ## Post-processing 
-  # print(f"Essential: {str(np.flatnonzero(paired == False))}")
-  eb = fv[np.flatnonzero(paired == False)]  ## essential births
-  ep = list(zip(eb, [max_death]*len(eb)))   ## essential pairs 
-  dgm = np.array(dgm + ep)                  ## append essential pairs
-
-  ## If warranted, lexicographically sort output
-  return dgm if not(lex_sort) else dgm[np.lexsort(np.rot90(dgm)),:]
 
 def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
   """
