@@ -65,8 +65,10 @@ struct SmoothStep {
   }
 };
 
+
 // Linear operator representing the 0-th Up Laplacian for vertex-and-edge valued boundary matrices
 // coming from lower-star filtrations, at scale (i,j), for some fixed simplicial complex K (w/ indices I, J)
+// This is takes as input the CSC-sparse matrix indices 
 template< typename F = float, bool lex_order = true >
 struct UpLaplacian0_VELS {
   using Scalar = F;  // required by Eigen 

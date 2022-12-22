@@ -389,8 +389,40 @@ By Proposition~\ref{prop:mu_reduction}, we also have a parameterized multiplicit
 %	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
 %\end{enumerate}
 
-\subsection{Complexity of Persistence}
- 
+\subsection{Complexity of Persistence \& Related work}
+Before proceeding with the main result, we briefly recount the main complexity results of the persistence computation. 
+With a few key exceptions, the majority of persistent homology implementations and extensions is based on the \emph{reduction algorithm} introduced by Edelsbrunner and Zomorodian~\cite{edelsbrunner2000topological}. 
+This algorithm factorizes the filtered boundary into a decomposition $R = \partial V$, where $V$ is full rank upper-triangular and $R$ is said to be in reduced form: if its $i$-th and $j$-th columns are nonzero, then $\mathrm{low}_R(i) \neq \mathrm{low}_R(j)$, where $\mathrm{low}_R(i)$ denotes the row index of the lowest non-zero in column $i$. 
+We refer to~\cite{} for details. 
+
+Given a filtration $(K, f)$ of size $m = \lvert K \rvert$ with filter $f : K \to [m]$, the reduction algorithm in form given in ~\cite{edelsbrunner2000topological} computes $\mathrm{dgm}_p(K; \mathbb{Z}/2) = \{ \, (\tau_1, \sigma_1), (\tau_2, \sigma_2), \dots, (\tau_k, \sigma_k) \, \}$ runs in time proportional to the sum of the squared (index) persistences $\sum_{i=1}^k (f(\sigma_i)-f(\tau_i))^2$. As $k$ is at most $m / 2$, this implies a $O(m^3)$ upper bound on the complexity of the general persistence computation, which incidentally Morozov showed was a tight $\Theta(m^3)$ under the assumption that each column reduction takes $O(m)$ time. 
+By exploiting the matrix-multiplication results, a similar result can be shown to reduce to $O(m^\omega)$, where $\omega$ is the matrix-multiplication constant, which is $\approx 2.37$ as of this time of writing. 
+It worth remarking that the complexity statements above are all given in terms of the number of \emph{simplices} $m$: if $n = \lvert K^0 \rvert$ is the size of the vertex set, the above implies a worst-case bound of $O(n^{\omega(p+2)})$ on the general persistence computation. For example, if we use non-Strassen-based matrix multiplication $(\omega = 3)$ and we are concerned with $p=1$ homology computation, the complexity of the reduction algorithm scales $O(n^9)$ in the number of vertices of the complex, which is essentially intractable for most real world application settings. 
+
+Despite the seemingly immense intractability of the persistence computation, decades of advancements have been made in reducing the complexity or achieving approximate results in reasonable time and space complexities. 
+The complexity of the reduction algorithm is complicated by the fact that it depends heavily on the structure of the associated filtration $K$, the homology dimension $p$, the field of coefficients $\mathbb{F}$, and the assumptions about the space $K$ manifests from.
+In~\cite{}, Sheehy presented an algorithm for producing a sparsified version $(\tilde{K}, \tilde{f})$ of a given Vietoris-Rips filtration $(K, f)$ constructed from an $n$-point metric space $(X, d_X)$ whose total number of $p$-simplices is bounded above by $n\cdot (\epsilon^{-1})^{O(pd)}$, where $d$ is the doubling dimension of $X$.
+%By assuming $d$ and $\epsilon$ are constant, one infers the size of the filtration is $O(n)$. 
+It was shown that $\mathrm{dgm}_p(\tilde{K})$ is guaranteed to be a multiplicative $c$-approximation to the $\mathrm{dgm}_p(K)$, where $c = (1 - 2\epsilon)^{-1}$ and $\epsilon \leq 1/3$ is a positive approximation parameter.
+When $p = 0$ and the filtration function $f : K \to \mathbb{R}$ is PL, the reduction algorithm can be bypassed entirely in favor of simple $O(n \log n + \alpha(n) m) \approx O(m)$ algorithm (see Algorithm 5 in~\cite{dey2022computational}), where $n = \lvert K^0 \rvert$ and $m = \lvert K^1 \rvert$ and $\alpha(n)$ is the extremely slow-growing inverse Ackermann function. 
+Moreover, the $d-1$ persistence pairs can be computed in $O(n \alpha(n))$ time algorithm for filtrations of simplicial $d$-manifolds essentially reducing the problem to computing persistence on a dual graph~\cite{dey2022computational}.
+For clique complexes, the apparent pairs optimization---which preemptively removes zero-persistence pairs from the computation prior to the reduction---has been empirically observed to reduce the number of columns needing reduced for clique complexes by $\approx 98-99\%$~\cite{bauer2020persistence}. 
+Numerous other optimizations, including e.g. the \emph{clearing optimization}, the use of \emph{cohomology}, the \emph{implicit reduction} technique, have further reduced both the non-asymptotic constant factors of the reduction algorithm significantly, see~\cite{bauer2020persistence} and references therein for a full overview. 
+
+Despite the dramatic reductions in time and space needed for the persistence algorithm to complete, to the author knowledge relatively little has been done in improving the complexity and effective runtime of the reduction in parameterized settings. 
+% vineyards
+% moves and warm restarts
+Although both of these algorithms have shown significant constant-factor reductions in the (re)-reduction of the associated sparse matrices, all of the techniques require $O(m^2)$ storage to execute as the $R$ and $V$ matrices must be maintained throughout the computation. Moreover, all three of the above methods intrinsically work within the reduction framework, wherein simulating persistence in dynamic contexts effectively reduces to the combinatorial problem of maintaining a valid $R = \partial V$ decomposition. 
+
+As noted in~\cite{dey2022computational}, the reduction algorithm is essentially a variant of Gaussian elimination. Indeed, the persistence of a given filtration can be computed by the PLU factorization of a matrix.
+The explicit decompositional approach of factorizing a large matrix into constitutive parts is known historically in numerical linear algebra as a \emph{direct method}---methods would yield the exact solution within a finite number of steps. 
+In contrast, iterative methods start with approximate solution and progressively update the solution up to arbitrary accuracy. 
+The iterative methods well-known to the numerical linear algebra community, such as Krylov methods, are typically often attractive not only due to the reduction in computational work over direct approaches but also of the limited amount of memory that is required. 
+Despite the success of iterative methods in efficiently solving linear systems manifesting from diagonally dominant sparse matrices is~\cite{}, such advancements have not yet been extended to the persistence setting. 
+% Iterative solution of linear systems in the 20th century
+% Sketching Persistence Diagrams
+In what follows, we explore the possibility of doing just that. 
+
 
 \section{Spectral PBN relaxation and its implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
@@ -402,7 +434,7 @@ In this section we discuss the computational details involved in evaluating the 
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods for finding the eigenvalues of Hermitian matrices. 
+where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods specialized for symmetric matrices. 
 %In particular, we focus on the Lanczos iteration applied to positive semi-definite matrices, diagonally dominant (DD) and strictly diagonally dominant (SDD) matrices, and combinatorial Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
 
 % Benefits of rank(A) = < non-zero eigenvalues >
@@ -412,7 +444,7 @@ For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines
 %i.e. $y^T \Lambda y = \lambda_1 y_1^2 + \lambda_2 y_2^2 + \dots + \lambda_n y_n^2$. 
 Each eigen-pair $(\lambda, v)$ satisfies $A v = \lambda v$, and when $A$ is symmetric, every $\lambda$ is real-valued and every pair of eigenvectors $v, u \in \mathbb{R}^n$ whose corresponding eigenvalues $\lambda \neq \lambda'$ are orthogonal.  
 % https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
-Thus we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of the aforementioned ellipsoid---via orthogonal diagonalization:
+Thus, we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths of the aforementioned ellipsoid---via orthogonal diagonalization:
 %by constructing an orthonormal eigenvector basis $V$ of $A$,
 \begin{equation}\label{eq:eigen_decomp}
 	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
@@ -422,7 +454,7 @@ Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric ei
 Computing eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
 Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using non-Strassen-like operations, and thus this reduction to tridiagonal form dominates the computation. 
-Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum.
+Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As the Lanczos method is the central iterative method we study in this effort, we review it below. 
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -491,13 +523,12 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\mathcal{M}(n), n\}\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
 \end{lemma}
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
-Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any algorithm based on the Lanczos method.
+Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method.
 \begin{corollary}\label{cor:finite_arith_lanczos}
 	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\mathcal{M}(n), n\} \cdot r)$ time and $\Omega(n)$ storage complexity. 
 \end{corollary}
 \noindent
-In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation.
-These errors manifest as loss of orthogonality between the Lanczos vectors, which not only affects convergence towards an in invariant subspace, but muddles the termination condition. 
+In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation which manifest as loss of orthogonality between the Lanczos vectors. These errors not only affect the iterations convergence towards an in invariant subspace, but actually muddle the termination condition entirely. 
 Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
 Because these extensions are varied, non-trivial, and multifaceted, we defer their discussion to section~\ref{subsec:rounding}. 
 %Independent of orthogonality-enforcement scheme of choice,
@@ -636,8 +667,8 @@ In , they give both theoretical and empricial evidence to suggest that by employ
 %usually are significantly less than two times slower 
 %If we fast forward several decades of research, one finds that there is no longer just 
 
-\subsubsection*{Effective Resistance \& The Laplacian Paradigm}
-We now turn to our main result. 
+%\subsubsection*{Effective Resistance \& The Laplacian Paradigm}
+%We now turn to our main result. 
 
 
 

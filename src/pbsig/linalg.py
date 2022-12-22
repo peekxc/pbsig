@@ -7,6 +7,7 @@ from scipy.sparse import *
 from scipy.sparse.linalg import * 
 import numpy as np
 import _lanczos as lanczos
+import _laplacian as laplacian
 import primme
 
 ## Local imports
@@ -305,7 +306,7 @@ def _up_laplacian_matvec_1(S: Collection['Simplex'],  w0: ArrayLike, w1: ArrayLi
     for cc, (i,j) in enumerate(S):
       v[i] += w1[cc]**2
       v[j] += w1[cc]**2
-    v = w0**2 * v * x
+    v *= w0**2 * x
     for cc, (i,j) in enumerate(S):
       v[i] -= x[j]*w0[i]*w0[j]*w1[cc]**2
       v[j] -= x[i]*w0[i]*w0[j]*w1[cc]**2

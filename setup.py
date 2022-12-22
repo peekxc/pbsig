@@ -39,6 +39,16 @@ ext_modules = [
     extra_compile_args=extra_compile_args,
     language='c++17', 
     cxx_std=1
+  ),
+  Pybind11Extension(
+    '_laplacian', 
+    sources = ['src/pbsig/laplacian.cpp'], 
+    include_dirs=[
+      '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
+    ], 
+    extra_compile_args=extra_compile_args,
+    language='c++17', 
+    cxx_std=1
   ), 
   Pybind11Extension(
     '_pbn', 

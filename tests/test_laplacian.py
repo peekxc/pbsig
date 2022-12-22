@@ -3,8 +3,35 @@ import numpy as np
 from itertools import combinations
 from scipy.sparse import diags
 from pbsig.persistence import boundary_matrix
-from pbsig.simplicial import delaunay_complex, graph_laplacian, edge_iterator
-from pbsig.utility import lexsort_rows
+from pbsig.simplicial import *
+from pbsig.utility import *
+
+def test_up_laplacian_native():
+  X = np.random.uniform(size=(15,2))
+  assert isinstance(X, np.ndarray)
+
+  K = delaunay_complex(X) 
+  assert isinstance(K, SimplicialComplex)
+  
+  E = np.array(list(K.faces(1)))
+  nv = K.dim()[0]
+  er = rank_combs(E, k=2, n=nv)
+  assert isinstance(er, np.ndarray) and len(er) == K.dim()[1]
+
+  from pbsig.linalg import laplacian
+  assert str(type(laplacian)) == "<class 'module'>"
+  
+  L = laplacian.UpLaplacian0_LS(er, nv)
+  L.fv = np.random.uniform(size=nv)
+  x = np.random.uniform(size=nv)
+  L.precompute_degree()
+  L._matvec(x)
+
+  from pbsig.linalg import up_laplacian
+  fv = np.array(L.fv.copy())
+  L_up = up_laplacian(K, p=0, weight=lambda s: max(fv[s]))
+  L_up @ x
+
 
 ## Generate random geometric complex
 X = np.random.uniform(size=(15,2))
@@ -98,6 +125,7 @@ assert max(abs((L1 @ x) - y)) <= 1e-13
 
 L1 = up_laplacian(K, w0=w0, w1=w1**2, p=1, form='lo')
 assert max(abs((L1 @ x) - y)) <= 1e-13
+
 
 
 ## Apply a directional trasnform 

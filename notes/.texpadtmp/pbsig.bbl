@@ -6,6 +6,12 @@ Ulrich Bauer.
 \newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
   2021.
 
+\bibitem{bauer2020persistence}
+Ulrich Bauer and Michael Lesnick.
+\newblock Persistence diagrams as diagrams: A categorification of the stability
+  theorem.
+\newblock In {\em Topological Data Analysis}, pages 67--96. Springer, 2020.
+
 \bibitem{bi2013approximation}
 Shujun Bi, Le~Han, and Shaohua Pan.
 \newblock Approximation of rank function and its application to the nearest
@@ -64,6 +70,12 @@ Tamal~Krishna Dey and Yusu Wang.
 Herbert Edelsbrunner and John~L Harer.
 \newblock {\em Computational topology: an introduction}.
 \newblock American Mathematical Society, 2022.
+
+\bibitem{edelsbrunner2000topological}
+Herbert Edelsbrunner, David Letscher, and Afra Zomorodian.
+\newblock Topological persistence and simplification.
+\newblock In {\em Proceedings 41st annual symposium on foundations of computer
+  science}, pages 454--463. IEEE, 2000.
 
 \bibitem{golub2013matrix}
 Gene~H Golub and Charles~F Van~Loan.

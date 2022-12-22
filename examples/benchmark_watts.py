@@ -18,8 +18,26 @@ from pbsig.simplicial import *
 from pbsig.linalg import eigsh_family
 
 ## Data set 
-G = nx.connected_watts_strogatz_graph(n=100, k=5, p=0.10)
-X = np.array(list(nx.fruchterman_reingold_layout(G).values()))
+G = nx.watts_strogatz_graph(n=500, k=10, p=0.15)
+# S = SimplicialComplex(G.edges())
+k = int(np.ceil(np.log2(124749)))
+er = rank_combs(S.faces(1), k=2, n=500)
+
+number = 1337
+with open('complex.txt', 'w') as f:
+  for r in er:
+    f.write('%d\n' % r)
+# ./build -n 18625 -c 3.0 -a 0.94 -e dictionary_dictionary --minimal -i /Users/mpiekenbrock/pbsig/examples/complex.txt
+
+# X = np.array(list(nx.fruchterman_reingold_layout(G).values()))
+
+# edge_bs = 0b0001
+# y = np.array([(edge_bs << k) | r for r in er])
+# z = np.array([int(f[0]) for f in S.faces(0)])
+# np.array(list(z) + list(y))
+
+
+rank_combs(S.faces(1), k=2, n=500)
 
 ## Form weighted Laplacian directional transform 
 from pbsig.betti import Laplacian_DT_2D
