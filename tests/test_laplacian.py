@@ -33,6 +33,15 @@ def test_up_laplacian_native():
   L_up @ x
 
 
+from pbsig.linalg import _up_laplacian_matvec_1
+E = np.array(list(K.faces(1)))
+w0 = fv 
+w1 = fv[E].max(axis=1)
+f = _up_laplacian_matvec_1(list(K.faces(1)), w0, w1)
+f(x)
+
+up_laplacian(K, )
+
 ## Generate random geometric complex
 X = np.random.uniform(size=(15,2))
 K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
@@ -56,19 +65,38 @@ for cc, (i,j) in enumerate(K.faces(1)):
 v1 = (D1 @ D1.T) @ x
 assert np.allclose(v0, v1), "Unweighted Linear form failed!"
 
-## Test weighted linear form (only takes one O(n) vector!)
-ns = K.dim()
-w0,w1 = np.random.uniform(size=ns[0]), np.random.uniform(size=ns[1])
-v0 = np.zeros(ns[0]) # note the O(n) memory
-for cc, (i,j) in enumerate(K.faces(1)):
-  v0[i] += w1[cc]**2
-  v0[j] += w1[cc]**2
-v0 = w0**2 * v0 * x # O(n)
-for cc, (i,j) in enumerate(K.faces(1)):
-  v0[i] -= x[j]*w0[i]*w0[j]*w1[cc]**2
-  v0[j] -= x[i]*w0[i]*w0[j]*w1[cc]**2
-v1 = (diags(w0) @ D1 @ diags(w1**2) @ D1.T @ diags(w0)) @ x
-assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+def test_weighted_linear_L0():
+  ## Generate random geometric complex
+  X = np.random.uniform(size=(15,2))
+  K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
+  D1, D2 = boundary_matrix(K, p=(1,2))
+
+  ## Test weighted linear form (only takes one O(n) vector!)
+  ns = K.dim()
+  w0, w1 = np.random.uniform(size=ns[0]), np.random.uniform(size=ns[1])
+  v0 = np.zeros(ns[0]) # note the O(n) memory
+  for cc, (i,j) in enumerate(K.faces(1)):
+    v0[i] += w0[i]**2 * w1[cc]**2
+    v0[j] += w0[j]**2 * w1[cc]**2
+  v0 *= x # O(n)
+  for cc, (i,j) in enumerate(K.faces(1)):
+    c = w0[i]*w0[j]*w1[cc]**2
+    v0[i] -= x[j]*c
+    v0[j] -= x[i]*c
+  v1 = (diags(w0) @ D1 @ diags(w1**2) @ D1.T @ diags(w0)) @ x
+  assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+
+  ## Test interface method 
+  from pbsig.linalg import up_laplacian
+  fv = w0
+  L_up = up_laplacian(K, p=0, weight=lambda s: max(fv[s]), form='lo')
+  L_up.simplex_weights
+  L_up._ws
+  assert np.allclose(L_up @ x, v0)
+  assert np.allclose(L_up @ x, v1)
+  
+
+
 
 # def up_laplacian(K: Union[SparseMatrix, SimplicialComplex], p: int = 0, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
 ## Up Laplacian - test weighted linear form (only takes one O(n) vector!) 

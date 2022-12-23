@@ -296,9 +296,9 @@ from pbsig.simplicial import SimplicialComplex
 # from types import MappingProxyType
 
 # No F needed because faces are assumed to be vertices in sorted order, V = [n]
-def _up_laplacian_matvec_1(S: Collection['Simplex'],  w0: ArrayLike, w1: ArrayLike):
+def _up_laplacian_matvec_1(S: Collection['Simplex'], w0: ArrayLike, w1: ArrayLike):
   # .shape and .matvec and .dtype attributes
-  n,m = len(F), len(S)
+  n,m = len(w0), len(S)
   v = np.zeros(n) # note the O(n) memory
   def _matvec(x: ArrayLike): 
     nonlocal v
@@ -484,6 +484,8 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
+      lo.simplex_weights = w1
+      lo.simplex_weights = w0
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
       return lo
