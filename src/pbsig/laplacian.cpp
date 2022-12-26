@@ -17,6 +17,7 @@ using namespace pybind11::literals;  // to bring in the `_a` literal
 
 // Type aliases + alias templates 
 using std::vector;
+using std::array;
 using uint_32 = uint_fast32_t;
 using uint_64 = uint_fast64_t;
 
@@ -27,29 +28,40 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
   return(std::array< uint_64, 2 >{ i, j });
 }
 
-template< typename F = float, bool lex_order = true >
-struct UpLaplacian0_LS {
+template< int p = 0, typename F = float, bool lex_order = true >
+struct UpLaplacian {
   const size_t nv;
-  const size_t ne; 
-  std::array< size_t, 2 > shape; 
-  const vector< uint64_t > er; // edge ranks
-  mutable vector< F > y;  // workspace
-  vector< F > fv;         // filter values 
-  vector< F > Df;         // weighted degrees; compute during initialization
-  UpLaplacian0_LS(const vector< uint64_t > er_, const size_t nv_) : nv(nv_), ne(er_.size()), er(er_), y(nv_)  {
+  const size_t np;
+  const size_t nq; 
+  array< size_t, 2 > shape;  // TODO: figure out how to initialize in constructor
+  const vector< uint64_t > qr;    // p+1 ranks
+  mutable vector< F > y;          // workspace
+  vector< F > fp;                 // p-simplex weights 
+  vector< F > fq;                 // (p+1)-simplex weights
+  vector< F > Df;                 // weighted degrees; pre-computed
+  UpLaplacian(const vector< uint64_t > qr_, const size_t nv_, const size_t np_) 
+    : nv(nv_), np(np_), nq(qr_.size()), qr(qr_)  {
     shape = { nv, nv };
+    y = vector< F >(np); // todo: experiment with local _alloca allocation
+    fp = vector< F >(np, 1.0);
+    fq = vector< F >(nq, 1.0); 
+    Df = vector< F >(np, 0.0);
+    prepare();
   }
 
   // Precomputes the degree term
-  void precompute_degree(){
-    if (fv.size() != nv || er.size() != ne){ return; }
-    Df = vector< F >(nv);
-    F ew = 0.0;
-    for (size_t cc = 0; cc < ne; ++cc){
-      auto [i, j] = lex_unrank_2_array(er[cc], nv);
-      ew = std::max(fv[i], fv[j]);
-      Df[i] += ew * ew;
-      Df[j] += ew * ew;
+  void prepare(){
+    if (fp.size() != np || fq.size() != nq || Df.size() != np){ return; }
+    F qw = 0.0;
+    for (size_t cc = 0; cc < nq; ++cc){
+      if constexpr (p == 0){
+        auto [i, j] = lex_unrank_2_array(qr[cc], nv);
+        ew = std::max(fv[i], fv[j]);
+        Df[i] += ew * ew;
+        Df[j] += ew * ew;
+      } else {
+
+      }
     }
   };
 

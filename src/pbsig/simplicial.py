@@ -137,25 +137,25 @@ def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = Fal
 ## In the future, a true structural subtype system is preferable via e.g. mypy to enable optimizations such as mypy-c
 
 
+
+
 @runtime_checkable
 class SimplexLike(SetLike, Hashable, Protocol):
   ''' 
-  An object is *simplex-like* if it is a Hashable Set
+  An object is *simplex-like* if it is Immutable, Hashable, and SetLike
 
-  By definition, this implies a simplex is sized, iterable, and acts as a container (supports vertex containment queries)
-
-  Moreover, a simplex is also immutable and Set-like: 
-  
-  a boundary operator and has a dimension  
+  By definition, this implies a simplex is sized, iterable, and acts as a container (supports vertex __contains__ queries)
 
   Inherited Abstract Methods: __hash__, __contains__, __iter__, __len__
-
-  
   '''
-  def boundary(self) -> Iterable['SimplexLike']: 
-    raise NotImplementedError 
-  def dimension(self) -> int: 
-    raise NotImplementedError
+  def __setitem__(self, *args) -> None:
+    raise TypeError("'simplex' object does not support item assignment")
+
+def dim(s: SimplexLike) -> int:
+  return len(s) - 1
+
+def boundary(s: SimplexLike) -> Iterable['SimplexLike']:
+  return combinations(s, len(s)-1)
 
 ## Simplicial complex duck type
 @runtime_checkable
@@ -205,7 +205,7 @@ class MutableSequence(Sequence, Protocol):
 from itertools import combinations
 from functools import total_ordering
 import numpy as np
-
+from dataclasses import dataclass
 from numbers import Integral
 
 ## The Python data model doesn't exactly allow for immutable, hashable, ordered set-like objects
@@ -220,13 +220,17 @@ from numbers import Integral
 ## So we make our own Simplex representation!
 ## Should use __slots__! See: https://stackoverflow.com/questions/472000/usage-of-slots
 ## and flyweights! https://python-patterns.guide/gang-of-four/flyweight/
+@dataclass(frozen=True)
 class Simplex(Set, Hashable):
   '''
   Implements: 
     __contains__(self, v: int) <=> Returns whether integer 'v' is a vertex in 'self'
   '''
+  # __slots__ = 'vertices'
+  vertices: tuple = ()
   def __init__(self, v: Collection[Integral]) -> None:
-    self.vertices = tuple([int(v)]) if isinstance(v, Number) else tuple(np.unique(np.sort(np.ravel(tuple(v)))))
+    t = tuple([int(v)]) if isinstance(v, Number) else tuple(np.unique(np.sort(np.ravel(tuple(v)))))
+    object.__setattr__(self, 'vertices', t)
     assert all([isinstance(v, Integral) for v in self.vertices]), "Simplex must be comprised of integral types."
   def __eq__(self, other) -> bool: 
     if len(self) != len(other):
@@ -322,12 +326,13 @@ class SimplicialComplex(MutableSet):
   def __init__(self, iterable = None):
     """"""
     self.data = SortedSet([], key=lambda s: (len(s), tuple(s), s)) # for now, just use the lex/dim/face order 
+    self.shape = tuple()
     self.update(iterable)
 
   def __iter__(self) -> Iterator:
     return iter(self.data)
   
-  def __len__(self) -> int:
+  def __len__(self, p: Optional[int] = None) -> int:
     return self.data.__len__()
 
   def update(self, iterable):
@@ -336,13 +341,25 @@ class SimplicialComplex(MutableSet):
 
   def add(self, item: Collection[int]):
     # self_set = super(SimplicialComplex, self)
-    self.data.update(Simplex(item).faces())
+    for f in Simplex(item).faces():
+      if not(f in self.data):
+        self.data.add(f)
+        if len(f) > len(self.shape):
+          self.shape = tuple(list(tuple(self.shape)) + [1])
+        else:
+          t = self.shape
+          self.shape = tuple(t[i]+1 if i == (len(f)-1) else t[i] for i in range(len(t)))
+        
+  def dim(self) -> int:
+    return len(self.shape) - 1
   
   def remove(self, item: Collection[int]):
     self.data.difference_update(set(self.cofaces(item)))
-  
+    self._update_shape()
+
   def discard(self, item: Collection[int]):
     self.data.discard(Simplex(item))
+    self._update_shape()
 
   def cofaces(self, item: Collection[int]):
     s = Simplex(item)
@@ -357,9 +374,6 @@ class SimplicialComplex(MutableSet):
     else: 
       assert isinstance(p, Number)
       yield from filter(lambda s: len(s) == p + 1, iter(self))
-
-  def dimension(self) -> int: 
-    return max([s.dimension() for s in iter(self)])
 
   def __repr__(self) -> str:
     if self.data.__len__() <= 15:
@@ -378,18 +392,15 @@ class SimplicialComplex(MutableSet):
     s.close()
     return res
 
-  def dim(self) -> tuple:
+  def _update_shape(self) -> None:
     from collections import Counter
     cc = Counter([len(s)-1 for s in self.data])
-    cc = dict(sorted(cc.items()))
-    return cc
+    self.shape = tuple(dict(sorted(cc.items())).values())
 
   def print(self, **kwargs) -> None:
-    d = self.dimension()
-    ST = np.zeros(shape=(self.__len__(), d+1), dtype='<U15')
+    ST = np.zeros(shape=(self.__len__(), self.dim()+1), dtype='<U15')
     ST.fill(' ')
-    lex_iter = sorted(iter(self), key=lambda s: (len(s), tuple(iter(s))))
-    for i,s in enumerate(lex_iter):
+    for i,s in enumerate(self):
       ST[i,:len(s)] = str(s)[1:-1].split(',')
     SC = np.apply_along_axis(lambda x: ' '.join(x), axis=0, arr=ST)
     for i, s in enumerate(SC): 

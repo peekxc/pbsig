@@ -4,6 +4,7 @@ from pbsig.simplicial import Simplex, SimplicialComplex, MutableFiltration
 s = Simplex([0,1,2,3])
 S = SimplicialComplex([[0,1,2,3,4]])
 
+
 ## TODO: investigate gray code for fast iteration of ranks of simplices! 
 # x = np.argsort([int(format(int(s.dimension()), 'b') + format(rank_comb(s.vertices, k=4,n=10), 'b'),2) for s in S])
 # np.array(list(S))[x]
