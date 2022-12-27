@@ -1,23 +1,16 @@
-\newcommand\restr[2]{{% we make the whole thing an ordinary symbol
-  \left.\kern-\nulldelimiterspace % automatically resize the bar with \right
-  #1 % the function
-  \vphantom{\big|} % pretend it's a little taller at normal size
-  \right|_{#2} % this is the delimiter
-  }}
-  
  %For any $i,j \in \Delta_+$, define the \emph{multiplicity} $\mu_p^{i,j}$ of the pair $p = (i,j)$ by: 
 %\begin{equation}
 %	\mu_p^{i,j} = \beta_{p}^{i-1, j} - \beta_{p}^{i, j} + \beta_{p}^{i, j-1}  - \beta_{p}^{i-1, j-1}
 %\end{equation}
 %The multiplicity function is intimately linked with the persistence diagram. Indeed, the original definition of a persistence 
 
-The connection between the persistent homology (PH) groups and their corresponding persistent Betti numbers (PBNs) has long been studied from multiple perspectives by several authors~\cite{cerri2013betti, chazal2016structure, cohen2005stability, zomorodian2004computing}.
+The connection between the persistent homology (PH) groups and their corresponding persistent Betti numbers (PBNs) has long been studied from multiple perspectives~\cite{cerri2013betti, chazal2016structure, cohen2005stability, zomorodian2004computing}.
 %We recall a few characterizations which are illuminating in this effort.
 From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
 %They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
 %More recently, Bauer studied persistence in a form a matching. 
 In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspective on PH by defining the persistence diagram in terms of a \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$, the $p$-th persistence diagram over $f$ is given as: 
-\begin{equation}
+\begin{equation}\label{eq:dgm}
 \mathrm{dgm}_p(f) = \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta	
 \end{equation}
 %the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
@@ -32,7 +25,8 @@ Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022compu
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-The direct consequence of~\eqref{eq:betti_mult} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly. In this effort, as we will show, we will take the inverse mentality by recovering portions of the diagram via multiplicity evaluations.
+The direct consequence of~\cite{edelsbrunner2022computational} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, through particular combinations of Betti numbers, one can recover portions of a spaces persistence diagram via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
+
 %The focus of this effort inverts this mindset: we focus on recovering \emph{portions} of the diagram by fixing the the index pairs $(i,j)$ ahead of time.
 
 %This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
@@ -51,7 +45,7 @@ was shown by demonstrating that one may recover the diagram of a persistence mod
 	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
 \end{equation}
 % The diagram exists wherever the measure takes finite values. 
-Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying the stability of PBNs in multidimensional persistence by showing that \emph{proper cornerpoints} are any points $x = (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ satisfying $\mu_p(x) > 0$, where $\mu_p(x)$ is defined as:
+Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying the stability of PBNs in multidimensional persistence via what they define as \emph{proper cornerpoints}. These are points $x = (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ satisfying $\mu_p(x) > 0$, where $\mu_p(x)$:
 %\begin{flalign}\label{eq:pbn_cont}
 %	(\, \forall x =  (\, \hat\imath, \hat\jmath \,) \in \mathrm{dgm}_p(f) \,)  & & \quad\quad 
 %	 \; \Longleftrightarrow \; \mu_p(x) := \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
@@ -59,7 +53,7 @@ Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying t
 \begin{equation}\label{eq:pbn_cont}
 \mu_p(x) := \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
 \end{equation}
-One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. One of the primary contributions from~\cite{cerri2013betti} is a representation theorem akin to~\eqref{eq:betti_mult} expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N} \, \cup \, \{\infty\}$ as a sum of multiplicity functions. 
+One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. Towards establishing a better understanding of the stability of the rank invariant in multidimensional persistence settings, one of the primary contributions from~\cite{cerri2013betti} is a representation theorem akin to~\eqref{eq:betti_mult} expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N} \, \cup \, \{\infty\}$ as a sum of multiplicity functions. 
 A consequence of this theorem is that distances between diagrams induces a distance between PBN functions---if $X$ is a triangulable space and $f,g : X \to \mathbb{R}$ are two continuous functions, then $d(\beta_f, \beta_g) \leq \max\limits_{x \in X} \, \lvert f(x) - g(x) \rvert$, where:
 \begin{equation*}\label{eq:pbn_stability}
 	d(\beta_f, \beta_g) = \inf\limits_{\phi} \; \sup\limits_{p \in \mathrm{dgm}(f)} \lVert p - \phi(p) \rVert_{\widetilde{\infty} }
@@ -74,7 +68,8 @@ Like persistence diagrams, the stability of PBN functions justifies their use an
 %portions of $\mathrm{dgm}_p(K_\bullet)$ are counted by PBNs via~\eqref{eq:betti_mult}; %(2)
 %%once $\beta_p^{i,j}$ has been obtained, $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ may be readily computed; 
 %as a weaker invariant, a single PBN ought to be easier to compute that the full persistence diagram. %(3)
-Nonetheless, as we shall show, there are certain advantages the PBN computation has over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
+Nonetheless, there are certain advantages the PBN computation has over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
+% add more 
 Indeed,~\eqref{eq:multiplicity} implies one may in theory recover the diagram through [a finite number of] PBN computations alone via a divide-and-conquer like approach~\cite{chen2011output}, suggesting an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach the persistence computation. 
 
 % This was the first output-sensitive algorithm. 

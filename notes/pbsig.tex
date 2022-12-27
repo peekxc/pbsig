@@ -59,6 +59,13 @@
 
 \DeclareMathSymbol{\shortminus}{\mathbin}{AMSa}{"39}
 
+\newcommand\restr[2]{{% we make the whole thing an ordinary symbol
+  \left.\kern-\nulldelimiterspace % automatically resize the bar with \right
+  #1 % the function
+  \vphantom{\big|} % pretend it's a little taller at normal size
+  \right|_{#2} % this is the delimiter
+  }}
+
 \usepackage{dsfont}
 
 \newtheorem{proposition}{Proposition}
@@ -90,6 +97,9 @@
 \subsection*{Motivation} TODO 
 %\subfile{intro_feature}
 %\subfile{overview} % Contributions, Main result overview, etc. 
+\subsection{Related work}\label{sec:related_work}
+Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; their subsequent Theorem 5.1 reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
+However, the standard homology computations require $O(N^2)$ space and $O(N^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
 \\
 \noindent 
 \textbf{Contributions: }
@@ -122,7 +132,7 @@ Some technical details, illustrative examples, and pseudocode are relegated to t
 \section{Background \& Notation}\label{sec:background_notation}
 \subfile{background}
 
-\subsubsection*{The duality between PBNs and Diagrams}\label{sec:duality_pbn_dgm}
+\subsection{The duality between PBNs and Diagrams}\label{sec:duality_pbn_dgm}
 
 % --- Counting measure multiplicity interpretation --- 
 \subfile{counting_measure}
@@ -131,34 +141,31 @@ Some technical details, illustrative examples, and pseudocode are relegated to t
 %In what follows, we briefly outline the computation of the 
 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
-Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively. 
-Additionally, let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the boundary operator sending $p$-chains to their respective boundaries. 
-With a slight abuse of notation, we also use $\partial_p$ to also denote the $p$-th filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ induced by $K_\bullet$:
+Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively, and let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the $p$-th boundary operator. 
+We use $\partial$ to denote the $N \times N$ filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ induced by $K_\bullet$, given by:
 \begin{equation}\label{eq:boundary_matrix}
-	\partial_p[i,j] = \begin{cases}
-		(-1)^{s_{ij}} & \sigma_i \in \partial_p[\sigma_j]  \\
+	\partial[i,j] = \begin{cases}
+		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j], \; \text{where } s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])  \\
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-As the matrix representation of the $p$-th boundary operator $\partial_p : C_p( K_{\bullet}) \to C_p(K_{\bullet})$, note that $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$.  
-The $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^N$, where $\Delta_+^N  := \{ \, (i,j) \in [N] \times [N] : i < j \, \}$, is defined as: 
+Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$,  one may obtain a matrix representative of $\partial_p$ by setting all columns corresponding to simplices of dimension $q \neq p$ to $0$. 
+Where it is clear from the context, we will freely use both $\partial$ and $\partial_p$ to refer to both the boundary operators themselves and their matrix representatives.
+
+Given a fixed filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th persistent Betti number $\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j})$ at index $(i,j) \in \Delta_+^N$, where $\Delta_+^N  := \{ \, (i,j) \in [N] \times [N] : i < j \, \}$, is defined by the quotient group: 
 \begin{align*} \label{eq:pbn}
 	\centering
-	\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}) &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
+	\beta_p^{i,j} &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
 	& = \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-While $\mathrm{dim}(Z_p(K_i)) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a rank computation, the intersection term---the persistence part---is more subtle. Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; their subsequent Theorem 5.1 reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
-However, the standard homology computations require $O(N^2)$ space and $O(N^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
-
+While $\mathrm{dim}(Z_p(K_i)) = \mathrm{nullity}(\partial_p(K_i))$ and thus reduces to a rank computation, the intersection term---the persistence part---is more subtle. While one may freely use any of the algorithms outlined section~\ref{sec:related_work} to compute $\beta_p^{i,j}$, each of these methods scale to $O(N^3)$ in time and $O(N^2)$ in memory.
 % Golub and Van Loan 
-
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
-
-In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
-To illustrate our approach, we require more notation. If $A$ is a $m \times n$ matrix, let $A^{i, j}$ denote the lower-left submatrix defined by the first $j$ columns and the last $m - i + 1$ rows (rows $i$ through $m$, inclusive). 
+%In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
+To illustrate an alternative approach, we require more notation. If $A$ is a $m \times n$ matrix, let $A^{i, j}$ denote the lower-left submatrix defined by the first $j$ columns and the last $m - i + 1$ rows (rows $i$ through $m$, inclusive). 
 %Given an $n \times m$ matrix $A$, let $A[I, J]$ refer to the submatrix formed by taking rows in the set $I$ and taking columns in the set $J \subseteq [m]$. Let $L_{, j}$
 %\begin{equation}
 %	\begin{bNiceMatrix}[first-row,first-col]
@@ -187,22 +194,21 @@ $$ r_R(i,j) \neq 0 \Leftrightarrow R[i,j] \neq 0 $$
 Since the persistence diagram is derived completely from $R$, this suggests that information about a diagram can be obtained through rank computations alone.
 For a more geometric description of this idea, see the third picture in Figure~\ref{fig:mult}. We record a non-trivial fact that follows from this observation: 
 \begin{lemma}[Dey \& Wang~\cite{dey2022computational}]\label{lemma:rank}
-Let $R = \partial V$ denote the matrix decomposition of a given filtered boundary matrix $\partial$ derived from the associated filtration $K_\bullet$. For any pair $(i,j)$ satisfying $1 \leq i < j \leq m$, we have:
+Let $R = \partial V$ denote the matrix decomposition of a given filtered boundary matrix $\partial$ derived from the associated filtration $K_\bullet$. For any pair $(i,j)$ satisfying $1 \leq i < j \leq N$, we have:
 	\begin{equation}\label{eq:lower_left_rank}
 		\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})
 	\end{equation}
 Equivalently, all lower-left submatrices of $\partial$ have the same rank as their corresponding submatrices in $R$. 
 \end{lemma}
-\noindent \textbf{Remark: } Though Lemma~\ref{lemma:rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in its restriction to $p$-dimensional homology exclusively, for any fixed $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ recovers the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
-In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
-
-Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
+%\noindent \textbf{Remark: } Though Lemma~\ref{lemma:rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in its restriction to $p$-dimensional homology exclusively, for any fixed $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ recovers the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
+%In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
+\noindent Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
 The first fact we prove is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number as a sum of rank functions. 
 \begin{proposition}\label{prop:rank_reduction}
-Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
+Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
 	% \mathrm{rank}(I_p^{1,i})
-	\beta_p^{i,j}(K_\bullet) = i - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
+	\beta_p^{i,j}(K_\bullet) = \lvert K_p^i \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
@@ -210,28 +216,28 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K_\bullet
 \noindent A detailed proof of Proposition~\ref{prop:rank_reduction} is given in the appendix. It turns out Lemma~\ref{lemma:rank} can also be used to generalize~\eqref{eq:betti_four} to arbitrary rectangles in $\Delta_+^N$ via $\mu$\emph{-queries}: box-parameterized rank queries which count the number of persistence pairs that intersect a fixed ``box'' placed in the index persistence plane~\cite{chen2011output}. 
 As a result, the $p$-th multiplicity function can also be defined in a rank-based formulation akin to~\eqref{eq:betti_four}. 
 \begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
-Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $m = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq m$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
+Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
 	\begin{equation}\label{eq:mu_four}
 	\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent In summary, the complexity of computing either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ can be reduced to the complexity of computing the rank of a set of ``lower-left'' submatrices of $\partial_p$. We summarize this fact with two corollaries. Let $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with at most $O((p+1)k)$ non-zero $\mathbb{F}$ entries. Then we have:
+\noindent In summary, the complexity of computing either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ reduces to the complexity of computing the rank of a set of ``lower-left'' submatrices of $\partial$. We summarize this fact with two corollaries. Let $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with at most $O((p+1)k)$ non-zero $\mathbb{F}$ entries. Then we have:
 \begin{corollary}
-	Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$ and indices $i,j \in \Delta_+^N$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O\big(\max \{\mathrm{R}_{p}(i), \mathrm{R}_{p+1}(j) \} \big)$ time.
+	Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$ and indices $(\,i,j\,) \in \Delta_+^N$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O\big(\max \{\mathrm{R}_{p}(n_i), \mathrm{R}_{p+1}(m_j) \} \big)$ time, where $n_i = \lvert K_i^p \rvert$ and $m_j = \lvert K_j^{p+1} \rvert$.
 	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
-\noindent Observe the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the  dominant cost of computing~\eqref{eq:betti_four} lies in computing either $\mathrm{rank}(\partial_p^{1,i})$ or $\mathrm{rank}(\partial_{p+1}^{1,j})$. As a result, the cost of computing $\mu_p^R$ is localized to the pair $(K_i, K_l)$ and thus the complexity of computing the multiplicity $\mu_p^R$ depends only on the number of $(p+1)$-simplices in the interval $[i, l]$. 
+\noindent Observe the relation $\partial_{p\+1}^{i \+ 1, j} \subseteq \partial_{p\+1}^{1, j}$ implies the  dominant cost of computing~\eqref{eq:betti_four} lies in computing either $\mathrm{rank}(\partial_p^{1,i})$ or $\mathrm{rank}(\partial_{p+1}^{1,j})$, which depends on the relative sizes of $\lvert K^p\rvert$ and $\lvert K^{p+1}\rvert$. In contrast, $\mu_p^R$ is localized to the pair $(K_i, K_l)$ and depends only on the $(p+1)$-simplices in the interval $[i, l]$, yielding the following corollary. 
 \begin{corollary}
-	Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq N$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p+1}(l - i))$ time.
+	Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$ and a rectangle $R = [i,j] \times [k,l]$ with indices $0 \leq i < j \leq k < l \leq N$, computing $\mu_p^{R}$ using expression~\eqref{eq:mu_four} requires $O(\mathrm{R}_{p+1}(m_{il}))$ time $m_{il} = \lvert K_l^{p+1}\rvert - \lvert K_i^{p+1}\rvert$.
 	%$ j(p+1) - i$
 	%time and storage complexity $O(\max \{\, R_\partial(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
 	%with $n < m$
 \end{corollary} 
 
 \noindent Compared to other classical methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$, such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. 
-Moreover, if we only concern ourselves with persistence modules with real-valued coefficients, not only do we inherit the measure-theoretic perspective from~\ref{eq:measure}, but we may also replace the non-zero entries of $\partial_p$ with real-valued coefficients. 
+Moreover, if we only concern ourselves with persistence modules with real-valued coefficients, not only do we inherit the measure-theoretic perspective from~\eqref{eq:measure}, but we may also replace the non-zero entries of $\partial_p$ with real-valued coefficients. 
 We dedicate the rest of the paper to exploring the consequences of this fact. 
 
 %We exploit various properties of the rank function to 
@@ -283,12 +289,15 @@ In what follows, we re-define the boundary matrix to exploit this permutation in
 %where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
 
 % Change index set
-All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $(K_\bullet, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
+\textbf{Remark:} All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $(K_\bullet, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
 In practice, it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, as the filter function $f$ is often a real-valued function derived from geometrical settings.
 For example, when $f : K \to \mathbb{R}$ satisfies $f(\sigma') \leq f(\sigma)$ for every $\sigma' \subseteq \sigma$, the subcomplexes $K_i = f^{-1}(-\infty, \hat\imath \,]$ of $K$ represent sublevel sets $f^{-1}(-\infty, \hat\imath \,]$ for every $\hat\imath \in \mathbb{R}$. 
 In this setting, each pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ is typically represented as the point $(\, \hat\imath, \hat\jmath \, )$ where $\hat\imath = f(\sigma_i)$ and $\hat\jmath = f(\sigma_j)$.
 % In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
-Unless it is clear from the context, we alter our notation by re-defining $\beta_p^{\hat\imath,\hat\jmath}$ using pairs $(\,\hat\imath,\hat\jmath\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
+%Unless it is clear from the context, we alter our notation by re-defining $\beta_p^{\hat\imath,\hat\jmath}$ using pairs $(\,\hat\imath,\hat\jmath\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
+%Since this is equivalent to reindexing a given filter $f : K \to \mathbb{R}$ over the index set $[N]$, 
+Since the persistence diagrams of $K_\bullet$ are isomorphic under monotone transformations of the index set $g : [N] \to \mathbb{R}$, in what follows we use the notation $(\,i, j\,)$ to denote pairs $(\,i, j\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
+
 
 %such that $\mathrm{range}(f) = \mathbb{R}$, and it is often more informative to work with the pairs $(f(\tau_i), f(\sigma_j))$ stemming from the persistent-pairs $()$ persistence diagram 
 % A common scenario is where $K_\bullet$ is obtained via a Rips filtration constructed over a metric space $(X, d_X)$. In this case $f : \mathcal{P}(X) \to \mathbb{R}_+$ is given as the diameter $f(\sigma) = \max_{x,x' \in \sigma} d_X(x,x')$. 
@@ -302,8 +311,8 @@ Consider the following reformulation of the boundary matrix $\partial_p$.
 % $\delta_{\mathcal{X}}(\cdot) = (X, d_X(\cdot))$ a DMS over a finite set $X$ of fixed size $\lvert X \rvert = n$
 % TODO: fix i,j to be [n], [m]... no need for upper half plane yet 
 \begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
-Let $K$ denote an abstract simplicial complex of size $\lvert K \rvert = m$, equipped with parameterized filtering function $f : K \times \mathcal{H} \to \mathbb{R}$. 
-Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{\hat \imath, j}(h)$ \emph{at scale} $(i,j)$ to be the $m \times m$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+Let $K$ denote an abstract simplicial complex of size $\lvert K \rvert = N$, equipped with parameterized filtering function $f : K \times \mathcal{H} \to \mathbb{R}$. 
+Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $N \times N$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}\label{eq:param_boundary_matrix}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -317,28 +326,43 @@ Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^
 where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_i(x) = 0$ if $x \leq i$ and $1$ otherwise, $\tilde{S}_{i} = 1 - S_i$, and $f_h(\sigma) = f(\sigma, h)$.
 \end{definition}
 \noindent
-We now show definition~\ref{def:time_boundary_matrix} eases the computation of both counting invariants in parameterized settings. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. 
-Additionally, for simplicity of presentation, we always assume the orientation of the simplices induced by the linear extension $(K, \preceq^\ast)$ on $K$ is inherited from the total order on $V$. 
+In the following sections, we will exploit the continuity of the entries in  of~\eqref{eq:param_boundary_matrix} to ease the computation of both counting invariants in parameterized settings. First, we record basic properties of $\hat{\partial}_p^{i,j}$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. 
+For simplicity of presentation, we assume the orientation of the simplices induced by $(K, \preceq^\ast)$ is inherited from the order on $V$. 
 %We also write $r(A) = \mathrm{rank}(A)$.
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
+\begin{proposition}
+	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. 
+	For any pair $i,j \in \Delta_+$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, the $\mathcal{H}$-parameterized PBN $\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ and multiplicity $\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ functions given by: 
+	\begin{align*}\label{eq:pbn_parameterized}
+		\beta_p^{i,j}(K,h) = \lvert K_i^{p}(h) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j}(h)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, j}(h)\,\big) \numberthis
+	\end{align*}
+	\begin{align*}\label{eq:mu_parameterized}
+	\mu_p^{R}(K,h) = \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, l}(h)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i \+ \delta, l}(h)\,\big) \numberthis
+	\end{align*}
+	yield the quantities $\mu_p(R) = $
+	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(M)}{R} \, \right)$ and 
+	$\beta_p(i,j) = \mathrm{dim}(H_p^{i,j})$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, for all $h \in \mathcal{H}$.
+\end{proposition}
+\noindent We give proofs the equivalence between these two expressions in the appendix. 
 
-The parameterized PBN can be written as: 
-\begin{align*}\label{eq:pbn_parameterized}
-	\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
-	%h &\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
-	h, K &\mapsto \lvert K_i^{p}(h) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j}(h)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, j}(h)\,\big) \numberthis
-\end{align*}
-% deflation?
-where $\epsilon > 0$ is an arbitrarily small positive number. Observe~\eqref{eq:pbn_parameterized} is essentially the same form as~\eqref{eq:betti_four}. 
-By Proposition~\ref{prop:mu_reduction}, we also have a parameterized multiplicity function for any rectangle $R = [i,j] \times [k,l]$ in the upper half-plane $\Delta_{+}$ satisfying $i < j \leq k < l$: 
-\begin{align*}\label{eq:mu_parameterized}
-	\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
-	h, K & \mapsto  \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, l}(h)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i \+ \delta, l}(h)\,\big) \numberthis
-\end{align*}
-We give proofs the equivalence between these two expressions in the appendix. 
-In summary, by restricting ourselves to homology defined over real-valued coefficients, we may parameterize the non-zero entries of the $p$-th boundary matrix $\partial_p$ from~\ref{eq:boundary_matrix} directly using $f : K \times \mathcal{H} \to \mathbb{R}$. Moreover, since $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$, it is clear that expressions of the counting invariants from Propositions~\ref{prop:rank_reduction} and~\ref{prop:mu_reduction} 
-yield equivalent values to the parameterized expressions in~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}. 
+%In summary, by restricting ourselves to homology defined over real-valued coefficients, we may parameterize the non-zero entries of the $p$-th boundary matrix $\partial_p$ from~\ref{eq:boundary_matrix} directly using $f : K \times \mathcal{H} \to \mathbb{R}$. 
+% Moreover, since $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$, it is clear that expressions of the counting invariants from Propositions~\ref{prop:rank_reduction} and~\ref{prop:mu_reduction} yield equivalent values to the parameterized expressions in~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}. 
+%\end{proof}
+%The parameterized PBN can be written as: 
+%\begin{align*}\label{eq:pbn_parameterized}
+%	\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
+%	%h &\mapsto \lvert K_i^{(p)}(h) \rvert  -  (\mathrm{r} \circ \hat{\partial}_{p}^{i})(h) - (\mathrm{r} \circ \hat{\partial}_{q}^{j})(h) + (\mathrm{r} \circ \hat{\partial}_{q}^{i \+ \epsilon, j})(h) \numberthis
+%	h, K &\mapsto \lvert K_i^{p}(h) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j}(h)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, j}(h)\,\big) \numberthis
+%\end{align*}
+%% deflation?
+%. Observe~\eqref{eq:pbn_parameterized} is essentially the same form as~\eqref{eq:betti_four}. 
+%By Proposition~\ref{prop:mu_reduction}, we also have a parameterized multiplicity function for any rectangle $R = [i,j] \times [k,l]$ in the upper half-plane $\Delta_{+}$ satisfying $i < j \leq k < l$: 
+%\begin{align*}\label{eq:mu_parameterized}
+%	\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) &\to \mathbb{N} \\
+%	h, K & \mapsto  \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, l}(h)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i \+ \delta, l}(h)\,\big) \numberthis
+%\end{align*}
+
 %One remark is in order: note that although definition~\ref{def:time_boundary_matrix} specifies $\hat{\partial}_p^{i,j}$ as a full $\binom{n}{p} \times \binom{n}{q}$ matrix, implying a memory complexity of $O(q\cdot n^{q})$ for all $h \in \mathcal{H}$, we remark that there is no need to fully allocate this much memory as the rows/columns corresponding to the set of $p$/$q$ face/coface pairs $(\sigma_k, \sigma_l)$ with $f(\sigma_l) < i$ or $f(\sigma_k) > j$ are entirely $0$. 
 %As we will show below, it is enough to have access to the simplices $K_j^{(q)}(h)$. % and $\bar{K}_i^{(p)}(h)$?
 
@@ -417,9 +441,9 @@ yield equivalent values to the parameterized expressions in~\eqref{eq:pbn_parame
 %We tackled the form by fixing specific \emph{regions} of $\Lambda_+$ a-priori; we now focus on on the latter.
 %persistence information contained in them, if possible. 
 
-One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are integer-valued and thus not smooth. 
-Namely, if $(K, f_h)$ is an $\mathcal{H}$-parameterized filtration where $K$ is a fixed simplicial complex and $f_h : K \to \mathbb{R}$ is a filter function, one may easily construct examples where $\lVert \mu_h^R - \mu_{h + \delta}^R \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small perturbation $\delta > 0$. 
-Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter such situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. In this section, we introduce a smooth relaxation to both invariants to counter this instability. 
+One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are integer-valued and not smooth. 
+Namely, if $(K, f_h)$ is an $\mathcal{H}$-parameterized filtration, one may easily construct examples where $\lVert \mu_h^R - \mu_{h + \delta}^R \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small perturbation $\delta > 0$. 
+Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. In this section, we introduce a smooth relaxation to both invariants to counter this instability. 
 %for the multiplicity function $\mu_p^R$ to be considered stable we would need to show 
 %$\lVert \mu_p^R(h,K) - \mu_p^R(h + \epsilon,K) \rVert \leq \epsilon$
 %there exists a non-negative constant $C$ such that $\lVert \mu_h^R - \mu_{h + \epsilon}^R \rVert \leq \epsilon \cdot C$, where $\mu^R_{h} = \mu_p^R(K,h)$.
@@ -445,21 +469,27 @@ We begin with a spectral characterization of the rank function. Given a matrix $
 where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
 Like the betti numbers, the unstable nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. 
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
-The idea is, given a positive approximation parameter $\epsilon > 0$, we approximate the rank via:
+One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 \begin{flalign}\label{eq:rank_sgn}
 	(\, \forall \, x > 0 \,)  & & \quad\quad\quad 
 %\begin{equation}
 	\mathrm{rank}(X) \approx \sum\limits_{i=1}^n \phi(\sigma_i(X), \epsilon), \quad \quad &  \lim_{\epsilon \to 0^+} \phi(x, \epsilon) = \mathrm{sgn}_+(x) &&
 \end{flalign}
 %\end{equation}
-where $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ is an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions. 
-Following the seminal work done by Chen et al.~\cite{chen1996class}, Bi et al.~\cite{bi2013approximation} give a framework for constructing such functions, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy.
-The form of these $\phi$ functions is obtained by integration of smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
+where $\epsilon > 0$ positive approximation parameter controlling the accuracy of the relaxation.  
+%Following the seminal work done by Chen et al.~\cite{chen1996class}, 
+Bi et al.~\cite{bi2013approximation} give a framework for constructing such functions, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy.
+These $\phi$ functions are derived by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 %an integral $\mathrm{sgn}_+(x) = \int_{-\infty}^x \delta(z) dz$, where the $\delta$ is a Dirac delta function satisfying $\int\limits_{-\infty}^\infty \delta(z) dz = 1$. In particular, for any $\epsilon > 0$, we define $\phi(\cdot, \epsilon)$ as:
-\begin{equation}\label{eq:phi}
-	\phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \forall \, z \geq 0, \epsilon > 0 
-\end{equation}
-where $\hat{\delta}(z, \epsilon) = \nu(\epsilon)^{\text{-}1} p \big( z \nu \cdot (\epsilon)^{\text{-}1} \big )$ for some continuous density function $p: \mathbb{R}_+ \to \mathbb{R}_+$ and some choice of continuous increasing $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
+\begin{flalign}\label{eq:phi}
+(\, \forall \, z \geq 0, \epsilon > 0  \,)  & & \quad\quad\quad
+\phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \quad  & 
+\hat{\delta}(z, \epsilon) = \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) && 
+%(\forall \, z \geq 0, \epsilon > 0 ) & & \quad \quad \quad 
+%\begin{equation}\label{eq:phi}
+%\end{equation}
+\end{flalign}
+where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
 In contrast to the rank function, if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
 Moreover, consider the operator $\Phi_\epsilon$ defined as: 
 %This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
@@ -478,7 +508,7 @@ where $\tilde{\phi}(x, \epsilon) = \phi(\lvert x \rvert, \epsilon)$ and $\epsilo
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
 \noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this operator turns out to have a variety of attractive properties related to monotonicity and differentiability.
 We summarize a few such properties below. 
-\begin{proposition}[\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
+\begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
@@ -559,7 +589,7 @@ Stability results
 % Lipshitz stability 
 % partition of unity + output-sensitive mention
 
-\section{Computing }\label{sec:methodology}
+\section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
 In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. 
 As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods specialized for symmetric matrices. 
