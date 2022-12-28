@@ -289,11 +289,9 @@ def as_linear_operator(A, stats=True):
 from pbsig.simplicial import SimplicialComplex
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
 
-# class UpLaplacian(LinearOperator):
-#   def __init__(self):
 
-#   def __matvec__(self):
-# from types import MappingProxyType
+def sgn_approx(sigma: ArrayLike) -> ArrayLike:
+  """ Approximates the sgn function """
 
 # No F needed because faces are assumed to be vertices in sorted order, V = [n]
 def _up_laplacian_matvec_1(S: Collection['Simplex'], w0: ArrayLike, w1: ArrayLike):
@@ -491,3 +489,5 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       return lo
     else: 
       raise ValueError(f"Unknown form '{form}'.")
+
+

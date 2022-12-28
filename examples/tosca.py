@@ -11,8 +11,12 @@ S = np.c_[x,y,z]
 
 fig = plt.figure()
 ax = plt.axes(projection='3d')
-ax.scatter(*S.T, s=0.15)
-lb,ub = min(S.min(axis=0)), max(S.max(axis=0))
-ax.set_xlim(lb, ub)
-ax.set_ylim(lb, ub)
-ax.set_zlim(lb, ub)
+ax.scatter(*S.T, s=0.15, c=S[:,2])
+c = S.mean(axis=0)
+rng = max(abs(S.max(axis=0)-S.min(axis=0)))
+ax.set_xlim(c[0] - 0.5*rng, c[0] + 0.5*rng)
+ax.set_ylim(c[1] - 0.5*rng, c[1] + 0.5*rng)
+ax.set_zlim(c[2] - 0.5*rng, c[2] + 0.5*rng)
+
+# from pbsig.
+

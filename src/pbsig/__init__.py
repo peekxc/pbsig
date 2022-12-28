@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import numpy as np
 from numpy.typing import ArrayLike
+# from typing import *
 #from . import boundary
 
 # from .ext import boundary
@@ -12,8 +13,6 @@ from .persistence import *
 from .betti import *
 from .linalg import *
 from .fast_pbn import *
-
-
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 def _package_data(path: str = ""):
@@ -90,108 +89,84 @@ def rotate_S1(X: ArrayLike, nd: int = 10, include_direction: bool = True):
     else: 
       yield (X @ v).flatten()
 
-## From: https://stackoverflow.com/a/4696026/6912436
-def rfft_xcorr(x, y):
-  M = len(x) + len(y) - 1
-  N = 2 ** int(np.ceil(np.log2(M)))
-  X = np.fft.rfft(x, N)
-  Y = np.fft.rfft(y, N)
-  cxy = np.fft.irfft(X * np.conj(Y))
-  cxy = np.hstack((cxy[:len(x)], cxy[N-len(y)+1:]))
-  return cxy
 
-## From: https://stackoverflow.com/a/4696026/6912436
-def match(x, ref):
-  cxy = rfft_xcorr(x, ref)
-  index = np.argmax(cxy)
-  return index if index < len(x) else index - len(cxy)
+# def random_2d():
+#   from itertools import combinations
+#   import networkx as nx
+#   n = 50
+#   G = nx.fast_gnp_random_graph(n, 0.25)
+#   X = np.vstack(list(nx.spring_layout(G).values()))
+#   edges = pbsig.rank_combs(G.edges(), n=50, k=2)
 
-def phase_align(s1: Sequence, s2: Sequence):
-  ind = match(s2, s1)
-  offsets = np.fromiter(range(-5, 5), dtype=int)
-  r_ind = np.argmin([np.linalg.norm(s2 - np.roll(s1, ind+i)) for i in offsets])
-  return(np.roll(s1, ind+offsets[r_ind]))
+#   k_cliques = lambda C: combinations(C, 3)
+#   triangles = np.concatenate([pbsig.rank_combs(k_cliques(c), n=50, k=3) for c in nx.find_cliques(G)])
 
-def one_parameter_family():
-  return(0)
-
-def random_2d():
-  from itertools import combinations
-  import networkx as nx
-  n = 50
-  G = nx.fast_gnp_random_graph(n, 0.25)
-  X = np.vstack(list(nx.spring_layout(G).values()))
-  edges = pbsig.rank_combs(G.edges(), n=50, k=2)
-
-  k_cliques = lambda C: combinations(C, 3)
-  triangles = np.concatenate([pbsig.rank_combs(k_cliques(c), n=50, k=3) for c in nx.find_cliques(G)])
-
-  theta = np.linspace(0, 2*np.pi, 100, endpoint=True)
+#   theta = np.linspace(0, 2*np.pi, 100, endpoint=True)
 
 
-  cvec = lambda x: np.array(x)[:,np.newaxis]
-  F = [X @ cvec(v) for v in zip(np.sin(theta), np.cos(theta))]
+#   cvec = lambda x: np.array(x)[:,np.newaxis]
+#   F = [X @ cvec(v) for v in zip(np.sin(theta), np.cos(theta))]
   
-  import matplotlib.pyplot as plt
-  for i, f in enumerate(F):
-    plt.scatter(np.repeat(i, len(f)), f, s=0.05)
-  np.hstack(f)
+#   import matplotlib.pyplot as plt
+#   for i, f in enumerate(F):
+#     plt.scatter(np.repeat(i, len(f)), f, s=0.05)
+#   np.hstack(f)
 
-  from scipy.interpolate import CubicSpline
+#   from scipy.interpolate import CubicSpline
   
 
-  FM = np.hstack(F)
-  FP = [CubicSpline(theta, FM[i,:], bc_type='periodic') for i in range(FM.shape[0])]
-  cutoff = 0.50 
+#   FM = np.hstack(F)
+#   FP = [CubicSpline(theta, FM[i,:], bc_type='periodic') for i in range(FM.shape[0])]
+#   cutoff = 0.50 
 
-  for i in range(20):
-    plt.plot(theta, np.array([FP[i](a) for a in theta]))
+#   for i in range(20):
+#     plt.plot(theta, np.array([FP[i](a) for a in theta]))
 
-  ## TODO: estimate maximum number of simplices for pre-allocation
-  plt.plot(theta, np.array([FP[0](a) for a in theta]))
-  in_circle = lambda x: x >= 0.0 and x < 2*np.pi
-  crit_events = [np.array(list(filter(in_circle, fp.solve(cutoff)))) for fp in FP]
-  crit_events = np.concatenate([np.vstack((np.repeat(i, len(ce)), ce)).T for i, ce in enumerate(crit_events)])
-  plt.scatter(w, FP[0](w))
+#   ## TODO: estimate maximum number of simplices for pre-allocation
+#   plt.plot(theta, np.array([FP[0](a) for a in theta]))
+#   in_circle = lambda x: x >= 0.0 and x < 2*np.pi
+#   crit_events = [np.array(list(filter(in_circle, fp.solve(cutoff)))) for fp in FP]
+#   crit_events = np.concatenate([np.vstack((np.repeat(i, len(ce)), ce)).T for i, ce in enumerate(crit_events)])
+#   plt.scatter(w, FP[0](w))
 
-  ## Preprocess the simplex 'additions' + 'deletions' via the cutoff as changes to the 
-  ## sparse boundary matrices (in CSC?)
-  ## TODO: bound upper-envelope simplex filtration values with davenport-shinzel sequence
-  f = F[0]
-  is_active = lambda s: bool(max(f[s]) <= cutoff)
-  active_vertices = list(range(n))
-  active_edges = [(i,j) for (i,j) in combinations(active_vertices, 2) if is_active([i,j])]
-  active_triangles = [(i,j,k) for (i,j,k) in combinations(active_vertices, 3) if is_active([i,j,k])]
+#   ## Preprocess the simplex 'additions' + 'deletions' via the cutoff as changes to the 
+#   ## sparse boundary matrices (in CSC?)
+#   ## TODO: bound upper-envelope simplex filtration values with davenport-shinzel sequence
+#   f = F[0]
+#   is_active = lambda s: bool(max(f[s]) <= cutoff)
+#   active_vertices = list(range(n))
+#   active_edges = [(i,j) for (i,j) in combinations(active_vertices, 2) if is_active([i,j])]
+#   active_triangles = [(i,j,k) for (i,j,k) in combinations(active_vertices, 3) if is_active([i,j,k])]
 
-  from scipy.spatial import Delaunay
-  D = Delaunay(X)
-  triangles = D.simplices
-  active_triangles = np.array(list(filter(is_active, triangles)))
-  from pbsig.betti import edges_from_triangles
-  active_edges = edges_from_triangles(active_triangles, n)
+#   from scipy.spatial import Delaunay
+#   D = Delaunay(X)
+#   triangles = D.simplices
+#   active_triangles = np.array(list(filter(is_active, triangles)))
+#   from pbsig.betti import edges_from_triangles
+#   active_edges = edges_from_triangles(active_triangles, n)
 
-  ## when does a *simplex* go from active to inactive to active?
-  v_ids = crit_events[:,0].astype(int)
-  tri = [1,2,3]
-  ce = np.sort(crit_events[[i in tri for i in v_ids], 1])
-  # valid_ce = abs(np.max(np.array([FP[i](ce) for i in tri]), axis=0) - cutoff) < 10*np.finfo(float).resolution
+#   ## when does a *simplex* go from active to inactive to active?
+#   v_ids = crit_events[:,0].astype(int)
+#   tri = [1,2,3]
+#   ce = np.sort(crit_events[[i in tri for i in v_ids], 1])
+#   # valid_ce = abs(np.max(np.array([FP[i](ce) for i in tri]), axis=0) - cutoff) < 10*np.finfo(float).resolution
   
-  ## 
-  ind = np.argmax(np.array([FP[i](ce) for i in tri]), axis=0)
-  ce_type = np.array([np.sign(FP[i].derivative(1)(x)) for i,x in zip(ind, ce)]).astype(int) # 1 == turning off
+#   ## 
+#   ind = np.argmax(np.array([FP[i](ce) for i in tri]), axis=0)
+#   ce_type = np.array([np.sign(FP[i].derivative(1)(x)) for i,x in zip(ind, ce)]).astype(int) # 1 == turning off
   
 
 
-  for i in tri: 
-    plt.plot(theta, FP[i](theta))
-    plt.scatter(ce, FP[i](ce))
+#   for i in tri: 
+#     plt.plot(theta, FP[i](theta))
+#     plt.scatter(ce, FP[i](ce))
 
-  ## Convert 
-  ## Can we have a _fast_ sparse matvec from a filtration?
-  ## possibly w/ laplacian 
+#   ## Convert 
+#   ## Can we have a _fast_ sparse matvec from a filtration?
+#   ## possibly w/ laplacian 
 
 
-  return(2)
+#   return(2)
 
 
 

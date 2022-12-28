@@ -326,7 +326,15 @@ Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^
 where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_i(x) = 0$ if $x \leq i$ and $1$ otherwise, $\tilde{S}_{i} = 1 - S_i$, and $f_h(\sigma) = f(\sigma, h)$.
 \end{definition}
 \noindent
-In the following sections, we will exploit the continuity of the entries in  of~\eqref{eq:param_boundary_matrix} to ease the computation of both counting invariants in parameterized settings. First, we record basic properties of $\hat{\partial}_p^{i,j}$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. 
+\textbf{Remark:} Let $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matrix $\mathrm{diag}(\{\, g_h(\sigma_1), g_h(\sigma_2), \dots, g_h(\sigma_N) \, \})$ obtained by setting $g_h(\sigma) = (S_x \circ f_h)(\sigma)$ if $\mathrm{dim}(\sigma) = p$ for all $\sigma \in K$ and $g_h(\sigma) = 0$ otherwise. It is straightforward to show that the element-wise definition of $\hat{\partial}_p^{i,j}$ from~\eqref{eq:param_boundary_matrix} corresponds to the product: 
+\begin{equation}
+	\hat{\partial}_p^{i,j}(h) := \widetilde{W}_p^i(h) \circ \partial_p \circ W_{p+1}^j(h)
+\end{equation}
+where $\widetilde{W}_p^x$ is defined synonymous with $\tilde{g}_h(\sigma) = (\tilde{S}_x \circ f_h)(\sigma)$. Thus, definition~\ref{def:time_boundary_matrix} corresponds simply a row-and-column weighted version of the \emph{fixed} $p$-th boundary matrix $\partial_p$.
+\\
+\\
+\noindent 
+In the following sections, we will exploit the continuity of the entries in  of~\eqref{eq:param_boundary_matrix} to ease the computation of both counting invariants in parameterized settings. First, we record a basic property of $\hat{\partial}_p^{i,j}$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ for the setting where only columns up to $x$ of $A$ are being selected, and let $q = p + 1$. 
 For simplicity of presentation, we assume the orientation of the simplices induced by $(K, \preceq^\ast)$ is inherited from the order on $V$. 
 %We also write $r(A) = \mathrm{rank}(A)$.
 % TODO: ask Jose about this
@@ -577,7 +585,7 @@ Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \math
 		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
 		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
-where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$, and $\tilde{\partial}_p$ is $\mathcal{H}$-parameterized $p$-th boundary matrix from~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$.
+where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$, and $\tilde{\partial}_p$ is $\mathcal{H}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$.
 \end{definition}
 \noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify that $\hat{\mu}_p^R$ is Lipshitz continuous by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. We omit the definition of the smooth PBN relaxation $\hat{\beta}_p^{i,j}$, as its form is synonymous with definition~\ref{def:smooth_mu}.
 

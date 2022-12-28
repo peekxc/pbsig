@@ -39,10 +39,20 @@ def test_weighted_boundary_p1():
   ew = np.repeat(wq, 2)
   W1.data = np.sign(W1.data)*ew*vw
 
-  ## Check matrix-vector product 
+  ## Check equivalence of boundary and weighted boundary matrix-vector product 
+  y = np.random.uniform(size=D1.shape[1])
+  assert np.allclose(W1 @ y, (diags(wp) @ D1 @ diags(wq)) @ y)
+
+  ## Check equivalence of boundary and laplacian matrix-vector product 
   x = np.random.uniform(size=D1.shape[0])
   assert np.allclose(W1 @ W1.T @ x, diags(wp) @ D1 @ diags(wq**2) @ D1.T @ diags(wp) @ x), "Matvec failed"
   assert is_symmetric(W1 @ W1.T)
+
+  ## Check sqrt of eigen-spectrum of laplacian yields singular values of weighted boundary 
+  LW = W1 @ W1.T
+  ew = np.sort(np.sqrt(np.linalg.eigvalsh(LW.todense())))
+  sw = np.sort(np.linalg.svd(W1.todense())[1])
+  assert np.allclose(ew[1:], sw[1:])
 
   ## Check matrix-vector product sqrt
   W1 = D1.copy()

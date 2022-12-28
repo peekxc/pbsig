@@ -564,7 +564,7 @@ def mu_query(UL: LinearOperator, R: tuple, smoothing: str = [""], w: float = 0.0
     ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
     ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
     smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-
+    ## todo: 
     numerical_rank(LS)
     return 0 
   elif isinstance(UL, spmatrix):
