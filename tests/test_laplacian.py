@@ -20,7 +20,6 @@ def test_can_import():
   from pbsig.linalg import laplacian
   assert str(type(laplacian)) == "<class 'module'>"
 
-
 def test_weighted_boundary_p1():
   X, S = generate_dataset()
   D1 = boundary_matrix(S, p=1)
@@ -66,18 +65,163 @@ def test_weighted_boundary_p1():
   assert is_symmetric(diags(np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(np.sqrt(wp)))
   assert is_symmetric(diags(1/np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wp)))
   
-  LG = D1 @ diags(wq) @ D1.T 
-  L_inner = diags(1/np.sqrt(wp)) @ LG @ diags(1/np.sqrt(wp))
-  L_full = diags(np.sqrt(wp)) @ L_inner @ diags(1/np.sqrt(wp))
-  assert is_symmetric(L_inner)
-  assert not(is_symmetric(L_full))
-  assert np.allclose(abs((LG @ diags(1/wp)) - L_full).data, 0.0)
+def test_uplaplacian0():
+  X, S = generate_dataset()
+  D1 = boundary_matrix(S, p=1).tocsc()
+  wq = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+  wpl = np.random.uniform(size=S.shape[0], low=0.0, high=1.0)
+  wpr = np.random.uniform(size=S.shape[0], low=0.0, high=1.0)
 
-  L_inner = diags(np.sqrt(wp)) @ LG @ diags(np.sqrt(wp))
-  L_full = diags(1/np.sqrt(wp)) @ L_inner @ diags(np.sqrt(wp))
-  assert is_symmetric(L_inner)
-  assert not(is_symmetric(L_full))
-  assert np.allclose(abs((LG @ diags(wp)) - L_full).data, 0.0)
+  ## Check equivalence of weighted laplacian matrix-vector product and graph-theoretic version
+  x = np.random.uniform(size=D1.shape[0])
+  LW = diags(wpl) @ D1 @ diags(wq) @ D1.T @ diags(wpr)
+
+  ## Check diagonal first
+  V, E = list(S.faces(0)), list(S.faces(1))
+  d = np.zeros(S.shape[0])
+  for s_ind, s in enumerate(E):
+    for f in s.boundary():
+      ii = V.index(f)
+      d[ii] += wq[s_ind] * wpl[ii] * wpr[ii]
+  assert np.allclose(d, LW.diagonal())
+
+  ## Then check the full asymmetric product
+  sgn_pattern = D1[:,[0]].data
+  z = d * x # update with x
+  for s_ind, s in enumerate(E):
+    for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), -sgn_pattern):
+      ii, jj = V.index(f1), V.index(f2)
+      z[ii] += x[jj] * wpl[ii] * wpr[jj] * wq[s_ind] * sgn_ij
+      z[jj] += x[ii] * wpl[jj] * wpr[ii] * wq[s_ind] * sgn_ij
+  assert np.allclose(z, LW @ x)
+
+
+def test_up_laplacian1():
+  X, S = generate_dataset()
+  D = boundary_matrix(S, p=2).tocsc()
+  wq = np.random.uniform(size=S.shape[2], low=0.0, high=1.0)
+  wpl = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+  wpr = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+
+  ## Check equivalence of weighted laplacian matrix-vector product and graph-theoretic version
+  x = np.random.uniform(size=S.shape[1])
+  LW = diags(wpl) @ D @ diags(wq) @ D.T @ diags(wpr)
+
+  ## Check diagonal first
+  P, Q = list(S.faces(1)), list(S.faces(2))
+  d = np.zeros(S.shape[1])
+  for s_ind, s in enumerate(Q):
+    for f in s.boundary():
+      ii = P.index(f)
+      d[ii] += wpl[ii] * wq[s_ind] * wpr[ii]
+  assert np.allclose(d, LW.diagonal())
+
+  ## Then check the full asymmetric product
+  sgn_pattern = D[:,[0]].data ## if vertex-induced
+  z = d * x # update with x
+  for s_ind, s in enumerate(Q):
+    for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), -sgn_pattern):
+      ii, jj = P.index(f1), P.index(f2)
+      z[ii] += sgn_ij * x[jj] * wpl[ii] * wq[s_ind] * wpr[jj]
+      z[jj] += sgn_ij * x[ii] * wpl[jj] * wq[s_ind] * wpr[ii]
+  assert np.allclose(z, LW @ x)
+
+## Test with arbitrary sign changes
+def test_up_laplacian1_sgn():
+  X, S = generate_dataset()
+  D = boundary_matrix(S, p=2).tocsc()
+  wq = np.random.uniform(size=S.shape[2], low=0.0, high=1.0)
+  wpl = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+  wpr = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+
+  ## Orient arbitrarily
+  for j in range(D.shape[1]):
+    D[:,[j]] = D[:,[j]]*np.random.choice([-1,1])
+
+  ## Check equivalence of weighted laplacian matrix-vector product and graph-theoretic version
+  x = np.random.uniform(size=S.shape[1])
+  LW = diags(wpl) @ D @ diags(wq) @ D.T @ diags(wpr)
+
+  ## Check diagonal first
+  P, Q = list(S.faces(1)), list(S.faces(2))
+  d = np.zeros(S.shape[1])
+  for s_ind, s in enumerate(Q):
+    for f in s.boundary():
+      ii = P.index(f)
+      d[ii] += wpl[ii] * wq[s_ind] * wpr[ii]
+  assert np.allclose(d, LW.diagonal())
+
+  ## Then check the full asymmetric product
+  z = d * x # update with x
+  for s_ind, s in enumerate(Q):
+    sgn_pattern = np.sign(D[:,[s_ind]].data)
+    B = list(s.boundary())
+    for (f1, f2) in combinations(s.boundary(), 2):
+      sgn_ij = sgn_pattern[B.index(f1)]*sgn_pattern[B.index(f2)]
+      ii, jj = P.index(f1), P.index(f2)
+      z[ii] += sgn_ij * x[jj] * wpl[ii] * wq[s_ind] * wpr[jj]
+      z[jj] += sgn_ij * x[ii] * wpl[jj] * wq[s_ind] * wpr[ii]
+  assert np.allclose(z, LW @ x)
+
+def test_up_laplacian1():
+  X, S = generate_dataset()
+  D = boundary_matrix(S, p=2).tocsc()
+  wq = np.random.uniform(size=S.shape[2], low=0.0, high=1.0)
+  wpl = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+  wpr = np.random.uniform(size=S.shape[1], low=0.0, high=1.0)
+
+  from pbsig.linalg import UpLaplacian
+  L = UpLaplacian(list(S.faces(2)), list(S.faces(1)))
+  
+  ## Ensure construction
+  from scipy.sparse.linalg import LinearOperator
+  assert isinstance(L, LinearOperator)
+  
+  ## Test unweighted product 
+  x = np.random.uniform(size=L.shape[0])
+  assert np.allclose(D @ D.T @ x, L @ x)
+  
+  ## Test weighted product with p+1 simplices
+  L.simplex_weights = wq 
+  assert np.allclose(D @ diags(wq) @ D.T @ x, L @ x)
+
+  ## Test weighted product with p simplices 
+  L.face_right_weights = wpr 
+  assert np.allclose(D @ diags(wq) @ D.T @ diags(wpr) @ x, L @ x)    
+  L.face_left_weights = wpl 
+  assert np.allclose(diags(wpl) @ D @ diags(wq) @ D.T @ diags(wpr) @ x, L @ x)  
+
+  ## Test matrix equivalence at API level 
+  from pbsig.linalg import up_laplacian
+  LO = UpLaplacian(list(S.faces(2)), list(S.faces(1)))
+  LM = up_laplacian(S, p=1)
+  assert np.allclose(LO @ x, LM @ x)
+
+  ## Test matrix equivalence at API level 
+  W = dict(zip(S, np.random.uniform(size=len(S), low=0.0)))
+  LM = up_laplacian(S, p=1, weight = lambda s: W[s])
+  LO = UpLaplacian(list(S.faces(2)), list(S.faces(1)))
+  LO.simplex_weights = np.array([W[s] for s in S.faces(2)])
+  LO.face_left_weights = np.array([W[s] for s in S.faces(1)])
+  LO.face_right_weights = np.array([W[s] for s in S.faces(1)])
+  assert np.allclose(LO @ x, LM @ x)
+
+  ## Test equivalence via weight function
+  LO = up_laplacian(S, p=1, weight = lambda s: W[s], form='lo')
+  assert np.allclose(LO @ x, LM @ x)
+
+# LG = D1 @ diags(wq) @ D1.T 
+# L_inner = diags(1/np.sqrt(wp)) @ LG @ diags(1/np.sqrt(wp))
+# L_full = diags(np.sqrt(wp)) @ L_inner @ diags(1/np.sqrt(wp))
+# assert is_symmetric(L_inner)
+# assert not(is_symmetric(L_full))
+# assert np.allclose(abs((LG @ diags(1/wp)) - L_full).data, 0.0)
+
+# L_inner = diags(np.sqrt(wp)) @ LG @ diags(np.sqrt(wp))
+# L_full = diags(1/np.sqrt(wp)) @ L_inner @ diags(np.sqrt(wp))
+# assert is_symmetric(L_inner)
+# assert not(is_symmetric(L_full))
+# assert np.allclose(abs((LG @ diags(wp)) - L_full).data, 0.0)
 
 
 def test_spectra_union():

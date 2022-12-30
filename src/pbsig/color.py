@@ -105,7 +105,7 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 	assert isinstance(out_min, float) and isinstance(out_max, float)
 	
 	## Normalize to unit interval
-	x = (x-np.min(x))/(np.max(x)-np.min(x))
+	x = (x-out_min)/(out_max-out_min)
 	
 	## Scale the values based on selected scaling
 	if scaling == "linear":

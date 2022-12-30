@@ -289,7 +289,7 @@ In what follows, we re-define the boundary matrix to exploit this permutation in
 %where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
 
 % Change index set
-\textbf{Remark:} All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $(K_\bullet, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
+\textbf{Remark:} All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $K_\bullet = (K, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
 In practice, it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, as the filter function $f$ is often a real-valued function derived from geometrical settings.
 For example, when $f : K \to \mathbb{R}$ satisfies $f(\sigma') \leq f(\sigma)$ for every $\sigma' \subseteq \sigma$, the subcomplexes $K_i = f^{-1}(-\infty, \hat\imath \,]$ of $K$ represent sublevel sets $f^{-1}(-\infty, \hat\imath \,]$ for every $\hat\imath \in \mathbb{R}$. 
 In this setting, each pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ is typically represented as the point $(\, \hat\imath, \hat\jmath \, )$ where $\hat\imath = f(\sigma_i)$ and $\hat\jmath = f(\sigma_j)$.
@@ -330,7 +330,7 @@ where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_
 \begin{equation}
 	\hat{\partial}_p^{i,j}(h) := \widetilde{W}_p^i(h) \circ \partial_p \circ W_{p+1}^j(h)
 \end{equation}
-where $\widetilde{W}_p^x$ is defined synonymous with $\tilde{g}_h(\sigma) = (\tilde{S}_x \circ f_h)(\sigma)$. Thus, definition~\ref{def:time_boundary_matrix} corresponds simply a row-and-column weighted version of the \emph{fixed} $p$-th boundary matrix $\partial_p$.
+where $\widetilde{W}_p^x$ is defined synonymous with $\tilde{g}_h(\sigma) = (\tilde{S}_x \circ f_h)(\sigma)$. Thus, definition~\ref{def:time_boundary_matrix} corresponds to a \emph{fixed} $p$-th boundary matrix $\partial_p$ whose rows and columns are weighted by $\widetilde{W}_p^i(h)$ and $W_{p+1}^j(h)$, respectively.
 \\
 \\
 \noindent 
@@ -340,8 +340,7 @@ For simplicity of presentation, we assume the orientation of the simplices induc
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
 \begin{proposition}
-	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. 
-	For any pair $i,j \in \Delta_+$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, the $\mathcal{H}$-parameterized PBN $\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ and multiplicity $\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ functions given by: 
+	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. Given a filtration $K_\bullet = (K, f)$ with $f: K \to \mathbb{R}$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, the $\mathcal{H}$-parameterized betti numbers $\beta_p^{i,j} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ and multiplicity $\mu_p^{R} : \mathcal{H} \times \mathcal{P}(V) \to \mathbb{N}$ functions given by: 
 	\begin{align*}\label{eq:pbn_parameterized}
 		\beta_p^{i,j}(K,h) = \lvert K_i^{p}(h) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j}(h)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, j}(h)\,\big) \numberthis
 	\end{align*}
@@ -349,8 +348,8 @@ For simplicity of presentation, we assume the orientation of the simplices induc
 	\mu_p^{R}(K,h) = \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{i \+ \delta, k}(h)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{q}^{j \+ \delta, l}(h)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i \+ \delta, l}(h)\,\big) \numberthis
 	\end{align*}
 	yield the quantities $\mu_p(R) = $
-	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(M)}{R} \, \right)$ and 
-	$\beta_p(i,j) = \mathrm{dim}(H_p^{i,j})$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, for all $h \in \mathcal{H}$.
+	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(f)}{R} \, \right)$ and 
+	$\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j})$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, for all $h \in \mathcal{H}$.
 \end{proposition}
 \noindent We give proofs the equivalence between these two expressions in the appendix. 
 
@@ -466,6 +465,7 @@ Intuitively, since both counting invariants are $0$ outside of the portions of $
 %In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
+\subsection{Rank relaxation} 
 We begin with a spectral characterization of the rank function. Given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
@@ -589,13 +589,22 @@ where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h
 \end{definition}
 \noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify that $\hat{\mu}_p^R$ is Lipshitz continuous by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. We omit the definition of the smooth PBN relaxation $\hat{\beta}_p^{i,j}$, as its form is synonymous with definition~\ref{def:smooth_mu}.
 
-\subsection{Basic properties}
+\subsubsection*{Basic properties}
+
 Basic properties of $\hat{\mu}$. % pseudo-monotonicity, additivity 
 
-\subsection{Stability}
+
+
+\subsubsection*{Stability}
 Stability results
 % Lipshitz stability 
 % partition of unity + output-sensitive mention
+
+\subsection{Laplacian connections}
+It is well known that the square roots of the non-zero eigenvalues of either $\partial \partial^T$ or $\partial^T \partial$ recover the singular values of $\partial$~\cite{}. 
+Moreover, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators.
+
+
 
 \section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
@@ -714,15 +723,13 @@ In the next section, we demonstrate how to reduce this complexity using the stru
 
 \subsubsection{Combinatorial Laplacians}
 The efficiency of the Lanczos method depends on two crucial components: the three-term recurrence and fast matrix-vector product. 
+In contrast, whereas $x \mapsto Lx$ can be carried out in essentially linear time time in the number of edges of the underlying graph, it is not immediately clear whether $x \mapsto \partial_p \partial_p^T x$ can be carried out in a time linear in the number of $p+1$ simplices for more general $p > 1$. 
 The former only arises in the decomposition of symmetric matrices and the latter depends the existence of combinatorial structure in the $x \mapsto A x$ operation. 
-Though $\partial$ is not symmetric, it is well known that the non-zero part of the spectrum of both $\partial \partial^T$ and $\partial^T \partial$ contain the same information as the singular values of $\partial$~\cite{}. 
-%Thus, the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$.
-Indeed, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators.
-In contrast, whereas $x \mapsto Lx$ can be carried out in essentially linear time time in the number of edges of the underlying graph, it is not immediately clear whether $x \mapsto \partial_p \partial_p^T x$ can be carried out in a time linear in the number of $p+1$ simplices for more general $p > 1$. Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
+Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
-Given a simple undirected graph $G = (V, E)$, let $A \in \mathbb{B}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
+Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
 The \emph{graph Laplacian} $L$, defined in terms of adjacency, incidence, and element-wise relations, is defined as: 
 \begin{equation}
 L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
@@ -1348,35 +1355,46 @@ Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathc
 Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
 For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
 
+\newlength\myindent 
+\setlength\myindent{6em} 
+\newcommand\bindent{
+  \begingroup 
+  \setlength{\itemindent}{\myindent} 
+  \addtolength{\algorithmicindent}{\myindent} 
+}
+\newcommand\eindent{\endgroup} % closes a group
+
 \section{Laplacian \texttt{matvec} products}\label{sec:up_laplace_matvec}
 \begin{algorithm}
-\caption{Two-pass \texttt{matvec} operator for combinatorial up-Laplacians in $O(m(p+1)) \approx O(m)$ time }	
+\caption{\texttt{matvec} operator for weighted $p$ up-Laplacians in $O(m(p+1)^2) \approx O(m)$ time for any $p \geq 0$}	
 \begin{algorithmic}
-\Require $x \in \mathbb{R}^n, \, f: K \to \mathbb{R}_{+}, \, h: K^p \to [\,n\,]$
-\Ensure $y = \langle L_p^{\mathrm{up}}(K, f), x \rangle$
+\Require Fixed oriented complex $K$ of size $N=\lvert K \rvert$ and filter function $f: K \to [N]$ \\
+\hspace{-1.38em} \textbf{Optional:} Weight functions $w_{p+1}: K^{p+1} \to \mathbb{R}_{+}$ and  $w_{p}^l, w_{p}^l: K^p \to \mathbb{R}_{+}$
+\Ensure $y = \langle \, L_p^{\mathrm{up}}, x \, \rangle = (W_p^{l} \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p^{r}) x$
 %\State $(n,m) \gets (\lvert K^p\rvert, \lvert K^{p+1}\rvert)$
 \vspace{0.25em}
-\Function{UpLaplacianMatvec}{x}
-\State $y \gets \mathbf{0}$ \Comment{$(\in \mathbb{R}^n)$}
-%\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
-\For{$\sigma \in K^{p+1}$}:
-    %\For{$(\, [\tau], \, [\tau'] \,) \in \partial[\sigma]$}
-    \For{$\tau, \, \tau' \in \partial[\sigma]^{(2)}$}: %\Comment{$A^{(2)} = \{ (a, a') : a,a' \in A \times A \text{ s.t. }a < a' \}$ }
-%    	\If{$\tau \neq \tau'$}
-	    	\State $i, j \gets h(\tau), \; h(\tau')$ % \mathrm{sgn}([\tau],\partial[\sigma]) \cdot \mathrm{sgn}([\tau'],\partial[\sigma])
-	    	%\State $v \gets f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
-    		\State $y_{i} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot x_{j} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
-    		\State $y_{j} \mathrel{{+}{=}} (-1)^{s_{ij}} \cdot x_{i} \cdot f(\tau) \cdot f(\tau') \cdot f(\sigma)^2$
-%    	\EndIf
-    	%\State $y_{h_p(\tau)} \mathrel{{+}{=}} z_{h_p(\tau')} \cdot v \cdot sgn(\tau,\partial[\sigma]) $
-    \EndFor 
-\EndFor
+\State \# Precompute weighted degrees $D_w$ 
+\State $h_p : K^p \to [ \, \lvert K^p \rvert \, ] := \restr{f^{-1}}{K^p}$
+\State $D_w \gets \mathbf{0}$
 \For{$\sigma \in K^{p+1}$}: 
 	\For{$\tau \in \partial[\sigma]$}:
-		\State $i \gets h(\tau)$
-   	 	\State $y_{i} \mathrel{{+}{=}} x_i \cdot f(\sigma)^2 \cdot f(\tau)^2$
+   	 	\State $D_w[h_p(\tau)] \gets f_l(\tau) \cdot f(\sigma) \cdot  f_r(\tau)$
    	\EndFor
 \EndFor
+\State 
+\State \# Compute Laplacian \texttt{matvec} for $x$ 
+\Function{UpLaplacianMatvec}{$x \in \mathbb{R}^n$}
+\State $y \gets D_w \cdot x$ %(element-wise product)
+%\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
+\For{$\sigma \in K^{p+1}$}:
+%    $\mathrm{sgn}(\partial[\sigma])$
+    \For{$\tau, \, \tau' \in \partial[\sigma] \times \partial[\sigma]$}: 
+    		\State $s, \; i, \; j \gets \mathrm{sgn}([\tau], \partial[\sigma]) \cdot \mathrm{sgn}([\tau'], \partial[\sigma]), \; h_p(\tau), \; h_p(\tau')$
+    		\State $y[i] \mathrel{{+}{=}} s \cdot x_{j} \cdot w_p^l(\tau) \cdot w_{p+1}(\sigma) \cdot w_p^r(\tau')$
+%    		\State $y_{j} \mathrel{{+}{=}} s \cdot x_{i} \cdot f_l(\tau') \cdot f(\sigma) \cdot f_r(\tau)$
+    \EndFor 
+\EndFor
+
 \Return $y$
 \EndFunction
 \end{algorithmic}

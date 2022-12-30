@@ -22,6 +22,12 @@ from .simplicial import *
 #   ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
 #   # return sum(np.sort(diagonal(A)) >= tol) # rank lower bound
 
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default', **kwargs) -> float:
+  """ 
+  Computes a smooth version of the [numerical] rank of a matrix or linear operator 'A' 
+  
+  In general, 
+  """
 
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:
@@ -313,6 +319,21 @@ def _up_laplacian_matvec_1(S: Collection['Simplex'], w0: ArrayLike, w1: ArrayLik
 
 
 class UpLaplacian(LinearOperator):
+  """ 
+  Linear operator for weighted p up-Laplacians of simplicial complexes. 
+  
+  In matrix notation, these take the form:
+
+  W_p^l @ D_{p+1} @ W_{p+1} D_{p+1}.T @ W_p^r 
+
+  where W* represents diagonal weight matrices on the p-th (or p+1) simplices and Dp represents 
+  the p-th oriented boundary matrix of the simplicial complex. 
+
+  This operator is matrix-free. 
+
+  """
+  identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
+
   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None, orientation: Union[int, tuple] = 0):
     ## Ensure S is repeatable and faces 'F' is indexable
     assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
@@ -330,23 +351,39 @@ class UpLaplacian(LinearOperator):
     self.faces = F
     self.shape = (len(F), len(F))
     self.dtype = np.dtype(float) if dtype is None else dtype
-    self._wf = None
-    self._ws = None
+    self._wfl = self._wfr = self._ws = UpLaplacian.identity_seq
     self.prepare()
+    self._precompute_degree()
+    
   
   ## Face weights
   @property 
-  def face_weights(self): 
-    return self._wf
+  def face_left_weights(self): 
+    return self._wfl
 
-  @face_weights.setter
-  def face_weights(self, value: ArrayLike) -> None:
+  @face_left_weights.setter
+  def face_left_weights(self, value: ArrayLike) -> None:
     if value is None: 
-      self._wf = None 
+      self._wfl = UpLaplacian.identity_seq
     else: 
       assert len(value) == self.shape[0], "Invalid value given. Must match shape."
       assert isinstance(value, np.ndarray)
-      self._wf = value
+      self._wfl = value
+    self._precompute_degree()
+
+  @property 
+  def face_right_weights(self): 
+    return self._wfr
+
+  @face_right_weights.setter
+  def face_right_weights(self, value: ArrayLike) -> None:
+    if value is None: 
+      self._wfr = UpLaplacian.identity_seq
+    else: 
+      assert len(value) == self.shape[0], "Invalid value given. Must match shape."
+      assert isinstance(value, np.ndarray)
+      self._wfr = value
+    self._precompute_degree()
 
   ## S-weights
   @property
@@ -356,15 +393,27 @@ class UpLaplacian(LinearOperator):
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
     if value is None: 
-      self._ws = None
+      self._ws = UpLaplacian.identity_seq
     else:
-      # if hasattr(self.S, '__len__'): assert len(self.S) == len(value), "Invalid weight vector given."
-      assert isinstance(value, np.ndarray) 
-      self._ws = value ## length is unchecked! 
+      ## Soft-check to help debugging
+      if hasattr(self.simplices, '__len__') and hasattr(value, '__len__'): 
+        assert len(self.simplices) == len(value), "Invalid weight vector given."
+      #assert isinstance(value, np.ndarray) 
+      self._ws = value ## length is potentially unchecked! 
+    self._precompute_degree()
 
+  def _precompute_degree(self):
+    self.degree = np.zeros(self.shape[1])
+    for s_ind, s in enumerate(self.simplices):
+      for f in s.boundary():
+        ii = self.index(f)
+        self.degree[ii] += self._wfl[ii] * self._ws[s_ind] * self._wfr[ii]
+
+  ## Prepares the indexing function, precomputes the degree, etc.
   def prepare(self, level: int = 0) -> None: 
     # self.index = type('_indexer', (), { '__getitem__' : lambda })
     if level == 0:
+      ## Faces must be a Sequence anyways
       self.index = lambda s: self.faces.index(s)
     elif level == 1:
       self._index = { f: i for i, f in enumerate(self.faces) }
@@ -372,54 +421,16 @@ class UpLaplacian(LinearOperator):
     else: 
       raise NotImplementedError("Not implemented yet")
 
-  ## Define the matvec operator as a closure
+  ## Define the matvec operator using the precomputed degree, the pre-allocate workspace, and the pre-determined sgn pattern
   def _matvec(self, x: ArrayLike):
-    v = self._v
-    v.fill(0)
-    if self._wf is None and self._wf is None:
-      for s_ind, s in enumerate(self.simplices):
-        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
-          ii, jj = self.index(f1), self.index(f2)
-          v[ii] += x[jj] * sgn_ij
-          v[jj] += x[ii] * sgn_ij
-      for s_ind, s in enumerate(self.simplices):
-        for f in s.boundary():
-          ii = self.index(f)
-          v[ii] += x[ii]
-    elif (self._ws is None) and not(self._wf is None):
-      for s_ind, s in enumerate(self.simplices):
-        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
-          ii, jj = self.index(f1), self.index(f2)
-          c = self._wf[ii] * self._wf[jj]
-          v[ii] += x[jj] * c * sgn_ij
-          v[jj] += x[ii] * c * sgn_ij
-      for s_ind, s in enumerate(self.simplices):
-        for f in s.boundary():
-          ii = self.index(f)
-          v[ii] += x[ii] * self._wf[ii]**2
-    elif not(self._ws is None) and (self._wf is None):
-      for s_ind, s in enumerate(self.simplices):
-        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
-          ii, jj = self.index(f1), self.index(f2)
-          c = self._ws[s_ind]
-          v[ii] += x[jj] * c * sgn_ij
-          v[jj] += x[ii] * c * sgn_ij
-      for s_ind, s in enumerate(self.simplices):
-        for f in s.boundary():
-          ii = self.index(f)
-          v[ii] += x[ii] * self._ws[s_ind]
-    else:
-      for s_ind, s in enumerate(self.simplices):
-        for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
-          ii, jj = self.index(f1), self.index(f2)
-          c = self._wf[ii] * self._wf[jj] * self._ws[s_ind]
-          v[ii] += x[jj] * c * sgn_ij
-          v[jj] += x[ii] * c * sgn_ij
-      for s_ind, s in enumerate(self.simplices):
-        for f in s.boundary():
-          ii = self.index(f)
-          v[ii] += x[ii] * self._ws[s_ind] * self._wf[ii]**2
-    return v
+    self._v.fill(0)
+    self._v += self.degree * x
+    for s_ind, s in enumerate(self.simplices):
+      for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+        ii, jj = self.index(f1), self.index(f2)
+        self._v[ii] += sgn_ij * x[jj] * self._wfl[ii] * self._ws[s_ind] * self._wfr[jj]
+        self._v[jj] += sgn_ij * x[ii] * self._wfl[jj] * self._ws[s_ind] * self._wfr[ii]
+    return self._v
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:
@@ -449,44 +460,57 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)
 
+from numbers import Number
+
 ## TODO: change weight to optionally be a string when attr system added to SC's
 def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
     Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex K. 
 
-    Given D = boundary_matrix(K, p), the weighted p-th up-laplacian L is defined as: 
+    Given D_p = boundary_matrix(K, p), the weighted p-th up-laplacian L is defined as: 
 
-    Lp := W_p @ D @ W_{p+1} @ D^T @ W_p 
+    Lp := W_p @ D_{p+1} @ W_{p+1} @ D_{p+1}^T @ W_p 
     
-    Where W_p, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively.
+    Where W_p, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively. Note p = 0 (default), the results represents 
+    the graph laplacians operator. This function is loosely based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
 
-    Note p = 0 (default), the results represents the graph laplacians operator. 
-
-    *Note to self*: You need weights as parameters. If the form = 'lo' or 'function', then you can't post-compose the resulting matrix-free matvec product w/ weights. 
-
-    SciPy accepts weights by accepting potentially sparse adjacency matrix input. 
-
-    Based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+    Parameters:
+      S := Simplicial Complex 
+      p := dimension of the up Laplacian. Defaults to 0 (graph Laplacian).
+      weight := Callable weight function to be evaluated on each simplex in S. Must return either a value or a 2-tuple (wl, wr). 
+      normed := 
+      return_diag := whether to return diagonal degree matrix along with the laplacian
+      form := return type. One of ['array', 'lo', 'function']
+      dtype := dtype of associated laplacian. 
+      kwargs := unused. 
     """
     assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
-    ns = K.dim() 
-    w0 = np.array([float(weight(s)) for s in K.faces(p)]) if weight is not None else np.repeat(1, ns[p]) 
-    w1 = np.array([float(weight(s)) for s in K.faces(p+1)]) if weight is not None else np.repeat(1, ns[p+1])
-    assert len(w0) == ns[p] and len(w1) == ns[p+1], "Invalid weight arrays given."
+    ns = K.shape
+    weight = (lambda s: 1.0) if weight is None else weight
+    _ = weight(next(K.faces(p)))
+    if not isinstance(_, Number) and len(_) == 2:
+      W_LR = np.array([weight(s) for s in K.faces(p)]).astype(float)
+      wpl = W_LR[:,0]
+      wpr = W_LR[:,1]
+    else: 
+      wpl = np.array([float(weight(s)) for s in K.faces(p)])
+      wpr = wpl
+    wq = np.array([float(weight(s)) for s in K.faces(p+1)])
+    assert len(wpl) == ns[p] and len(wq) == ns[p+1], "Invalid weight arrays given."
     if form == 'array':
       B = boundary_matrix(K, p = p+1)
-      L = (diags(w0) @ B @ diags(w1) @ B.T @ diags(w0)).tocoo()
-      return L
+      L = (diags(wpl) @ B @ diags(wq) @ B.T @ diags(wpr)).tocoo()
+      return (L, L.diagonal()) if return_diag else L
     elif form == 'lo' or form == 'function':
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
-      lo.simplex_weights = w1
-      lo.simplex_weights = w0
+      lo._wfl, lo._wfr, lo._ws = wpl, wpr, wq
+      lo._precompute_degree()
+      return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
-      return lo
     else: 
       raise ValueError(f"Unknown form '{form}'.")
 
