@@ -20,6 +20,27 @@ def test_can_import():
   from pbsig.linalg import laplacian
   assert str(type(laplacian)) == "<class 'module'>"
 
+def test_fro_norm():
+  from pbsig.linalg import up_laplacian
+  X, S = generate_dataset()
+  
+  LO = UpLaplacian(list(S.faces(2)), list(S.faces(1)))
+  LM = up_laplacian(S, p=1)
+
+  ## Matrix first
+  n1 = np.sqrt(sum(np.linalg.svd(LM.todense())[1]**2))
+  n2 = np.sqrt(np.sum(diagonal(LM.T @ LM)))
+  n3 = np.sqrt(sum(LM.data**2))
+  n4 = np.linalg.norm(LM.todense(), 'fro')
+  assert np.allclose([n1 - n2, n2 - n3, n3 - n4], 0.0)
+
+  ## Operator
+  n, m = LO.shape
+  col_sum = lambda j: sum((LO @ np.array([1 if i == j else 0 for i in range(m)]))**2)
+  fn = np.sqrt(sum([col_sum(j) for j in range(m)]))
+
+  
+
 def test_weighted_boundary_p1():
   X, S = generate_dataset()
   D1 = boundary_matrix(S, p=1)

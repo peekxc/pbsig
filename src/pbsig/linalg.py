@@ -2,32 +2,106 @@ from typing import *
 from numpy.typing import ArrayLike
 from numbers import *
 
-from math import prod 
+import numpy as np 
+import primme
+from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
-import numpy as np
-import _lanczos as lanczos
-import _laplacian as laplacian
-import primme
+from scipy.sparse.csgraph import structural_rank
 
 ## Local imports
 from .simplicial import * 
+import _lanczos as lanczos
+import _laplacian as laplacian
 
-# def testing_l():
-#   lanczos.lower_star_lanczos()
-#   print(dir(lanczos))
-# eigh(L.todense())
-
-# def bound_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float):
-#   ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
-#   # return sum(np.sort(diagonal(A)) >= tol) # rank lower bound
-
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default', **kwargs) -> float:
-  """ 
-  Computes a smooth version of the [numerical] rank of a matrix or linear operator 'A' 
+# Neumanns majorization doesn't apply? rank_lb = sum(np.sort(diagonal(A)) >= tol)
+def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True) -> int:
+  assert A.shape[0] == A.shape[1], "Matrix 'A' must be square"
+  if upper: 
+    k_ = structural_rank(A) if isinstance(A, spmatrix) else A.shape[0]
+    bound = min([A.shape[0], A.shape[1], sum(diagonal(A) != 0), k_])  
+  else:
+    ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
+    n, m = A.shape
+    col_sum = lambda j: sum((A @ np.array([1 if i == j else 0 for i in range(m)]))**2)
+    fn2 = sum([col_sum(j) for j in range(m)])
+    bound = min([A.shape[0], A.shape[1], np.ceil(sum(diagonal(A))**2 / fn2)])
+  return int(bound)
   
-  In general, 
+def sgn_approx(sigma: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) -> ArrayLike:
+  """ 
+  Approximates the positive sgn+ function with a smooth relaxation
+
+  If sigma = (x1, x2, ..., xn), where each x >= 0, then this function returns a vector (y1, y2, ..., yn) satisfying
+
+  1. 0 <= yi <= 1
+  2. sgn+(yi) = sgn+(xi)
+  3. yi = sgn+(xi) as eps -> 0+
+  4. sgn(xi, eps) <= sgn(xi, eps') for all eps >= eps'
+
+  Parameters:
+    sigma := array of non-negative values
+    eps := smoothing parameter. Values close to 0 mimick the sgn function more closely. Larger values smooth out the relaxation. 
+    p := float 
   """
+  assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
+  # assert isinstance(sigma, np.ndarray), "Only numpy arrays supported for now"
+  sigma = np.array(sigma)
+  s1 = np.vectorize(lambda x: x**p / (x**p + eps**p))
+  s2 = np.vectorize(lambda x: x**p / (x**p + eps))
+  s3 = np.vectorize(lambda x: x / (x**p + eps**p)**(1/p))
+  s4 = np.vectorize(lambda x: 1 - np.exp(-x/eps))
+  phi = [s1,s2,s3,s4][method]
+  return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in sigma], dtype=sigma.dtype)
+
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, **kwargs) -> float:
+  """ 
+  Computes a smoothed-version of the rank of a positive semi-definite 'A' 
+  
+  The default solver 'default' chooses depends on the size, structure, and estimated rank of 'A'.
+
+  Otherwise, if solver is 'irl' then 'dac'  
+
+  Parameters: 
+    A := array, sparse matrix, or linear operator to compute the rank of
+    pp := proportional part of the spectrum to compute
+    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
+    smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
+    symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
+    kwargs := keyword arguments to pass to the solver. Ignored if solver = 'default'.
+  """
+  assert A.shape[0] == A.shape[1], "A must be square"
+  assert symmetric, "Haven't implemented non-symmetric yet"
+  assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+  assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
+  if pp == 0.0: return 0.0
+  eps, p, method = smoothing 
+  if solver == 'dac':
+    assert isinstance(A, np.ndarray) or isinstance(A, spmatrix), "Cannot use divide-and-conquer with linear operators"
+    if isinstance(A, spmatrix):
+      import warnings
+      warnings.warn("Converting sparse matrix to a dense matrix to use LAPACK divide-and-conquer routine.")
+      A = A.todense()
+  if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
+    ew = np.linalg.eigvalsh(A, **kwargs)
+  elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+    nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+    if nev == A.shape[0] and solver == 'irl':
+      import warnings
+      warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
+      solver = 'default' if solver == 'irl' else solver
+    assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
+    if solver == 'irl':
+      ew = eigsh(A, k=nev, which='LM', return_eigenvectors=False, **kwargs)
+    else:
+      import primme
+      methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
+      ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **kwargs)
+  else: 
+    raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
+  ew = np.array([0.0 if np.isclose(v, 0.0) else v for v in ew], dtype=ew.dtype)
+  assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
+  return sum(sgn_approx(np.sqrt(ew), eps, p, method))
 
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:
@@ -35,7 +109,6 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
   Computes the numerical rank of a positive semi-definite 'A' via thresholding its eigenvalues.
 
   The eps-numerical rank r_eps(A) is the largest integer 'r' such that: 
-
 
   See: https://math.stackexchange.com/questions/2238798/numerically-determining-rank-of-a-matrix
   """
@@ -55,7 +128,7 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
     if np.allclose(A.data, 0.0) or prod(A.shape) == 0: return 0
 
     ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
-    rank_lb = int(np.ceil((sum(diagonal(A))**2)/sum(A.data**2)))
+    rank_lb = rank_bound(A, upper=False)
     k = A.shape[0]-rank_lb
 
     ## Get numerical epsilon tolerance 
@@ -84,19 +157,23 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
 
     ## Resolve the Ax = b solver
     if solver == 'default' or solver == 'cg':
-      solver = lambda self, b: cg(A+cI, b, tol=tol, atol=tol)[0]
+      solver = lambda b: cg(A+cI, b, tol=tol, atol=tol)[0]
     elif solver == 'lgmres':
-      solver = lambda self, b: lgmres(A+cI, b, tol=tol, atol=tol)[0]
+      solver = lambda b: lgmres(A+cI, b, tol=tol, atol=tol)[0]
     else: 
       raise ValueError(f"Unknown Ax=b solver '{solver}'")
-    solver = aslinearoperator(type('Ax_solver', (type(A),), { '_matvec' : solver })(A))
 
-    ## Use tolerance + Neumans trace inequality / majorization result to lower bound on rank / upper bound nullity
-    rank_lb = sum(np.sort(diagonal(A)) >= tol)
-    k = A.shape[0]-rank_lb
+    ## Construct an object with .shape and .matvec attributes
+    Ax_solver = aslinearoperator(type('Ax_solver', (object,), { 
+      'matvec' : solver, 
+      'shape' : A.shape
+    }))
+
+    ## Get lower bound on rank
+    k = A.shape[0]-rank_bound(A, upper=False)
 
     ## Use un-shifted operator 'A' + shifted solver to estimate the dimension of the nullspace w/ shift-invert mode
-    smallest_k = eigsh(A, k=k, which='LM', sigma=0.0, OPinv = solver, tol=tol, return_eigenvectors=False)
+    smallest_k = eigsh(A, k=k, which='LM', sigma=0.0, OPinv = Ax_solver, tol=tol, return_eigenvectors=False)
     dim_nullspace = sum(np.isclose(np.maximum(smallest_k - tol, 0.0), 0.0))
     
     ## Use rank-nullity to obtain the numerical rank
@@ -183,7 +260,7 @@ def effective_resistance(L: ArrayLike, method: str = "pinv"):
 
 def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
   """
-  Calculates all 
+  Calculates all eigenvalues in a block-wise manner 
   """
   ni = int(np.ceil(k/b))
   f_args = dict(tol=np.finfo(np.float32).eps, which='CGT', return_eigenvectors=True, raise_for_unconverged=False, return_history=False)
@@ -205,7 +282,6 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 # from pbsig.precon import Minres, Jacobi, ssor, ShiftedJacobi
 
 # def as_positive_definite(A: Union[ArrayLike, LinearOperator], c: float = 0.0):
-  
 
 def diagonal(A: Union[ArrayLike, LinearOperator]):
   if hasattr(A, 'diagonal'):
@@ -221,11 +297,11 @@ def diagonal(A: Union[ArrayLike, LinearOperator]):
     return d 
 
 ## Returns number of largest eigenvalues needed to capture t% of the spectrum 
-def trace_threshold(A, p=0.80):
-  assert p >= 0.0 and p <= 1.0, "Proportion must be in [0,1]"
+def trace_threshold(A, pp=0.80) -> int:
+  assert pp >= 0.0 and pp <= 1.0, "Proportion must be in [0,1]"
   ev_cs = np.cumsum(diagonal(A))
-  thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) >= p)[0] # index needed to obtain 80% of the spectrum
-  return thresh_ind
+  thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) >= pp)[0] # index needed to obtain 80% of the spectrum
+  return thresh_ind+1 # 0-based conversion
 
 def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[ArrayLike, float] = None, **kwargs):
   """
@@ -292,30 +368,8 @@ def as_linear_operator(A, stats=True):
   lo = LO(A)
   return lo
 
-from pbsig.simplicial import SimplicialComplex
+
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
-
-
-def sgn_approx(sigma: ArrayLike) -> ArrayLike:
-  """ Approximates the sgn function """
-
-# No F needed because faces are assumed to be vertices in sorted order, V = [n]
-def _up_laplacian_matvec_1(S: Collection['Simplex'], w0: ArrayLike, w1: ArrayLike):
-  # .shape and .matvec and .dtype attributes
-  n,m = len(w0), len(S)
-  v = np.zeros(n) # note the O(n) memory
-  def _matvec(x: ArrayLike): 
-    nonlocal v
-    v.fill(0)
-    for cc, (i,j) in enumerate(S):
-      v[i] += w1[cc]**2
-      v[j] += w1[cc]**2
-    v *= w0**2 * x
-    for cc, (i,j) in enumerate(S):
-      v[i] -= x[j]*w0[i]*w0[j]*w1[cc]**2
-      v[j] -= x[i]*w0[i]*w0[j]*w1[cc]**2
-    return v
-  return _matvec
 
 
 class UpLaplacian(LinearOperator):
@@ -329,7 +383,7 @@ class UpLaplacian(LinearOperator):
   where W* represents diagonal weight matrices on the p-th (or p+1) simplices and Dp represents 
   the p-th oriented boundary matrix of the simplicial complex. 
 
-  This operator is matrix-free. 
+  The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
 
   """
   identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
@@ -424,7 +478,7 @@ class UpLaplacian(LinearOperator):
   ## Define the matvec operator using the precomputed degree, the pre-allocate workspace, and the pre-determined sgn pattern
   def _matvec(self, x: ArrayLike):
     self._v.fill(0)
-    self._v += self.degree * x
+    self._v += self.degree * x.reshape(-1)
     for s_ind, s in enumerate(self.simplices):
       for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
         ii, jj = self.index(f1), self.index(f2)
@@ -434,8 +488,7 @@ class UpLaplacian(LinearOperator):
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:
-  """Check if a matrix is Hermitian and/or symmetric.
-  """
+  """ Check if a real-valued matrix is symmetric up to a given tolerance (via np.isclose) """
   from scipy.sparse import issparse
   if isinstance(A, np.ndarray):
     return np.allclose(A, A.T)
@@ -460,7 +513,7 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)
 
-from numbers import Number
+
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
 def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
@@ -502,15 +555,18 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       B = boundary_matrix(K, p = p+1)
       L = (diags(wpl) @ B @ diags(wq) @ B.T @ diags(wpr)).tocoo()
       return (L, L.diagonal()) if return_diag else L
-    elif form == 'lo' or form == 'function':
+    elif form == 'lo':
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
       lo._wfl, lo._wfr, lo._ws = wpl, wpr, wq
       lo._precompute_degree()
+      lo.prepare(1)
       return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
+    elif form == 'function':
+      raise NotImplementedError("function form not implemented yet")
     else: 
       raise ValueError(f"Unknown form '{form}'.")
 

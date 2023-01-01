@@ -601,10 +601,66 @@ Stability results
 % partition of unity + output-sensitive mention
 
 \subsection{Laplacian connections}
-It is well known that the square roots of the non-zero eigenvalues of either $\partial \partial^T$ or $\partial^T \partial$ recover the singular values of $\partial$~\cite{}. 
-Moreover, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian for $p > 0$---as the study of singular values of boundary operators.
+It is well known that the square roots of the non-zero eigenvalues of either $\partial \partial^T$ or $\partial^T \partial$ yield the singular values of $\partial$. 
+Moreover, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators.
+% "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
 
+Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
+The \emph{graph Laplacian} $L$, defined in terms of adjacency, incidence, and element-wise relations, is defined as: 
+\begin{equation}
+L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
+	L\,[i,j] = \begin{cases}
+		\mathrm{deg}(v_i) & \text{ if } i = j \\
+		-1 & \text{ if } i \sim j \\
+		0 & \text{ if } i \nsim j
+	\end{cases}
+\end{equation}
+where we use the notation $i \sim j$ to denote vertices $v_i,v_j \in V$ which are path-connected in $G$. 
+Its well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$. 
+% forget about combinatorial laplacian, mention rank and lanczos! 
+For simplicial complexes, the generalization of the graph laplacian is the \emph{$p$-th combinatorial Laplacian} $\Delta_p$ given by: 
+\begin{equation}
+	\Delta_p(K) = 
+	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
+%	\simeq H() 
+\end{equation}
+As all three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are self-adjoint, non-negative, and compact, their eigenvalues are real and non-negative.
+Note when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$.
+The study of was first generalized to simplicial complexes by Eckmann~\cite{}, who proved a discrete version of the now celebrated Hodge Theorem, which states that for any simplicial complex $K$: 
+%and for each $p \in \mathbb{N}$: 
+%Using the fact that $\mathrm{Im}(L_p^{\text{up}}) \subset \mathrm{Ker}(L_p^{\text{dn}})$ and $\mathrm{Im}(L_p^{\text{dn}}) \subset \mathrm{Ker}(L_p^{\text{up}})$, Eckmann~\cite{} showed the now celebrated discrete version of the Hodge theorem 
+\begin{equation}\label{eq:laplace_hom}
+	\tilde{H}_p(K; \mathbb{R}) \cong \mathrm{ker}(\Delta_p(K)), \quad \beta_p = \mathrm{nullity}(\Delta_p(K))
+\end{equation}
+Many subsequent papers have been published studying the properties of higher order combinatorial Laplacians, which have subsequently found applications to graph optimization problems, network circuit theory, and sparsification problems; see~\cite{} and references therein for an overview. 
 
+The spectra of combinatorial Laplacians derived from simplicial complexes was studied extensively by~\cite{}. 
+
+In general, the Laplacians of a simplicial complex encode its basic topology via its homology groups, which characterized by the nullspace of the corresponding operator.
+The dimension of the nullspace is identical for many Laplacians, whether they are normalized, weighted, signless, and so on~\cite{}.
+In contrast, these operators differ in the nonzero part of the spectrum, which encode specific combinatorial or geometric features in addition to topological properties. 
+
+%there are a large variety of Laplacian operators, including e.g. the graph Laplacian, the combinatorial Laplacian, the edge (or vertex) weighted Laplacian, the normalized graph laplacian.
+
+Whereas the graph Laplacian, originally studied in the context of circuit theory, has certain connections by the Laplace operator on manifolds, the normalized graph Laplacian has found certain connections to the sparsest cut.
+It may be shown that the range of the spectrum of the combinatorial Laplacian depends on choice of the scalar product on the coboundary vector spaces, products which can be viewed in terms of positive weight functions $f: K \to \mathbb{R}_+ \setminus \{0\}$. 
+By controlling the weights that define the corresponding scalar product, one effectively has control over the spectral range of the corresponding operator. 
+
+In this effort, we consider a very general kind of combinatorial Laplacian. Given a simplicial complex $K$, let $w_{p}^l, w_{p}^l: K^p \to \mathbb{R}_{+}$ and $w_{p+1}: K^{p+1} \to \mathbb{R}_{+}$ denote \emph{non-negative} weight functions equipped the $p$ and $p+1$ simplices of $K$, respectively.  
+Here, we define the combinatorial $p$-th weighted up-Laplacian of the triple $(w_{p}^l, w_{p+1}, w_{p}^r)$ by: 
+\begin{equation}\label{eq:weighted_up_laplace}
+	L_p^{\mathrm{up}}(K) := W_p^l \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p^r
+\end{equation} 
+where $W_p^\ast = \mathrm{diag}(\{ w_i \})$ is a diagonal weight matrix whose corresponding weights are given by the appropriate function of $(w_{p}^l, w_{p+1}, w_{p}^r)$, respectively. 
+Setting all weight functions to the identity yields the combinatorial Laplacian~\cite{}. 
+When $p = 0$ and $K = (V,E)$ is a graph, setting the diagonal entries of $W_1$ to edge weights and $W_0^l = W_0^r = I$ yields Kirchoff's \emph{weighted graph Laplacian}. 
+Alternatively, setting $W_0^l[i,i] = 1/\mathrm{deg}(v_i)$ and $W_0^r = I$ yields the \emph{normalized graph Laplacian} studied by Chung~\cite{}.
+Setting $W_p^l[i,i] = w_{p}^l(\sigma_i)^{-1}$ for all $\sigma \in K^p$ and $W_p^r = I$ yields the \emph{up Laplacian} from~\cite{}.
+\begin{align*}\label{eq:up_laplace_2}
+	\tilde{L}_p^{\mathrm{up}} &= \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1}  \\
+	&= W_p^{1/2} \left ( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T   W_p^{-\frac{1}{2}} \right ) W_p^{-\frac{1}{2}} \numberthis
+\end{align*}
+Note that $\tilde{L}_p^{\mathrm{up}}$ is no longer a symmetric matrix. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
 
 \section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
@@ -728,19 +784,6 @@ The former only arises in the decomposition of symmetric matrices and the latter
 Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
-
-Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
-The \emph{graph Laplacian} $L$, defined in terms of adjacency, incidence, and element-wise relations, is defined as: 
-\begin{equation}
-L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
-	L\,[i,j] = \begin{cases}
-		\mathrm{deg}(v_i) & \text{ if } i = j \\
-		-1 & \text{ if } i \sim j \\
-		0 & \text{ otherwise }
-	\end{cases}
-\end{equation}
-where we use the notation $i \sim j$ to denote vertices $v_i,v_j \in V$ which are path-connected in $G$. 
-Its well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$. 
 Moreover, the linear and quadratic forms of $L$ may be succinctly expressed using the above path-connected relation:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
@@ -748,27 +791,17 @@ Moreover, the linear and quadratic forms of $L$ may be succinctly expressed usin
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 %	  x^T L x = \sum\limits_{i \sim j} f(v_i, v_j) (x_i - x_j)^2  & &&
 \end{flalign}
-Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
-% forget about combinatorial laplacian, mention rank and lanczos! 
-We would like to generalize this procedure for simplicial complexes. 
-For simplicial complexes, the generalization of the graph laplacian is $p$-th \emph{combinatorial Laplacian} $\Delta_p$, which is given by: 
-\begin{equation}
-	\Delta_p(K) = 
-	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
-%	\simeq H() 
-\end{equation}
-Note when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$. As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
-In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
-To make this clear, we require more notation. 
-
 %For an abstract simplicial complex $K$ defined over vertex set $V$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 
 %The \emph{coboundary operator} $\delta_p : C_{p}(K, \mathbb{R}) \to C_{p+1}(K, \mathbb{R})$ that sends $p$-chains to $p+1$-chains is the well known dual of $\partial_p$. 
 
+%~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
+%Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation .
 
+As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
+In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
+To make this clear, we require more notation. 
 
-
-Given a pair $(K, f)$ where $K$ is a simplicial complex of dimension $\mathrm{dim}(K) \geq p+1$ and $f : K \to \mathbb{R}_+$ is an arbitrary function equipped to the simplices of $K$, define the combinatorial $p$-th weighted up-Laplacian of the pair $(K, f)$ by: 
-$$ L_p^{\mathrm{up}}(K, f) := W_p \circ \partial_{p+1} \circ W_{p+1}^2 \circ \partial_{p+1}^T \circ W_p $$
+Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
 To characterize the explicit forms of $L_p^{\mathrm{up}}$ for $p \geq 1$, we need an appropriate generalization the path-connected relation from~\eqref{eq:lap_quad_from}.
 To accomplish this, let $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and let $d_f(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} f(\sigma)^2$ denote the \emph{degree} of $\tau$.
 Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{co}(\tau') \neq \emptyset$, then the $\tau, \tau'$ not only share a cofacet $\sigma$, but this cofacet $\{\sigma\} = \mathrm{co}(\tau) \cap \mathrm{co}(\tau')$ is \emph{unique}~\cite{}. Thus, given two distinct $p$-simplices $\tau \neq \tau'$ in $K^p$, we use the notation $\tau \overset{\sigma}{\sim} \tau'$ to denote this cofacet, and we write:
@@ -787,7 +820,8 @@ Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{
 	\end{cases}
 \end{align}
 where $s_{ij} = \mathrm{sgn}([\tau_i], \partial[\sigma]) \cdot \mathrm{sgn}([\tau_j], \partial[\sigma])$.
-In general, the sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in $\partial[\sigma]$, which itself depends on the orientation of $[\sigma]$. However, observe that regardless of the orientation $\sigma$ takes, the sign of the product $s_{ij}$ is invariant. 
+In general, the sign of the coefficients in $[\tau]$ and $[\tau']$ depends on the position as summands in $\partial[\sigma]$, which itself depends on the orientation of $[\sigma]$. 
+However, observe that regardless of the orientation $\sigma$ takes, the sign of the product $s_{ij}$ is invariant. 
 Moreover, since we assume the poset order on $K$ is induced from the vertex order, the sign pattern each $[\sigma]$ takes induced by $(V, \preceq)$ is constant, thus we may access $s_{ij}$ in $O(1)$ time.
 
 Consider the operation $x \mapsto L_p^{\text{up}} x$ for any $x \in \mathbb{R}^n$, where $n = \lvert K^p \rvert$. Let $m = \lvert K^{p+1}\rvert$, and as before assuming the simplices of $K$ are ordered by some fixed linear extension $(V, \preceq)$ of the vertex set.
