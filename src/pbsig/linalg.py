@@ -28,16 +28,16 @@ def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True
     bound = min([A.shape[0], A.shape[1], np.ceil(sum(diagonal(A))**2 / fn2)])
   return int(bound)
   
-def sgn_approx(sigma: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) -> ArrayLike:
+def sgn_approx(x: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) -> ArrayLike:
   """ 
-  Approximates the positive sgn+ function with a smooth relaxation
+  Applies a function phi(x) to 'x' where phi smoothly approximates the positive sgn+ function.
 
-  If sigma = (x1, x2, ..., xn), where each x >= 0, then this function returns a vector (y1, y2, ..., yn) satisfying
+  If x = (x1, x2, ..., xn), where each x >= 0, then this function returns a vector (y1, y2, ..., yn) satisfying
 
   1. 0 <= yi <= 1
-  2. sgn+(yi) = sgn+(xi)
-  3. yi = sgn+(xi) as eps -> 0+
-  4. sgn(xi, eps) <= sgn(xi, eps') for all eps >= eps'
+  2. sgn+(xi) = sgn+(yi)
+  3. yi -> sgn+(xi) as eps -> 0+
+  4. phi(xi, eps) <= phi(xi, eps') for all eps >= eps'
 
   Parameters:
     sigma := array of non-negative values
@@ -45,6 +45,7 @@ def sgn_approx(sigma: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int =
     p := float 
   """
   assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
+  assert eps >= 0.0, "Epsilon must be non-negative"
   # assert isinstance(sigma, np.ndarray), "Only numpy arrays supported for now"
   sigma = np.array(sigma)
   s1 = np.vectorize(lambda x: x**p / (x**p + eps**p))
@@ -54,7 +55,8 @@ def sgn_approx(sigma: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int =
   phi = [s1,s2,s3,s4][method]
   return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in sigma], dtype=sigma.dtype)
 
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, **kwargs) -> float:
+## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
   """ 
   Computes a smoothed-version of the rank of a positive semi-definite 'A' 
   
@@ -101,7 +103,8 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
   ew = np.array([0.0 if np.isclose(v, 0.0) else v for v in ew], dtype=ew.dtype)
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
-  return sum(sgn_approx(np.sqrt(ew), eps, p, method))
+  ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
+  return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
 
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:

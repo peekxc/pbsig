@@ -44,7 +44,7 @@ fig, axes = plt.subplots(1, 4, figsize=(12, 4))
 x = np.linspace(-1,1,1000)
 for eps in np.linspace(0, 1, 8):
   for method in range(4):
-    S = sgn_approx(eps=eps, p=2, normalize=True, method=method)
+    S = sgn_approx(eps=eps, p=1, method=method)
     axes[method].plot(x, S(abs(x)), label=f"eps={eps:.{2}f}")
 
 
