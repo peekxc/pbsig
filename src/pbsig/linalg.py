@@ -47,29 +47,42 @@ def sgn_approx(x: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) 
   assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
   assert eps >= 0.0, "Epsilon must be non-negative"
   # assert isinstance(sigma, np.ndarray), "Only numpy arrays supported for now"
-  sigma = np.array(sigma)
-  s1 = np.vectorize(lambda x: x**p / (x**p + eps**p))
-  s2 = np.vectorize(lambda x: x**p / (x**p + eps))
-  s3 = np.vectorize(lambda x: x / (x**p + eps**p)**(1/p))
-  s4 = np.vectorize(lambda x: 1 - np.exp(-x/eps))
+  x = np.array(x)
+  s1 = np.vectorize(lambda t: t**p / (t**p + eps**p))
+  s2 = np.vectorize(lambda t: t**p / (t**p + eps))
+  s3 = np.vectorize(lambda t: t / (t**p + eps**p)**(1/p))
+  s4 = np.vectorize(lambda t: 1 - np.exp(-t/eps))
   phi = [s1,s2,s3,s4][method]
-  return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in sigma], dtype=sigma.dtype)
+  return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in x], dtype=x.dtype)
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
   """ 
-  Computes a smoothed-version of the rank of a positive semi-definite 'A' 
-  
-  The default solver 'default' chooses depends on the size, structure, and estimated rank of 'A'.
+  Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
 
-  Otherwise, if solver is 'irl' then 'dac'  
+  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
+  
+  The default solver 'default' chooses the solver dynamically based on the size, structure, and estimated rank of 'A'.
+
+  Otherwise, the solver can be specified explicitly as one of:
+    'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
+    'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
+    'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
+    'gd' <=> Generalized Davidson w/ robust shifting (via PRIMME)
+    'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
+    'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
+
+  If 'A' is dense, divide-and-conquer should be used. Otherwise, the choice will depend on the structure of 'A'.
+
+  The default proportion constant represents the fractional empirically 
 
   Parameters: 
     A := array, sparse matrix, or linear operator to compute the rank of
-    pp := proportional part of the spectrum to compute
+    pp := proportional part of the spectrum to compute. 
     solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
     smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
     symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
+    sqrt := whether to compute the singular values of 'A' or of 'B' where A = B @ B.T or A = B.T @ B
     kwargs := keyword arguments to pass to the solver. Ignored if solver = 'default'.
   """
   assert A.shape[0] == A.shape[1], "A must be square"
@@ -87,18 +100,23 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, 
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     ew = np.linalg.eigvalsh(A, **kwargs)
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return 0.0
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
     if nev == A.shape[0] and solver == 'irl':
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
-      solver = 'default' if solver == 'irl' else solver
+      solver = 'jd' if solver == 'irl' else solver
+    solver = 'irl' if solver == 'default' else solver
     assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
     if solver == 'irl':
-      ew = eigsh(A, k=nev, which='LM', return_eigenvectors=False, **kwargs)
+      ew = eigsh(A, k=nev, which='LM', tol=1e-6, return_eigenvectors=False, **kwargs)
     else:
       import primme
+      n = A.shape[0]
+      ncv = min(2*nev + 1, 20) # use modification scipy rule
       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **kwargs)
+      params = dict(ncv=ncv, maxiter=n*10, tol=1e-6) | kwargs
+      ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **params)
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
   ew = np.array([0.0 if np.isclose(v, 0.0) else v for v in ew], dtype=ew.dtype)
@@ -112,6 +130,10 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
   Computes the numerical rank of a positive semi-definite 'A' via thresholding its eigenvalues.
 
   The eps-numerical rank r_eps(A) is the largest integer 'r' such that: 
+  
+  s1 >= s2 >= ... >= sr >= eps >= ... >= 0
+
+  where si represent the i'th largest singular value of A. 
 
   See: https://math.stackexchange.com/questions/2238798/numerically-determining-rank-of-a-matrix
   """

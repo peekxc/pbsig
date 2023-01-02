@@ -36,7 +36,6 @@ class SetLike(Comparable, Protocol):
   @abstractmethod
   def __len__(self) -> int: pass
     
-# isinstance(tuple([0,1,2]), SetLike)
 
 def edge_iterator(A):
   assert issparse(A), "Must be a sparse matrix"
@@ -46,44 +45,25 @@ def edge_iterator(A):
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
-  # E = edges_from_triangles(dt.simplices, X.shape[0])
   T = dt.simplices
   V = np.fromiter(range(X.shape[0]), dtype=np.int32)
-  K = SimplicialComplex(chain(V, T))
-  # K = {
-  #   'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
-  #   'edges' : lexsort_rows(E),
-  #   'triangles' : lexsort_rows(T)
-  # }
-  return(K)
+  S = SimplicialComplex(chain(V, T))
+  return(S)
 
 def cycle_graph(X: ArrayLike):
   "Creates a cycle graph from a set of ordered points" 
   E = np.array(list(cycle_window(range(X.shape[0]))))
-  K = {
-    'vertices' : np.fromiter(range(X.shape[0]), dtype=np.int32),
-    'edges' : lexsort_rows(E),
-    'triangles' : np.empty(shape=(0,3))
-  }
-  return(K)
+  V = np.fromiter(range(X.shape[0]), dtype=np.int32)
+  S = SimplicialComplex(chain(iter(V), iter(lexsort_rows(E))))
+  return S
 
 def complete_graph(n: int):
   "Creates the complete graph from an integer n" 
   from itertools import combinations
-  K = {
-    'vertices' : np.fromiter(range(n), dtype=np.int32),
-    'edges' : np.array(list(combinations(range(n), 2)), dtype=np.int32),
-    'triangles' : np.empty(shape=(0,3), dtype=np.int32)
-  }
-  return(K)
-
-def graph2complex(G):
-  K = {
-    'vertices' : np.sort(np.array([i for i in G.nodes()], dtype=int)),
-    'edges' : lexsort_rows(np.array([[i,j] for i,j in G.edges()], dtype=int)),
-    'triangles' : np.empty(shape=(0,3), dtype=int)
-  }
-  return K
+  V = np.fromiter(range(n), dtype=np.int32)
+  E = np.array(list(combinations(range(n), 2)), dtype=np.int32)
+  S = SimplicialComplex(chain(iter(V), iter(lexsort_rows(E))))
+  return(S)
 
 
 # def is_symmetric(A):
@@ -135,9 +115,6 @@ def graph_laplacian(G: Union[Graph, Tuple[Iterable, int]], normalize: bool = Fal
 ## 
 ## In practice, since Python is interpreted, this is typically implemented as a duck-typing system enforced via Protocol classes. 
 ## In the future, a true structural subtype system is preferable via e.g. mypy to enable optimizations such as mypy-c
-
-
-
 
 @runtime_checkable
 class SimplexLike(SetLike, Hashable, Protocol):

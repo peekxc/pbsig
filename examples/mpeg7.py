@@ -1,20 +1,55 @@
 import numpy as np 
 from pbsig import * 
+from pbsig.linalg import * 
 from pbsig.datasets import mpeg7
 from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import boundary_matrix
 from pbsig.simplicial import cycle_graph
 import matplotlib.pyplot as plt 
-import primme
+from pbsig.vis import plot_complex
 
 # %% Load dataset 
-dataset = mpeg7(simplify=150)
+dataset = mpeg7(simplify=50)
 for k, S in dataset.items():
   dataset[k] = pht_preprocess_pc(S, nd=64)
 
 # %% Generate vertex-edge weighted Laplacian spectrum signature
 X = dataset[('turtle',1)]
-K = cycle_graph(X)
+S = cycle_graph(X)
+L = up_laplacian(S, p=0)
+
+
+plot_complex(S)
+  # ec = np.ones((len(G.edges),), dtype=float)
+  # # if isinstance(edge_color, Iterable) or isinstance(edge_color, str):
+
+ 
+
+smooth_rank(L)
+
+
+
+
+
+
+
+
+## Find proportion of eigenvalues needed on average to compute 90% of spectrum
+# n = 150
+# mu = 0
+# for i in range(1500):
+#   Q,R = np.linalg.qr(np.random.uniform(size=(n,n), low=-1.0, high=1.0))
+#   ew = np.linalg.eigvalsh(Q @ diags(np.random.uniform(size=n, low=0, high=1.0)) @ Q.T)
+#   cdf = np.cumsum(np.sort(ew)[::-1])/sum(ew)
+#   # plt.plot()
+#   mu += max(np.flatnonzero(cdf <= 0.90))/len(cdf)
+# mu / 1500
+
+from scipy.sparse.linalg import eigsh
+eigsh(L, k=148, tol=1e-6, return_eigenvectors=False)
+primme.eigsh(A, k=149, ncv=150, tol=1e-6, maxiter=A.shape[0]*50, return_eigenvectors=False, return_unconverged=True, which='LM')
+
+
 D1 = boundary_matrix(K, p=1).tocsc()
 
 E = K['edges']
