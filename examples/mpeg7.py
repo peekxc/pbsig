@@ -3,34 +3,119 @@ from pbsig import *
 from pbsig.linalg import * 
 from pbsig.datasets import mpeg7
 from pbsig.pht import pht_preprocess_pc, rotate_S1
-from pbsig.persistence import boundary_matrix
+from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph
+from pbsig.simplicial import MutableFiltration
 import matplotlib.pyplot as plt 
 from pbsig.vis import plot_complex
 
 # %% Load dataset 
-dataset = mpeg7(simplify=50)
-for k, S in dataset.items():
-  dataset[k] = pht_preprocess_pc(S, nd=64)
+# NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
+dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
 
-# %% Generate vertex-edge weighted Laplacian spectrum signature
+# %% Generate a random set of rectangles in the upper half plane 
+def sample_rect_halfplane(n: int, area: tuple = (0, 0.05)):  
+  """ 
+  Generate random rectilinear boxes with area between [lb,ub] in upper-half plane via rejection sampling 
+  """
+  cc = 0
+  R = []
+  while cc < n:
+    r = np.sort(np.random.uniform(size=4, low = -1.0, high=1.0))
+    ra = (r[1]-r[0])*(r[3]-r[2])
+    if ra >= area[0] and ra <= area[1]:
+      R.append(r)
+    else: 
+      continue
+    cc += 1
+  return np.array(R)
+
+R = sample_rect_halfplane(1)
+
+#%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-L = up_laplacian(S, p=0)
+fv = X @ np.array([0,1])
+L = up_laplacian(S, p=0, form='lo', weight=lambda s: max(fv[s]))
+L.face_left_weights
+L.face_right_weights
+L.simplex_weights
+mu_query(S, i, j)
+
+# %% Generate 
+X = dataset[('turtle',1)]
+
+L = up_laplacian(S, p=0, form='lo')
+sum(np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], return_eigenvectors=False)))
 
 
-plot_complex(S)
-  # ec = np.ones((len(G.edges),), dtype=float)
-  # # if isinstance(edge_color, Iterable) or isinstance(edge_color, str):
 
- 
+L = up_laplacian(S, p=0, form='lo')
+ew_lap = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], return_eigenvectors=False))
+np.allclose(ew_lap, ew_cf) # True
 
+# ph0_lower_star(fv: ArrayLike, E: ArrayLike)
+fv = X @ np.array([0,1])
+K = MutableFiltration(S, f = lambda s: max(fv[s]))
+
+barcodes(K)
+boundary_matrix(K)
+
+ph(K)
+lower_star_pb
+
+
+# import numpy as np 
+# from scipy.linalg import toeplitz
+# from scipy.sparse import csc_array
+# m = 49
+# T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+
+# ew_np = np.sort(np.linalg.eigvalsh(T.todense()))
+# ew_cf = np.sort([2.0-2.0*np.cos(2*np.pi*k/m) for k in range(m)])
+# np.allclose(ew_np, ew_cf) # True
+
+# import primme
+# ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, return_eigenvectors=False))
+# np.allclose(ew_pm, ew_cf) # True
+
+# L = up_laplacian(S, p=0, form='array')
+# ew_lap = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], return_eigenvectors=False))
+# np.allclose(ew_lap, ew_cf) # True
+
+
+plot_complex(S, pos = X)
 smooth_rank(L)
 
 
+## Unable to replicate non-convergence behavior of integer laplacian 
+import primme
+from scipy.sparse import diags
+from scipy.sparse.linalg import eigsh
+n = 100
+M = np.random.uniform(size=(n,n), low=-1.0, high=1.0)
+Q,R = np.linalg.qr(M)
+d = np.round(np.random.uniform(size=n, low=0.0, high=10.0))
+d[np.random.choice(range(n), size=5)] = 0
+A = Q @ diags(d) @ Q.T
+eigsh(A, k=4, return_eigenvectors=False, which='LM')
+primme.eigsh(A, k=n, return_eigenvectors=False, which='LM')
+primme.eigsh(A, k=n, ncv=n, return_eigenvectors=False, which='LM')
 
 
+from scipy.linalg import * 
+c,r = np.random.uniform(size=5), np.random.uniform(size=5)
+P = np.fliplr(np.eye(5))
 
+x = np.random.uniform(size=5, low=-1, high=1)
+T = toeplitz(c, r)
+b = T @ x 
+solve_toeplitz((c,r), b) # works only if every principle subminor is full rank
+
+H = hankel(np.flip(c), r)
+np.allclose(T - P @ H, 0)
+np.allclose(H @ x, P @ b)
+np.allclose(P @ (H @ x), b)
 
 
 

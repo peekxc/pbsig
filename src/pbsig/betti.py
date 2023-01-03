@@ -553,54 +553,76 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-def mu_query(UL: LinearOperator, R: tuple, smoothing: str = [""], w: float = 0.0):
+def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, smoothing: tuple = (0.5, 1.5, 0), w: float = 0.0):
   """
   Given a weighted up laplacian 'UL', computes
   """
   assert len(R) == 4, "Must be a rectangle"
-  if isinstance(UL, LinearOperator):
+  if isinstance(L, UpLaplacian):
     i,j,k,l = R
+    assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
     delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
-    ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-    ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
-    smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-    ## todo: 
-    numerical_rank(LS)
-    return 0 
-  elif isinstance(UL, spmatrix):
+    sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+    su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    
+    fw = L.face_right_weights.copy()
+    sw = L.simplex_weights.copy()
+
+    ## First term
+    L.simplex_weights = sd_k(sw)
+    L.face_left_weights = su_j(fw)
+    
+    
+    smooth_rank(L, solver='dac')
+
+    # L.simplex_weights = su_j()
+    # smooth_rank(L)
+    #smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+    # smooth_rank(A)
+    # L.simplex_weights = 
+    # L.face_right_weights = 
+    # L.face_left_weights = 
+    # t1 = rank_ll(S, j, k, p=p+1, weight=weight, **kwargs)
+    # t2 = rank_ll(S, i, k, p=p+1, weight=weight, **kwargs)
+    # t3 = rank_ll(S, j, l, p=p+1, weight=weight, **kwargs)
+    # t4 = rank_ll(S, i, l, p=p+1, weight=weight, **kwargs)
+    # print(f"{t1-t2-t3+t4}: {t1},{t2},{t3},{t4}")
+    # numerical_rank(LS)
     return 0 
   else: 
-    raise ValueError("")
-
+    raise ValueError("Invlaid input")
   return 0 
 
-def rank_ll(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
-  """
-  Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
+# def mu_query(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
+#   """
+#   Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
 
-  The rank is computed by evaluating the given weight function on all p and (p+1)-simplices of S, and then 
-  restricting the entries to non-zero if (p+1)-simplices have weight <= j and p-simplices have weight > than i. 
+#   The rank is computed by evaluating the given weight function on all p and (p+1)-simplices of S, and then 
+#   restricting the entries to non-zero if (p+1)-simplices have weight <= j and p-simplices have weight > than i. 
 
-  S := an abstract simplicial complex. 
-  i := (p-1)-face threshold. Only (p-1)-simplices with weight strictly greater than i are considered.  
-  j := p-face threshold. Only p-simplices with weight less than or equal to j are considered. 
-  p := dimension of the chain group on S with which to construct the boundary matrix.
-  w := non-negative smoothing parameter. If 0, non-zero entries will have value 1, and otherwise they will be in [0,1]. 
-  weight := real-valued weight function on S. 
-  """
-  assert i <= j, "i must be <= j"
-  assert w >= 0, "smoothing parameter mut be non-negative."
-  assert p >= 0, "Invalid homology dimension."
-  assert isinstance(weight, Callable)
-  delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
-  ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
-  smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-  # print(p)
-  LS = up_laplacian(S, p = p-1, weight = smoothed_weight) # 0th up laplacian = D1 @ D1.T
-  # print(LS)
-  # print(LS.data)
-  return numerical_rank(LS)
+#   S := an abstract simplicial complex. 
+#   i := (p-1)-face threshold. Only (p-1)-simplices with weight strictly greater than i are considered.  
+#   j := p-face threshold. Only p-simplices with weight less than or equal to j are considered. 
+#   p := dimension of the chain group on S with which to construct the boundary matrix.
+#   w := non-negative smoothing parameter. If 0, non-zero entries will have value 1, and otherwise they will be in [0,1]. 
+#   weight := real-valued weight function on S. 
+#   """
+#   assert i <= j, "i must be <= j"
+#   assert w >= 0, "smoothing parameter mut be non-negative."
+#   assert p >= 0, "Invalid homology dimension."
+#   assert isinstance(weight, Callable)
+#   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
+#   ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
+#   smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+#   # print(p)
+#   LS = up_laplacian(S, p = p-1, weight = smoothed_weight, form = 'lo') # 0th up laplacian = D1 @ D1.T
+  
+#   # print(LS)
+#   # print(LS.data)
+#   return numerical_rank(LS)
 
 # E: Union[ArrayLike, Iterable],
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: SimplicialComplex, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):

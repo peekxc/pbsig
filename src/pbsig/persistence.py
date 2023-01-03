@@ -11,9 +11,9 @@ import scipy.sparse as sps
 ## Function/structure imports
 from scipy.sparse import *
 from array import array
-from itertools import combinations
-from scipy.special import binom
-from scipy.spatial.distance import pdist, cdist, squareform
+from itertools import *
+from scipy.special import *
+from scipy.spatial.distance import *
 
 ## Relative package imports
 import _boundary as boundary
@@ -561,8 +561,8 @@ def ph(K: FiltrationLike, p: int = 0, factor: bool = False):
   Computes the p-th persistent homology a filtration 'K'. 
 
   Returns: 
-    (1) (dgm: ArrayLike) := K's p-th persistence diagram (if factor == False), or
-    (2) (Dp, Dq, Rp, Rq, Vp, Vq) := The matrices used to compute the decomposition  
+    (1) dgm := The p-th persistence diagram of K (if factor == False), or;
+    (2) (Dp, Dq, Rp, Rq, Vp, Vq) := The matrices used to compute the decomposition R = D V 
   """
   D0, D1 = boundary_matrix(K, p=(0,1))
   R0, R1, V0, V1 = reduction_pHcol(D0, D1)
@@ -713,8 +713,6 @@ def persistence_pairs(R1, R2: Optional[csc_matrix] = None, f: Sequence[Union[Arr
   else: 
     return(dgm[valid_ind,:])
 
-from scipy.sparse import triu
-
 def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float = 10*np.finfo(float).eps):
   valid = is_reduced(R1)
   valid &= np.isclose(sum(abs(((D1 @ V1) - R1).data).flatten()), 0.0)
@@ -726,55 +724,59 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
   return(valid)
 
 ## TODO: redo with filtration class at some point
-def barcodes(K: Dict, p: Optional[int] = None, f: Tuple= None, index: bool = False, **kwargs):
+def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, **kwargs):
   """
-  Given a simplicial complex 'K', an integer p >= 0, p-dimensional barcodes
+  Given a filtered simplicial complex 'K' and optionally an integer p >= 0, generate p-dimensional barcodes
+
+  If p is not specified, all p-dimensional barcodes are generated up to the dimension of the filtration.
   """
-  if isinstance(K, dict):
-    if p == 0:
-      v0, e0 = f
-      V_names = [str(v) for v in K['vertices']]
-      E_names = [str(tuple(e)) for e in K['edges']]
-      VF0 = dict(zip(V_names, v0))
-      EF0 = dict(zip(E_names, e0))
-      D0, D1 = boundary_matrix(K, p=(0,1))
-      D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
-      R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-      P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
-    elif p is None:
-      D = boundary_matrix(K)
-      V = sps.identity(D.shape[1]).tolil()
-      R = D.copy().tolil()
-      pHcol(R, V)
-      assert validate_decomp(D, R, V)
-  elif isinstance(K, MutableFiltration):
-    if p is None:
-      D = boundary_matrix(K)
-      V = sps.identity(D.shape[1]).tolil()
-      R = D.copy().tolil()
-      pHcol(R, V)
-      assert validate_decomp(D, R, V)
-      rlow = low_entry(R)
-      sdim = np.array([s.dimension() for s in iter(K.values(expand=True))])
-      
-      ## Get the indices of the creators and destroyers
+  # if isinstance(K, dict):
+  #   if p == 0:
+  #     v0, e0 = f
+  #     V_names = [str(v) for v in K['vertices']]
+  #     E_names = [str(tuple(e)) for e in K['edges']]
+  #     VF0 = dict(zip(V_names, v0))
+  #     EF0 = dict(zip(E_names, e0))
+  #     D0, D1 = boundary_matrix(K, p=(0,1))
+  #     D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
+  #     R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+  #     P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
+  #   elif p is None:
+  #     D = boundary_matrix(K)
+  #     V = sps.identity(D.shape[1]).tolil()
+  #     R = D.copy().tolil()
+  #     pHcol(R, V)
+  #     assert validate_decomp(D, R, V)
+  assert isinstance(K, MutableFiltration), "Only accepts filtration objects for now"
+  if p is None:
+    D = boundary_matrix(K)
+    V = sps.identity(D.shape[1]).tolil()
+    R = D.copy().tolil()
+    pHcol(R, V)
+    assert validate_decomp(D, R, V)
+    rlow = low_entry(R)
+    sdim = np.array([s.dimension() for s in iter(K.values())])
+    
+    ## Get the indices of the creators and destroyers
+    if any(rlow == -1):
       creator_mask = rlow == -1
       creator_dim = sdim[creator_mask]
       birth = np.flatnonzero(creator_mask)
       death = np.repeat(np.inf, len(birth))
       death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
+    else:
+      birth = np.empty(shape=(0, 1))
+      death = np.empty(shape=(0, 1))
 
-      ## If 
-      if not(index): 
-        # key_dtype = type(next(F.keys(expand=True)))
-        filter_vals = np.fromiter(K.keys(expand=True), dtype=float)
-        index2f = {i:fv for i, fv in zip(np.arange(len(F)), filter_vals)} | { np.inf : np.inf}
-        birth = np.array([index2f[i] for i in birth])
-        death = np.array([index2f[i] for i in death])
-      
-      ## Assemble the diagram
-
-      dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
+    ## Match the barcodes with the index set of the filtration
+    key_dtype = type(next(K.keys()))
+    filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
+    index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf}
+    birth = np.array([index2f[i] for i in birth])
+    death = np.array([index2f[i] for i in death])
+    
+    ## Assemble the diagram
+    dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
       
       # dgm = np.fromiter(zip(creator_dim, birth, death), dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
       # dgm = dgm[np.argsort(dgm, order=['dim', 'birth', 'death'])]
@@ -794,7 +796,7 @@ def barcodes(K: Dict, p: Optional[int] = None, f: Tuple= None, index: bool = Fal
       # b = np.flatnonzero(rlow[rlow != -1])
 
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
-  return(P0)
+  return(dgm)
 
 # def persistent_pairs(R: List[csc_matrix], K: Dict, F: List[ArrayLike] = None, cohomology: bool = False):
 # p_birth = np.where(low_entry(R1) == -1)

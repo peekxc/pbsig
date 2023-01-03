@@ -14,7 +14,12 @@ from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
 
-def plot_complex(S, pos = ["spring", "mds"], notebook=True, **kwargs):
+def plot_complex(S, pos = None, notebook=True, **kwargs):
+
+  """
+  S := simplicial complex
+  pos := one of 'mds', 'spring', or a np.ndarray instance
+  """
   
   ## Default scales
   vertex_scale, edge_scale = 6.0, 0.25 
@@ -22,7 +27,7 @@ def plot_complex(S, pos = ["spring", "mds"], notebook=True, **kwargs):
   TOOLTIPS = [ ("index", "$index") ]
 
   ## Deduce embedding
-  pos = "spring" if pos == ["spring", "mds"] else pos
+  pos = "mds" if pos is None else pos
   use_grid_lines = False
   L = up_laplacian(S, p = 0)
   A = L - diags(L.diagonal())
@@ -36,6 +41,7 @@ def plot_complex(S, pos = ["spring", "mds"], notebook=True, **kwargs):
     use_grid_lines = True
   elif isinstance(pos, np.ndarray) and pos.shape[1] == 2:
     assert pos.shape[0] == S.shape[0], "Layout must match number of vertices"
+    use_grid_lines = True
   else:
     raise ValueError("Unimplemented layout")
 
@@ -46,9 +52,8 @@ def plot_complex(S, pos = ["spring", "mds"], notebook=True, **kwargs):
     tools="pan,wheel_zoom,reset", 
     active_scroll=None,
     active_drag="auto",
-    x_range=x_rng, 
-    y_range=y_rng, 
-    title=S.__repr__(), 
+    # x_range=x_rng, 
+    # y_range=y_rng,  
     tooltips=TOOLTIPS,
     plot_width=300, 
     plot_height=300,
@@ -57,8 +62,8 @@ def plot_complex(S, pos = ["spring", "mds"], notebook=True, **kwargs):
   p.axis.visible = False
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
-  edge_x = [pos[e,0] for e in G.edges]
-  edge_y = [pos[e,1] for e in G.edges]
+  edge_x = [pos[e,0] for e in S.faces(1)]
+  edge_y = [pos[e,1] for e in S.faces(1)]
 
   ## Edge widths
   from pbsig.color import bin_color, colors_to_hex, linear_gradient

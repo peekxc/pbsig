@@ -282,23 +282,6 @@ from collections.abc import Set, Hashable
 class SimplicialComplex(MutableSet):
   """ Abstract Simplicial Complex"""
   __hash__ = Set._hash
-  # wrapped_methods = ('difference', 'intersection', 'symmetric_difference', 'union', 'copy')
-  
-  # @classmethod
-  # def _wrap_methods(cls, names):
-  #   def wrap_method_closure(name):
-  #     def inner(self, *args):
-  #       result = getattr(super(cls, self), name)(*args)
-  #       result = cls(result) if isinstance(result, set) else result 
-  #       return result
-  #     inner.fn_name = name
-  #     setattr(cls, name, inner)
-  #   for name in names: wrap_method_closure(name)
-
-  # def __new__(cls, iterable=None):
-  #   selfobj = super(SimplicialComplex, cls).__new__(SimplicialComplex)
-  #   cls._wrap_methods(cls.wrapped_methods)
-  #   return selfobj
 
   def __init__(self, iterable = None):
     """"""
@@ -411,39 +394,20 @@ class MutableFiltration(MutableMapping):
 
   Implements: __getitem__, __iter__, __len__, __contains__, keys, items, values, get, __eq__, and __ne__
   """
-  wrapped_methods = ('_check', '_key', '_list', '_list_add', '_list_clear', '_list_iter', '_list_pop', '_list_remove', '_list_reversed', '_list_update', '_reset', '_setitem', '_update')
-  
-  # @classmethod
-  # def _wrap_methods(cls, names):
-  #   def wrap_method_closure(name):
-  #     def inner(self, *args):
-  #       result = getattr(super(cls, self), name)(*args)
-  #       result = cls(result) if isinstance(result, SortedDict) else result 
-  #       return result
-  #     inner.fn_name = name
-  #     setattr(cls, name, inner)
-  #   for name in names: wrap_method_closure(name)
 
-  # def __new__(cls, iterable=None):
-  #   selfobj = super(MutableFiltration, cls).__new__(MutableFiltration)
-  #   cls._wrap_methods(cls.wrapped_methods)
-  #   return selfobj
-
-  # _key = int.__le__
   @classmethod
   def _key_dim_lex_poset(cls, s: Simplex) -> bool:
     return (len(s), tuple(s), s)
 
   ## Returns a newly allocated Sorted Set w/ lexicographical poset ordering
   def _sorted_set(self, iterable: Iterable[Collection[Integral]] = None) -> SortedSet:
-    if iterable is None:
-      return SortedSet(None, key=MutableFiltration._key_dim_lex_poset)
-    else:
-      return SortedSet(iter(map(Simplex, iterable)), key=MutableFiltration._key_dim_lex_poset)
-
+    key = MutableFiltration._key_dim_lex_poset
+    return SortedSet(None, key) if iterable is None else SortedSet(iter(map(Simplex, iterable)), key)
+  
   # simplices: Sequence[SimplexLike], I: Optional[Collection] = None
   def __init__(self, iterable: Union[SimplicialComplex, Iterable] = None, f: Optional[Callable] = None) -> None:
     self.data = SortedDict()
+    self.shape = tuple()
     if isinstance(iterable, SimplicialComplex):
       if isinstance(f, Callable):
         self += ((f(s), s) for s in iterable)
@@ -454,52 +418,22 @@ class MutableFiltration(MutableMapping):
       else:
         raise ValueError("Invalid input for simplicial complex")
     elif isinstance(iterable, Iterable):
-      # if index_set is None:
-      #   index_set = np.arange(len(iterable))  
-      # assert len(index_set) == len(iterable)
-      #self.data.update(zip(iter(index_set), iterable))
       self += iterable ## accept pairs, like a normal dict
     elif iterable is None:
       pass
     else: 
       raise ValueError("Invalid input")
 
-
-    # self_dict.__init__(*args, **kwargs)
-    # np.fromiter(zip(), self.dtype)
-    # self.simplices = simplices
-    # self.indices = range(len(simplices)) if I is None else I
-    # assert all([isinstance(s, SimplexLike) for s in simplices]), "Must all be simplex-like"
-    # if I is not None: assert len(simplices) == len(I)
-    # self.simplices = [Simplex(s) for s in simplices]
-    # self.index_set = np.arange(0, len(simplices)) if I is None else np.asarray(I)
-    # self.dtype = [('s', Simplex), ('index', I.dtype)]
-  ## TODO: maybe this shouldn't add, but retain dict-like properties
   ## delegate new behavior to new methods: __iadd__, __isub__
   def update(self, other: Iterable[Tuple[Any, Collection[Integral]]]):
     for k,v in other:
-      #print(f"key={str(k)}, val={str(v)}")
-      # self._sorted_set()
       self.data.__setitem__(k, self._sorted_set(v))
-      # ss.(Simplex(v))
-
-
 
   def __getitem__(self, key: Any) -> Simplex: 
     return self.data.__getitem__(key)
 
   def __setitem__(self, k: Any, v: Union[Collection[Integral], SortedSet]):
     self.data.__setitem__(k, self._sorted_set(v))
-    # if isinstance(v, SortedSet):
-    #   self.data.__setitem__(k, v)
-    # else:
-    #   assert isinstance(v, Collection)
-      # self.data.setdefault(k, self._sorted_set())
-      # print("here")
-      # ss = self._empty_set()
-      # ss.add(Simplex(v))
-      # print(ss)
-      # self.data.__setitem__(k, ss)
   
   ## Returns the value of the item with the specified key.
   ## If key doesn't exist, set's F[key] = default and returns default
@@ -514,10 +448,10 @@ class MutableFiltration(MutableMapping):
     self.data.__del__(k)
   
   def __iter__(self) -> Iterator:
-    return iter(self.data.keys())
+    return iter(self.keys())
 
   def __len__(self) -> int:
-    return sum((len(v) for v in self.data.values()))
+    return sum(self.shape)
     #return self.data.__len__()
 
   # https://peps.python.org/pep-0584/
@@ -542,7 +476,15 @@ class MutableFiltration(MutableMapping):
     for k,v in other:
       if len(Simplex(v)) >= 1:
         # print(f"key={str(k)}, val={str(v)}")
-        self.setdefault(k, self._sorted_set()).add(Simplex(v))
+        s_set = self.setdefault(k, self._sorted_set())
+        f = Simplex(v)
+        if not(f in s_set):
+          s_set.add(f)
+          if len(f) > len(self.shape):
+            self.shape = tuple(list(tuple(self.shape)) + [1])
+          else:
+            t = self.shape
+            self.shape = tuple(t[i]+1 if i == (len(f)-1) else t[i] for i in range(len(t)))   
     return self
 
   ## Copy-add '+' operator 
@@ -559,42 +501,39 @@ class MutableFiltration(MutableMapping):
 
   ## Keys yields the index set. Set expand = True to get linearized order. 
   ## TODO: Make view objects
-  def keys(self, expand: bool = True):
-    if not expand:
-      return self.data.keys()
-    else:
-      it_keys = chain()
-      for k,v in self.data.items():
-        it_keys = chain(it_keys, repeat(k, len(v)))
-      return it_keys
-  def values(self, expand: bool = True):
-    if not expand:
-      return self.data.values()
-    else: 
-      it_vals = chain()
-      for v in self.data.values():
-        it_vals = chain(it_vals, iter(v))
-      return it_vals
-  def items(self, expand: bool = True):
-    if not expand:
-      return self.data.items()
-    else:
-      it_keys, it_vals = chain(), chain()
-      for k,v in self.data.items():
-        it_keys = chain(it_keys, repeat(k, len(v)))
-        it_vals = chain(it_vals, iter(v))
-      return zip(it_keys, it_vals)
+  def keys(self):
+    it_keys = chain()
+    for k,v in self.data.items():
+      it_keys = chain(it_keys, repeat(k, len(v)))
+    return it_keys
+
+  def values(self):
+    it_vals = chain()
+    for v in self.data.values():
+      it_vals = chain(it_vals, iter(v))
+    return it_vals
+
+  def items(self):
+    it_keys, it_vals = chain(), chain()
+    for k,v in self.data.items():
+      it_keys = chain(it_keys, repeat(k, len(v)))
+      it_vals = chain(it_vals, iter(v))
+    return zip(it_keys, it_vals)
+
+  def faces(self, p: int = None) -> Iterable:
+    return filter(lambda s: len(s) == p+1, self.values())
 
   def __repr__(self) -> str:
-    from collections import Counter
-    cc = Counter([len(s)-1 for s in self.values(expand=True)])
-    cc = dict(sorted(cc.items()))
-    return f"{max(cc)}-d filtered complex with {tuple(cc.values())}-simplices of dimension {tuple(cc.keys())}"
+    # from collections import Counter
+    # cc = Counter([len(s)-1 for s in self.values()])
+    # cc = dict(sorted(cc.items()))
+    n = len(self.shape)
+    return f"{n-1}-d filtered complex with {self.shape}-simplices of dimension {tuple(range(n))}"
 
   def print(self, **kwargs) -> None:
     import sys
     fv_s, fs_s = [], []
-    for k,v in self.items(expand=True):
+    for k,v in self.items():
       ks = len(str(v))
       fv_s.append(f"{str(k):<{ks}.{ks}}")
       fs_s.append(f"{str(v): <{ks}}")
@@ -605,11 +544,11 @@ class MutableFiltration(MutableMapping):
     print("S: " + sym_inc.join(fs_s[:5]) + sym_inc + ' ... ' + sym_inc + sym_inc.join(fs_s[-2:]), **kwargs)
 
   def validate(self, light: bool = True) -> bool:
-    fs = list(self.values(expand=True))
+    fs = list(self.values())
     for i, s in enumerate(fs): 
       p = s.dimension() - 1 if light and len(s) >= 2 else None
       assert all([fs.index(face) <= i for face in s.faces(p)])
-    assert all([k1 <= k2 for k1, k2 in pairwise(self.keys(expand=False))])
+    assert all([k1 <= k2 for k1, k2 in pairwise(self.keys())])
 
   def __format__(self, format_spec = "default") -> str:
     from io import StringIO
@@ -734,13 +673,9 @@ def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tupl
     return (boundary_matrix(K, pi) for pi in p)
   else: 
     assert p is None or isinstance(p, Integral), "p must be integer, or None"
-    if isinstance(K, MutableFiltration):
-      assert p is None
-      simplices = list(K.values())
-      D = _boundary(simplices, simplices)
-    elif isinstance(K, SimplicialComplex):
+    if isinstance(K, SimplicialComplex) or isinstance(K, MutableFiltration):
       if p is None:
-        simplices = list(iter(K))
+        simplices = list(K.values())
         D = _boundary(simplices, simplices)
       else:
         p_simplices = K.faces(p=p)
@@ -749,3 +684,18 @@ def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tupl
     else: 
       raise ValueError("Invalid input")
     return D
+
+
+## TODO: make Filtration class that uses combinatorial number system for speed 
+# class StructuredFiltration():
+# self_dict.__init__(*args, **kwargs)
+# np.fromiter(zip(), self.dtype)
+# self.simplices = simplices
+# self.indices = range(len(simplices)) if I is None else I
+# assert all([isinstance(s, SimplexLike) for s in simplices]), "Must all be simplex-like"
+# if I is not None: assert len(simplices) == len(I)
+# self.simplices = [Simplex(s) for s in simplices]
+# self.index_set = np.arange(0, len(simplices)) if I is None else np.asarray(I)
+# self.dtype = [('s', Simplex), ('index', I.dtype)]
+
+  

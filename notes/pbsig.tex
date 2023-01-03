@@ -537,8 +537,7 @@ Fortunately, this requires a simple augmentation to the step function from the o
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
 	\includegraphics[width=0.90\textwidth]{cont_relax}
-	\caption{From left to right: 
-	the $\ell_1$ norm (red) forms a convex envelope over the $\ell_0$ (black) pseudo-norm on the interval $[-1, 1]$; 
+	\caption{From left to right---the $\ell_1$ norm (red) forms a convex envelope over the $\ell_0$ (black) pseudo-norm on the interval $[-1, 1]$; 
 	$\tilde{\phi}(\cdot, \epsilon)$ at various values of $\epsilon$, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu(\epsilon) = \sqrt{\epsilon}$ (red) and at $\epsilon = 0$ (black); 
 	the step function $S_i(x)$ from definition~\ref{def:time_boundary_matrix}; 
 	the smoothstep relaxation $\mathcal{S}_i^{\omega}$ from~\eqref{eq:smoothstep}.
@@ -660,7 +659,7 @@ Setting $W_p^l[i,i] = w_{p}^l(\sigma_i)^{-1}$ for all $\sigma \in K^p$ and $W_p^
 	\tilde{L}_p^{\mathrm{up}} &= \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1}  \\
 	&= W_p^{1/2} \left ( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T   W_p^{-\frac{1}{2}} \right ) W_p^{-\frac{1}{2}} \numberthis
 \end{align*}
-Note that $\tilde{L}_p^{\mathrm{up}}$ is no longer a symmetric matrix. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
+Note that $\tilde{L}_p^{\mathrm{up}}$ is not be symmetric matrix in general. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
 
 \section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
