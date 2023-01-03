@@ -163,6 +163,51 @@ def test_up_laplacian1_sgn():
       z[jj] += sgn_ij * x[ii] * wpl[jj] * wq[s_ind] * wpr[ii]
   assert np.allclose(z, LW @ x)
 
+# https://stackoverflow.com/questions/38025074/how-to-accumulate-an-array-by-index-in-numpy
+def test_vectorized_uplap():
+  X, S = generate_dataset()
+  L = up_laplacian(S, p=1, form='lo')
+
+  x = np.random.uniform(size=L.shape[0])
+  v = np.zeros(L.shape[0])
+  v += L.degree * x.reshape(-1)
+  q = len(L.simplices[0])-1
+  N = 2*len(L.simplices)*comb(q+1, 2)
+  P = np.zeros(shape=N, dtype=[('weights', 'f4'), ('xi', 'i2'), ('vo', 'i2')])
+  cc = 0 
+  for s_ind, s in enumerate(L.simplices):
+    for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), L.sgn_pattern):
+      ii, jj = L.index(f1), L.index(f2)
+      d1 = sgn_ij * L._wfl[ii] * L._ws[s_ind] * L._wfr[jj]
+      d2 = sgn_ij * L._wfl[jj] * L._ws[s_ind] * L._wfr[ii]
+      P[cc] = d1, jj, ii
+      P[cc+1] = d2, ii, jj
+      cc += 2
+  np.add.at(v, P['vo'], x[P['xi']]*P['weights'])
+  assert np.allclose(L @ x, v)
+
+  ## Ensure this works at library level 
+  L = up_laplacian(S, p=1, form='lo')
+  L.precompute()
+  assert np.allclose(L._matvec(x), L._matvec_precompute(x))
+
+
+  # X, S = generate_dataset(n=350)
+  # L = up_laplacian(S, p=1, form='lo')
+
+  # x = np.random.uniform(size=L.shape[0])
+  # import timeit
+  # timeit.timeit(lambda: L @ x, number=50) # 0.740328342999419
+
+  # L.precompute()
+  # timeit.timeit(lambda: L @ x, number=50) # 0.006494699999166187
+  # L._matvec = L._matvec_precompute
+  # #assert L._matvec(x) type error 
+  # import types 
+  # types.MethodType(L._matvec_precompute, L)
+
+
+
 def test_up_laplacian1():
   X, S = generate_dataset()
   D = boundary_matrix(S, p=2).tocsc()

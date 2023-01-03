@@ -30,7 +30,7 @@ def sample_rect_halfplane(n: int, area: tuple = (0, 0.05)):
     cc += 1
   return np.array(R)
 
-R = sample_rect_halfplane(1)
+R = sample_rect_halfplane(1)[0,:]
 
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
@@ -38,10 +38,13 @@ S = cycle_graph(X)
 fv = X @ np.array([0,1])
 L = up_laplacian(S, p=0, form='lo', weight=lambda s: max(fv[s]))
 
+mu_query(L, R, f=lambda s: max(fv[s]))
+
 import line_profiler
 profile = line_profiler.LineProfiler()
 profile.add_function(smooth_rank)
 profile.add_function(trace_threshold)
+profile.add_function(L._matvec)
 profile.enable_by_count()
 smooth_rank(L)
 profile.print_stats(output_unit=1e-3)

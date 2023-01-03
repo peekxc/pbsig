@@ -553,7 +553,7 @@ def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float,
     raise ValueError("Not supported yet")
   return(np.asarray(shape_sig))
 
-def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, smoothing: tuple = (0.5, 1.5, 0), w: float = 0.0):
+def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, smoothing: tuple = (0.5, 1.5, 0), w: float = 0.0):
   """
   Given a weighted up laplacian 'UL', computes
   """
@@ -567,14 +567,16 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, smoothing: t
     su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
     su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
     
-    fw = L.face_right_weights.copy()
-    sw = L.simplex_weights.copy()
+    ## Get initial set of weights
+    fw = np.array([f(s) for s in L.faces])
+    sw = np.array([f(s) for s in L.simplices])
 
     ## Multiplicity formula 
-    t1 = smooth_rank(L.set_weights(np.sqrt(su_j(fw)), sd_k(sw), np.sqrt(su_j(fw))))
-    t2 = smooth_rank(L.set_weights(np.sqrt(su_i(fw)), sd_k(sw), np.sqrt(su_i(fw))))
-    t3 = smooth_rank(L.set_weights(np.sqrt(su_j(fw)), sd_l(sw), np.sqrt(su_j(fw))))
-    t4 = smooth_rank(L.set_weights(np.sqrt(su_i(fw)), sd_l(sw), np.sqrt(su_i(fw))))
+    fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
+    t1 = smooth_rank(L.set_weights(fj, fk, fj).precompute())
+    t2 = smooth_rank(L.set_weights(fi, fk, fi).precompute())
+    t3 = smooth_rank(L.set_weights(fj, fl, fj).precompute())
+    t4 = smooth_rank(L.set_weights(fi, fl, fi).precompute())
     return t1 - t2 - t3 + t4
     # L.simplex_weights = su_j()
     # smooth_rank(L)

@@ -102,6 +102,7 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90,
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return 0.0
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+    if nev == 0: return 0.0
     if nev == A.shape[0] and solver == 'irl':
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
@@ -119,7 +120,7 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90,
       ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **params)
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
-  ew = np.array([0.0 if np.isclose(v, 0.0) else v for v in ew], dtype=ew.dtype)
+  ew[np.isclose(x, 0, atol=1e-6)] = 0.0
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
   ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
   return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
@@ -324,8 +325,10 @@ def diagonal(A: Union[ArrayLike, LinearOperator]):
 ## Returns number of largest eigenvalues needed to capture t% of the spectrum 
 def trace_threshold(A, pp=0.80) -> int:
   assert pp >= 0.0 and pp <= 1.0, "Proportion must be in [0,1]"
-  ev_cs = np.cumsum(diagonal(A))
-  thresh_ind = np.flatnonzero(ev_cs/max(ev_cs) >= pp)[0] # index needed to obtain 80% of the spectrum
+  d = diagonal(A)
+  ev_cs = np.cumsum(d)
+  if ev_cs[-1] == 0.0: return 0
+  thresh_ind = np.flatnonzero(ev_cs/w[-1] >= pp)[0] # index needed to obtain 80% of the spectrum
   return thresh_ind+1 # 0-based conversion
 
 def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[ArrayLike, float] = None, **kwargs):
@@ -434,8 +437,9 @@ class UpLaplacian(LinearOperator):
     self.prepare()
     self._precompute_degree()
     
-  
-  ## Face weights
+  def diagonal(self) -> ArrayLike:
+    return self.degree
+
   @property 
   def face_left_weights(self): 
     return self._wfl
@@ -486,7 +490,7 @@ class UpLaplacian(LinearOperator):
     self.simplex_weights = cw
     self.face_right_weights = rw
     return self 
-    
+
   def _precompute_degree(self):
     self.degree = np.zeros(self.shape[1])
     for s_ind, s in enumerate(self.simplices):
@@ -506,6 +510,31 @@ class UpLaplacian(LinearOperator):
     else: 
       raise NotImplementedError("Not implemented yet")
 
+  ## Computes all of the expressions that do not directly involve x, including input and output indices
+  ## This essentially moves the looping structures in _matvec over to numpy, at the expense of a lot of memory  
+  def precompute(self):
+    q = len(self.simplices[0])-1
+    N = 2*len(self.simplices)*comb(q+1, 2)
+    self.P = np.zeros(shape=N, dtype=[('weights', 'f4'), ('xi', 'i2'), ('vo', 'i2')])
+    cc = 0 
+    for s_ind, s in enumerate(self.simplices):
+      for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
+        ii, jj = self.index(f1), self.index(f2)
+        d1 = sgn_ij * self._wfl[ii] * self._ws[s_ind] * self._wfr[jj]
+        d2 = sgn_ij * self._wfl[jj] * self._ws[s_ind] * self._wfr[ii]
+        self.P[cc] = d1, jj, ii
+        self.P[cc+1] = d2, ii, jj
+        cc += 2
+    self._matvec = self._matvec_precompute
+    return self
+    #   np.add.at(v, P['vo'], x[P['xi']]*P['weights'])
+
+  def _matvec_precompute(self, x: ArrayLike) -> ArrayLike:
+    self._v.fill(0)
+    self._v += self.degree * x.reshape(-1)
+    np.add.at(self._v, self.P['vo'], x[self.P['xi']]*self.P['weights'])
+    return self._v
+  
   ## Define the matvec operator using the precomputed degree, the pre-allocate workspace, and the pre-determined sgn pattern
   def _matvec(self, x: ArrayLike):
     self._v.fill(0)
