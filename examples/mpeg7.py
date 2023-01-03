@@ -37,10 +37,16 @@ X = dataset[('turtle',1)]
 S = cycle_graph(X)
 fv = X @ np.array([0,1])
 L = up_laplacian(S, p=0, form='lo', weight=lambda s: max(fv[s]))
-L.face_left_weights
-L.face_right_weights
-L.simplex_weights
-mu_query(S, i, j)
+
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(smooth_rank)
+profile.add_function(trace_threshold)
+profile.enable_by_count()
+smooth_rank(L)
+profile.print_stats(output_unit=1e-3)
+
+mu_query(L, i, j)
 
 # %% Generate 
 X = dataset[('turtle',1)]

@@ -570,16 +570,15 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, smoothing: t
     fw = L.face_right_weights.copy()
     sw = L.simplex_weights.copy()
 
-    ## First term
-    L.simplex_weights = sd_k(sw)
-    L.face_left_weights = su_j(fw)
-    
-    
-    smooth_rank(L, solver='dac')
-
+    ## Multiplicity formula 
+    t1 = smooth_rank(L.set_weights(np.sqrt(su_j(fw)), sd_k(sw), np.sqrt(su_j(fw))))
+    t2 = smooth_rank(L.set_weights(np.sqrt(su_i(fw)), sd_k(sw), np.sqrt(su_i(fw))))
+    t3 = smooth_rank(L.set_weights(np.sqrt(su_j(fw)), sd_l(sw), np.sqrt(su_j(fw))))
+    t4 = smooth_rank(L.set_weights(np.sqrt(su_i(fw)), sd_l(sw), np.sqrt(su_i(fw))))
+    return t1 - t2 - t3 + t4
     # L.simplex_weights = su_j()
     # smooth_rank(L)
-    #smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+    # smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
     # smooth_rank(A)
     # L.simplex_weights = 
     # L.face_right_weights = 

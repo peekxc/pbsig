@@ -481,6 +481,12 @@ class UpLaplacian(LinearOperator):
       self._ws = value ## length is potentially unchecked! 
     self._precompute_degree()
 
+  def set_weights(self, lw = None, cw = None, rw = None):
+    self.face_left_weights = lw
+    self.simplex_weights = cw
+    self.face_right_weights = rw
+    return self 
+    
   def _precompute_degree(self):
     self.degree = np.zeros(self.shape[1])
     for s_ind, s in enumerate(self.simplices):
