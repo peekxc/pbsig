@@ -55,8 +55,37 @@ def sgn_approx(x: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) 
   phi = [s1,s2,s3,s4][method]
   return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in x], dtype=x.dtype)
 
+
+def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True) -> Callable:
+  """
+  symmetric positive semi-definite 'A'
+
+  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
+  
+  The default solver 'default' chooses the solver dynamically based on the size, structure, and estimated rank of 'A'.
+
+  Otherwise, the solver can be specified explicitly as one of:
+    'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
+    'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
+    'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
+    'gd' <=> Generalized Davidson w/ robust shifting (via PRIMME)
+    'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
+    'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
+
+  If 'A' is dense, divide-and-conquer should be used. Otherwise, the choice will depend on the structure of 'A'.
+
+  The default proportion constant represents the fractional empirically 
+
+  Parameters: 
+    A := array, sparse matrix, or linear operator to compute the rank of
+    pp := proportional part of the spectrum to compute. 
+    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
+  """
+
+
+
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', smoothing: tuple = (0.5, 1.5, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
   """ 
   Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
 
@@ -120,7 +149,7 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90,
       ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **params)
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
-  ew[np.isclose(x, 0, atol=1e-6)] = 0.0
+  ew[np.isclose(ew, 0, atol=1e-6)] = 0.0
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
   ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
   return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
@@ -328,7 +357,7 @@ def trace_threshold(A, pp=0.80) -> int:
   d = diagonal(A)
   ev_cs = np.cumsum(d)
   if ev_cs[-1] == 0.0: return 0
-  thresh_ind = np.flatnonzero(ev_cs/w[-1] >= pp)[0] # index needed to obtain 80% of the spectrum
+  thresh_ind = np.flatnonzero(ev_cs/ev_cs[-1] >= pp)[0] # index needed to obtain 80% of the spectrum
   return thresh_ind+1 # 0-based conversion
 
 def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[ArrayLike, float] = None, **kwargs):

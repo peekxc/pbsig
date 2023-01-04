@@ -578,23 +578,15 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     t3 = smooth_rank(L.set_weights(fj, fl, fj).precompute())
     t4 = smooth_rank(L.set_weights(fi, fl, fi).precompute())
     return t1 - t2 - t3 + t4
-    # L.simplex_weights = su_j()
-    # smooth_rank(L)
-    # smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-    # smooth_rank(A)
-    # L.simplex_weights = 
-    # L.face_right_weights = 
-    # L.face_left_weights = 
-    # t1 = rank_ll(S, j, k, p=p+1, weight=weight, **kwargs)
-    # t2 = rank_ll(S, i, k, p=p+1, weight=weight, **kwargs)
-    # t3 = rank_ll(S, j, l, p=p+1, weight=weight, **kwargs)
-    # t4 = rank_ll(S, i, l, p=p+1, weight=weight, **kwargs)
-    # print(f"{t1-t2-t3+t4}: {t1},{t2},{t3},{t4}")
-    # numerical_rank(LS)
-    return 0 
   else: 
     raise ValueError("Invlaid input")
   return 0 
+
+## TODO: make a sparse matrix containing spectra of all 4 terms, unreduced. 
+## then return a structure that allows you to play with sgn+ parameters 
+def mu_signature(S: SimplicialComplex, Iterable, R: Iterable[ArrayLike]):
+
+  pass
 
 # def mu_query(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
 #   """

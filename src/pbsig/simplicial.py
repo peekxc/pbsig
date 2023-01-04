@@ -497,6 +497,7 @@ class MutableFiltration(MutableMapping):
   def copy(self) -> 'MutableFiltration':
     new = MutableFiltration()
     new.data = self.data.copy()
+    new.shape = self.shape.copy()
     return new 
 
   ## Keys yields the index set. Set expand = True to get linearized order. 
@@ -519,6 +520,13 @@ class MutableFiltration(MutableMapping):
       it_keys = chain(it_keys, repeat(k, len(v)))
       it_vals = chain(it_vals, iter(v))
     return zip(it_keys, it_vals)
+
+  def reindex_keys(self, index_set: Iterable):
+    ''' Given a totally ordered key set of the same length of the filtation, reindexes '''
+    assert len(index_set) == len(self)
+    assert all((i <= j for i,j in pairwise(index_set)))
+    new = MutableFiltration(zip(iter(index_set), self.values()))
+    return new
 
   def faces(self, p: int = None) -> Iterable:
     return filter(lambda s: len(s) == p+1, self.values())

@@ -35,10 +35,55 @@ R = sample_rect_halfplane(1)[0,:]
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-fv = X @ np.array([0,1])
-L = up_laplacian(S, p=0, form='lo', weight=lambda s: max(fv[s]))
+L = up_laplacian(S, p=0, form='lo')
 
-mu_query(L, R, f=lambda s: max(fv[s]))
+fv = X @ np.array([0,1])
+K = MutableFiltration(S, f = lambda s: max(fv[s]))
+K = K.reindex_keys(np.arange(len(K)))
+
+## Index filter values <=> index 
+f_index_set = np.array(list(K.keys()))
+
+## Given rectangle, find its closest equivalent box via index 
+i = np.searchsorted(f_index_set, R[0], side='left')
+j = np.searchsorted(f_index_set, f_index_set[np.searchsorted(f_index_set, R[1])], side='right')
+k = np.searchsorted(f_index_set, R[2], side='left')
+l = np.searchsorted(f_index_set, f_index_set[np.searchsorted(f_index_set, R[3])], side='right')
+
+## Plot all the diagrams, viridas coloring, as before
+E = np.array(list(K.faces(1)))
+vir_colors = bin_color(range(132))
+for ii, v in enumerate(uniform_S1(132)):
+  dgm = ph0_lower_star(X @ v, E, max_death='max')
+  plt.scatter(*dgm.T, color=vir_colors[ii], s=1.25)
+
+## Sample a couple rectangles in the upper half-plane and plot them 
+R = sample_rect_halfplane(1, area=(0.20, 1.00))
+ax = plt.gca()
+for i,j,k,l in R:  
+  rec = plt.Rectangle((i,k), j-i, l-k)
+  rec.set_color('#0000000f')
+  ax.add_patch(rec)
+
+## Create a signature via mu queries
+r = R[0,:]
+sig = []
+for v in uniform_S1(132):
+  fv = X @ np.array(v)
+  sig.append(mu_query(L, r, f=lambda s: max(fv[s]), w=0.20))
+
+plt.plot(sig)
+
+dgm = barcodes(K)
+plt.scatter(dgm['birth'], dgm['death'])
+
+fv = X @ np.array([0,1])
+mu_query(L, R, f=lambda s: max(fv[s]), w=1.15)
+
+r = np.array([-np.inf, -0.75456026, -0.29686413, np.inf])
+mu_query(L, r, f=lambda s: max(fv[s]), w=0.0)
+
+
 
 import line_profiler
 profile = line_profiler.LineProfiler()
