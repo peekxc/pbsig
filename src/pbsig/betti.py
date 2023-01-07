@@ -582,11 +582,149 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     raise ValueError("Invlaid input")
   return 0 
 
-## TODO: make a sparse matrix containing spectra of all 4 terms, unreduced. 
-## then return a structure that allows you to play with sgn+ parameters 
-def mu_signature(S: SimplicialComplex, Iterable, R: Iterable[ArrayLike]):
+from pbsig.utility import progressbar
+class MuSignature:
+  """ 
+  A multiplicity (mu) signature M is a shape statistic M(i) generated from a parameterized family F = { f1, f2, ..., fk }
 
-  pass
+  Concisely, for a fixed pair (S, r) where 'S' is simplicial complex and 'r' a box in the upper half-plane, M(i) 
+  is real number representing the (smoothed) cardinality of dgm(S, fi) restricted to 'r'. 
+
+  Constructor parameters: 
+    S := Fixed simplicial complex to evaluate 
+    F := Iterable of functions of type Callable[SimplexLike, float]
+    R := Rectangle in the upper half-plane 
+    p := dimension of persistence diagram to restrict R too. 
+
+  Methods: 
+    precompute := precomputes the signature
+  """
+  def __init__(self, S: SimplicialComplex, F: Iterable[Callable], R: ArrayLike, p: int = 0):
+    assert len(R) == 4 and is_sorted(R)
+    # assert isinstance(S, SimplicialComplex)
+    assert not(F is iter(F)), "Iterable 'F' must be repeateable; a generator is not sufficient!"
+    self.L = up_laplacian(S, p, form='lo')
+    self.R = R
+    self.S = S 
+    self.F = F
+    self.k = len(F)
+    # self.tol = tol
+    # self._signature = np.zeros(k, dtype=float)
+  
+  ## Does not change eigenvalues!
+  def precompute(self, w: float = 0.0, **kwargs) -> None:
+    """
+    pp: 
+    """
+    self._T1 = [None]*self.k
+    self._T2 = [None]*self.k
+    self._T3 = [None]*self.k
+    self._T4 = [None]*self.k
+    i,j,k,l = self.R
+    eigh_solver = parameterize_solver(self.L, **kwargs) 
+    for i, f in progressbar(enumerate(self.F), self.k):
+      assert isinstance(f, Callable), "f must be a simplex-wise function f: S -> float !"
+      self._update_weights(f, defer=True)
+      self._update_smoothstep(self.R, w=w)
+      self.L.set_weights(self._fj, self._fk, self._fj).precompute()
+      self._T1[i] = eigh_solver(self.L)
+      self.L.set_weights(self._fi, self._fk, self._fi).precompute()
+      self._T2[i] = eigh_solver(self.L)
+      self.L.set_weights(self._fj, self._fl, self._fj).precompute()
+      self._T3[i] = eigh_solver(self.L)
+      self.L.set_weights(self._fi, self._fl, self._fi).precompute()
+      self._T4[i] = eigh_solver(self.L)
+
+    # def _fix_ew(ew): 
+    #   ew[np.isclose(ew, 0, atol=self.tol)] = 0.0 # compress
+    #   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
+    #   return ew
+    # for i in range(self.k):
+    #   self._T1[i] = _fix_ew(self._T1[i])
+    #   self._T2[i] = _fix_ew(self._T2[i])
+    #   self._T3[i] = _fix_ew(self._T3[i])
+    #   self._T4[i] = _fix_ew(self._T4[i])
+    self._T1 = csr_array(self._T1)
+    self._T2 = csr_array(self._T2)
+    self._T3 = csr_array(self._T3)
+    self._T4 = csr_array(self._T4)
+    self._T1.eliminate_zeros() 
+    self._T2.eliminate_zeros() 
+    self._T3.eliminate_zeros() 
+    self._T4.eliminate_zeros() 
+  
+  ## Changes the eigenvalues! 
+  def _update_weights(self, f: Callable[SimplexLike, float], defer: bool = False):
+    self.fw = np.array([f(s) for s in self.L.faces])
+    self.sw = np.array([f(s) for s in self.L.simplices])
+
+  ## Changes the eigenvalues! 
+  def _update_smoothstep(self, R: ArrayLike, w: float = 0.05, defer: bool = False):
+    """ Assumes fw and sw are set"""
+    assert len(R) == 4 and is_sorted(R)
+    i,j,k,l = R 
+    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
+    sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+    su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    self._fi = np.sqrt(su_i(self.fw))
+    self._fj = np.sqrt(su_j(self.fw))
+    self._fk = sd_k(self.sw)
+    self._fl = sd_l(self.sw)
+  
+  ## Changes the eigenvalues! 
+  ## TODO: allow multiple rectangles
+  def _update_rectangle(self, R: ArrayLike, defer: bool = False):
+    pass
+
+  ## Should be easy to vectorize; sgn(S.data).sum(axis=0)
+  def __call__(self, i: int = None, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
+    eps,p,method = smoothing
+    S = sgn_approx(eps=eps, p=p, method=method)
+    sig = np.add.reduceat(S(self._T1.data), self._T1.indptr[:-1])
+    sig -= np.add.reduceat(S(self._T2.data), self._T2.indptr[:-1])
+    sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1])
+    sig += np.add.reduceat(S(self._T4.data), self._T4.indptr[:-1])
+    return sig
+    # if i is None: 
+    #   sig = np.array([self.__call__(i, smoothing) for i in range(self.k)])
+    #   return sig
+    # else: 
+    #   assert isinstance(i, Integral) and i >= 0 and i < self.k, "operator(i) defined for i in [0, 1, ..., k]"
+    #   eps,p,method = smoothing
+    #   t1 = sum(sgn_approx(self._T1[i], eps, p, method))
+    #   t2 = sum(sgn_approx(self._T2[i], eps, p, method))
+    #   t3 = sum(sgn_approx(self._T3[i], eps, p, method))
+    #   t4 = sum(sgn_approx(self._T4[i], eps, p, method))
+    #   return t1 - t2 - t3 + t4
+
+
+
+#   ## Prep smooth-step functions for rectangle R = [i,j] x [k,l]
+#   i,j,k,l = R 
+#   sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+#   sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+#   su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  
+#   ## Get initial set of weights based on weight function
+#   weight = (lambda s: 1) if weight is None else weight 
+#   L = up_laplacian(S, p=0, form='lo')
+#   fw = np.array([weight(s) for s in L.faces])
+#   sw = np.array([weight(s) for s in L.simplices])
+  
+#   ## Multiplicity formula 
+#   fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
+  
+#   ## Choose a eigenvalue solver 
+#   eigh_solver = parameterize_solver(L) 
+#   # pairs = [(i,j), (), (), ()
+  
+#   ## Precompute the eigenvalues for each box r \in R 
+#   EW1 = [] ## eigenvalues for first pair
+
+#   pass
 
 # def mu_query(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
 #   """

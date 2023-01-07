@@ -35,11 +35,56 @@ R = sample_rect_halfplane(1)[0,:]
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-L = up_laplacian(S, p=0, form='lo')
+#L = up_laplacian(S, p=0, form='lo')
+L = up_laplacian(S, p=0, form='array')
+# np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=5000, return_eigenvectors=False))
+# np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=5000, return_eigenvectors=False))
+
+solver = parameterize_solver(L, solver='jd')
+
+parameterize_solver(L, solver='jd', ncv=L.shape[0], maxiter=10000)(L)
+numerical_rank(L)
 
 fv = X @ np.array([0,1])
 K = MutableFiltration(S, f = lambda s: max(fv[s]))
 K = K.reindex_keys(np.arange(len(K)))
+
+## Sample a couple rectangles in the upper half-plane and plot them 
+R = sample_rect_halfplane(1, area=(0.20, 1.00))
+
+## Plot all the diagrams, viridas coloring, as before
+from pbsig.color import bin_color
+E = np.array(list(K.faces(1)))
+vir_colors = bin_color(range(132))
+for ii, v in enumerate(uniform_S1(132)):
+  dgm = ph0_lower_star(X @ v, E, max_death='max')
+  plt.scatter(*dgm.T, color=vir_colors[ii], s=1.25)
+
+ax = plt.gca()
+for i,j,k,l in R:  
+  rec = plt.Rectangle((i,k), j-i, l-k)
+  rec.set_color('#0000000f')
+  ax.add_patch(rec)
+
+from pbsig.simplicial import SimplicialComplex
+from pbsig.betti import MuSignature
+
+def directional_transform(X: ArrayLike):
+  def _transform(theta: float):
+    fv = X @ np.array([np.cos(theta), np.sin(theta)])
+    return lambda s: max(fv[s])
+  return _transform
+
+dt = directional_transform(X)
+F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
+sig = MuSignature(S, F, R[0,:])
+sig.precompute(pp=1.0, tol=1e-12)
+
+sig()
+plt.plot(sig(smoothing=(1e-12, 1.0, 0)))
+plt.scatter(np.arange(len(F)), sig(smoothing=(1e-8, 1.0, 0)))
+i = 10 
+
 
 ## Index filter values <=> index 
 f_index_set = np.array(list(K.keys()))
@@ -50,20 +95,6 @@ j = np.searchsorted(f_index_set, f_index_set[np.searchsorted(f_index_set, R[1])]
 k = np.searchsorted(f_index_set, R[2], side='left')
 l = np.searchsorted(f_index_set, f_index_set[np.searchsorted(f_index_set, R[3])], side='right')
 
-## Plot all the diagrams, viridas coloring, as before
-E = np.array(list(K.faces(1)))
-vir_colors = bin_color(range(132))
-for ii, v in enumerate(uniform_S1(132)):
-  dgm = ph0_lower_star(X @ v, E, max_death='max')
-  plt.scatter(*dgm.T, color=vir_colors[ii], s=1.25)
-
-## Sample a couple rectangles in the upper half-plane and plot them 
-R = sample_rect_halfplane(1, area=(0.20, 1.00))
-ax = plt.gca()
-for i,j,k,l in R:  
-  rec = plt.Rectangle((i,k), j-i, l-k)
-  rec.set_color('#0000000f')
-  ax.add_patch(rec)
 
 ## Create a signature via mu queries
 r = R[0,:]
@@ -99,7 +130,7 @@ mu_query(L, i, j)
 # %% Generate 
 X = dataset[('turtle',1)]
 
-L = up_laplacian(S, p=0, form='lo')
+L = up_laplacian(S, p=0, form='array')
 sum(np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], return_eigenvectors=False)))
 
 
@@ -119,19 +150,40 @@ ph(K)
 lower_star_pb
 
 
-# import numpy as np 
-# from scipy.linalg import toeplitz
-# from scipy.sparse import csc_array
-# m = 49
-# T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+import numpy as np 
+from scipy.linalg import toeplitz
+from scipy.sparse import csc_array, diags
+m = 50
+T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
 
-# ew_np = np.sort(np.linalg.eigvalsh(T.todense()))
-# ew_cf = np.sort([2.0-2.0*np.cos(2*np.pi*k/m) for k in range(m)])
-# np.allclose(ew_np, ew_cf) # True
+ew_np = np.sort(np.linalg.eigvalsh(T.todense()))
+ew_cf = np.sort([2.0-2.0*np.cos(2*np.pi*k/m) for k in range(m)])
+np.allclose(ew_np, ew_cf) # True
 
-# import primme
-# ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, return_eigenvectors=False))
-# np.allclose(ew_pm, ew_cf) # True
+import primme
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, return_eigenvectors=False))
+np.allclose(ew_pm, ew_cf) # True
+
+import primme
+np.random.seed(1234)
+m = 150
+T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=5000, return_eigenvectors=False))
+np.allclose(ew_pm, ew_cf) 
+
+np.random.seed(1234)
+m = 100
+T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+w = np.random.uniform(size=m, low=0, high=1)
+#w[np.random.choice(np.arange(m), size=5)] = 0
+WT = diags(w) @ T @ diags(w)
+# plt.spy(WT)
+ew_pm = np.sort(primme.eigsh(WT, k=m, return_eigenvectors=False))
+ew_np = np.sort(np.linalg.eigvalsh(WT.todense()))
+np.allclose(ew_pm, ew_np) 
+any(ew > WT.trace())
+
+np.allclose(ew_pm, ew_cf) # True
 
 # L = up_laplacian(S, p=0, form='array')
 # ew_lap = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], return_eigenvectors=False))
@@ -146,7 +198,7 @@ smooth_rank(L)
 import primme
 from scipy.sparse import diags
 from scipy.sparse.linalg import eigsh
-n = 100
+n = 10
 M = np.random.uniform(size=(n,n), low=-1.0, high=1.0)
 Q,R = np.linalg.qr(M)
 d = np.round(np.random.uniform(size=n, low=0.0, high=10.0))
@@ -171,6 +223,8 @@ np.allclose(T - P @ H, 0)
 np.allclose(H @ x, P @ b)
 np.allclose(P @ (H @ x), b)
 
+
+toeplitz([2,-1,], )
 
 
 ## Find proportion of eigenvalues needed on average to compute 90% of spectrum

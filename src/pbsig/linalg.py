@@ -28,7 +28,7 @@ def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True
     bound = min([A.shape[0], A.shape[1], np.ceil(sum(diagonal(A))**2 / fn2)])
   return int(bound)
   
-def sgn_approx(x: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) -> ArrayLike:
+def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: int = 0, normalize: bool = False) -> ArrayLike:
   """ 
   Applies a function phi(x) to 'x' where phi smoothly approximates the positive sgn+ function.
 
@@ -47,16 +47,42 @@ def sgn_approx(x: ArrayLike, eps: float = 0.0, p: float = 1.0, method: int = 0) 
   assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
   assert eps >= 0.0, "Epsilon must be non-negative"
   # assert isinstance(sigma, np.ndarray), "Only numpy arrays supported for now"
-  x = np.array(x)
-  s1 = np.vectorize(lambda t: t**p / (t**p + eps**p))
-  s2 = np.vectorize(lambda t: t**p / (t**p + eps))
-  s3 = np.vectorize(lambda t: t / (t**p + eps**p)**(1/p))
-  s4 = np.vectorize(lambda t: 1 - np.exp(-t/eps))
-  phi = [s1,s2,s3,s4][method]
-  return np.array([0.0 if np.isclose(s, 0.0) else phi(s) for s in x], dtype=x.dtype)
+  if eps == 0 and (x is not None): return np.sign(x)
+  _f = 0
+  if normalize:
+    s1 = np.vectorize(lambda t, e: t**p / (t**p + e**p))
+    s2 = np.vectorize(lambda t, e: t**p / (t**p + e))
+    s3 = np.vectorize(lambda t, e: t / (t**p + e**p)**(1/p))
+    s4 = np.vectorize(lambda t, e: 1 - np.exp(-t/e))
+    _phi = [s1,s2,s3,s4][method]
+    from scipy.interpolate import interp1d
+    alpha = np.copy(eps).item()
+    assert alpha >= 0.0 and alpha <= 1.0,"Must be in [0,1]"
+    dom = np.abs(np.linspace(0, 1, 100))
+    EPS = np.linspace(1e-16, 10, 50)
+    area = np.array([2*np.trapz(_phi(dom, eps), dom) for eps in EPS])
+    area[0] = 2.0
+    area[-1] = 0.0
+    _f = lambda z: interp1d(2-area, EPS)(z*2)
+  else:
+    _f = lambda z: z
+  
+  # print(_f)
+  ## Ridiculous syntax due to python: see https://stackoverflow.com/questions/2295290/what-do-lambda-function-closures-capture
+  if method == 0: 
+    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x**p / (x**p + f(eps)**p), 0.0)
+  elif method == 1: 
+    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x**p / (x**p + f(eps)), 0.0)
+  elif method == 2: 
+    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x / (x**p + f(eps)**p)**(1/p), 0.0)
+  else: 
+    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(1 - np.exp(-x/f(eps)), 0.0)
+  return phi if x is None else phi(x)
+  
 
 
-def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True) -> Callable:
+## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
+def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True, **kwargs) -> Callable:
   """
   symmetric positive semi-definite 'A'
 
@@ -80,75 +106,64 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     A := array, sparse matrix, or linear operator to compute the rank of
     pp := proportional part of the spectrum to compute. 
     solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
-  """
-
-
-
-## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
-  """ 
-  Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
-
-  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
   
-  The default solver 'default' chooses the solver dynamically based on the size, structure, and estimated rank of 'A'.
-
-  Otherwise, the solver can be specified explicitly as one of:
-    'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
-    'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
-    'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
-    'gd' <=> Generalized Davidson w/ robust shifting (via PRIMME)
-    'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
-    'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
-
-  If 'A' is dense, divide-and-conquer should be used. Otherwise, the choice will depend on the structure of 'A'.
-
-  The default proportion constant represents the fractional empirically 
-
-  Parameters: 
-    A := array, sparse matrix, or linear operator to compute the rank of
-    pp := proportional part of the spectrum to compute. 
-    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
-    smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
-    symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
-    sqrt := whether to compute the singular values of 'A' or of 'B' where A = B @ B.T or A = B.T @ B
-    kwargs := keyword arguments to pass to the solver. Ignored if solver = 'default'.
+  Returns a Callable f(A, ...) which takes as its first argument a matrix/array/lo or the same type as 'A'
   """
   assert A.shape[0] == A.shape[1], "A must be square"
   assert symmetric, "Haven't implemented non-symmetric yet"
   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
-  assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
   if pp == 0.0: return 0.0
-  eps, p, method = smoothing 
   if solver == 'dac':
-    assert isinstance(A, np.ndarray) or isinstance(A, spmatrix), "Cannot use divide-and-conquer with linear operators"
-    if isinstance(A, spmatrix):
-      import warnings
-      warnings.warn("Converting sparse matrix to a dense matrix to use LAPACK divide-and-conquer routine.")
-      A = A.todense()
+    assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
-    ew = np.linalg.eigvalsh(A, **kwargs)
+    params = kwargs
+    solver = np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return 0.0
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
     if nev == 0: return 0.0
-    if nev == A.shape[0] and solver == 'irl':
+    if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
-      solver = 'jd' if solver == 'irl' else solver
+      solver = 'jd'
     solver = 'irl' if solver == 'default' else solver
     assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
     if solver == 'irl':
-      ew = eigsh(A, k=nev, which='LM', tol=1e-6, return_eigenvectors=False, **kwargs)
+      params = dict(k=nev, which='LM', tol=1e-6, return_eigenvectors=False) | kwargs
+      solver = eigsh
     else:
       import primme
       n = A.shape[0]
-      ncv = min(2*nev + 1, 20) # use modification scipy rule
+      ncv = min(2*nev + 1, 20) # use modification of scipy rule
       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      params = dict(ncv=ncv, maxiter=n*10, tol=1e-6) | kwargs
-      ew = primme.eigsh(A, k=nev, which='LM', return_eigenvectors=False, method=methods[solver], **params)
+      params = dict(ncv=ncv, maxiter=n*10, tol=1e-6, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
+      solver = primme.eigsh
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
+  def _call_solver(A, **kwargs):
+    return solver(A, **(params | kwargs))
+  return _call_solver
+
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
+  """ 
+  Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
+
+  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
+
+  Parameters: 
+    A := array, sparse matrix, or linear operator to compute the rank of
+    pp := proportional part of the spectrum to compute.
+    smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
+    symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
+    sqrt := whether to compute sqrt the singular values
+    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'. See 'parameterize_solver' for more details. 
+    kwargs := keyword arguments to pass to the parameterize_solver.
+  """
+  assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
+  if pp == 0.0: return 0.0
+  eps, p, method = smoothing 
+  solver = parameterize_solver(A, pp=pp, solver=solver)
+  ew = solver(A)
   ew[np.isclose(ew, 0, atol=1e-6)] = 0.0
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
   ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
@@ -626,7 +641,7 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       dtype := dtype of associated laplacian. 
       kwargs := unused. 
     """
-    assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
+    # assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
     ns = K.shape
     weight = (lambda s: 1.0) if weight is None else weight

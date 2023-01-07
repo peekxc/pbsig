@@ -9,9 +9,9 @@ The connection between the persistent homology (PH) groups and their correspondi
 From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
 %They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
 %More recently, Bauer studied persistence in a form a matching. 
-In~\cite{cohen2005stability}, Cohen-Steiner et al. give a more discrete perspective on PH by defining the persistence diagram in terms of a \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$, the $p$-th persistence diagram over $f$ is given as: 
+Cohen-Steiner et al.~\cite{cohen2005stability} studied PH from a discrete perspective by defining the persistence via \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$, the $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is defined as: 
 \begin{equation}\label{eq:dgm}
-\mathrm{dgm}_p(f) = \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta	
+\mathrm{dgm}_p(f) := \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta	
 \end{equation}
 %the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
 where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\mu_p^{i,j}$ is the  \emph{multiplicity function}, defined as: 
@@ -25,14 +25,14 @@ Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022compu
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-The direct consequence of~\cite{edelsbrunner2022computational} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, through particular combinations of Betti numbers, one can recover portions of a spaces persistence diagram via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
+The direct consequence of~\cite{edelsbrunner2022computational} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, combinations of Betti numbers recover portions of $\mathrm{dgm}_p(\mathcal{X})$  via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
 
 %The focus of this effort inverts this mindset: we focus on recovering \emph{portions} of the diagram by fixing the the index pairs $(i,j)$ ahead of time.
 
 %This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
 
 % TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
-The duality between diagrams and PBNs derived from persistence modules indexed over the real line was further studied by Chazal~\cite{chazal2016structure} in a measure-theoretic setting. 
+Chazal~\cite{chazal2016structure} further studied the duality between diagrams and PBNs in a measure-theoretic setting, focusing on persistence modules indexed over the real line. 
 By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, a generalization of~\eqref{eq:multiplicity} 
 %via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
 was shown by demonstrating that one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
@@ -45,7 +45,7 @@ was shown by demonstrating that one may recover the diagram of a persistence mod
 	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
 \end{equation}
 % The diagram exists wherever the measure takes finite values. 
-Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying the stability of PBNs in multidimensional persistence via what they define as \emph{proper cornerpoints}. These are points $x = (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ satisfying $\mu_p(x) > 0$, where $\mu_p(x)$:
+Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying the stability of PBNs in multidimensional persistence via what they define as \emph{proper cornerpoints}. These are points $x = (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ satisfying $\mu_p(x) > 0$, where:
 %\begin{flalign}\label{eq:pbn_cont}
 %	(\, \forall x =  (\, \hat\imath, \hat\jmath \,) \in \mathrm{dgm}_p(f) \,)  & & \quad\quad 
 %	 \; \Longleftrightarrow \; \mu_p(x) := \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
@@ -71,6 +71,7 @@ Like persistence diagrams, the stability of PBN functions justifies their use an
 Nonetheless, there are certain advantages the PBN computation has over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
 % add more 
 Indeed,~\eqref{eq:multiplicity} implies one may in theory recover the diagram through [a finite number of] PBN computations alone via a divide-and-conquer like approach~\cite{chen2011output}, suggesting an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach the persistence computation. 
+In what follows, we motivate the main results of this effort by deriving a lesser known expression of the persistent Betti number. 
 
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 
