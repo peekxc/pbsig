@@ -54,6 +54,24 @@ F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
 sig = MuSignature(S, F, R[0,:])
 sig.precompute(pp=0.90, tol=1e-6)
 
+## compare signatures manually 
+Sigs = {}
+for k, X in dataset.items():
+  S = cycle_graph(X)
+  dt = directional_transform(X)
+  F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
+  Sigs[k] = MuSignature(S, F, R[0,:])
+
+## Precompute the singular values associated with the DT for each shape 
+for sig in Sigs.values():
+  sig.precompute(pp=0.80, tol=1e-6, w=0.10)
+
+Sigs[('turtle', 1)]()
+
+
+
+
+
 
 ## Ca
 sig()

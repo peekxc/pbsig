@@ -70,13 +70,13 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
   # print(_f)
   ## Ridiculous syntax due to python: see https://stackoverflow.com/questions/2295290/what-do-lambda-function-closures-capture
   if method == 0: 
-    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x**p / (x**p + f(eps)**p), 0.0)
+    phi = lambda x, eps=eps, p=p, f=_f: x**p / (x**p + f(eps)**p)
   elif method == 1: 
-    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x**p / (x**p + f(eps)), 0.0)
+    phi = lambda x, eps=eps, p=p, f=_f: x**p / (x**p + f(eps))
   elif method == 2: 
-    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(x / (x**p + f(eps)**p)**(1/p), 0.0)
+    phi = lambda x, eps=eps, p=p, f=_f: x / (x**p + f(eps)**p)**(1/p)
   else: 
-    phi = lambda x, eps=eps, p=p, f=_f: np.maximum(1 - np.exp(-x/f(eps)), 0.0)
+    phi = lambda x, eps=eps, p=p, f=_f: 1.0 - np.exp(-x/f(eps))
   return phi if x is None else phi(x)
   
 

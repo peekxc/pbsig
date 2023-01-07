@@ -207,7 +207,21 @@ def test_vectorized_uplap():
   # types.MethodType(L._matvec_precompute, L)
 
 
+def test_laplacian_matmat():
+  LM = up_laplacian(S, p=0, form='array')
+  solver = parameterize_solver(LM, solver='jd')
+  solver(LM)
 
+  LO = up_laplacian(S, p=0, form='lo')
+  LO.precompute()
+  solver = parameterize_solver(LO, solver='lobpcg')
+  solver(LO)
+
+  M = np.random.uniform(size=LO.shape)
+  np.allclose(np.ravel((LO @ M) - (LM @ M)), 0)
+
+  LM @ M[:,0]
+  LO @ M[:,0]
 def test_up_laplacian1():
   X, S = generate_dataset()
   D = boundary_matrix(S, p=2).tocsc()

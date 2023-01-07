@@ -652,15 +652,20 @@ class MuSignature:
       self.L.set_weights(self._fi, self._fl, self._fi).precompute()
       self._T4[i] = eigh_solver(self.L)
 
-    # def _fix_ew(ew): 
-    #   ew[np.isclose(ew, 0, atol=self.tol)] = 0.0 # compress
-    #   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
-    #   return ew
-    # for i in range(self.k):
-    #   self._T1[i] = _fix_ew(self._T1[i])
-    #   self._T2[i] = _fix_ew(self._T2[i])
-    #   self._T3[i] = _fix_ew(self._T3[i])
-    #   self._T4[i] = _fix_ew(self._T4[i])
+    def _fix_ew(ew): 
+      atol = kwargs['tol'] if 'tol' in kwargs else 1e-8
+      ew[np.isclose(ew, 0.0, atol=atol)] = 0.0 # compress
+      if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+        print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+        # print(ew)
+        # print(min(ew))
+      #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
+      return np.maximum(ew, 0.0)
+    for i in range(self.k):
+      self._T1[i] = _fix_ew(self._T1[i])
+      self._T2[i] = _fix_ew(self._T2[i])
+      self._T3[i] = _fix_ew(self._T3[i])
+      self._T4[i] = _fix_ew(self._T4[i])
     self._T1 = csr_array(self._T1)
     self._T2 = csr_array(self._T2)
     self._T3 = csr_array(self._T3)
