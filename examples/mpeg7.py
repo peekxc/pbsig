@@ -2,6 +2,7 @@ import numpy as np
 from pbsig import * 
 from pbsig.linalg import * 
 from pbsig.datasets import mpeg7
+from pbsig.betti import *
 from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph
@@ -12,46 +13,42 @@ from pbsig.vis import plot_complex
 # %% Load dataset 
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
-
-# %% Generate a random set of rectangles in the upper half plane 
-def sample_rect_halfplane(n: int, area: tuple = (0, 0.05)):  
-  """ 
-  Generate random rectilinear boxes with area between [lb,ub] in upper-half plane via rejection sampling 
-  """
-  cc = 0
-  R = []
-  while cc < n:
-    r = np.sort(np.random.uniform(size=4, low = -1.0, high=1.0))
-    ra = (r[1]-r[0])*(r[3]-r[2])
-    if ra >= area[0] and ra <= area[1]:
-      R.append(r)
-    else: 
-      continue
-    cc += 1
-  return np.array(R)
-
 R = sample_rect_halfplane(1)[0,:]
 
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-#L = up_laplacian(S, p=0, form='lo')
-L = up_laplacian(S, p=0, form='array')
+
+LM = up_laplacian(S, p=0, form='array')
+solver = parameterize_solver(LM, solver='jd')
+solver(LM)
+
+LO = up_laplacian(S, p=0, form='lo')
+LO.precompute()
+solver = parameterize_solver(LO, solver='lobpcg')
+solver(LO)
+
+M = np.random.uniform(size=LO.shape)
+np.allclose(np.ravel((LO @ M) - (LM @ M)), 0)
+
+LM @ M[:,0]
+LO @ M[:,0]
+
 # np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=5000, return_eigenvectors=False))
 # np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=5000, return_eigenvectors=False))
+L @ np.random.uniform(size=L.shape[0])
 
-solver = parameterize_solver(L, solver='jd')
-solver(L)
+parameterize_solver(L, solver='gd', ncv=20, maxiter=1500, return_unconverged=False)(L)
 
-parameterize_solver(L, solver='jd', ncv=L.shape[0], maxiter=10000)(L)
-numerical_rank(L)
+parameterize_solver(L, solver='jd')(L.precompute())
+
 
 fv = X @ np.array([0,1])
 K = MutableFiltration(S, f = lambda s: max(fv[s]))
 K = K.reindex_keys(np.arange(len(K)))
 
 ## Sample a couple rectangles in the upper half-plane and plot them 
-R = sample_rect_halfplane(1, area=(0.20, 1.00))
+R = sample_rect_halfplane(1, area=(0.10, 1.00))
 
 ## Plot all the diagrams, viridas coloring, as before
 from pbsig.color import bin_color

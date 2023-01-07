@@ -209,6 +209,7 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
     assert isinstance(tol, float), "Invalid tolerance"
     
     ## Use un-shifted operator 'A' + shifted solver to estimate the dimension of the nullspace w/ shift-invert mode
+    ## TODO: Preconditioning advice: https://caam37830.github.io/book/02_linear_algebra/sparse_linalg.html
     smallest_k = eigsh(A + tol*eye(A.shape[0]), k=k, which='LM', sigma=0.0, tol=tol, return_eigenvectors=False)
     dim_nullspace = sum(np.isclose(np.maximum(smallest_k - tol, 0.0), 0.0))
     
@@ -480,7 +481,9 @@ class UpLaplacian(LinearOperator):
     self._wfl = self._wfr = self._ws = UpLaplacian.identity_seq
     self.prepare()
     self._precompute_degree()
-    
+    self.precompute()
+    self.P = None
+
   def diagonal(self) -> ArrayLike:
     return self.degree
 
@@ -569,26 +572,39 @@ class UpLaplacian(LinearOperator):
         self.P[cc] = d1, jj, ii
         self.P[cc+1] = d2, ii, jj
         cc += 2
-    self._matvec = self._matvec_precompute
     return self
     #   np.add.at(v, P['vo'], x[P['xi']]*P['weights'])
 
   def _matvec_precompute(self, x: ArrayLike) -> ArrayLike:
+    x = x.reshape(-1)
     self._v.fill(0)
-    self._v += self.degree * x.reshape(-1)
+    self._v += self.degree * x
     np.add.at(self._v, self.P['vo'], x[self.P['xi']]*self.P['weights'])
     return self._v
   
   ## Define the matvec operator using the precomputed degree, the pre-allocate workspace, and the pre-determined sgn pattern
-  def _matvec(self, x: ArrayLike):
+  def _matvec_full(self, x: ArrayLike) -> ArrayLike:
+    x = x.reshape(-1)
     self._v.fill(0)
-    self._v += self.degree * x.reshape(-1)
+    self._v += self.degree * x
     for s_ind, s in enumerate(self.simplices):
       for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
         ii, jj = self.index(f1), self.index(f2)
         self._v[ii] += sgn_ij * x[jj] * self._wfl[ii] * self._ws[s_ind] * self._wfr[jj]
         self._v[jj] += sgn_ij * x[ii] * self._wfl[jj] * self._ws[s_ind] * self._wfr[ii]
     return self._v
+    
+  def _matvec(self, x: ArrayLike) -> ArrayLike:
+    assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
+    return self._matvec_precompute(x) if self.P is not None else self._matvec_full(x)
+
+  def _matmat(self, X: ArrayLike) -> ArrayLike:
+    n,k = X.shape
+    m = self.shape[0]
+    Y = np.empty(shape=(m,k))
+    for j in range(X.shape[1]):
+      Y[:,j] = self._matvec(X[:,j])
+    return Y
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:

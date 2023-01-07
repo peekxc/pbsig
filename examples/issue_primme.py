@@ -6,15 +6,21 @@ from scipy.sparse.linalg import LinearOperator, aslinearoperator, eigsh
 from scipy.sparse.csgraph import laplacian
 
 import primme
-m = 50
+m = 150
 T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
-ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=1500, return_eigenvectors=False))
+
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=5, maxiter=10000, return_eigenvectors=False))
+
+TO = aslinearoperator(T)
+np.sort(primme.eigsh(TO, k=m, ncv=m, maxiter=10000, return_eigenvectors=False))
+
+
 
 from scipy.sparse import save_npz, load_npz
 L = load_npz("laplacian.npz")
 ew_pm = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=1500, return_eigenvectors=False))
-
-ew_pm = np.sort(primme.eigsh(L, k=L.shape[0], ncv=20, maxiter=5000, return_eigenvectors=False))
+LO = aslinearoperator(L)
+ew_pm = np.sort(primme.eigsh(LO, k=L.shape[0], ncv=20, maxiter=5000, return_eigenvectors=False))
 
 # from pbsig.linalg import parameterize_solver
 # solver = parameterize_solver(L, solver='jd')
@@ -42,12 +48,21 @@ ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=1500, return_eigenvectors=Fa
 dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-#L = up_laplacian(S, p=0, form='lo')
-L = up_laplacian(S, p=0, form='array')
+L = up_laplacian(S, p=0, form='lo')
+#L = up_laplacian(S, p=0, form='array')
 
-solver = parameterize_solver(L, solver='jd')
+solver = parameterize_solver(L, solver='jd', pp=0.01, maxiter=1500)
 solver(L)
 
+
+LO = up_laplacian(S, p=0, form='lo')
+LM = up_laplacian(S, p=0, form='array')
+
+import timeit
+timeit.timeit(lambda: LM @ x, number=100, setup=lambda: "x = np.random.uniform(size=LO.shape[0])")
+timeit.timeit(lambda: LO @ x, number=100, setup=lambda: "x = np.random.uniform(size=LO.shape[0])")
+LO.precompute()
+timeit.timeit(lambda: LO @ x, number=100, setup=lambda: "x = np.random.uniform(size=LO.shape[0])")
 
 save_npz("laplacian.npz", L)
 L = load_npz("laplacian.npz")

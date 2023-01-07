@@ -18,6 +18,23 @@ def unrank_C2(x: int, n: int):
   j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
   return(i,j) 
 
+## Generate a random set of rectangles in the upper half plane 
+def sample_rect_halfplane(n: int, area: tuple = (0, 0.05)):  
+  """ 
+  Generate random rectilinear boxes with area between [lb,ub] in upper-half plane via rejection sampling 
+  """
+  cc = 0
+  R = []
+  while cc < n:
+    r = np.sort(np.random.uniform(size=4, low = -1.0, high=1.0))
+    ra = (r[1]-r[0])*(r[3]-r[2])
+    if ra >= area[0] and ra <= area[1]:
+      R.append(r)
+    else: 
+      continue
+    cc += 1
+  return np.array(R)
+
 def Lipshitz(f: ArrayLike, x: ArrayLike):
   """ 
   Estimate Lipshitz constant K such that: 
