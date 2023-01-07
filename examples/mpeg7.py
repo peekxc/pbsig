@@ -41,6 +41,7 @@ L = up_laplacian(S, p=0, form='array')
 # np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=5000, return_eigenvectors=False))
 
 solver = parameterize_solver(L, solver='jd')
+solver(L)
 
 parameterize_solver(L, solver='jd', ncv=L.shape[0], maxiter=10000)(L)
 numerical_rank(L)

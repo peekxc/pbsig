@@ -136,7 +136,7 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
       n = A.shape[0]
       ncv = min(2*nev + 1, 20) # use modification of scipy rule
       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      params = dict(ncv=ncv, maxiter=n*10, tol=1e-6, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
+      params = dict(ncv=ncv, maxiter=pp*n*100, tol=1e-6, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
       solver = primme.eigsh
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")

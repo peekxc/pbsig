@@ -1,11 +1,73 @@
 ## SUMMARY OF FINDINGS: Estimating dim(nullspace(L)) is actually just as hard (if not harder!) as estimating the full spectrum of Laplacians!
 import numpy as np 
-from scipy.sparse import diags, eye 
+from scipy.linalg import toeplitz
+from scipy.sparse import diags, eye, csc_array
 from scipy.sparse.linalg import LinearOperator, aslinearoperator, eigsh
 from scipy.sparse.csgraph import laplacian
 
-import networkx as nx 
 import primme
+m = 50
+T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=1500, return_eigenvectors=False))
+
+from scipy.sparse import save_npz, load_npz
+L = load_npz("laplacian.npz")
+ew_pm = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=1500, return_eigenvectors=False))
+
+ew_pm = np.sort(primme.eigsh(L, k=L.shape[0], ncv=20, maxiter=5000, return_eigenvectors=False))
+
+# from pbsig.linalg import parameterize_solver
+# solver = parameterize_solver(L, solver='jd')
+import primme
+n = L.shape[0]
+ncv = min(2*n + 1, 20) # use modification of scipy rule
+methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
+params = dict(ncv=ncv, maxiter=n*50, tol=1e-6, k=n, which='LM', return_eigenvectors=False, method='PRIMME_JDQR')
+primme.eigsh(L, **params)
+
+
+
+from pbsig import * 
+from pbsig.linalg import * 
+from pbsig.datasets import mpeg7
+from pbsig.pht import pht_preprocess_pc, rotate_S1
+from pbsig.persistence import *
+from pbsig.simplicial import cycle_graph, MutableFiltration
+from pbsig.vis import plot_complex
+import matplotlib.pyplot as plt 
+from scipy.sparse import save_npz, load_npz
+
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=1500, return_eigenvectors=False))
+
+dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
+X = dataset[('turtle',1)]
+S = cycle_graph(X)
+#L = up_laplacian(S, p=0, form='lo')
+L = up_laplacian(S, p=0, form='array')
+
+solver = parameterize_solver(L, solver='jd')
+solver(L)
+
+
+save_npz("laplacian.npz", L)
+L = load_npz("laplacian.npz")
+
+
+ew_pm = np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=1500, return_eigenvectors=False))
+
+
+ew_np = np.sort(np.linalg.eigvalsh(T.todense()))
+ew_cf = np.sort([2.0-2.0*np.cos(2*np.pi*k/m) for k in range(m)])
+np.allclose(ew_np, ew_cf) # True
+
+
+
+
+
+
+
+
+
 
 G = nx.connected_watts_strogatz_graph(n=100, k=5, p=0.10)
 W = diags(np.random.uniform(size=G.number_of_nodes(), low=0.0, high=1.0))
@@ -114,3 +176,20 @@ ew, stats = primme.eigsh(L, ncv=L.shape[0], k=L.shape[0]-1, which='LM', v0=v0, t
 
 
 ew, stats = primme.eigsh(L, ncv=L.shape[0], k=L.shape[0]-1, which='LM', v0=v0, tol=1e-6, return_eigenvectors=False, method="PRIMME_STEEPEST_DESCENT", return_stats=True)
+
+
+
+
+import numpy as np 
+from scipy.linalg import toeplitz
+from scipy.sparse import csc_array, diags
+m = 50
+T = csc_array(toeplitz([2, -1] + [0]*(m-3) + [-1]))
+
+ew_np = np.sort(np.linalg.eigvalsh(T.todense()))
+ew_cf = np.sort([2.0-2.0*np.cos(2*np.pi*k/m) for k in range(m)])
+np.allclose(ew_np, ew_cf) # True
+
+import primme
+ew_pm = np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=1500, return_eigenvectors=False))
+np.allclose(ew_pm, ew_cf) # True
