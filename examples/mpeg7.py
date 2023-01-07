@@ -13,35 +13,11 @@ from pbsig.vis import plot_complex
 # %% Load dataset 
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
-R = sample_rect_halfplane(1)[0,:]
 
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-
-LM = up_laplacian(S, p=0, form='array')
-solver = parameterize_solver(LM, solver='jd')
-solver(LM)
-
-LO = up_laplacian(S, p=0, form='lo')
-LO.precompute()
-solver = parameterize_solver(LO, solver='lobpcg')
-solver(LO)
-
-M = np.random.uniform(size=LO.shape)
-np.allclose(np.ravel((LO @ M) - (LM @ M)), 0)
-
-LM @ M[:,0]
-LO @ M[:,0]
-
-# np.sort(primme.eigsh(T, k=m, ncv=m, maxiter=5000, return_eigenvectors=False))
-# np.sort(primme.eigsh(L, k=L.shape[0], ncv=L.shape[0], maxiter=5000, return_eigenvectors=False))
-L @ np.random.uniform(size=L.shape[0])
-
-parameterize_solver(L, solver='gd', ncv=20, maxiter=1500, return_unconverged=False)(L)
-
-parameterize_solver(L, solver='jd')(L.precompute())
-
+L = up_laplacian(S, p=0, form='lo')
 
 fv = X @ np.array([0,1])
 K = MutableFiltration(S, f = lambda s: max(fv[s]))
@@ -76,10 +52,18 @@ def directional_transform(X: ArrayLike):
 dt = directional_transform(X)
 F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
 sig = MuSignature(S, F, R[0,:])
-sig.precompute(pp=1.0, tol=1e-12)
+sig.precompute(pp=0.90, tol=1e-6)
 
+
+## Ca
 sig()
-plt.plot(sig(smoothing=(1e-12, 1.0, 0)))
+plt.plot(sig(smoothing=(10, 1.1, 0)))
+plt.plot(sig(smoothing=(0.1, 1.5, 0)))
+
+sig.precompute(pp=0.30, tol=1e-6, w=0.50)
+
+plt.plot(sig(smoothing=(0.9, 1.5, 0)))
+
 plt.scatter(np.arange(len(F)), sig(smoothing=(1e-8, 1.0, 0)))
 i = 10 
 
