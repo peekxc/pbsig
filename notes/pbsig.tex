@@ -476,7 +476,7 @@ For simplicity of presentation, but without loss in generality, we assume the or
 %In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
-\subsection{Rank relaxation} 
+\subsection{Relaxation definition} 
 We begin with a spectral characterization of the rank function. Given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
@@ -497,8 +497,9 @@ One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ functio
 %\end{equation}
 where $\epsilon > 0$ positive approximation parameter controlling the accuracy of the relaxation.  
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
-Bi et al.~\cite{bi2013approximation} give a framework for constructing such functions, each of which when composed with the singular value function yield a continuous function that approximates the rank function to any pre-prescribed accuracy.
-These $\phi$ functions are derived by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
+Bi et al.~\cite{bi2013approximation} give a framework for constructing smooth approximations  $\phi \approx \mathrm{sgn}_+$, including an analysis of their properties when composed with the singular value function via~\eqref{eq:rank_sgn}.
+%, each of which--- when composed with the singular value function---yield continuous functions that approximates the rank function to any pre-prescribed accuracy.
+The idea of their approach is to approximate the $\mathrm{sgn}_+$ function by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 %an integral $\mathrm{sgn}_+(x) = \int_{-\infty}^x \delta(z) dz$, where the $\delta$ is a Dirac delta function satisfying $\int\limits_{-\infty}^\infty \delta(z) dz = 1$. In particular, for any $\epsilon > 0$, we define $\phi(\cdot, \epsilon)$ as:
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \epsilon > 0  \,)  & & \quad\quad\quad
@@ -509,40 +510,50 @@ These $\phi$ functions are derived by integrating smoothed variations $\hat{\del
 %\end{equation}
 \end{flalign}
 where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
-In contrast to the rank function, if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
-Moreover, consider the operator $\Phi_\epsilon$ defined as: 
+In contrast to the $\mathrm{sgn}_+$ function, it was shown in~\cite{bi2013approximation} that if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
+Moreover, by replacing $\mathrm{sgn}_+ \mapsto \phi$ in~\eqref{eq:rank_sgn}, one may extend several of these properties to the rank function. 
+In particular, suppose a given $X \in \mathbb{R}^{n \times m}$ satisfying $n \leq m$ admits a singular value decomposition $X = U\Sigma V^T$ and is paired with a scalar-valued function $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}  \to \mathbb{R}$ that is continuously differentiable at every $\sigma \in \Sigma$. 
+Then for some $\epsilon > 0$, the corresponding \emph{Löwner} operator $\Phi_\epsilon : \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by: 
+% $f$ is continuous differentiable at every eigenvalue of $X$
 %This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
 %$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
 \begin{align*}\label{eq:lowner}
- \Phi_\epsilon : \quad \mathbb{R}^{n \times m}  & \; \to \; \mathbb{R}^{n \times m}  \\
-						           X & \; \mapsto \; U \, \mathrm{diag}( \tilde{\phi}(\sigma_1, \epsilon), \tilde{\phi}(\sigma_2, \epsilon), \dots, \tilde{\phi}(\sigma_n, \epsilon)) \, V^T \numberthis
+ \Phi_\epsilon (X) & = U \, \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon)) \, V^T \\
+ & = \sum\limits_{i=1}^{n} \phi(\sigma_i, \epsilon) u v^T\numberthis
 \end{align*}
-where $\tilde{\phi}(x, \epsilon) = \phi(\lvert x \rvert, \epsilon)$ and $\epsilon > 0$ is fixed. Since $\phi(0,0) = 0$, $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ and one can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. We summarize this with a definition:
+%\begin{align*}\label{eq:lowner}
+% \Phi_\epsilon : \quad \mathbb{R}^{n \times m}  & \; \to \; \mathbb{R}^{n \times m}  \\
+%						           X & \; \mapsto \; U \, \mathrm{diag}( \tilde{\phi}(\sigma_1, \epsilon), \tilde{\phi}(\sigma_2, \epsilon), \dots, \tilde{\phi}(\sigma_n, \epsilon)) \, V^T \numberthis
+%\end{align*}
+is a continuously differentiable operator in $\mathbb{R}^{n \times m}$. 
+%The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
+In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then the operator~\eqref{eq:lowner} is twice continuously differentiable at $X$~\cite{}. 
+We summarize this with a definition:
 \begin{definition}[Continuous Rank Approximation]
-	Given $X \in \mathbb{R}^{n \times m}$, a fixed approximation parameter $\epsilon > 0$, and a choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{continuous rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ as: 
+	Given $X \in \mathbb{R}^{n \times m}$ admitting a singular value decomposition $X = U \Sigma V^T$ where $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$, a fixed approximation parameter $\epsilon > 0$, and a choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, we define the \emph{continuous rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ as: 
 	\begin{equation}\label{def:cont_rank}
 		\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \epsilon)
 	\end{equation}
 \end{definition}
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
-\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this operator turns out to have a variety of attractive properties related to monotonicity and differentiability.
+\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability.
 We summarize a few such properties below. 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
 		$$ 0 \leq r - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(r) $$
-		where $c(r)$ is a positive constant that depends only on $r$. 
-		\item The function $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth on $\mathbb{R}^{n \times m}$.
+		where $c(r)$ is a positive constant that depends only on $r$, $\nu$, and $p$. 
+		\item The function $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{The notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{} for more details.} on $\mathbb{R}^{n \times m}$.
 %		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
 %		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
 	\end{enumerate}
 \end{proposition}
-\noindent It's worth noting that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, and that the notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{} for more details. 
+\noindent It's worth noting that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$. However, as well will discuss more in section~\ref{sec:laplacian_theory}, this is sufficient for our purposes here. 
 \\
 \\
-\noindent \textbf{Smoothstep:} To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
+\noindent To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
 Fortunately, this requires a simple augmentation to the step function from the one in definition~\ref{def:time_boundary_matrix}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{figure}
 \centering
@@ -587,7 +598,7 @@ Our motivation to use them here is based on the observations shown in Figure~\re
 %We summarize the previous 
 Moreover, by composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
 \begin{definition}[Smooth Multiplicity]\label{def:smooth_mu}
-Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Define the \emph{continuous multiplicity function} over some fixed $R = [i,j] \times [k,l]$ as:
+Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of functions which vary continuously in $\mathcal{H}$. For some fixed $R = [i,j] \times [k,l] \subset \Delta_+$ and some choice of parameters $(\epsilon, p, \omega)$ satisfying $\epsilon > 0$, $p \geq 0$, and $\omega > 0$, define the $\mathcal{H}$-parameterized \emph{smooth multiplicity function} as:
 	\begin{equation}\label{eq:mu_cont}
 	\hat{\mu}_{p,\epsilon}^R(h) = 
 		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
@@ -595,11 +606,11 @@ Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \math
 		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
 		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
-where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$, and $\tilde{\partial}_p$ is $\mathcal{H}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}, for some fixed $\omega > 0$.
+where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$, and $\hat{\partial}_p$ is $\mathcal{H}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
 \end{definition}
 \noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify that $\hat{\mu}_p^R$ is Lipshitz continuous by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. We omit the definition of the smooth PBN relaxation $\hat{\beta}_p^{i,j}$, as its form is synonymous with definition~\ref{def:smooth_mu}.
 
-\subsubsection*{Basic properties}
+\subsubsection*{Properties}
 
 Basic properties of $\hat{\mu}$. % pseudo-monotonicity, additivity 
 
@@ -615,7 +626,7 @@ The first type of stability we consider is Lipshitz stability--that is, stabilit
 % Lipshitz stability 
 % partition of unity + output-sensitive mention
 
-\subsection{Laplacian connections}
+\subsection{Laplacian connections}\label{sec:laplacian_theory}
 It is well known that the square roots of the non-zero eigenvalues of either $\partial \partial^T$ or $\partial^T \partial$ yield the singular values of $\partial$. 
 Moreover, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we can consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators.
 % "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
