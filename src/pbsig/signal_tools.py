@@ -21,6 +21,8 @@ def _match_index(x, ref):
 def phase_align(s1: Sequence, s2: Sequence):
   """
   Aligns s1 with s2 = rolls s1 to minimize sum of squared pairwise differences between s1 and s2. 
+
+  Returns the newly aligned/permuted s1
   """
   ind = _match_index(s2, s1)
   # fft gets us close; check O(1) offsets in neighborhood for exact rolling 

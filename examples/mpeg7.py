@@ -5,8 +5,7 @@ from pbsig.datasets import mpeg7
 from pbsig.betti import *
 from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import *
-from pbsig.simplicial import cycle_graph
-from pbsig.simplicial import MutableFiltration
+from pbsig.simplicial import cycle_graph, MutableFiltration
 import matplotlib.pyplot as plt 
 from pbsig.vis import plot_complex
 
@@ -14,25 +13,40 @@ from pbsig.vis import plot_complex
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
 
+# t1 = dataset[('turtle',1)]
+# t2 = dataset[('turtle',2)]
+# plt.plot(*t1.T); plt.plot(*t2.T)
+# t1 = t1 @ np.array([[-1, 0], [0, 1]])
+# plt.plot(*t1.T); plt.plot(*t2.T)
+# R, t = find_rigid_alignment(t1,t2)
+# plt.plot(*t1.T); plt.plot(*(t2 @ R.T).T)
+# plt.plot(*(t1 @ R).T); plt.plot(*t2.T)
+
+
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
 L = up_laplacian(S, p=0, form='lo')
 
-fv = X @ np.array([0,1])
-K = MutableFiltration(S, f = lambda s: max(fv[s]))
-K = K.reindex_keys(np.arange(len(K)))
+# fv = X @ np.array([0,1])
+# K = MutableFiltration(S, f = lambda s: max(fv[s]))
+# K = K.reindex_keys(np.arange(len(K)))
 
 ## Sample a couple rectangles in the upper half-plane and plot them 
 R = sample_rect_halfplane(1, area=(0.10, 1.00))
 
 ## Plot all the diagrams, viridas coloring, as before
 from pbsig.color import bin_color
-E = np.array(list(K.faces(1)))
-vir_colors = bin_color(range(132))
-for ii, v in enumerate(uniform_S1(132)):
+E = np.array(list(S.faces(1)))
+vir_colors = bin_color(range(64))
+for ii, v in enumerate(uniform_S1(64)):
   dgm = ph0_lower_star(X @ v, E, max_death='max')
   plt.scatter(*dgm.T, color=vir_colors[ii], s=1.25)
+  i,j,k,l = R[0,:]
+  ij = np.logical_and(dgm[:,0] >= i, dgm[:,0] <= j) 
+  kl = np.logical_and(dgm[:,1] >= k, dgm[:,1] <= l) 
+  if np.any(np.logical_and(ij, kl)):
+    print(ii)
 
 ax = plt.gca()
 for i,j,k,l in R:  
@@ -49,41 +63,125 @@ def directional_transform(X: ArrayLike):
     return lambda s: max(fv[s])
   return _transform
 
+Theta = np.linspace(0, 2*np.pi, 64, endpoint=False)
 dt = directional_transform(X)
-F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
+F = [dt(theta) for theta in Theta]
 sig = MuSignature(S, F, R[0,:])
-sig.precompute(pp=0.90, tol=1e-6)
+
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(sig.precompute)
+profile.add_function(sig.L._matvec)
+profile.add_function(sig.L._matmat)
+profile.enable_by_count()
+sig.precompute()
+profile.print_stats(output_unit=1e-3)
 
 ## compare signatures manually 
 Sigs = {}
 for k, X in dataset.items():
   S = cycle_graph(X)
   dt = directional_transform(X)
-  F = [dt(theta) for theta in np.linspace(0, 2*np.pi, 32, endpoint=False)]
+  F = [dt(theta) for theta in Theta]
   Sigs[k] = MuSignature(S, F, R[0,:])
 
 ## Precompute the singular values associated with the DT for each shape 
-for sig in Sigs.values():
-  sig.precompute(pp=0.80, tol=1e-6, w=0.10)
+for ii, sig in enumerate(Sigs.values()):
+  print(ii)
+  sig.precompute(pp=0.50, tol=1e-4, w=0.30)
 
-Sigs[('turtle', 1)]()
+def pointwise_dist(a,b, check_reverse: bool = True):
+  d1 = np.linalg.norm(b-phase_align(a,b))
+  d2 = np.linalg.norm(b-phase_align(np.flip(a),b)) if check_reverse else d1
+  return min(d1, d2)
+
+## See if they align 
+import bokeh 
+from bokeh.io import output_notebook
+from bokeh.layouts import column
+from bokeh.models import *
+from bokeh.plotting import figure, curdoc
+from bokeh.plotting import figure, show, curdoc
+
+output_notebook()
+
+p = figure(height=200, width=400)
+p.outline_line_color = None
+p.grid.grid_line_color = None
+params = dict(smoothing = (0.10, 1.2, 0))
+mu_sig = lambda k,m: Sigs[(k, m)](**params)
+
+keys = ['turtle', 'watch', 'bone', 'bell', 'bird'] # 'chicken', 'lizzard'
+colors = ['firebrick', 'orange', 'black', 'blue', 'green']
+for t, c in zip(keys, colors):
+  p.line(Theta, mu_sig(t,1), color=c)
+  p.line(Theta, phase_align(mu_sig(t,2), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,3), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,4), mu_sig(t,1)), color=c)
+show(p)
+
+for s1,s2 in product(['bone', 'watch', 'lizzard'], ['bone', 'watch', 'lizzard']):
+  for i,j in combinations(range(1, 4), 2):
+    print(f"{s1}-{i}, {s2}-{j} ~ d={pointwise_dist(mu_sig(s1,i), mu_sig(s2,j))}")
+
+
+from pbsig.signal_tools import phase_align
+from itertools import combinations
+filter(lambda k: k[0] in [""], Sigs.keys())
+n = len(Sigs)
+d = []
+
+for (k1,k2) in combinations(Sigs.keys(),2):
+  a,b = Sigs[k1](**params), Sigs[k2](**params)
+  d1 = np.linalg.norm(b-phase_align(a,b))
+  d2 = np.linalg.norm(b-phase_align(np.flip(a),b))
+  d.append(min(d1,d2))
+
+from pbsig.color import bin_color
+C = np.floor(bin_color(d)*255).astype(int)
+D = np.zeros((n,n), dtype=np.uint32)
+D_view = D.view(dtype=np.int8).reshape((n, n, 4))
+for cc, (i,j) in enumerate(combinations(range(n),2)):
+  D_view[i,j,0] = D_view[j,i,0] = C[cc,0]
+  D_view[i,j,1] = D_view[j,i,1] = C[cc,1]
+  D_view[i,j,2] = D_view[j,i,2] = C[cc,2]
+  D_view[i,j,3] = D_view[j,i,3] = 255
+
+min_col = (bin_color([0, 1])[0,:]*255).astype(int)
+for i in range(n):
+  D_view[i,i,0] = 68
+  D_view[i,i,1] = 2
+  D_view[i,i,2] = 85
+  D_view[i,i,3] = 255
+
+p = figure(width=200, height=200)
+p.x_range.range_padding = p.y_range.range_padding = 0
+# p.y_range.flipped = True
+# p.y_range = Range1d(0,-10)
+# p.x_range = Range1d(0,10)
+p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
+show(p)
+
+d = np.zeros((n,n), dtype=np.uint32)
+d_view = d.view(dtype=np.int8).reshape((n, n, 4))
+np.floor(bin_color(D)*255).astype(int)
+
+
+
+
+from scipy.spatial.distance import pdist, squareform
+
+
+from pbsig.utility import * 
+
+procrustes_dist_cc(dataset[('turtle',1)], dataset[('turtle',2)], do_reflect=True)
+procrustes_dist_cc(*procrustes_cc(A, B))
 
 
 
 
 
 
-## Ca
-sig()
-plt.plot(sig(smoothing=(10, 1.1, 0)))
-plt.plot(sig(smoothing=(0.1, 1.5, 0)))
-
-sig.precompute(pp=0.30, tol=1e-6, w=0.50)
-
-plt.plot(sig(smoothing=(0.9, 1.5, 0)))
-
-plt.scatter(np.arange(len(F)), sig(smoothing=(1e-8, 1.0, 0)))
-i = 10 
 
 
 ## Index filter values <=> index 
@@ -618,9 +716,15 @@ plt.plot(*A.T);plt.plot(*B.T)
 plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
 plt.gca().set_aspect('equal')
 
+A = shift_curve(A, B, lambda X,Y: np.linalg.norm(X-Y, 'fro'))
+plt.plot(*A.T);plt.plot(*B.T)
+plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
+plt.gca().set_aspect('equal')
+
 ## manual rolling
-from procrustes import rotational
-pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
+# from procrustes import rotational
+# pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
+pro_error = lambda X,Y: np.linalg.norm(X @ Kabsch(X, Y) - Y, 'fro')
 os = np.argmin([pro_error(T1_p, np.roll(T2_p, offset, axis=0)) for offset in range(T1_p.shape[0])])
 A,B = T1_p, np.roll(T2_p, os, axis=0)
 plt.plot(*A.T);plt.plot(*B.T)
@@ -628,10 +732,10 @@ plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
 plt.gca().set_aspect('equal')
 
 ## Then rotated?
-res = rotational(A, B, pad=False, translate=False, scale=False)
-A,B = res.new_a @ res.t, res.new_b
-plt.plot(*A.T);plt.plot(*B.T)
-plt.scatter(*A.T, c=range(A.shape[0]));plt.scatter(*B.T, c=range(B.shape[0]))
+R = Kabsch(A, B)
+AR,BR = A @ R, B @ R
+plt.plot(*AR.T);plt.plot(*BR.T)
+plt.scatter(*AR.T, c=range(AR.shape[0]));plt.scatter(*BR.T, c=range(BR.shape[0]))
 plt.gca().set_aspect('equal')
 
 ## Replace and check!
@@ -696,7 +800,8 @@ plt.plot(*shift_curve(T1, T2).T)
 plt.plot(*T2.T)
 plt.gca().set_aspect('equal')
 
-plt.plot(*shift_curve(T1, T2, objective=procrustes_error).T)
+
+plt.plot(*shift_curve(T1, T2, objective=pro_error).T)
 plt.plot(*T2.T)
 plt.gca().set_aspect('equal')
 

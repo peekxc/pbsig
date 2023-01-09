@@ -32,7 +32,7 @@ The direct consequence of~\cite{edelsbrunner2022computational} is that if one is
 %This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
 
 % TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
-Chazal~\cite{chazal2016structure} further studied the duality between diagrams and PBNs in a measure-theoretic setting, focusing on persistence modules indexed over the real line. 
+Chazal~\cite{chazal2016structure} further studied the duality between diagrams and PBNs from a measure-theoretic perspective, focusing on persistence modules indexed over the real line. 
 By reinterpreting the multiplicity function $\mu^\ast_p$ as a certain kind of integer-valued measure over rectangles in the plane, a generalization of~\eqref{eq:multiplicity} 
 %via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
 was shown by demonstrating that one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
@@ -61,17 +61,11 @@ A consequence of this theorem is that distances between diagrams induces a dista
 is the (extended) matching distance between PBN functions ($\beta_f$, $\beta_g$), $\phi$ ranges over all multi-bijections between $\mathrm{dgm}(f)$ and $\mathrm{dgm}(g)$, and $\lVert \,\cdot \, \rVert_{\widetilde{\infty}}$ measures the pseudo-distance~\cite{cerri2013betti} between points.
 Thus, PBN functions are stable functions: small changes in continuous scalar-valued filtering functions imply small changes in the corresponding persistent Betti numbers functions. 
 
-Like persistence diagrams, the stability of PBN functions justifies their use and study in continuously parameterized settings. Despite this, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{}, as opposed to the PBNs (\cite{cerri2013betti, chen2011output} are notable exceptions). 
-% the connection between $\mu_p^\ast$ and $\beta_p^{\ast}$ elucidated by~\eqref{eq:betti_mult} implies
-%Nonetheless, PBN computations exhibit certain advantages; 
-%computing $\beta_p^{i,j}$ requires only (localized) knowledge of $(K_i, K_j)$; %(1)
-%portions of $\mathrm{dgm}_p(K_\bullet)$ are counted by PBNs via~\eqref{eq:betti_mult}; %(2)
-%%once $\beta_p^{i,j}$ has been obtained, $\beta_p^{i+1,j}$ or $\beta_p^{i,j+1}$ may be readily computed; 
-%as a weaker invariant, a single PBN ought to be easier to compute that the full persistence diagram. %(3)
-Nonetheless, there are certain advantages the PBN computation has over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
-% add more 
-Indeed,~\eqref{eq:multiplicity} implies one may in theory recover the diagram through [a finite number of] PBN computations alone via a divide-and-conquer like approach~\cite{chen2011output}, suggesting an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach the persistence computation. 
-In what follows, we motivate the main results of this effort by deriving a lesser known expression of the persistent Betti number. 
+Like persistence diagrams, the stability of PBN functions justifies their use and study in continuously parameterized settings. Despite this, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{} rather than PBNs or multiplicities (notable exceptions include~\cite{cerri2013betti, chen2011output}). 
+To some extent, this matches intuition: whereas betti numbers and multiplicities are mere counting invariants, a persistence diagram is a multiset of pairs containing strictly more information about the topology of the underlying space. 
+Nonetheless, the counting invariants have certain computational advantages over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
+Namely, the computations are \emph{localized} in the sense that computing $\beta_p^{i,j}$ only requires knowledge of $K_i$ and $K_j$. As counting invariants, both $\mu_p^\ast$ and $\beta_p^{\ast}$ may be determined through rank computations alone~\cite{zomorodian2004computing}. 
+Indeed,~\eqref{eq:multiplicity} implies one may actually recover the diagram through at most $2n-1$ multiplicity computations via a divide-and-conquer like approach on the index-persistence plane~\cite{chen2011output}. The duality between the counting invariants and the persistence diagram suggests an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach persistence-related computations entirely. 
 
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 

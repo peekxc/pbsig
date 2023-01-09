@@ -137,8 +137,10 @@ def mpeg7(contour: bool = True, simplify: int = 150):
   #   if member.size > 0:
   #     content = f.read()
   #     mpeg7.append(Image.open(io.BytesIO(content)))
-  shape_types = ["turtle", "watch", "chicken"] # "bird", "lizzard", "bone", "bell"
-  shape_nums = [1,2] #3,4,5
+  # med types: "bird", "bell"
+  # bad types: "lizzard", "chicken"
+  shape_types = ["turtle", "watch", "bird", "bone", "bell", "bat", "beetle", "butterly", "car", "cup", "dog"]
+  shape_nums = [1,2,3,4,5,6,7,8] #3,4,5
   normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
   dataset = {}
   for st in shape_types:

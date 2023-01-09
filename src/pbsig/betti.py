@@ -704,10 +704,11 @@ class MuSignature:
   def __call__(self, i: int = None, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
     eps,p,method = smoothing
     S = sgn_approx(eps=eps, p=p, method=method)
-    sig = np.add.reduceat(S(self._T1.data), self._T1.indptr[:-1])
-    sig -= np.add.reduceat(S(self._T2.data), self._T2.indptr[:-1])
-    sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1])
-    sig += np.add.reduceat(S(self._T4.data), self._T4.indptr[:-1])
+    sig = np.zeros(len(self.F))
+    sig += np.add.reduceat(S(self._T1.data), self._T1.indptr[:-1]) if len(self._T1.data) > 0 else 0
+    sig -= np.add.reduceat(S(self._T2.data), self._T2.indptr[:-1]) if len(self._T2.data) > 0 else 0
+    sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1]) if len(self._T3.data) > 0 else 0
+    sig += np.add.reduceat(S(self._T4.data), self._T4.indptr[:-1]) if len(self._T4.data) > 0 else 0
     return sig
     # if i is None: 
     #   sig = np.array([self.__call__(i, smoothing) for i in range(self.k)])

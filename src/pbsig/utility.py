@@ -331,6 +331,15 @@ def shift_curve(line, reference, objective: Optional[Callable] = None):
     line = np.roll(line, best_offset, axis=0)
   return line
 
+def Kabsch(A, B):
+  H = A.T @ B
+  R = (H.T @ H)**(1/2) @ np.linalg.inv(H)
+  u,s,vt = np.linalg.svd(H)
+  d = np.sign(np.linalg.det(vt.T @ u.T))
+  R = vt.T @ np.diag(np.append(np.repeat(1, A.shape[1]-1), d)) @ u.T
+  return R
+
+from scipy.linalg import orthogonal_procrustes
 def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
   """ Procrustes distance between closed curves """
   from procrustes.rotational import rotational
@@ -345,17 +354,24 @@ def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: 
     return (A1, B1) if np.linalg.norm(A1-B1, 'fro') < np.linalg.norm(A2-B2, 'fro') else (A2, B2)
   else:
     if matched:
-      R = rotational(A, B, pad=False, translate=False, scale=False)
-      # return np.linalg.norm((A @ R.t) - B, 'fro')
-      return A @ R.t, B
+      # R = rotational(A, B, pad=False, translate=False, scale=False)
+      # from scipy.spatial import procrustes
+      R, err = orthogonal_procrustes(A, B)
+      #return np.linalg.norm((A @ R.t) - B, 'fro')
+      return A @ R, B
     else: 
       ## Fix clockwise / counter-clockwise orientation of points
       A_p, B_p = prepare(A, B)
       
       ## Shift points along shape until minimum procrustes distance is obtained
-      pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
+      #pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
+      def pro_error(X, Y):
+        R, _ = orthogonal_procrustes(X, Y)[1]
+        return np.linalg.norm((X @ R) - Y, 'fro')
+      pro_error = lambda X,Y: orthogonal_procrustes(X, Y)[1]
       os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
       A, B = A_p, np.roll(B_p, os, axis=0)
+      # plt.plot(*A.T);plt.plot(*B.T)
       return procrustes_cc(A, B, matched=True)
 
 def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
