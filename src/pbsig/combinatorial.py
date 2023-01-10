@@ -2,6 +2,9 @@ import numpy as np
 from typing import * 
 from itertools import * 
 from math import comb 
+import _combinatorial as comb_mod
+
+# comb_mod.rank_combs(np.array([0,1,2], dtype=int), 3, 10)
 
 def rank_C2(i: int, j: int, n: int) -> int:
   i, j = (j, i) if j < i else (i, j)

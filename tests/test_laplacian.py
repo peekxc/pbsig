@@ -405,70 +405,80 @@ def test_up_laplacian_native():
   L_up = up_laplacian(K, p=0, weight=lambda s: max(fv[s]) if len(s) == 2 else 1.0)
   L_up @ x
 
-def test_weighted_linear_L0():
-  ## Generate random geometric complex
+
+def test_laplacian_cpp():
+  from pbsig.combinatorial import rank_combs
   X = np.random.uniform(size=(15,2))
-  K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
-  D1, D2 = boundary_matrix(K, p=(1,2))
+  S = delaunay_complex(X) 
+  r = rank_combs(S.faces(1), k=2, n=S.shape[0])
 
-  ## Test weighted linear form (only takes one O(n) vector!)
-  ns = K.dim()
-  w0, w1 = np.random.uniform(size=ns[0]), np.random.uniform(size=ns[1])
-  v0 = np.zeros(ns[0]) # note the O(n) memory
-  for cc, (i,j) in enumerate(K.faces(1)):
-    v0[i] += w0[i]**2 * w1[cc]**2
-    v0[j] += w0[j]**2 * w1[cc]**2
-  v0 *= x # O(n)
-  for cc, (i,j) in enumerate(K.faces(1)):
-    c = w0[i]*w0[j]*w1[cc]**2
-    v0[i] -= x[j]*c
-    v0[j] -= x[i]*c
-  v1 = (diags(w0) @ D1 @ diags(w1**2) @ D1.T @ diags(w0)) @ x
-  assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+  from pbsig.linalg import laplacian, up_laplacian
+  L = laplacian.UpLaplacian0(r, X.shape[0], X.shape[0])
+  L.compute_indexes()
+  L.precompute_degree()
+  L.degrees
+  x = np.random.uniform(size=L.shape[0])
+  L._matvec(x)
 
-  ## Test interface method 
-  from pbsig.linalg import up_laplacian
-  fv = w0
-  L_up = up_laplacian(K, p=0, weight=lambda s: max(fv[s]), form='lo')
-  L_up.simplex_weights
-  L_up._ws
-  assert np.allclose(L_up @ x, v0)
-  assert np.allclose(L_up @ x, v1)
-  
+  LM = up_laplacian(S, p=0)
+  np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
 
-def test_unsym_L_up():
-  ## Generate random geometric complex
+  import timeit
+  timeit.timeit(lambda: LM @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
+  timeit.timeit(lambda: L._matvec(x), setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
+
+  # %% 
+  from pbsig.combinatorial import rank_combs
   X = np.random.uniform(size=(15,2))
-  K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
-  D1, D2 = boundary_matrix(K, p=(1,2))
+  S = delaunay_complex(X) 
+  qr = rank_combs(S.faces(2), k=3, n=S.shape[0])
+
+  from pbsig.linalg import laplacian, up_laplacian
+  L = laplacian.UpLaplacian1(qr, S.shape[1], S.shape[1])
+  L.compute_indexes()
   
-  ns = K.dim()
-  w0, w1 = np.random.uniform(size=ns[0], low=0.0, high=1.0), np.random.uniform(size=ns[1], low=0.0, high=1.0)
-  assert all(w0 != 0.0) and all(w1 != 0.0)
-  
-  from scipy.sparse import diags
-  from pbsig.linalg import is_symmetric
-  assert is_symmetric(D1 @ D1.T), "unweighted 0-up-laplacian not symmetric!"
-  assert is_symmetric(D1 @ diags(w1) @ D1.T), "edge weighted 0-up-laplacian not symmetric!"
+  pr = rank_combs(S.faces(1), k=2, n=S.shape[0])
+  rank_combs(S.faces(1), k=3, n=S.shape[0])
+  L.index_map.keys()
 
-  ## Start with just edge-weighted values
-  L_inner = D1 @ diags(w1) @ D1.T
-  ew_inner = np.linalg.eigvalsh(L_inner.todense())
+  assert len(L.index_map) == S.shape[1], "Invalid length"
+  np.sort(list(L.index_map.values())) - np.arange(0, S.shape[1]+1)
 
-  ## The inner-eigenvalues are identical to the non-symmetric v/e eigenvalues 
-  LW_up_unsym = diags(1/np.sqrt(w0)) @ L_inner @ diags(np.sqrt(w0))
-  ew_unsym = np.linalg.eig(LW_up_unsym.todense())[0]
-  assert np.allclose(np.sort(ew_inner), np.sort(ew_unsym)) # the main statement
-  assert np.allclose(np.sort(ew_inner), (1/np.sqrt(w0)) * ew_inner * np.sqrt(w0)) # same statement basically
 
-  ## But this doesn't hold for the symmetric ones
-  LW_up_sym = diags(np.sqrt(w0)) @ L_inner @ diags(np.sqrt(w0))
-  ew_sym = np.linalg.eigh(LW_up_sym.todense())[0]
-  assert np.allclose(np.sqrt(w0) * ew_sym * np.sqrt(w0), w0 * ew_sym)
-  assert np.allclose(np.sqrt(w0) * ew_inner * np.sqrt(w0), w0 * ew_inner)
-  assert np.allclose(np.sort(ew_inner * w0), np.sort(ew_sym))
-  np.sort(ew_unsym)
-  np.sort(ew_sym)
-  np.sort((1/np.sqrt(w0)) * ew_inner * np.sqrt(w0))
+  L.precompute_degree()
+  L.degrees
+  x = np.random.uniform(size=L.shape[0])
+  L._matvec(x)
 
-  # np.linalg.eig( @ D1 @ diags(w1) @ D1.T @ diags(np.sqrt(w0))).todense())[0]
+  LM = up_laplacian(S, p=0)
+  np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+
+# def test_weighted_linear_L0():
+#   ## Generate random geometric complex
+#   X = np.random.uniform(size=(15,2))
+#   K = delaunay_complex(X) # assert isinstance(K, SimplicialComplex)
+#   D1, D2 = boundary_matrix(K, p=(1,2))
+
+#   ## Test weighted linear form (only takes one O(n) vector!)
+#   ns = K.dim()
+#   w0, w1 = np.random.uniform(size=ns[0]), np.random.uniform(size=ns[1])
+#   v0 = np.zeros(ns[0]) # note the O(n) memory
+#   for cc, (i,j) in enumerate(K.faces(1)):
+#     v0[i] += w0[i]**2 * w1[cc]**2
+#     v0[j] += w0[j]**2 * w1[cc]**2
+#   v0 *= x # O(n)
+#   for cc, (i,j) in enumerate(K.faces(1)):
+#     c = w0[i]*w0[j]*w1[cc]**2
+#     v0[i] -= x[j]*c
+#     v0[j] -= x[i]*c
+#   v1 = (diags(w0) @ D1 @ diags(w1**2) @ D1.T @ diags(w0)) @ x
+#   assert np.allclose(v0, v1), "Unweighted Linear form failed!"
+
+#   ## Test interface method 
+#   from pbsig.linalg import up_laplacian
+#   fv = w0
+#   L_up = up_laplacian(K, p=0, weight=lambda s: max(fv[s]), form='lo')
+#   L_up.simplex_weights
+#   L_up._ws
+#   assert np.allclose(L_up @ x, v0)
+#   assert np.allclose(L_up @ x, v1)

@@ -51,6 +51,16 @@ ext_modules = [
     cxx_std=1
   ), 
   Pybind11Extension(
+    '_combinatorial', 
+    sources = ['src/pbsig/combinatorial.cpp'], 
+    include_dirs=[
+      '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
+    ], 
+    extra_compile_args=extra_compile_args,
+    language='c++17', 
+    cxx_std=1
+  ),
+  Pybind11Extension(
     '_pbn', 
     sources = ['src/pbsig/pbn.cpp'], 
     # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 

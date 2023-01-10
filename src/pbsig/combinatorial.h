@@ -1,15 +1,138 @@
+// combinatorial.h 
+// Contains routines for combinatorics-related tasks 
+// The combinations and permutations generation code is copyright Howard Hinnant, taken from: https://github.com/HowardHinnant/combinations/blob/master/combinations.h
 #ifndef COMBINATORIAL_H
 #define COMBINATORIAL_H 
 
-#include <cstdint>
+#include <cstdint>		// uint_fast64_t
 #include <array>
-#include <span>
-#include <cmath>	 // round, sqrt
-#include <numeric>   // midpoint, accumulate
+// #include <span> 		 	// span (C++20)
+#include <cmath>	 	 	// round, sqrt
+#include <numeric>   	// midpoint, accumulate
+#include <vector> 	 	// vector  
+#include <algorithm> 
+#include <type_traits>
+#include <vector>
+#include <functional>
+#include <iterator>
+
+using std::begin;
+using std::end; 
+using std::vector; 
+using std::size_t;
 
 namespace combinatorial {
 	using I = uint_fast64_t;
 
+	template<typename T>
+	using it_diff_t = typename std::iterator_traits<T>::difference_type;
+
+
+	// Rotates two discontinuous ranges to put *first2 where *first1 is.
+	//     If last1 == first2 this would be equivalent to rotate(first1, first2, last2),
+	//     but instead the rotate "jumps" over the discontinuity [last1, first2) -
+	//     which need not be a valid range.
+	//     In order to make it faster, the length of [first1, last1) is passed in as d1,
+	//     and d2 must be the length of [first2, last2).
+	//  In a perfect world the d1 > d2 case would have used swap_ranges and
+	//     reverse_iterator, but reverse_iterator is too inefficient.
+	template <class It>
+	void rotate_discontinuous(
+		It first1, It last1, it_diff_t< It > d1,
+		It first2, It last2, it_diff_t< It > d2)
+	{
+		using std::swap;
+		if (d1 <= d2){ std::rotate(first2, std::swap_ranges(first1, last1, first2), last2); }
+		else {
+			It i1 = last1;
+			while (first2 != last2)
+				swap(*--i1, *--last2);
+			std::rotate(first1, i1, last1);
+		}
+	}
+
+	// Call f() for each combination of the elements [first1, last1) + [first2, last2)
+	//    swapped/rotated into the range [first1, last1).  As long as f() returns
+	//    false, continue for every combination and then return [first1, last1) and
+	//    [first2, last2) to their original state.  If f() returns true, return
+	//    immediately.
+	//  Does the absolute mininum amount of swapping to accomplish its task.
+	//  If f() always returns false it will be called (d1+d2)!/(d1!*d2!) times.
+	template < typename It, typename Lambda >
+	bool combine_discontinuous(
+		It first1, It last1, it_diff_t< It > d1,  
+		It first2, It last2, it_diff_t< It > d2,
+		Lambda&& f, it_diff_t< It > d = 0)
+	{
+		using D = it_diff_t< It >;
+		using std::swap;
+		if (d1 == 0 || d2 == 0){ return f(); }
+		if (d1 == 1) {
+			for (It i2 = first2; i2 != last2; ++i2) {
+				if (f()){ return true; }
+				swap(*first1, *i2);
+			}
+		}
+		else {
+			It f1p = std::next(first1), i2 = first2;
+			for (D d22 = d2; i2 != last2; ++i2, --d22){
+				if (combine_discontinuous(f1p, last1, d1-1, i2, last2, d22, f, d+1))
+					return true;
+				swap(*first1, *i2);
+			}
+		}
+		if (f()){ return true; }
+		if (d != 0){ rotate_discontinuous(first1, last1, d1, std::next(first2), last2, d2-1); }
+		else { rotate_discontinuous(first1, last1, d1, first2, last2, d2); }
+		return false;
+	}
+
+
+	template < typename Lambda, typename It > 
+	struct bound_range { 
+		Lambda f_;
+		It first_, last_;
+		bound_range(Lambda& f, It first, It last) : f_(f), first_(first), last_(last) {}
+		bool operator()(){ return f_(first_, last_); } 
+		bool operator()(It, It) { return f_(first_, last_); }
+	};
+
+	template <class It, class Function>
+	Function for_each_combination(It first, It mid, It last, Function&& f) {
+		bound_range<Function&, It> wfunc(f, first, mid);
+		combine_discontinuous(first, mid, std::distance(first, mid),
+													mid, last, std::distance(mid, last),
+													wfunc);
+		return std::move(f);
+	}
+
+	template < class I, class Function >
+	void for_each_combination(I n, I k, Function&& f) {
+		static_assert(std::is_integral<I>::value, "Must be integral type.");
+		using It = typename vector< I >::iterator;
+		vector< I > seq_n(n);
+		std::iota(begin(seq_n), end(seq_n), 0);
+		for_each_combination(begin(seq_n), begin(seq_n)+k, end(seq_n), [&f](It a, It b){
+			return f(a, b);
+		});
+		return;
+	}
+
+
+	template < class I, class Function >
+	void for_each_combination_idx(I n, I k, Function&& f) {
+		static_assert(std::is_integral<I>::value, "Must be integral type.");
+		using It = typename vector< I >::iterator;
+		vector< I > seq_n(n);
+		std::iota(begin(seq_n), end(seq_n), 0);
+		for_each_combination(begin(seq_n), begin(seq_n)+k, end(seq_n), [k, &f](It a, It b){
+			vector< I > cc(k);
+			std::transform(a, b, begin(cc), [](const I num){ return num; });
+			f(cc);
+			return false; 
+		});
+		return;
+	}
 	template <std::size_t... Idx>
 	constexpr auto make_index_dispatcher(std::index_sequence<Idx...>) {
 		return [] (auto&& f) { (f(std::integral_constant<std::size_t,Idx>{}), ...); };
@@ -45,6 +168,7 @@ namespace combinatorial {
 	  }
 	};
 	
+	
 	// Build the cached table
 	static constexpr size_t max_choose = 16;
 	static constexpr auto BC = BinomialCoefficientTable< max_choose, max_choose >();
@@ -65,6 +189,17 @@ namespace combinatorial {
 	  return n < max_choose ? BC.combinations[n][k] : binomial_coeff_(n,std::min(k,n-k));
 	}
 	
+	#if __cplusplus >= 202002L
+    // C++20 (and later) code
+		// constexpr midpoint midpoint
+		using std::midpoint; 
+	#else
+		template < class Integer > 
+		constexpr Integer midpoint(Integer a, Integer b) noexcept {
+			return (a+b)/2;
+		}
+	#endif
+
 	// All inclusive range binary search 
 	// Compare must return -1 for <(key, index), 0 for ==(key, index), and 1 for >(key, index)
 	// Guaranteed to return an index in [0, n-1] representing the lower_bound
@@ -72,7 +207,7 @@ namespace combinatorial {
 	int binary_search(const T key, size_t n, Compare p) {
 	  int low = 0, high = n - 1, best = 0; 
 		while( low <= high ){
-			int mid = int{ std::midpoint(low, high) };
+			int mid = int{ midpoint(low, high) };
 			auto cmp = p(key, mid);
 			if (cmp == 0){ 
 				while(p(key, mid + 1) == 0){ ++mid; }
@@ -122,7 +257,7 @@ namespace combinatorial {
 	
 	// Lexicographically unrank k-subsets [ O(log n) version ]
 	template< typename OutputIterator > 
-	inline void lex_unrank_k(I r, const size_t k, const size_t n, OutputIterator out) noexcept {
+	inline void lex_unrank_k(I r, const size_t n, const size_t k, OutputIterator out) noexcept {
 		const size_t N = combinatorial::BinomialCoefficient(n, k);
 		r = (N-1) - r; 
 		// auto S = std::vector< size_t >(k);
@@ -139,7 +274,7 @@ namespace combinatorial {
 	// Lexicographically rank k-subsets
 	template< typename InputIter >
 	[[nodiscard]]
-	inline I lex_rank_k(InputIter s, const size_t k, const size_t n, const I N){
+	inline I lex_rank_k(InputIter s, const size_t n, const size_t k, const I N){
 		I i = k; 
 	  const I index = std::accumulate(s, s+k, 0, [n, &i](I val, I num){ 
 		  return val + BinomialCoefficient((n-1) - num, i--); 
@@ -157,7 +292,7 @@ namespace combinatorial {
 					lex_unrank_2(*s, n, out);
 					break;
 				default:
-					lex_unrank_k(*s, k, n, out);
+					lex_unrank_k(*s, n, k, out);
 					break;
 			}
 		}
@@ -175,12 +310,14 @@ namespace combinatorial {
     } else if (k == 3){
       std::array< I, 3 > triangle;
       for (; s != e; ++s){
-        lex_unrank_k(*s, 3, n, triangle.begin());
+        lex_unrank_k(*s, n, 3, triangle.begin());
+				f(triangle);
       }
 		} else {
       std::array< I, k > simplex;
       for (; s != e; ++s){
-        lex_unrank_k(*s, k, n, simplex.begin());
+        lex_unrank_k(*s, n, k, simplex.begin());
+				f(simplex);
       }
     }
 	}
@@ -201,18 +338,18 @@ namespace combinatorial {
 		}
 	}
 	
-	template< typename T > [[nodiscard]]
-	inline T lex_rank(std::span< T > s, const size_t n){
-		static_assert(std::is_integral_v< T >, "T must be integral type.");
-		switch(s.size()){
-			case 2: 
-				return(lex_rank_2(s[0], s[1], n));
-				break;
-			default: 
-				return(lex_rank_k(s.begin(), s.size(), n, BinomialCoefficient(n, s.size())));
-				break;
-		}
-	}
+	// template< typename T > [[nodiscard]]
+	// inline T lex_rank(std::span< T > s, const size_t n){
+	// 	static_assert(std::is_integral_v< T >, "T must be integral type.");
+	// 	switch(s.size()){
+	// 		case 2: 
+	// 			return(lex_rank_2(s[0], s[1], n));
+	// 			break;
+	// 		default: 
+	// 			return(lex_rank_k(s.begin(), s.size(), n, BinomialCoefficient(n, s.size())));
+	// 			break;
+	// 	}
+	// }
 	
 	[[nodiscard]]
 	inline auto lex_unrank_2_array(const I r, const I n) noexcept -> std::array< I, 2 > {
@@ -230,118 +367,51 @@ namespace combinatorial {
 		} else {
 			std::vector< I > out; 
 			out.reserve(k);
-			lex_unrank_k(rank, k, n, std::back_inserter(out));
+			lex_unrank_k(rank, n, k, std::back_inserter(out));
 			return(out);
 		}
 	}
 	
-	
-	
-} // namespace combinatorial
-
-template< class Iter, class Index >
-auto cycle_leader_shortcut(Iter t, Index start){
-  auto cur = t[start];
-  while(cur != start){
-    if (cur < start) return false;
-    cur = t[cur];
-  }
-  return true;
-}
-template< class Iter, class Index >
-void reverse_cycle(Iter t, Index start){
-  auto cur = t[start];
-  auto prev = start;
-  while( cur != start ){
-    auto next = t[cur];
-    t[cur] = prev;
-    prev = cur;
-    cur = next;
-  }
-  t[start] = prev;
-}
-
-// O(n log n) in-place permutation inverse algorithm
-// Based on: https://stackoverflow.com/questions/56603153/how-to-invert-a-permutation-represented-by-an-array-in-place
-template< class Iter >
-inline void inverse_permutation_n(Iter first, size_t n){
-  for (size_t i = 0; i != n; ++i){
-		if (cycle_leader_shortcut(first, i)){ reverse_cycle(first, i); };
-  }
-}
-
-
-// Schwartzian transform
-// From: https://devblogs.microsoft.com/oldnewthing/20170106-00/?p=95135
-template<typename Iter, typename UnaryOperation, typename Compare>
-void sort_by_with_caching(Iter first, Iter last, UnaryOperation op, Compare comp) {
-	using Diff = typename std::iterator_traits<Iter>::difference_type;
-	using T = typename std::iterator_traits<Iter>::value_type;
-	using Key = decltype(op(std::declval<T>()));
-	using Pair = std::pair<T, Key>;
-	Diff length = std::distance(first, last);
-	
-	// Construct the "cache" by applying op to every T 
-	std::vector< Pair > pairs;
-	pairs.reserve(length);
-	std::transform(first, last, std::back_inserter(pairs), [&](T& t) { 
-		return std::make_pair(std::move(t), op(t)); 
-	});
-	
-	// Now do the cached comparison-based sort  
-	std::sort(pairs.begin(), pairs.end(), [&](const Pair& a, const Pair& b) { 
-		return comp(a.second, b.second); 
-	});
-	// ... and move the resulting sorted keys back into the range
-	std::transform(pairs.begin(), pairs.end(), first, [](Pair& p) { return std::move(p.first); });
-}
-
-// Applies a permutation (indices) in O(n) time in-place - Essentially performs cycle sort
-// Based on: https://devblogs.microsoft.com/oldnewthing/20170104-00/?p=95115
-template< typename Iter1, typename Iter2 >
-void apply_permutation(Iter1 b, Iter1 e, Iter2 p) {
-	using T = typename std::iterator_traits< Iter1 >::value_type;
-	using Diff = typename std::iterator_traits< Iter2 >::value_type;
-	const Diff length = std::distance(b, e);
-	for (Diff i = 0; i < length; ++i) {
-		Diff current = i;
-		if (i != p[current]) {				// Don't process trivial cycles
-			T element{std::move(b[i])};
-			while (i != p[current]) {   // Sort the current non-trivial cycle
-				Diff next = p[current];
-				b[current] = std::move(b[next]);
-				p[current] = current;
-				current = next;
+	template< typename Lambda >
+	void apply_boundary(const size_t p_rank, const size_t n, const size_t k, Lambda f){
+		// Given a p-simplex's rank , enumerates the ranks of its (p-1)-faces, calling Lambda(*) on its rank
+		using combinatorial::I; 
+		switch(k){
+			case 0: case 1: { return; }
+			case 2: {
+				auto p_vertices = std::array< I, 2 >();
+				lex_unrank_2(static_cast< I >(p_rank), static_cast< I >(n), begin(p_vertices));
+				f(p_vertices[0]);
+				f(p_vertices[1]);
+				return;
 			}
-			b[current] = std::move(element);
-			p[current] = current;
+			case 3: {
+				auto p_vertices = std::array< I, 3 >();
+				lex_unrank_k(p_rank, n, k, begin(p_vertices));
+				f(lex_rank_2(p_vertices[0], p_vertices[1], n));
+				f(lex_rank_2(p_vertices[0], p_vertices[2], n));
+				f(lex_rank_2(p_vertices[1], p_vertices[2], n));
+				// const I N = BinomialCoefficient(n, k); 
+				// combinatorial::for_each_combination(begin(p_vertices), begin(p_vertices)+1, end(p_vertices), [&](auto a, auto b){
+				// 	I face_rank = lex_rank_k(a, k, n, N);
+				// 	f(face_rank);
+				// 	return false; 
+				// });
+				return; 
+			} 
+			default: {
+				// lex_unrank_k(p_rank, n, k, p_vertices.begin());
+				// const I N = BinomialCoefficient(n, k); 
+				// combinatorial::for_each_combination(begin(p_vertices), begin(p_vertices)+1, end(p_vertices), [&](auto a, auto b){
+				// 	I face_rank = lex_rank_k(a, k, n, N);
+				// 	f(face_rank);
+				// 	return false; 
+				// });
+				return; 
+			}
 		}
 	}
-}
 
-// Applies the reverse of the permutation given by 'indices' to the range [first, last)
-template< typename Iter1, typename Iter2 >
-void apply_reverse_permutation(Iter1 first, Iter1 last, Iter2 indices) {
-	using T = typename std::iterator_traits<Iter1>::value_type;
-	using Diff = typename std::iterator_traits<Iter2>::value_type;
-	const Diff length = std::distance(first, last);
-	for (Diff i = 0; i < length; ++i) {
-		while (i != indices[i]) {
-			Diff next = indices[i];
-			if (next < 0 || next >= length) { throw std::range_error("Invalid index in permutation"); }
-	    if (next == indices[next]) { throw std::range_error("Not a permutation"); }
-			std::swap(first[i], first[next]);
-			std::swap(indices[i], indices[next]);
-		}
-	}
-}
-
-// Creates and returns the inverse permutation of p 
-template< typename Iter >
-std::vector< size_t > inverse_permutation(Iter b, const Iter e) {
-	auto a = std::vector< size_t >(b, e);
-	inverse_permutation_n(a.begin(), a.size());
-	return(a);
-}
+} // namespace combinatorial
 
 #endif 
