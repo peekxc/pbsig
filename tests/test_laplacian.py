@@ -5,6 +5,7 @@ from scipy.sparse import diags
 from pbsig.persistence import boundary_matrix
 from pbsig.simplicial import *
 from pbsig.utility import *
+from pbsig.linalg import *
 
 def generate_dataset(n: int = 15, d: int = 2):
   X = np.random.uniform(size=(n,d))
@@ -163,65 +164,7 @@ def test_up_laplacian1_sgn():
       z[jj] += sgn_ij * x[ii] * wpl[jj] * wq[s_ind] * wpr[ii]
   assert np.allclose(z, LW @ x)
 
-# https://stackoverflow.com/questions/38025074/how-to-accumulate-an-array-by-index-in-numpy
-def test_vectorized_uplap():
-  X, S = generate_dataset()
-  L = up_laplacian(S, p=1, form='lo')
 
-  x = np.random.uniform(size=L.shape[0])
-  v = np.zeros(L.shape[0])
-  v += L.degree * x.reshape(-1)
-  q = len(L.simplices[0])-1
-  N = 2*len(L.simplices)*comb(q+1, 2)
-  P = np.zeros(shape=N, dtype=[('weights', 'f4'), ('xi', 'i2'), ('vo', 'i2')])
-  cc = 0 
-  for s_ind, s in enumerate(L.simplices):
-    for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), L.sgn_pattern):
-      ii, jj = L.index(f1), L.index(f2)
-      d1 = sgn_ij * L._wfl[ii] * L._ws[s_ind] * L._wfr[jj]
-      d2 = sgn_ij * L._wfl[jj] * L._ws[s_ind] * L._wfr[ii]
-      P[cc] = d1, jj, ii
-      P[cc+1] = d2, ii, jj
-      cc += 2
-  np.add.at(v, P['vo'], x[P['xi']]*P['weights'])
-  assert np.allclose(L @ x, v)
-
-  ## Ensure this works at library level 
-  L = up_laplacian(S, p=1, form='lo')
-  L.precompute()
-  assert np.allclose(L._matvec(x), L._matvec_precompute(x))
-
-
-  # X, S = generate_dataset(n=350)
-  # L = up_laplacian(S, p=1, form='lo')
-
-  # x = np.random.uniform(size=L.shape[0])
-  # import timeit
-  # timeit.timeit(lambda: L @ x, number=50) # 0.740328342999419
-
-  # L.precompute()
-  # timeit.timeit(lambda: L @ x, number=50) # 0.006494699999166187
-  # L._matvec = L._matvec_precompute
-  # #assert L._matvec(x) type error 
-  # import types 
-  # types.MethodType(L._matvec_precompute, L)
-
-
-def test_laplacian_matmat():
-  LM = up_laplacian(S, p=0, form='array')
-  solver = parameterize_solver(LM, solver='jd')
-  solver(LM)
-
-  LO = up_laplacian(S, p=0, form='lo')
-  LO.precompute()
-  solver = parameterize_solver(LO, solver='lobpcg')
-  solver(LO)
-
-  M = np.random.uniform(size=LO.shape)
-  np.allclose(np.ravel((LO @ M) - (LM @ M)), 0)
-
-  LM @ M[:,0]
-  LO @ M[:,0]
 def test_up_laplacian1():
   X, S = generate_dataset()
   D = boundary_matrix(S, p=2).tocsc()
@@ -269,79 +212,6 @@ def test_up_laplacian1():
   LO = up_laplacian(S, p=1, weight = lambda s: W[s], form='lo')
   assert np.allclose(LO @ x, LM @ x)
 
-# LG = D1 @ diags(wq) @ D1.T 
-# L_inner = diags(1/np.sqrt(wp)) @ LG @ diags(1/np.sqrt(wp))
-# L_full = diags(np.sqrt(wp)) @ L_inner @ diags(1/np.sqrt(wp))
-# assert is_symmetric(L_inner)
-# assert not(is_symmetric(L_full))
-# assert np.allclose(abs((LG @ diags(1/wp)) - L_full).data, 0.0)
-
-# L_inner = diags(np.sqrt(wp)) @ LG @ diags(np.sqrt(wp))
-# L_full = diags(1/np.sqrt(wp)) @ L_inner @ diags(np.sqrt(wp))
-# assert is_symmetric(L_inner)
-# assert not(is_symmetric(L_full))
-# assert np.allclose(abs((LG @ diags(wp)) - L_full).data, 0.0)
-
-
-def test_spectra_union():
-  ## Test what happens with appropriate f respecting face poset with disjoint components
-  S = SimplicialComplex([[1,2,3], [4,5,6]])
-  D1 = boundary_matrix(S, p = 1)
-
-  ## positive weights => same sparsity pattern
-  wp = np.random.uniform(size=D1.shape[0])
-  plt.spy(D1 @ D1.T @ diags(wp))
-
-  ## Setting vertex weight to 0 makes a column 0 
-  wp[2] = 0
-  plt.spy(D1 @ D1.T @ diags(wp))
-
-  ## Multiplying both sides sets row and column to 0 
-  plt.spy(diags(wp) @ D1 @ D1.T @ diags(wp))
-  
-  ## Does not produce a block diagonal, but perhaps same rank....
-  S = SimplicialComplex([[1,2,3,4,5,6]])
-  D1 = boundary_matrix(S, p = 1)
-  plt.spy(diags(wp) @ D1 @ D1.T @ diags(wp))
-
-  wp = np.arange(1, D1.shape[0]+1)
-  np.linalg.svd((D1 @ D1.T).todense())[1]
-  np.linalg.svd((D1 @ D1.T @ diags(wp)).todense())[1]
-  plt.spy(D1 @ D1.T @ diags(wp))
-
-  np.allclose((LG @ diags(1/wp)).data, L_full.data)
-
-
-
-
-  ## Test what happens when a vertex is zero'ed 
-  from scipy.sparse.linalg import svds
-  wv = wp.copy()
-  piv = int(np.median(range(len(wv))))
-  wv[piv] = 0.0
-  LG = D1 @ diags(wq) @ D1.T
-  sw_whole = svds(diags(np.sqrt(wp)) @ LG @ diags(np.sqrt(wp)), k = len(wv)-1)[1]
-  plt.spy(diags(np.sqrt(wp)) @ LG @ diags(np.sqrt(wp)))
-  
-  LG_pos = diags(np.sqrt(wv)) @ LG @ diags(np.sqrt(wv))
-  sw_pos = svds(LG_pos, k = len(wv)-1)[1]
-  plt.spy(LG_pos)
-  plt.spy(LG_pos[:piv,:piv])
-  plt.spy(LG_pos[(piv+1):,(piv+1):])
-  sw_tl = svds(LG_pos[:piv,:piv], k=piv-1)[1]
-  sw_br = svds(LG_pos[(piv+1):,(piv+1):], k=piv-1)[1]
-  
-  total = np.array([l*r for l,r in product(sw_tl, sw_br)])
-  np.union1d(sw_tl, sw_br)
-
-  ## Try disjoint sets 
-  S = SimplicialComplex([[1,2,3], [4,5,6]])
-  D1 = boundary_matrix(S, p = 1)
-  plt.spy(D1 @ D1.T)
-
-  plt.spy(diags(1/np.sqrt(wv)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wv)))
-
-
 
 def test_weighted_up_laplacian():
   """ 
@@ -356,8 +226,8 @@ def test_weighted_up_laplacian():
 
   ## Start with the graph Laplacian 
   L = D1 @ diags(wq) @ D1.T
-  L_up = L @ diags(wp)
-  L_up2 = diags(np.sqrt(wp)) @ L @ diags(np.sqrt(wp))
+  L_up_asym = L @ diags(wp)
+  L_up_sym = diags(np.sqrt(wp)) @ L @ diags(np.sqrt(wp))
   x = np.random.uniform(size=L_up.shape[0])
   y = L_up @ x
 
@@ -367,23 +237,20 @@ def test_weighted_up_laplacian():
   for q_ind, q in enumerate(q_faces):
     for p in boundary(q):
       p_ind = p_faces.index(p)
-      z[p_ind] += wq[q_ind]**2 * wp[p_ind]**2
-  assert max(abs(L_up.diagonal() - z)) < 1e-13
+      z[p_ind] += wq[q_ind]
+  assert max(abs(L.diagonal() - z)) < 1e-13
 
-  x = np.random.uniform(size=ns[1])
-  y = np.zeros(ns[1])
-  del_sgn_pattern = [1,-1,1]
-  lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(del_sgn_pattern,2)])
-  for t_ind, t in enumerate(K.faces(p=2)):
-    for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
-      ii, jj = p_faces.index(e1), p_faces.index(e2)
-      c = w0[ii] * w0[jj] * w1[t_ind]**2
-      y[ii] += x[jj] * c * s_ij
-      y[jj] += x[ii] * c * s_ij
-
-
-
-
+  ## TODO: test inner product structure
+  # x = np.random.uniform(size=ns[1])
+  # y = np.zeros(ns[1])
+  # del_sgn_pattern = [1,-1,1]
+  # lap_sgn_pattern = np.array([s1*s2 for (s1,s2) in combinations(del_sgn_pattern,2)])
+  # for t_ind, t in enumerate(K.faces(p=2)):
+  #   for (e1, e2), s_ij in zip(combinations(t.boundary(), 2), lap_sgn_pattern):
+  #     ii, jj = p_faces.index(e1), p_faces.index(e2)
+  #     c = w0[ii] * w0[jj] * w1[t_ind]**2
+  #     y[ii] += x[jj] * c * s_ij
+  #     y[jj] += x[ii] * c * s_ij
 
 
 def test_up_laplacian_native():
@@ -406,7 +273,50 @@ def test_up_laplacian_native():
   L_up @ x
 
 
-def test_laplacian_cpp():
+def test_laplacian0_cpp():
+  from pbsig.combinatorial import rank_combs
+  X = np.random.uniform(size=(15,2))
+  S = delaunay_complex(X) 
+  r = rank_combs(S.faces(1), k=2, n=S.shape[0])
+  x = np.random.uniform(size=L.shape[0])
+
+  from pbsig.linalg import laplacian, up_laplacian
+  L = laplacian.UpLaplacian0(r, X.shape[0], X.shape[0])
+  L.compute_indexes()
+  L.precompute_degree()
+  LM = up_laplacian(S, p=0)
+  assert np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+
+  LO = up_laplacian(S, p=0, form='lo')
+  assert np.allclose((LO @ x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+
+  import timeit
+  timeit.timeit(lambda: LM @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
+  timeit.timeit(lambda: LO @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
+
+def test_laplacian1_cpp():
+  from pbsig.combinatorial import rank_combs
+  X = np.random.uniform(size=(15,2))
+  S = delaunay_complex(X) 
+  qr = rank_combs(S.faces(2), k=3, n=S.shape[0])
+
+  from pbsig.linalg import laplacian, up_laplacian
+  L = laplacian.UpLaplacian1(qr, S.shape[0], S.shape[1])
+  L.compute_indexes()
+  L.precompute_degree()
+  
+  ## Ensure index map is valid
+  pr_true = rank_combs(S.faces(1), k=2, n=S.shape[0])
+  pr_test = np.sort(list(L.index_map.keys()))
+  assert len(pr_true) == len(pr_test)
+  assert all((pr_true - pr_test) == 0)
+
+  ## Check matvec product 
+  x = np.random.uniform(size=S.shape[1])
+  LM = up_laplacian(S, p=1)
+  assert np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+
+def test_laplacian0_cpp_matmat():
   from pbsig.combinatorial import rank_combs
   X = np.random.uniform(size=(15,2))
   S = delaunay_complex(X) 
@@ -416,42 +326,33 @@ def test_laplacian_cpp():
   L = laplacian.UpLaplacian0(r, X.shape[0], X.shape[0])
   L.compute_indexes()
   L.precompute_degree()
-  L.degrees
-  x = np.random.uniform(size=L.shape[0])
-  L._matvec(x)
 
   LM = up_laplacian(S, p=0)
-  np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+  X = np.random.uniform(size=L.shape)
+  assert np.allclose((LM @ X) - L._matmat(X), 0.0, atol=10*np.finfo(np.float32).eps)
+  
+  #L.fpr = np.random.uniform(size=S.shape[0])
+
+def test_laplacian_API():
+  from pbsig.linalg import laplacian, up_laplacian
+  X = np.random.uniform(size=(150,2))
+  S = delaunay_complex(X) 
+  
+  LM = up_laplacian(S, p=0, form='array')
+  LO = up_laplacian(S, p=0, form='lo')
+  x = np.random.uniform(size=S.shape[0])
+  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+
+  LM = up_laplacian(S, p=1, form='array')
+  LO = up_laplacian(S, p=1, form='lo')
+  x = np.random.uniform(size=S.shape[1])
+  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
   import timeit
-  timeit.timeit(lambda: LM @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
-  timeit.timeit(lambda: L._matvec(x), setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
-
-  # %% 
-  from pbsig.combinatorial import rank_combs
-  X = np.random.uniform(size=(15,2))
-  S = delaunay_complex(X) 
-  qr = rank_combs(S.faces(2), k=3, n=S.shape[0])
-
-  from pbsig.linalg import laplacian, up_laplacian
-  L = laplacian.UpLaplacian1(qr, S.shape[1], S.shape[1])
-  L.compute_indexes()
-  
-  pr = rank_combs(S.faces(1), k=2, n=S.shape[0])
-  rank_combs(S.faces(1), k=3, n=S.shape[0])
-  L.index_map.keys()
-
-  assert len(L.index_map) == S.shape[1], "Invalid length"
-  np.sort(list(L.index_map.values())) - np.arange(0, S.shape[1]+1)
-
-
-  L.precompute_degree()
-  L.degrees
-  x = np.random.uniform(size=L.shape[0])
-  L._matvec(x)
-
-  LM = up_laplacian(S, p=0)
-  np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
+  timeit.timeit(lambda: LM @ x, number=1000)
+  timeit.timeit(lambda: LO @ x, number=1000)
+  timeit.timeit(lambda: LO.L._matvec(x), number=1000)
+  # LO.L._matvec(x)
 
 # def test_weighted_linear_L0():
 #   ## Generate random geometric complex
@@ -482,3 +383,17 @@ def test_laplacian_cpp():
 #   L_up._ws
 #   assert np.allclose(L_up @ x, v0)
 #   assert np.allclose(L_up @ x, v1)
+
+
+def test_laplacian_eigsh():
+  LM = up_laplacian(S, p=0, form='array')
+  solver = parameterize_solver(LM, solver='jd')
+  ew_m = solver(LM)
+
+  LO = up_laplacian(S, p=0, form='lo')
+  solver = parameterize_solver(LO, solver='jd')
+  ew_o = solver(LO)
+
+  ## Ensure eigenvalues are all the same
+  assert np.allclose(ew_o, ew_m, atol=1e-8)
+  

@@ -445,7 +445,7 @@ def as_linear_operator(A, stats=True):
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
 
 
-class UpLaplacian(LinearOperator):
+class UpLaplacianPy(LinearOperator):
   """ 
   Linear operator for weighted p up-Laplacians of simplicial complexes. 
   
@@ -679,9 +679,9 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
-      lo._wfl, lo._wfr, lo._ws = wpl, wpr, wq
-      lo._precompute_degree()
-      lo.prepare(1)
+      # lo._wfl, lo._wfr, lo._ws = wpl, wpr, wq
+      # lo._precompute_degree()
+      # lo.prepare(1)
       return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
@@ -689,5 +689,125 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       raise NotImplementedError("function form not implemented yet")
     else: 
       raise ValueError(f"Unknown form '{form}'.")
+
+
+class UpLaplacian(LinearOperator):
+  """ 
+  Linear operator for weighted p up-Laplacians of simplicial complexes. 
+  
+  In matrix notation, these take the form:
+
+  W_p^l @ D_{p+1} @ W_{p+1} D_{p+1}.T @ W_p^r 
+
+  where W* represents diagonal weight matrices on the p-th (or p+1) simplices and Dp represents 
+  the p-th oriented boundary matrix of the simplicial complex. 
+
+  The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
+
+  """
+  __slots__ = ('shape', 'dtype', 'simplices', 'faces', 'L')
+  # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
+
+  ## TODO: Remove 'F'? Add more params?
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None):
+    ## Ensure S is repeatable and faces 'F' is indexable
+    assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
+    assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
+    p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
+    assert p == 0 or p == 1, "Only p in {0,1} supported for now"
+    assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
+    from pbsig.combinatorial import rank_combs
+
+    self.shape = (len(F), len(F))
+    self.dtype = np.dtype(float) if dtype is None else dtype
+    
+    ## TODO: replace with soft containers via combinatorial ranks
+    self.simplices = S
+    self.faces = F
+
+    ## Parameterize the internal operator
+    nv, _np = max([max(s) for s in self.simplices])+1, len(F)
+    q_ranks = rank_combs(self.simplices, k=p+2, n=nv)
+    if p == 0:  
+      self.L = laplacian.UpLaplacian0(q_ranks, nv, _np) # TODO: Inherit from these instead? 
+    else:
+      self.L = laplacian.UpLaplacian1(q_ranks, nv, _np) 
+    self.L.compute_indexes()
+    self.L.precompute_degree()
+
+  def diagonal(self) -> ArrayLike:
+    return self.L.degrees
+
+  @property 
+  def face_left_weights(self): 
+    return self.L.fpl
+
+  @face_left_weights.setter
+  def face_left_weights(self, value: ArrayLike) -> None:
+    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert isinstance(value, np.ndarray)
+    self.L.fpl = value.astype(self.dtype)
+
+  @property 
+  def face_right_weights(self): 
+    return self.L.fpr
+
+  @face_right_weights.setter
+  def face_right_weights(self, value: ArrayLike) -> None:
+    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert isinstance(value, np.ndarray)
+    self.L.fpr = value.astype(self.dtype)
+
+  @property
+  def simplex_weights(self): 
+    return self.L.fq
+  
+  @simplex_weights.setter
+  def simplex_weights(self, value: ArrayLike):
+    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert isinstance(value, np.ndarray)
+    self.L.fq = value.astype(self.dtype)
+
+  def set_weights(self, lw = None, cw = None, rw = None):
+    self.face_left_weights = lw
+    self.simplex_weights = cw
+    self.face_right_weights = rw
+    self.L.precompute_degree()
+    return self 
+
+  def _matvec(self, x: ArrayLike) -> ArrayLike:
+    # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
+    return self.L._matvec(x)
+
+  def _matmat(self, X: ArrayLike) -> ArrayLike:
+    # assert isinstance(X, np.ndarray) and X.ndim == 2, "Invalid 'X'"
+    return self.L._matmat(X)
+
+## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
+def is_symmetric(A) -> bool:
+  """ Check if a real-valued matrix is symmetric up to a given tolerance (via np.isclose) """
+  from scipy.sparse import issparse
+  if isinstance(A, np.ndarray):
+    return np.allclose(A, A.T)
+  assert issparse(A)
+  if A.shape[0] != A.shape[1]:
+    raise ValueError('m must be a square matrix')
+  A = coo_array(A) if not isinstance(A, coo_array) else A
+
+  r, c, v = A.row, A.col, A.data
+  tril_no_diag = r > c
+  triu_no_diag = c > r
+
+  if not np.isclose(triu_no_diag.sum(), tril_no_diag.sum()):
+    return False
+
+  rl, cl, vl = r[tril_no_diag], c[tril_no_diag], v[tril_no_diag]
+  ru, cu, vu = r[triu_no_diag], c[triu_no_diag], v[triu_no_diag]
+
+  sortl = np.lexsort((cl, rl))
+  sortu = np.lexsort((ru, cu))
+  vl = vl[sortl]
+  vu = vu[sortu]
+  return np.allclose(vl, vu)
 
 

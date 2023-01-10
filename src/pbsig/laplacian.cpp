@@ -99,51 +99,84 @@ struct UpLaplacian {
     }
   };
 
-  // Matvec operation: Lx |-> y for any vector x
-  auto _matvec(const py::array_t< F >& x_) const -> py::array_t< F > {
-    // Ensure workplace vectors are zero'ed
-    //std::fill_n(y.begin(), y.size(), static_cast< F >(0.0));
-    
-    // Obtain direct access
-    py::buffer_info x_buffer = x_.request();
-    F* x = static_cast< F* >(x_buffer.ptr);
-
+  // Internal matvec; outputs y = L @ x
+  inline void __matvec(F* x) const noexcept { 
     // Start with the degree computation
     std::transform(degrees.begin(), degrees.end(), x, y.begin(), std::multiplies< F >());
 
     // The matvec
     size_t q_ind = 0;
-    auto q_vertices = array< uint_64, p+2 >();
+    // auto q_vertices = array< uint_64, p+2 >();
+    auto p_ranks = array< uint64_t, p+2 >();
     for (auto qi: qr){
       if constexpr (p == 0){
-				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(q_vertices));
-        const auto ii = index_map[q_vertices[0]]; // TODO: could speed up by assuming vertices start from 0 / remove index map
-        const auto jj = index_map[q_vertices[1]];// TODO: could speed up by assuming vertices start from 0 / remove index map
-        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; // inject the sign @ compile time
-        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; // inject the sign @ compile time
+				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
+        // const auto ii = index_map[q_vertices[0]]; // TODO: could speed up by assuming vertices start from 0 / remove index map
+        // const auto jj = index_map[q_vertices[1]];// TODO: could speed up by assuming vertices start from 0 / remove index map
+        const auto ii = p_ranks[0]; 
+        const auto jj = p_ranks[1];
+        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
+        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
+      } else if constexpr (p == 1) { // inject the sign @ compile time
+        boundary(qi, nv, p+2, begin(p_ranks));
+        const auto ii = index_map[p_ranks[0]];
+        const auto jj = index_map[p_ranks[1]];
+        const auto kk = index_map[p_ranks[2]];
+        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj];
+        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
+        y[ii] += x[kk] * fpl[ii] * fq[q_ind] * fpr[kk]; 
+        y[kk] += x[ii] * fpl[kk] * fq[q_ind] * fpr[ii]; 
+        y[jj] -= x[kk] * fpl[jj] * fq[q_ind] * fpr[kk]; 
+        y[kk] -= x[jj] * fpl[kk] * fq[q_ind] * fpr[jj]; 
       } else {
-				// lex_unrank_k(static_cast< I >(qi), static_cast< I >(nv), p+2, begin(q_vertices));
         auto p_ranks = array< uint64_t, p+2 >();
+        boundary(qi, nv, p+2, begin(p_ranks));
         size_t cc = 0;
-        apply_boundary(qi, nv, p+2, [&](auto face_rank){
-          p_ranks[cc] = static_cast< uint64_t >(face_rank); // todo: output it + transform since same size! 
-          cc++;
-        });
         const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
-        cc = 0;
 				for_each_combination(begin(p_ranks), begin(p_ranks)+2, end(p_ranks), [&](auto a, auto b){
           const auto ii = index_map[*a];
           const auto jj = index_map[*(a+1)];
-					y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; // inject the sign @ compile time
-          y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; // inject the sign @ compile time
+					y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
+          y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii];
           cc = (cc + 1) % 2;
           return false; 
         });
       }
       q_ind += 1;
     }
+  }
+
+  // Matvec operation: Lx |-> y for any vector x
+  auto _matvec(const py::array_t< F >& x_) const noexcept -> py::array_t< F > {
+    py::buffer_info x_buffer = x_.request();    // Obtain direct access
+    __matvec(static_cast< F* >(x_buffer.ptr));  // stores result in internal y 
     return py::cast(y);
   }
+
+  // Y = L @ X 
+  auto _matmat(const py::array_t< F, py::array::f_style | py::array::forcecast >& X_) const -> py::array_t< F > {
+    const ssize_t n_rows = X_.shape(0);
+    const ssize_t n_cols = X_.shape(1);
+    // Obtain direct access
+    py::buffer_info x_buffer = X_.request();
+    F* X = static_cast< F* >(x_buffer.ptr);
+
+    // Allocate memory 
+    auto result = vector< F >();
+    result.reserve(shape[0]*n_cols);
+
+    // Each matvec outputs to y. Copy to result via output iterator
+    auto out = std::back_inserter(result);
+    for (ssize_t j = 0; j < n_cols; ++j){
+      __matvec(X+(j*n_rows));
+      std::copy(y.begin(), y.end(), out);
+    }
+   
+    // From: https://github.com/pybind/pybind11/blob/master/include/pybind11/numpy.h 
+    array< ssize_t, 2 > Y_shape = { static_cast< ssize_t >(shape[0]), n_cols };
+    return py::array_t< F , py::array::f_style | py::array::forcecast >(Y_shape, result.data());
+  } 
+
   //  x = x.reshape(-1)
   //   self._v.fill(0)
   //   self._v += self.degree * x
@@ -183,7 +216,8 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readonly("degrees", &UpLaplacian< 0, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 0, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 0, float, true >::compute_indexes)
-    .def("_matvec", &UpLaplacian< 0, float, true >::_matvec);
+    .def("_matvec", &UpLaplacian< 0, float, true >::_matvec)
+    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat);
   py::class_< UpLaplacian< 1, float, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 1, float, true >::shape)
@@ -198,7 +232,8 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readonly("degrees", &UpLaplacian< 1, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 1, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 1, float, true >::compute_indexes)
-    .def("_matvec", &UpLaplacian< 1, float, true >::_matvec);
+    .def("_matvec", &UpLaplacian< 1, float, true >::_matvec)
+    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat);
     // .def("_matvec", &UpLaplacian0_LS< float, true >::_matvec)
     // .def("precompute_degree", &UpLaplacian0_LS< float, true >::precompute_degree);
   // m.def("vectorized_func", py::vectorize(my_func));s
