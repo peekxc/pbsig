@@ -505,7 +505,15 @@ def test_normalized_laplacian():
   print(x.T @ F.T @ diags(1/wq) @ y)
   print(x.T @ diags(1/wp) @ G.T @ y)
 
-
+  ## Now, suppose you replace select weights with 0. Do inner products still hold?
+  wp0, wq0 = wp.copy(), wq.copy()
+  wp0[np.random.choice(len(wp0), size=4, replace=False)] = 0
+  wq0[np.random.choice(len(wq0), size=6, replace=False)] = 0
+  F = diags(wq0) @ D1.T @ diags(pseudo(wp0))
+  G = diags(pseudo(wq0)) @ F @ diags(wp0) 
+  print(x.T @ F.T @ diags(pseudo(wq0)) @ y)
+  print(x.T @ diags(pseudo(wp0)) @ G.T @ y)
+  ## They do! 
 
   ## Conclusion: 
   # eigh(diags(pseudo(np.sqrt(deg0))) * D1 @ diags(wq) @ D1.T * diags(np.sqrt(deg0)))
