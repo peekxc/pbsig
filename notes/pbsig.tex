@@ -1442,16 +1442,16 @@ For a list of additional properties the graph and normalized Laplacians satisfy,
 \vspace{0.25em}
 \State \# Precompute weighted degrees $D_w$ 
 \State $h_p : K^p \to [ \, \lvert K^p \rvert \, ] := \restr{f^{-1}}{K^p}$
-\State $D_w \gets \mathbf{0}$
+\State $d_w \gets \mathbf{0}$
 \For{$\sigma \in K^{p+1}$}: 
 	\For{$\tau \in \partial[\sigma]$}:
-   	 	\State $D_w[h_p(\tau)] \gets f_l(\tau) \cdot f(\sigma) \cdot  f_r(\tau)$
+   	 	\State $d_w[h_p(\tau)] \gets f_l(\tau) \cdot f(\sigma) \cdot  f_r(\tau)$
    	\EndFor
 \EndFor
 \State 
 \State \# Compute Laplacian \texttt{matvec} for $x$ 
 \Function{UpLaplacianMatvec}{$x \in \mathbb{R}^n$}
-\State $y \gets D_w \cdot x$ %(element-wise product)
+\State $y \gets d_w \odot x$ \; \text{(element-wise product)}
 %\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
 \For{$\sigma \in K^{p+1}$}:
 %    $\mathrm{sgn}(\partial[\sigma])$

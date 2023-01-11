@@ -11,6 +11,7 @@ from scipy.sparse.csgraph import structural_rank
 
 ## Local imports
 from .simplicial import * 
+from .combinatorial import * 
 import _lanczos as lanczos
 import _laplacian as laplacian
 
@@ -670,26 +671,36 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     """
     # assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
-    ns = K.shape
+    ns = S.shape
+    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     weight = (lambda s: 1.0) if weight is None else weight
-    _ = weight(next(K.faces(p)))
+    _ = weight(next(S.faces(p)))
     if not isinstance(_, Number) and len(_) == 2:
-      W_LR = np.array([weight(s) for s in K.faces(p)]).astype(float)
+      W_LR = np.array([weight(s) for s in S.faces(p)]).astype(float)
       wpl = W_LR[:,0]
       wpr = W_LR[:,1]
     else: 
-      wpl = np.array([float(weight(s)) for s in K.faces(p)])
+      wpl = np.array([float(weight(s)) for s in S.faces(p)])
       wpr = wpl
-    wq = np.array([float(weight(s)) for s in K.faces(p+1)])
+    wq = np.array([float(weight(s)) for s in S.faces(p+1)])
     assert len(wpl) == ns[p] and len(wq) == ns[p+1], "Invalid weight arrays given."
     if form == 'array':
-      B = boundary_matrix(K, p = p+1)
-      L = (diags(wpl) @ B @ diags(wq) @ B.T @ diags(wpr)).tocoo()
+      B = boundary_matrix(S, p = p+1)
+      L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
       return (L, L.diagonal()) if return_diag else L
     elif form == 'lo':
-      p_faces = list(K.faces(p))        ## need to make a view 
-      p_simplices = list(K.faces(p+1))  ## need to make a view 
+      p_faces = list(S.faces(p))        ## need to make a view 
+      p_simplices = list(S.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
+      if normed:
+        deg = np.zeros(len(p_faces))
+        for cc, qs in enumerate(p_simplices):
+          face_ind = np.array([lo.index(ps) for ps in boundary(qs)])
+          deg[face_ind] += wq[cc]
+        lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg)))  # normalized weighted symmetric psd version 
+      else: 
+        # lo.set_weights(pseudo(wpl), wq, None)                         # asymmetric version
+        lo.set_weights(pseudo(np.sqrt(wpl)), wq, pseudo(np.sqrt(wpr)))  # weighted symmetric psd version 
       return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
@@ -772,9 +783,13 @@ class UpLaplacian(LinearOperator):
   
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
-    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == len(self.L_up.fq) and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
     self.L_up.fq = value.astype(self.dtype)
+
+  def index(self, face: SimplexLike) -> int:
+    face_rank = rank_comb(face, n=self.L_up.nv, k=len(face))
+    return self.L_up.index_map[face_rank]
 
   def set_weights(self, lw = None, cw = None, rw = None):
     self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.L_up.np)
@@ -782,6 +797,8 @@ class UpLaplacian(LinearOperator):
     self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.L_up.np)
     self.L_up.precompute_degree()
     return self 
+
+
 
   ## Attach lambdas for speed
   _matvec: Callable[ArrayLike, ArrayLike] = lambda self, x: self.L_up._matvec(x)

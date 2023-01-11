@@ -338,15 +338,47 @@ def test_laplacian_API():
   X = np.random.uniform(size=(150,2))
   S = delaunay_complex(X) 
   
+  ## Test they are the same 
   LM = up_laplacian(S, p=0, form='array')
   LO = up_laplacian(S, p=0, form='lo')
   x = np.random.uniform(size=S.shape[0])
   assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
+  ## Test they are the same 
   LM = up_laplacian(S, p=1, form='array')
   LO = up_laplacian(S, p=1, form='lo')
   x = np.random.uniform(size=S.shape[1])
   assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+
+  ## Test normalized operators
+  from scipy.sparse.linalg import eigsh
+  largest_ew = lambda M: eigsh(M, k=1, which='LM', return_eigenvectors=False).item()
+  
+  ## Largest eigenvalues should be in [0, p+2]
+  LO = up_laplacian(S, p=0, form='lo', normed=True)
+  assert largest_ew(LO) <= 2.0
+
+  ## Largest eigenvalues should be in [0, p+2]
+  LO = up_laplacian(S, p=1, form='lo', normed=True)
+  assert largest_ew(LO) <= 3.0
+
+  ## Weighted version 
+  vertex_weights = np.random.uniform(size=S.shape[0], low=0.0, high=5.0)
+  scalar_product = lambda s: max(vertex_weights[s])
+  for p in [0,1]:
+    LO = up_laplacian(S, p=p, form='lo', weight=scalar_product, normed=False)
+    assert isinstance(LO, LinearOperator)
+    ew_upper = (p+2)*max(LO.diagonal())/min([scalar_product(s) for s in S.faces(p) if scalar_product(s) > 0])
+    assert largest_ew(LO) <= ew_upper
+    LO = up_laplacian(S, p=p, form='lo', weight=scalar_product, normed=True)
+    assert largest_ew(LO) <= p+2.0
+  
+  ## Test equivalence of weighting array or operator
+  LM = up_laplacian(S, p=1, form='array', weight=scalar_product)
+  LO = up_laplacian(S, p=1, form='lo', weight=scalar_product)
+  x = np.random.uniform(size=S.shape[1])
+  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+
 
   ## Niceeee bound on maximum eigenvalue: 
   # (p+2)*np.dot(LM.diagonal(), x**2), 
@@ -511,8 +543,8 @@ def test_normalized_laplacian():
   wq0[np.random.choice(len(wq0), size=6, replace=False)] = 0
   F = diags(wq0) @ D1.T @ diags(pseudo(wp0))
   G = diags(pseudo(wq0)) @ F @ diags(wp0) 
-  print(x.T @ F.T @ diags(pseudo(wq0)) @ y)
-  print(x.T @ diags(pseudo(wp0)) @ G.T @ y)
+  print(x.T @ F.T @ diags(pseudo(wq0)) @ y) # cancels wq, includes wp 
+  print(x.T @ diags(pseudo(wp0)) @ G.T @ y) # cancels wp, includes wq
   ## They do! 
 
   ## Conclusion: 
