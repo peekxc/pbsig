@@ -467,18 +467,16 @@ def test_normalized_laplacian():
   assert is_psd(NWL) and max(ew_norm) <= 2
 
   # ## Try pseudo-inverse by setting vertex weights to 0 
-  # deg0 = deg.copy()
-  # idx = np.random.choice(np.arange(len(deg0)), size=5, replace=False)
-  # deg0[idx] = 0.0
-  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  # NWL0 = diags(pseudo(np.sqrt(deg0))) @ D1 @ diags(wq) @ D1.T @ diags(pseudo(np.sqrt(deg0)))
-  # eigh(NWL)
+  deg0 = deg.copy()
+  idx = np.random.choice(np.arange(len(deg0)), size=5, replace=False)
+  deg0[idx] = 0.0
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+
   
   ## "Turns off" certain eigenvalues by zero'ing them  
   ew_full = eigh(D1 @ diags(wq) @ D1.T )
   ew_zero = pseudo(np.sqrt(deg0)) * ew_full * np.sqrt(deg0)
   assert np.allclose(ew_full[~np.isclose(ew_zero, 0)], ew_zero[~np.isclose(ew_zero, 0)])
-
 
   ## Normalized
   eigh(diags(pseudo(deg)) @ D1 @ diags(wq) @ D1.T)
@@ -490,6 +488,24 @@ def test_normalized_laplacian():
   ew0_zero = pseudo(np.sqrt(deg0)) * ew0 * np.sqrt(deg0)
   assert np.allclose(ew0[~np.isclose(ew0_zero, 0)], ew0_zero[~np.isclose(ew0_zero, 0)])
   assert max(ew0_zero) <= 2.0
+
+  # edge_idx = np.random.choice(np.arange(len(wq)), size=5, replace=False)
+  # wq_zero = wq.copy()
+  # wq_zero[edge_idx] = 0.0
+
+  # ## just different eiegenvalues 
+  # eigh(diags(pseudo(np.sqrt(deg0))) @ D1 @ diags(wq) @ D1.T @ diags(pseudo(np.sqrt(deg0))))  
+  # eigh(diags(pseudo(np.sqrt(deg0))) @ D1 @ diags(wq_zero) @ D1.T @ diags(pseudo(np.sqrt(deg0))))
+
+  ## Inner product matrix result from Lemma 3.3. 
+  from scipy.linalg import solve
+  x, y = np.random.uniform(size=len(wp)), np.random.uniform(size=len(wq))
+  F = diags(wq) @ D1.T @ diags(1/wp)
+  G = diags(1/wq) @ F @ diags(wp) 
+  print(x.T @ F.T @ diags(1/wq) @ y)
+  print(x.T @ diags(1/wp) @ G.T @ y)
+
+
 
   ## Conclusion: 
   # eigh(diags(pseudo(np.sqrt(deg0))) * D1 @ diags(wq) @ D1.T * diags(np.sqrt(deg0)))
