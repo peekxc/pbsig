@@ -636,16 +636,25 @@ def is_symmetric(A) -> bool:
 
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
-def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
     Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex K. 
 
-    Given D_p = boundary_matrix(K, p), the weighted p-th up-laplacian L is defined as: 
+    Given B_p = boundary_matrix(K, p), this function defines the (generic) weighted p-th up-laplacian L as: 
 
-    Lp := W_p @ D_{p+1} @ W_{p+1} @ D_{p+1}^T @ W_p 
+    Lp := W_p^l @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ W_p^r
     
-    Where W_p, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively. Note p = 0 (default), the results represents 
-    the graph laplacians operator. This function is loosely based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+    Where W_p^l, W_p^r, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively. 
+    
+    Let w: S -> R+ denote a weight function, . 
+
+    Some specializations:
+      - graph laplacian [Kirchoff] 
+      - normalized graph Laplacian [diffusion]
+      - weighted combinatorial up-laplacian W_p^l = diag({ 1/w(), 1/w(), ..., 1/w() }), W_{p+1} = diag({ w(), w(), ..., w() }) 
+      - weighted normalized combinatorial up-laplacian W_p^l = diag({ 1/w(), 1/w(), ..., 1/w() }) 
+      - weighted symmetric combinatorial up-laplacian := (W_p^l)^{+/2} @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ (W_p^r)^{+/2}
+      - weighted normalized symmetric combinatorial up-laplacian := (D_p^l)^{+/2} @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ (D_p^r)^{+/2}
 
     Parameters:
       S := Simplicial Complex 
@@ -656,6 +665,8 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       form := return type. One of ['array', 'lo', 'function']
       dtype := dtype of associated laplacian. 
       kwargs := unused. 
+    
+    This function is loosely based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
     """
     # assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
@@ -679,9 +690,6 @@ def up_laplacian(K: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       p_faces = list(K.faces(p))        ## need to make a view 
       p_simplices = list(K.faces(p+1))  ## need to make a view 
       lo = UpLaplacian(p_simplices, p_faces)
-      # lo._wfl, lo._wfr, lo._ws = wpl, wpr, wq
-      # lo._precompute_degree()
-      # lo.prepare(1)
       return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))
@@ -703,9 +711,8 @@ class UpLaplacian(LinearOperator):
   the p-th oriented boundary matrix of the simplicial complex. 
 
   The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
-
   """
-  __slots__ = ('shape', 'dtype', 'simplices', 'faces', 'L')
+  __slots__ = ('shape', 'dtype', 'simplices', 'faces', 'L_up')
   # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
 
   ## TODO: Remove 'F'? Add more params?
@@ -718,8 +725,9 @@ class UpLaplacian(LinearOperator):
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
     from pbsig.combinatorial import rank_combs
 
+    ## Configure properties
     self.shape = (len(F), len(F))
-    self.dtype = np.dtype(float) if dtype is None else dtype
+    self.dtype = np.dtype(np.float32) if dtype is None else dtype
     
     ## TODO: replace with soft containers via combinatorial ranks
     self.simplices = S
@@ -729,59 +737,63 @@ class UpLaplacian(LinearOperator):
     nv, _np = max([max(s) for s in self.simplices])+1, len(F)
     q_ranks = rank_combs(self.simplices, k=p+2, n=nv)
     if p == 0:  
-      self.L = laplacian.UpLaplacian0(q_ranks, nv, _np) # TODO: Inherit from these instead? 
+      self.L_up = laplacian.UpLaplacian0(q_ranks, nv, _np) # TODO: Inherit from these instead? 
     else:
-      self.L = laplacian.UpLaplacian1(q_ranks, nv, _np) 
-    self.L.compute_indexes()
-    self.L.precompute_degree()
+      self.L_up = laplacian.UpLaplacian1(q_ranks, nv, _np) 
+    self.L_up.compute_indexes()
+    self.L_up.precompute_degree()
 
   def diagonal(self) -> ArrayLike:
-    return self.L.degrees
+    return self.L_up.degrees
 
   @property 
   def face_left_weights(self): 
-    return self.L.fpl
+    return self.L_up.fpl
 
   @face_left_weights.setter
   def face_left_weights(self, value: ArrayLike) -> None:
     assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L.fpl = value.astype(self.dtype)
+    self.L_up.fpl = value.astype(self.dtype)
 
   @property 
   def face_right_weights(self): 
-    return self.L.fpr
+    return self.L_up.fpr
 
   @face_right_weights.setter
   def face_right_weights(self, value: ArrayLike) -> None:
     assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L.fpr = value.astype(self.dtype)
+    self.L_up.fpr = value.astype(self.dtype)
 
   @property
   def simplex_weights(self): 
-    return self.L.fq
+    return self.L_up.fq
   
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
     assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L.fq = value.astype(self.dtype)
+    self.L_up.fq = value.astype(self.dtype)
 
   def set_weights(self, lw = None, cw = None, rw = None):
-    self.face_left_weights = lw
-    self.simplex_weights = cw
-    self.face_right_weights = rw
-    self.L.precompute_degree()
+    self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.L_up.np)
+    self.simplex_weights = cw if cw is not None else np.repeat(1.0, self.L_up.nq)
+    self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.L_up.np)
+    self.L_up.precompute_degree()
     return self 
 
-  def _matvec(self, x: ArrayLike) -> ArrayLike:
-    # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
-    return self.L._matvec(x)
+  ## Attach lambdas for speed
+  _matvec: Callable[ArrayLike, ArrayLike] = lambda self, x: self.L_up._matvec(x)
+  _matmat: Callable[ArrayLike, ArrayLike] = lambda self, x: self.L_up._matmat(x)
 
-  def _matmat(self, X: ArrayLike) -> ArrayLike:
-    # assert isinstance(X, np.ndarray) and X.ndim == 2, "Invalid 'X'"
-    return self.L._matmat(X)
+  # def _matvec(self, x: ArrayLike) -> ArrayLike:
+  #   # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
+  #   return self.L_up._matvec(x)
+
+  # def _matmat(self, X: ArrayLike) -> ArrayLike:
+  #   # assert isinstance(X, np.ndarray) and X.ndim == 2, "Invalid 'X'"
+  #   return self.L_up._matmat(X)
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:

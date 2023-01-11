@@ -45,8 +45,7 @@ for ii, v in enumerate(uniform_S1(64)):
   i,j,k,l = R[0,:]
   ij = np.logical_and(dgm[:,0] >= i, dgm[:,0] <= j) 
   kl = np.logical_and(dgm[:,1] >= k, dgm[:,1] <= l) 
-  if np.any(np.logical_and(ij, kl)):
-    print(ii)
+  #if np.any(np.logical_and(ij, kl)): print(ii)
 
 ax = plt.gca()
 for i,j,k,l in R:  
@@ -88,14 +87,25 @@ for k, X in dataset.items():
 ## Precompute the singular values associated with the DT for each shape 
 for ii, sig in enumerate(Sigs.values()):
   print(ii)
-  sig.precompute(pp=0.50, tol=1e-4, w=0.30)
+  sig.precompute(pp=0.30, tol=1e-4, w=0.30)
+
+s1 = Sigs[('watch',1)]()
+s2 = Sigs[('watch',2)]()
+plt.plot(s1); plt.plot(s2)
+
+plt.plot(*dataset[('watch',1)].T)
+plt.plot(*dataset[('watch',2)].T)
+
+## Stabilize signature with PoU 
+
 
 def pointwise_dist(a,b, check_reverse: bool = True):
   d1 = np.linalg.norm(b-phase_align(a,b))
   d2 = np.linalg.norm(b-phase_align(np.flip(a),b)) if check_reverse else d1
   return min(d1, d2)
 
-## See if they align 
+## See if they align
+from pbsig.signal_tools import phase_align
 import bokeh 
 from bokeh.io import output_notebook
 from bokeh.layouts import column
@@ -111,16 +121,22 @@ p.grid.grid_line_color = None
 params = dict(smoothing = (0.10, 1.2, 0))
 mu_sig = lambda k,m: Sigs[(k, m)](**params)
 
-keys = ['turtle', 'watch', 'bone', 'bell', 'bird'] # 'chicken', 'lizzard'
-colors = ['firebrick', 'orange', 'black', 'blue', 'green']
+keys = ['turtle', 'watch', 'bone', 'bell', 'bird', 'beetle', 'dog'] # 'chicken', 'lizzard'
+colors = ['firebrick', 'orange', 'black', 'blue', 'green', 'purple', 'yellow']
 for t, c in zip(keys, colors):
   p.line(Theta, mu_sig(t,1), color=c)
   p.line(Theta, phase_align(mu_sig(t,2), mu_sig(t,1)), color=c)
   p.line(Theta, phase_align(mu_sig(t,3), mu_sig(t,1)), color=c)
   p.line(Theta, phase_align(mu_sig(t,4), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,5), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,6), mu_sig(t,1)), color=c)
 show(p)
 
-for s1,s2 in product(['bone', 'watch', 'lizzard'], ['bone', 'watch', 'lizzard']):
+## Make a plot of each signal on a different horizontal slice, and then pictures 
+## of the shapes on horizontal slices on the right 
+
+
+for s1,s2 in product(['bone', 'watch', 'bird'], ['bone', 'watch', 'bird']):
   for i,j in combinations(range(1, 4), 2):
     print(f"{s1}-{i}, {s2}-{j} ~ d={pointwise_dist(mu_sig(s1,i), mu_sig(s2,j))}")
 

@@ -146,7 +146,8 @@ def mpeg7(contour: bool = True, simplify: int = 150):
   for st in shape_types:
     for sn in shape_nums:
       img_dir = base_dir + f"/{st}-{sn}.gif"
-      assert exists(img_dir), "Image not found"
+      if not exists(img_dir):
+        continue
       im = Image.open(img_dir)
       img_gray = normalize(np.array(im)).astype(np.uint8)
       if contour:

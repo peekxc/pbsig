@@ -348,11 +348,18 @@ def test_laplacian_API():
   x = np.random.uniform(size=S.shape[1])
   assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
+  ## Niceeee bound on maximum eigenvalue: 
+  # (p+2)*np.dot(LM.diagonal(), x**2), 
+  # x = np.random.uniform(size=LM.shape[0])
+  # max(np.linalg.eigvalsh(LM.todense())) <= 3*np.dot(x**2, LM.diagonal()) / np.dot(x**2, np.repeat(1.0, S.shape[1]))
   import timeit
   timeit.timeit(lambda: LM @ x, number=1000)
   timeit.timeit(lambda: LO @ x, number=1000)
-  timeit.timeit(lambda: LO.L._matvec(x), number=1000)
+  timeit.timeit(lambda: LO.L_up._matvec(x), number=1000)
   # LO.L._matvec(x)
+
+## TODO: Verify normalized symmetric laplacian w/ weight function is psd 
+## and similar per the formula 
 
 # def test_weighted_linear_L0():
 #   ## Generate random geometric complex
@@ -397,3 +404,106 @@ def test_laplacian_eigsh():
   ## Ensure eigenvalues are all the same
   assert np.allclose(ew_o, ew_m, atol=1e-8)
   
+def test_normalized_laplacian():
+  X, S = generate_dataset()
+  D1, D2 = boundary_matrix(S, p=(1,2))
+  
+  ## Generate weights 
+  wp = np.random.uniform(size=S.shape[0], low=5.0, high=10.0)
+  wq = np.array([max(wp[i], wp[j]) for i,j in S.faces(1)])
+
+  ## Start with the graph Laplacian 
+  L = D1 @ diags(wq) @ D1.T
+  assert is_symmetric(L)
+  assert all(np.linalg.eigvalsh(L.todense()) >= -1e-8) # psd check 
+
+  ## Calculate weighted degree for each vertex 
+  deg = np.zeros(S.shape[0])
+  for cc,(i,j) in enumerate(S.faces(1)):
+    deg[i] += wq[cc]
+    deg[j] += wq[cc]
+
+  ## Check spectral bound: note these may be negative! (3.5)
+  ew_asym = np.linalg.eigvalsh((diags(1/deg) @ L).todense()) 
+  assert max(ew_asym) <= 0+2 # Should be true, but some negative
+
+  ## Check Rayleigh quotient (3.6)
+  x = np.random.uniform(size=L.shape[0])
+  WNL = diags(1/deg) @ L  
+  ew_asym = np.linalg.eigvalsh(WNL.todense())
+  assert max(ew_asym) <= 2*(np.dot(x**2, deg) / np.dot(x**2, wp))  
+
+  ## Check spectrum is bounded in [0,p+2]
+  assert max(np.linalg.eigvalsh(WNL.todense())) <= 2
+
+  ## Check normalized symmetric is psd (Remark 3.2 in persistent Laplacian)
+  ew_sym = np.linalg.eigvalsh(diags(1/np.sqrt(deg)) @ L @ diags(1/np.sqrt(deg)).todense())
+  assert all(ew_sym >= -1e-8)
+
+  ## Check we really do have an inner PSD 
+  ew_form1 = (diags(np.sqrt(deg)) @ diags(ew_sym) @ diags(1/np.sqrt(deg))).diagonal()
+  ew_form2 = (diags(1/np.sqrt(deg)) @ diags(ew_sym) @ diags(np.sqrt(deg))).diagonal()
+  assert np.allclose(ew_form1, ew_sym)
+  assert np.allclose(ew_form2, ew_sym)
+  
+  ## Check we can get degree by setting vertex weights == 1 
+  LM = up_laplacian(S, weight=lambda s: 1 if len(s) == 1 else max(wp[s]))
+  assert np.allclose(LM.diagonal(), deg)
+
+  ## ------ SUMMARY ------ 
+  eigh = lambda X: np.linalg.eigvalsh(X.todense())
+  is_psd = lambda X: is_symmetric(X) and all(eigh(X) >= -1e-8) 
+  
+  assert is_psd(D1 @ diags(wq) @ D1.T)
+  assert not(is_psd(diags(1/wp) @ D1 @ diags(wq) @ D1.T))
+  assert is_psd(diags(1/np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wp)))
+  
+  s_inner = diags(eigh(diags(1/np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wp))))
+  assert np.allclose(s_inner.diagonal(), 1/np.sqrt(wp) * s_inner.diagonal() * np.sqrt(wp))
+
+  ## Normalized version 
+  NWL = diags(1/np.sqrt(deg)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(deg))
+  ew_norm = eigh(NWL)
+  assert is_psd(NWL) and max(ew_norm) <= 2
+
+  # ## Try pseudo-inverse by setting vertex weights to 0 
+  # deg0 = deg.copy()
+  # idx = np.random.choice(np.arange(len(deg0)), size=5, replace=False)
+  # deg0[idx] = 0.0
+  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  # NWL0 = diags(pseudo(np.sqrt(deg0))) @ D1 @ diags(wq) @ D1.T @ diags(pseudo(np.sqrt(deg0)))
+  # eigh(NWL)
+  
+  ## "Turns off" certain eigenvalues by zero'ing them  
+  ew_full = eigh(D1 @ diags(wq) @ D1.T )
+  ew_zero = pseudo(np.sqrt(deg0)) * ew_full * np.sqrt(deg0)
+  assert np.allclose(ew_full[~np.isclose(ew_zero, 0)], ew_zero[~np.isclose(ew_zero, 0)])
+
+
+  ## Normalized
+  eigh(diags(pseudo(deg)) @ D1 @ diags(wq) @ D1.T)
+  eigh(diags(pseudo(np.sqrt(deg))) @ D1 @ diags(wq) @ D1.T @ diags(pseudo(np.sqrt(deg))))
+
+  ## Not the same as above eigenvalues, but does follow zero-out principle
+  ## And is normalized ! 
+  ew0 = eigh(diags(pseudo(np.sqrt(deg0))) @ D1 @ diags(wq) @ D1.T @ diags(pseudo(np.sqrt(deg0))))
+  ew0_zero = pseudo(np.sqrt(deg0)) * ew0 * np.sqrt(deg0)
+  assert np.allclose(ew0[~np.isclose(ew0_zero, 0)], ew0_zero[~np.isclose(ew0_zero, 0)])
+  assert max(ew0_zero) <= 2.0
+
+  ## Conclusion: 
+  # eigh(diags(pseudo(np.sqrt(deg0))) * D1 @ diags(wq) @ D1.T * diags(np.sqrt(deg0)))
+
+  # L_up_asym = L @ diags(wp)
+  # L_up_sym = diags(np.sqrt(wp)) @ L @ diags(np.sqrt(wp))
+
+  # B1, B2 = boundary_matrix(S, p = (1, 2))
+  # LG = B1 @ B1.T
+  # ew = np.linalg.eigh(LG.todense())[0]
+  # deg = LG.diagonal()
+  # D = diags(1/np.sqrt(deg))
+  # ew_norm = np.linalg.eigh((D @ LG @ D).todense())[0] 
+  # assert max(ew_norm) <= 2.0
+  
+
+

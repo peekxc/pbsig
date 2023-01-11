@@ -1455,10 +1455,10 @@ For a list of additional properties the graph and normalized Laplacians satisfy,
 %\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
 \For{$\sigma \in K^{p+1}$}:
 %    $\mathrm{sgn}(\partial[\sigma])$
-    \For{$\tau, \, \tau' \in \partial[\sigma] \times \partial[\sigma]$}: 
+    \For{$\tau, \, \tau' \in \partial[\sigma]^{(2)}$}: 
     		\State $s, \; i, \; j \gets \mathrm{sgn}([\tau], \partial[\sigma]) \cdot \mathrm{sgn}([\tau'], \partial[\sigma]), \; h_p(\tau), \; h_p(\tau')$
-    		\State $y[i] \mathrel{{+}{=}} s \cdot x_{j} \cdot w_p^l(\tau) \cdot w_{p+1}(\sigma) \cdot w_p^r(\tau')$
-%    		\State $y_{j} \mathrel{{+}{=}} s \cdot x_{i} \cdot f_l(\tau') \cdot f(\sigma) \cdot f_r(\tau)$
+    		\State $y[\,\mathop{i}\,] \hspace{0.1325em} \mathrel{{+}{=}} s \cdot x_{j} \cdot w_p^l(\tau) \cdot w_{p+1}(\sigma) \cdot w_p^r(\tau')$
+    		\State $y[\,\mathop{j}\,] \mathrel{{+}{=}} s \cdot x_{i} \cdot w_p^l(\tau') \cdot w_{p+1}(\sigma) \cdot w_p^r(\tau)$ 
     \EndFor 
 \EndFor
 

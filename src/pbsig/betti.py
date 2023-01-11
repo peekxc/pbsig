@@ -639,22 +639,26 @@ class MuSignature:
     self._T4 = [None]*self.k
     i,j,k,l = self.R
     eigh_solver = parameterize_solver(self.L, **kwargs) 
+    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     for i, f in progressbar(enumerate(self.F), self.k):
       assert isinstance(f, Callable), "f must be a simplex-wise function f: S -> float !"
-      self._update_weights(f, defer=True)
-      self._update_smoothstep(self.R, w=w)
-      self.L.set_weights(self._fj, self._fk, self._fj).precompute()
+      self.update_weights(f, self.R, w=w)
+      # self.L.set_weights(self._fj, self._fk, self._fj)
+      self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fk, pseudo(np.sqrt(self._fj)))
       self._T1[i] = eigh_solver(self.L)
-      self.L.set_weights(self._fi, self._fk, self._fi).precompute()
+      # self.L.set_weights(self._fi, self._fk, self._fi)
+      self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fk, pseudo(np.sqrt(self._fi)))
       self._T2[i] = eigh_solver(self.L)
-      self.L.set_weights(self._fj, self._fl, self._fj).precompute()
+      # self.L.set_weights(self._fj, self._fl, self._fj)
+      self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fl, pseudo(np.sqrt(self._fj)))
       self._T3[i] = eigh_solver(self.L)
-      self.L.set_weights(self._fi, self._fl, self._fi).precompute()
+      # self.L.set_weights(self._fi, self._fl, self._fi)
+      self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fl, pseudo(np.sqrt(self._fi)))
       self._T4[i] = eigh_solver(self.L)
 
     def _fix_ew(ew): 
-      atol = kwargs['tol'] if 'tol' in kwargs else 1e-8
-      ew[np.isclose(ew, 0.0, atol=atol)] = 0.0 # compress
+      atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+      ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
       if not(all(np.isreal(ew)) and all(ew >= 0.0)):
         print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
         # print(ew)
@@ -676,24 +680,16 @@ class MuSignature:
     self._T4.eliminate_zeros() 
   
   ## Changes the eigenvalues! 
-  def _update_weights(self, f: Callable[SimplexLike, float], defer: bool = False):
+  def update_weights(self, f: Callable[SimplexLike, float], R: ArrayLike, w: float):
+    assert len(R) == 4 and is_sorted(R)
     self.fw = np.array([f(s) for s in self.L.faces])
     self.sw = np.array([f(s) for s in self.L.simplices])
-
-  ## Changes the eigenvalues! 
-  def _update_smoothstep(self, R: ArrayLike, w: float = 0.05, defer: bool = False):
-    """ Assumes fw and sw are set"""
-    assert len(R) == 4 and is_sorted(R)
     i,j,k,l = R 
-    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
-    sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-    sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-    su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-    su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-    self._fi = np.sqrt(su_i(self.fw))
-    self._fj = np.sqrt(su_j(self.fw))
-    self._fk = sd_k(self.sw)
-    self._fl = sd_l(self.sw)
+    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
+    self._fi = smooth_upstep(lb = i, ub = i+w)(self.fw) # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    self._fj = smooth_upstep(lb = j, ub = j+w)(self.fw) # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    self._fk = smooth_dnstep(lb = k-w, ub = k+delta)(self.sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(self.sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   
   ## Changes the eigenvalues! 
   ## TODO: allow multiple rectangles
