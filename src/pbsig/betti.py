@@ -609,67 +609,100 @@ class MuSignature:
 
   Constructor parameters: 
     S := Fixed simplicial complex to evaluate 
-    F := Iterable of functions of type Callable[SimplexLike, float]
+    F := Iterable of functions, each representing a scalar-product equipped to S
     R := Rectangle in the upper half-plane 
     p := dimension of persistence diagram to restrict R too. 
 
   Methods: 
     precompute := precomputes the signature
   """
-  def __init__(self, S: SimplicialComplex, F: Iterable[Callable], R: ArrayLike, p: int = 0):
+  def __init__(self, S: SimplicialComplex, family: Iterable[Callable], R: ArrayLike, p: int = 0, **kwargs):
     assert len(R) == 4 and is_sorted(R)
     # assert isinstance(S, SimplicialComplex)
-    assert not(F is iter(F)), "Iterable 'F' must be repeateable; a generator is not sufficient!"
-    self.L = up_laplacian(S, p, form='lo')
+    assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
+    self.L = up_laplacian(S, p, form='lo', **kwargs)
     self.R = R
-    self.S = S 
-    self.F = F
-    self.k = len(F)
+    self.family = family
+    self.np = S.shape[p]
+    self.nq = S.shape[p+1]
+    # self.S = S 
+    # self.F = F
     # self.tol = tol
     # self._signature = np.zeros(k, dtype=float)
   
   ## Does not change eigenvalues!
-  def precompute(self, w: float = 0.0, **kwargs) -> None:
+  def precompute(self, w: float = 0.0, normed: bool = False, **kwargs) -> None:
     """
     pp: 
     """
-    self._T1 = [None]*self.k
-    self._T2 = [None]*self.k
-    self._T3 = [None]*self.k
-    self._T4 = [None]*self.k
+    k = len(self.family)
+    self._T1 = [None]*k
+    self._T2 = [None]*k
+    self._T3 = [None]*k
+    self._T4 = [None]*k
     i,j,k,l = self.R
     eigh_solver = parameterize_solver(self.L, **kwargs) 
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-    for i, f in progressbar(enumerate(self.F), self.k):
-      assert isinstance(f, Callable), "f must be a simplex-wise function f: S -> float !"
+    # as-is? self.L.set_weights(self._fj, self._fl, self._fj)
+    for i, f in progressbar(enumerate(self.family), count=len(self.family)):
+      assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
       self.update_weights(f, self.R, w=w)
-      # self.L.set_weights(self._fj, self._fk, self._fj)
-      self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fk, pseudo(np.sqrt(self._fj)))
-      self._T1[i] = eigh_solver(self.L)
-      # self.L.set_weights(self._fi, self._fk, self._fi)
-      self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fk, pseudo(np.sqrt(self._fi)))
-      self._T2[i] = eigh_solver(self.L)
-      # self.L.set_weights(self._fj, self._fl, self._fj)
-      self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fl, pseudo(np.sqrt(self._fj)))
-      self._T3[i] = eigh_solver(self.L)
-      # self.L.set_weights(self._fi, self._fl, self._fi)
-      self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fl, pseudo(np.sqrt(self._fi)))
-      self._T4[i] = eigh_solver(self.L)
+      if not(normed): 
+        self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fk, pseudo(np.sqrt(self._fj)))
+        # print(f"LW: {sum(self.L.face_left_weights)}, CW: {sum(self.L.simplex_weights)}, RW: {sum(self.L.face_right_weights)}")
+        self._T1[i] = eigh_solver(self.L)
+        self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fk, pseudo(np.sqrt(self._fi)))
+        self._T2[i] = eigh_solver(self.L)
+        self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fl, pseudo(np.sqrt(self._fj)))
+        self._T3[i] = eigh_solver(self.L)
+        self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fl, pseudo(np.sqrt(self._fi)))
+        self._T4[i] = eigh_solver(self.L)
+        self.L.set_weights(None, None, None)
+      else: ## Normalize and solve
+        
+        ## 1: k, j
+        self.L.set_weights(None, self._fk, None)
+        self.L.precompute_degree()
+        fj_norm = self._fj * self.L.diagonal() # degrees
+        self.L.set_weights(pseudo(np.sqrt(fj_norm)), self._fk, pseudo(np.sqrt(fj_norm)))
+        self._T1[i] = eigh_solver(self.L)
 
+        ## 2: k, i 
+        self.L.set_weights(None, self._fk, None)
+        self.L.precompute_degree()
+        fi_norm = self._fi * self.L.diagonal() # degrees
+        self.L.set_weights(pseudo(np.sqrt(fi_norm)), self._fk, pseudo(np.sqrt(fi_norm)))
+        self._T2[i] = eigh_solver(self.L)
+
+        ## 3: l, j 
+        self.L.set_weights(None, self._fl, None)
+        self.L.precompute_degree()
+        fi_norm = self._fi * self.L.diagonal() # degrees
+        self.L.set_weights(pseudo(np.sqrt(fj_norm)), self._fl, pseudo(np.sqrt(fj_norm)))
+        self._T3[i] = eigh_solver(self.L)
+
+        ## 4: l, i 
+        self.L.set_weights(None, self._fl, None)
+        self.L.precompute_degree()
+        fi_norm = self._fi * self.L.diagonal() # degrees
+        self.L.set_weights(pseudo(np.sqrt(fi_norm)), self._fl, pseudo(np.sqrt(fi_norm)))
+        self._T4[i] = eigh_solver(self.L)
+        
+        ## For some reason, this is needed for determinism...
+        self.L.set_weights(None, None, None)
     def _fix_ew(ew): 
       atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
       ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
-      if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-        print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+      #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+        #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
         # print(ew)
         # print(min(ew))
       #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
       return np.maximum(ew, 0.0)
-    for i in range(self.k):
-      self._T1[i] = _fix_ew(self._T1[i])
-      self._T2[i] = _fix_ew(self._T2[i])
-      self._T3[i] = _fix_ew(self._T3[i])
-      self._T4[i] = _fix_ew(self._T4[i])
+    self._T1 = [_fix_ew(t) for t in self._T1]
+    self._T2 = [_fix_ew(t) for t in self._T2]
+    self._T3 = [_fix_ew(t) for t in self._T3]
+    self._T4 = [_fix_ew(t) for t in self._T4]
     self._T1 = csr_array(self._T1)
     self._T2 = csr_array(self._T2)
     self._T3 = csr_array(self._T3)
@@ -682,25 +715,26 @@ class MuSignature:
   ## Changes the eigenvalues! 
   def update_weights(self, f: Callable[SimplexLike, float], R: ArrayLike, w: float):
     assert len(R) == 4 and is_sorted(R)
-    self.fw = np.array([f(s) for s in self.L.faces])
-    self.sw = np.array([f(s) for s in self.L.simplices])
+    fw = np.array([f(s) for s in self.L.faces])
+    sw = np.array([f(s) for s in self.L.simplices])
     i,j,k,l = R 
     delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
-    self._fi = smooth_upstep(lb = i, ub = i+w)(self.fw) # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-    self._fj = smooth_upstep(lb = j, ub = j+w)(self.fw) # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-    self._fk = smooth_dnstep(lb = k-w, ub = k+delta)(self.sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-    self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(self.sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-  
+    self._fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    self._fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    self._fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+
+
   ## Changes the eigenvalues! 
   ## TODO: allow multiple rectangles
   def _update_rectangle(self, R: ArrayLike, defer: bool = False):
     pass
 
-  ## Should be easy to vectorize; sgn(S.data).sum(axis=0)
+  ## Vectorized version 
   def __call__(self, i: int = None, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
     eps,p,method = smoothing
     S = sgn_approx(eps=eps, p=p, method=method)
-    sig = np.zeros(len(self.F))
+    sig = np.zeros(len(self.family))
     sig += np.add.reduceat(S(self._T1.data), self._T1.indptr[:-1]) if len(self._T1.data) > 0 else 0
     sig -= np.add.reduceat(S(self._T2.data), self._T2.indptr[:-1]) if len(self._T2.data) > 0 else 0
     sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1]) if len(self._T3.data) > 0 else 0

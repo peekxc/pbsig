@@ -635,7 +635,6 @@ def is_symmetric(A) -> bool:
   return np.allclose(vl, vu)
 
 
-
 ## TODO: change weight to optionally be a string when attr system added to SC's
 def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
@@ -647,27 +646,33 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     
     Where W_p^l, W_p^r, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively. 
     
-    Let w: S -> R+ denote a weight function, . 
+    Let w: S -> R+ denote a weight function, corresponding to a scalar product S. 
+
+    weight == None  => all weight matrices are identity matrices
+    weight != None  => (W_p^l) = diag({ 1/w(s1), 1/w(s2), ..., 1/w(sn) }) and W_{p+1} = diag({ w(q1), w(q2), ..., w(qm) }) 
+    normed + weight => (W_p^l) = diag({ 1/sqrt(deg(s1)), 1/sqrt(deg(s2)), ..., 1/sqrt(deg(sn)) }) and W_{p+1} = diag({ w(q1), w(q2), ..., w(qm) }) 
 
     Some specializations:
-      - graph laplacian [Kirchoff] 
-      - normalized graph Laplacian [diffusion]
-      - weighted combinatorial up-laplacian W_p^l = diag({ 1/w(), 1/w(), ..., 1/w() }), W_{p+1} = diag({ w(), w(), ..., w() }) 
-      - weighted normalized combinatorial up-laplacian W_p^l = diag({ 1/w(), 1/w(), ..., 1/w() }) 
-      - weighted symmetric combinatorial up-laplacian := (W_p^l)^{+/2} @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ (W_p^r)^{+/2}
+      - (p=0)                           <=> graph laplacian  
+      - (p=0, weight=...)               <=> weighted graph laplacian
+      - (p=0, weight=..., normed=True)  <=> normalized weighted graph Laplacian 
+      - (p>0, weight=...)               <=> weighted combinatorial up-laplacian
+      - (p>0, weight=..., normed=True)  <=> normalized weighted combinatorial up-laplacian 
+      - weighted symmetric combinatorial up-laplacian := 
       - weighted normalized symmetric combinatorial up-laplacian := (D_p^l)^{+/2} @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ (D_p^r)^{+/2}
 
     Parameters:
       S := Simplicial Complex 
       p := dimension of the up Laplacian. Defaults to 0 (graph Laplacian).
       weight := Callable weight function to be evaluated on each simplex in S. Must return either a value or a 2-tuple (wl, wr). 
-      normed := 
+      normed := Whether to degree-normalize the corresponding up-laplacian. See details. 
       return_diag := whether to return diagonal degree matrix along with the laplacian
       form := return type. One of ['array', 'lo', 'function']
       dtype := dtype of associated laplacian. 
       kwargs := unused. 
     
-    This function is loosely based on SciPy 'laplacian' interface. See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
+    The argument names for this function is loosely based on SciPy 'laplacian' interface in the sparse.csgraph module. 
+    See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
     """
     # assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
@@ -752,6 +757,9 @@ class UpLaplacian(LinearOperator):
     else:
       self.L_up = laplacian.UpLaplacian1(q_ranks, nv, _np) 
     self.L_up.compute_indexes()
+    self.L_up.precompute_degree()
+
+  def precompute_degree(self) -> None:
     self.L_up.precompute_degree()
 
   def diagonal(self) -> ArrayLike:

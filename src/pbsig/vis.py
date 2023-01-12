@@ -1,9 +1,14 @@
-import bokeh 
-import networkx as nx
+
 import numpy as np
+from itertools import * 
+import networkx as nx
+from typing import * 
 
-from pbsig.linalg import * # cmds
+from .combinatorial import inverse_choose
+from .color import bin_color
+from .linalg import cmds
 
+import bokeh 
 from bokeh.plotting import figure, show
 from bokeh.plotting import figure, show, from_networkx
 from bokeh.models import GraphRenderer, Ellipse, Range1d, Circle, ColumnDataSource, MultiLine, Label, LabelSet, Button
@@ -12,6 +17,32 @@ from bokeh.models.graphs import StaticLayoutProvider
 from bokeh.io import output_notebook, show, save
 from bokeh.transform import linear_cmap
 from bokeh.layouts import column
+
+
+def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
+  n = inverse_choose(len(d), 2)
+  C = np.floor(bin_color(d)*255).astype(int)
+  D = np.zeros((n,n), dtype=np.uint32)
+  D_view = D.view(dtype=np.int8).reshape((n, n, 4))
+  for cc, (i,j) in enumerate(combinations(range(n),2)):
+    D_view[i,j,0] = D_view[j,i,0] = C[cc,0]
+    D_view[i,j,1] = D_view[j,i,1] = C[cc,1]
+    D_view[i,j,2] = D_view[j,i,2] = C[cc,2]
+    D_view[i,j,3] = D_view[j,i,3] = 255
+  min_col = (bin_color([0, 1])[0,:]*255).astype(int)
+  for i in range(n):
+    D_view[i,i,0] = 68
+    D_view[i,i,1] = 2
+    D_view[i,i,2] = 85
+    D_view[i,i,3] = 255
+  fig_kw = dict(width=200, height=200) | kwargs
+  p = figure(**fig_kw)
+  p.x_range.range_padding = p.y_range.range_padding = 0
+  # p.y_range.flipped = True
+  # p.y_range = Range1d(0,-10)
+  # p.x_range = Range1d(0,10)
+  p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
+  show(p)
 
 
 def plot_complex(S, pos = None, notebook=True, **kwargs):

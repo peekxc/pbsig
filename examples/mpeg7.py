@@ -13,16 +13,6 @@ from pbsig.vis import plot_complex
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
 
-# t1 = dataset[('turtle',1)]
-# t2 = dataset[('turtle',2)]
-# plt.plot(*t1.T); plt.plot(*t2.T)
-# t1 = t1 @ np.array([[-1, 0], [0, 1]])
-# plt.plot(*t1.T); plt.plot(*t2.T)
-# R, t = find_rigid_alignment(t1,t2)
-# plt.plot(*t1.T); plt.plot(*(t2 @ R.T).T)
-# plt.plot(*(t1 @ R).T); plt.plot(*t2.T)
-
-
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
@@ -62,10 +52,22 @@ def directional_transform(X: ArrayLike):
     return lambda s: max(fv[s])
   return _transform
 
+## Check idempotency
+X = dataset[('watch',1)]
+S = cycle_graph(X)
 Theta = np.linspace(0, 2*np.pi, 64, endpoint=False)
 dt = directional_transform(X)
-F = [dt(theta) for theta in Theta]
-sig = MuSignature(S, F, R[0,:])
+family = [dt(theta) for theta in Theta]
+sig = MuSignature(S, family, R[0,:])
+
+# sig.precompute(pp=0.30, tol=1e-4, w=0.30)
+# s_true = sig()
+# #print((id(sig.L), id(sig.R), id(sig.family)))181.59507751464844, CW: 53.28591875103302, RW: 181.59507751464844
+# sig.precompute(pp=0.30, tol=1e-4, w=0.30)
+# # print((id(sig.L), id(sig.R), id(sig.family)))
+# s_test = sig()
+# plt.plot(s_test);plt.plot(s_true)
+## assert idempotency 
 
 import line_profiler
 profile = line_profiler.LineProfiler()
@@ -79,30 +81,60 @@ profile.print_stats(output_unit=1e-3)
 ## compare signatures manually 
 Sigs = {}
 for k, X in dataset.items():
+  #if k[0] == 'watch':
   S = cycle_graph(X)
   dt = directional_transform(X)
-  F = [dt(theta) for theta in Theta]
-  Sigs[k] = MuSignature(S, F, R[0,:])
+  family = [dt(theta) for theta in Theta]
+  Sigs[k] = MuSignature(S, family, R[0,:])
 
 ## Precompute the singular values associated with the DT for each shape 
-for ii, sig in enumerate(Sigs.values()):
-  print(ii)
-  sig.precompute(pp=0.30, tol=1e-4, w=0.30)
+#keys = list(filter(lambda k: k[0] == 'watch', Sigs.keys())) # [(i,sig) for i,(k,sig) in enumerate(Sigs.items()) if k in keys]
+for ii, key in enumerate(Sigs.keys()):
+  Sigs[key].precompute(pp=0.30, tol=1e-4, w=0.30, normed=False)
 
 s1 = Sigs[('watch',1)]()
 s2 = Sigs[('watch',2)]()
-plt.plot(s1); plt.plot(s2)
+s3 = Sigs[('watch',3)]()
+s4 = Sigs[('watch',4)]()
+s5 = Sigs[('watch',5)]()
+s6 = Sigs[('watch',6)]()
+s7 = Sigs[('watch',7)]()
+s8 = Sigs[('watch',8)]()
+plt.plot(s1); plt.plot(s2); plt.plot(s3); plt.plot(s4); plt.plot(s5);plt.plot(s6);plt.plot(s7);plt.plot(s8)
 
 plt.plot(*dataset[('watch',1)].T)
 plt.plot(*dataset[('watch',2)].T)
 
 ## Stabilize signature with PoU 
 
+## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
+def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
+  
+  ## Center if requested 
+  a = a - np.mean(a) if center else a
+  b = b - np.mean(b) if center else b
 
-def pointwise_dist(a,b, check_reverse: bool = True):
-  d1 = np.linalg.norm(b-phase_align(a,b))
-  d2 = np.linalg.norm(b-phase_align(np.flip(a),b)) if check_reverse else d1
-  return min(d1, d2)
+  ## Scale if requested
+  normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
+  a = normalize(a) if (scale and not(np.all(a == a[0]))) else a
+  b = normalize(b) if (scale and not(np.all(b == b[0]))) else b
+
+  ## Align the signals by maximizing cross correlation
+  d1 = b-phase_align(a,b)
+  d2 = b-phase_align(np.flip(a),b) if check_reverse else d1
+
+  ## Compute whatever distance distance 
+  if method == "mae":
+    d = min(np.mean(np.abs(d1)), np.mean(np.abs(d2)))
+  elif method == "mse":
+    d = min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2)))
+  elif method == "rmse":
+    d = np.sqrt(min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2))))
+  elif method == "euc":
+    d = min(np.sum(np.abs(d1)), np.sum(np.abs(d1)))
+  else: 
+    raise ValueError(f"Invalid distance measure '{method}'")
+  return d
 
 ## See if they align
 from pbsig.signal_tools import phase_align
@@ -121,8 +153,10 @@ p.grid.grid_line_color = None
 params = dict(smoothing = (0.10, 1.2, 0))
 mu_sig = lambda k,m: Sigs[(k, m)](**params)
 
-keys = ['turtle', 'watch', 'bone', 'bell', 'bird', 'beetle', 'dog'] # 'chicken', 'lizzard'
-colors = ['firebrick', 'orange', 'black', 'blue', 'green', 'purple', 'yellow']
+keys =['bone', 'bird']
+colors=['orange', 'green']
+# keys = ['turtle', 'watch', 'bone', 'bell', 'bird', 'beetle', 'dog'] # 'chicken', 'lizzard'
+# colors = ['firebrick', 'orange', 'black', 'blue', 'green', 'purple', 'yellow']
 for t, c in zip(keys, colors):
   p.line(Theta, mu_sig(t,1), color=c)
   p.line(Theta, phase_align(mu_sig(t,2), mu_sig(t,1)), color=c)
@@ -134,60 +168,87 @@ show(p)
 
 ## Make a plot of each signal on a different horizontal slice, and then pictures 
 ## of the shapes on horizontal slices on the right 
+from bokeh.layouts import row, column
 
+params = dict(smoothing = (0.70, 1.4, 0))
+mu_sig = lambda k,m: Sigs[(k, m)](**params)
+
+# keys =['bone', 'bird']
+# colors=['orange', 'green']
+keys = ['turtle', 'watch', 'bone', 'bell', 'bird', 'beetle', 'bat', 'cup'] # 'chicken', 'lizzard', 'dog'
+colors = ['firebrick', 'orange', 'black', 'blue', 'green', 'purple', 'teal', 'pink']
+sig_figs = []
+for t, c in zip(keys, colors):
+  p = figure(height=75, width=350) # background_fill_color="#fafafa"
+  p.outline_line_color = None
+  p.grid.grid_line_color = None
+  p.line(Theta, mu_sig(t,1), color=c)
+  p.line(Theta, phase_align(mu_sig(t,2), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,3), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,4), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,5), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,6), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,7), mu_sig(t,1)), color=c)
+  p.line(Theta, phase_align(mu_sig(t,8), mu_sig(t,1)), color=c)
+  p.toolbar.logo = None
+  p.toolbar_location = None
+  p.min_border_left = 0
+  p.min_border_right = 0
+  p.min_border_top = 0
+  p.min_border_bottom = 2
+  p.axis.visible = False
+  p.xaxis.minor_tick_line_color = None 
+  p.yaxis.minor_tick_line_color = None 
+  p.xaxis.major_label_text_font_size = '0pt'  # turn off x-axis tick labels
+  p.yaxis.major_label_text_font_size = '0pt' 
+  sig_figs.append(p)
+
+rot_matrix = lambda theta: np.array([[np.cos(theta), np.sin(theta)],[-np.sin(theta), np.cos(theta)]])
+
+shapes = []
+shape_types = keys
+for i, st in enumerate(shape_types):
+  shape_figs = []
+  for j in range(1, 8):
+    X = dataset[(st, j)] @ rot_matrix(np.random.uniform(size=1,low=0, high=2*np.pi).item())
+    p = figure(height=75, width=75, match_aspect=True, aspect_scale=1)
+    p.scatter(X[:,0], X[:,1], size=1.5)
+    p.patch(X[:,0], X[:,1], alpha=0.40, line_width=2.5, color=colors[i])
+    p.toolbar_location = None
+    p.axis.visible = False
+    p.grid.grid_line_color = None
+    p.min_border_left = 0
+    p.min_border_right = 0
+    p.min_border_top = 0
+    p.min_border_bottom = 0
+    shape_figs.append(p)
+  shapes.append(shape_figs)
+
+show(row(
+  column(*sig_figs),
+  column(*[row(*s) for s in shapes])
+))
+
+
+# phase_align(mu_sig('turtle',4), mu_sig('turtle',1), return_offset=True)
 
 for s1,s2 in product(['bone', 'watch', 'bird'], ['bone', 'watch', 'bird']):
   for i,j in combinations(range(1, 4), 2):
-    print(f"{s1}-{i}, {s2}-{j} ~ d={pointwise_dist(mu_sig(s1,i), mu_sig(s2,j))}")
+    print(f"{s1}-{i}, {s2}-{j} ~ d={signal_dist(mu_sig(s1,i), mu_sig(s2,j))}")
 
 
 from pbsig.signal_tools import phase_align
 from itertools import combinations
-filter(lambda k: k[0] in [""], Sigs.keys())
-n = len(Sigs)
 d = []
-
+params = dict(smoothing=(0.65, 2.0, 0))
 for (k1,k2) in combinations(Sigs.keys(),2):
   a,b = Sigs[k1](**params), Sigs[k2](**params)
-  d1 = np.linalg.norm(b-phase_align(a,b))
-  d2 = np.linalg.norm(b-phase_align(np.flip(a),b))
-  d.append(min(d1,d2))
+  d.append(signal_dist(a,b,scale=False))
 
-from pbsig.color import bin_color
-C = np.floor(bin_color(d)*255).astype(int)
-D = np.zeros((n,n), dtype=np.uint32)
-D_view = D.view(dtype=np.int8).reshape((n, n, 4))
-for cc, (i,j) in enumerate(combinations(range(n),2)):
-  D_view[i,j,0] = D_view[j,i,0] = C[cc,0]
-  D_view[i,j,1] = D_view[j,i,1] = C[cc,1]
-  D_view[i,j,2] = D_view[j,i,2] = C[cc,2]
-  D_view[i,j,3] = D_view[j,i,3] = 255
-
-min_col = (bin_color([0, 1])[0,:]*255).astype(int)
-for i in range(n):
-  D_view[i,i,0] = 68
-  D_view[i,i,1] = 2
-  D_view[i,i,2] = 85
-  D_view[i,i,3] = 255
-
-p = figure(width=200, height=200)
-p.x_range.range_padding = p.y_range.range_padding = 0
-# p.y_range.flipped = True
-# p.y_range = Range1d(0,-10)
-# p.x_range = Range1d(0,10)
-p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
-show(p)
-
-d = np.zeros((n,n), dtype=np.uint32)
-d_view = d.view(dtype=np.int8).reshape((n, n, 4))
-np.floor(bin_color(D)*255).astype(int)
-
-
-
+from pbsig.vis import plot_dist
+plot_dist(d)
 
 from scipy.spatial.distance import pdist, squareform
-
-
 from pbsig.utility import * 
 
 procrustes_dist_cc(dataset[('turtle',1)], dataset[('turtle',2)], do_reflect=True)

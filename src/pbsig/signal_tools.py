@@ -18,7 +18,7 @@ def _match_index(x, ref):
   index = np.argmax(cxy)
   return index if index < len(x) else index - len(cxy)
 
-def phase_align(s1: Sequence, s2: Sequence):
+def phase_align(s1: Sequence, s2: Sequence, return_offset: bool = False):
   """
   Aligns s1 with s2 = rolls s1 to minimize sum of squared pairwise differences between s1 and s2. 
 
@@ -28,7 +28,7 @@ def phase_align(s1: Sequence, s2: Sequence):
   # fft gets us close; check O(1) offsets in neighborhood for exact rolling 
   offsets = np.fromiter(range(-5, 5), dtype=int)
   r_ind = np.argmin([np.linalg.norm(s2 - np.roll(s1, ind+i)) for i in offsets])
-  return(np.roll(s1, ind+offsets[r_ind]))
+  return(ind+offsets[r_ind] if return_offset else np.roll(s1, ind+offsets[r_ind]))
 
 
 # ## From: https://stackoverflow.com/a/4696026/6912436

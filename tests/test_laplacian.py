@@ -482,14 +482,14 @@ def test_normalized_laplacian():
   LM = up_laplacian(S, weight=lambda s: 1 if len(s) == 1 else max(wp[s]))
   assert np.allclose(LM.diagonal(), deg)
 
-  ## ------ SUMMARY ------ 
+  ## Test positive semi definite-ness 
   eigh = lambda X: np.linalg.eigvalsh(X.todense())
   is_psd = lambda X: is_symmetric(X) and all(eigh(X) >= -1e-8) 
-  
   assert is_psd(D1 @ diags(wq) @ D1.T)
   assert not(is_psd(diags(1/wp) @ D1 @ diags(wq) @ D1.T))
   assert is_psd(diags(1/np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wp)))
   
+  ## Test cancellations from left and right
   s_inner = diags(eigh(diags(1/np.sqrt(wp)) @ D1 @ diags(wq) @ D1.T @ diags(1/np.sqrt(wp))))
   assert np.allclose(s_inner.diagonal(), 1/np.sqrt(wp) * s_inner.diagonal() * np.sqrt(wp))
 
@@ -498,13 +498,12 @@ def test_normalized_laplacian():
   ew_norm = eigh(NWL)
   assert is_psd(NWL) and max(ew_norm) <= 2
 
-  # ## Try pseudo-inverse by setting vertex weights to 0 
+  ## Try pseudo-inverse by setting vertex weights to 0 
   deg0 = deg.copy()
   idx = np.random.choice(np.arange(len(deg0)), size=5, replace=False)
   deg0[idx] = 0.0
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
 
-  
   ## "Turns off" certain eigenvalues by zero'ing them  
   ew_full = eigh(D1 @ diags(wq) @ D1.T )
   ew_zero = pseudo(np.sqrt(deg0)) * ew_full * np.sqrt(deg0)
@@ -562,4 +561,6 @@ def test_normalized_laplacian():
   # assert max(ew_norm) <= 2.0
   
 
+# def test_rank_eq():
+  
 
