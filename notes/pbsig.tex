@@ -362,9 +362,9 @@ For simplicity of presentation, but without loss in generality, we assume the or
 \end{proposition}
 \noindent We give proofs the equivalence between these two expressions in the appendix. Computationally, note that the element-wise definition of $\hat{\partial}_p^{i,j}$ from~\eqref{eq:param_boundary_matrix} corresponds to the product: 
 \begin{equation}
-	\hat{\partial}_p^{i,j}(h) := \widetilde{W}_p^i(h)^+ \circ \partial_p \circ W_{p+1}^j(h)
+	\hat{\partial}_p^{i,j}(h) := V_p^i(h)^+ \circ \partial_p \circ W_{p+1}^j(h)
 \end{equation}
-where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matrix $\mathrm{diag}(\{\, g_h(\sigma_1), g_h(\sigma_2), \dots, g_h(\sigma_N) \, \})$ obtained by setting $g_h(\sigma) = (S_x \circ f_h)(\sigma)$ if $\mathrm{dim}(\sigma) = p$ for all $\sigma \in K$ and $g_h(\sigma) = 0$ otherwise. The definition of $\widetilde{W}_p^x$ synonymous, where $\tilde{g}_h(\sigma) = 1 - (S_x \circ f_h)(\sigma)$ and $A^+$ denotes the pseudo-inverse of $A$. Thus, definition~\ref{def:time_boundary_matrix} corresponds to a \emph{fixed} $p$-th boundary matrix $\partial_p$ whose rows and columns are weighted by $\widetilde{W}_p^i(h)$ and $W_{p+1}^j(h)$, respectively. As a result, there is no need to explicitly maintain an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of simplices as a function of $\mathcal{H}$ to obtain persistence-related information, as is done by the vineyards algorithm~\cite{cohen2006vines}---it is enough to simply preserve the correct sign pattern.
+where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matrix $\mathrm{diag}(\{\, g_h(\sigma_1), g_h(\sigma_2), \dots, g_h(\sigma_N) \, \})$ obtained by setting $g_h(\sigma) = (S_x \circ f_h)(\sigma)$ if $\mathrm{dim}(\sigma) = p$ for all $\sigma \in K$ and $g_h(\sigma) = 0$ otherwise. The definition of $V_p^x$ synonymous, where $\tilde{g}_h(\sigma) = 1 - (S_x \circ f_h)(\sigma)$ and $A^+$ denotes the pseudo-inverse of $A$. Thus, definition~\ref{def:time_boundary_matrix} corresponds to a \emph{fixed} $p$-th boundary matrix $\partial_p$ whose rows and columns are weighted by $\widetilde{W}_p^i(h)$ and $W_{p+1}^j(h)$, respectively. As a result, there is no need to explicitly maintain an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of simplices as a function of $\mathcal{H}$ to obtain persistence-related information, as is done by the vineyards algorithm~\cite{cohen2006vines}---it is enough to simply preserve the correct sign pattern.
 Extending from this idea, we now turn to the main results: a spectral relaxation of the counting invariants, and the resulting implications. 
 
 %% TODO: proof of sign pattern stuff 
@@ -701,8 +701,8 @@ The same result holds for up-, down-, and combinatorial Laplacians~\cite{}. We r
 Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{def:time_boundary_matrix}. Assume that the filter function $f : K \to \mathbb{R}_+$ is strictly positive. By taking the product $(\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T$ for some choice of $h \in \mathcal{H}$, we have:
 \begin{align*}
 	\hat{L}_p^{\text{up}}(K, f) &= (\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T \\
-	&= (\widetilde{W}_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (\widetilde{W}_p^i)^{+} \\
-	&\propto (\widetilde{W}_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (\widetilde{W}_p^i)^{+/2}  \numberthis
+	&= (V_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (V_p^i)^{+} \\
+	&\propto (V_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (V_p^i)^{+/2}  \numberthis
 \end{align*}
 where $A^{+/2} = (A^{1/2})^+$. Thus, in this way we think of our definition of a parameterized boundary matrix as corresponding to a choice of a \emph{non-negative scalar-product} on the vector space $C^p(K, \mathbb{R})$, which induces a (degenerate) inner product $\langle \cdot, \cdot \rangle : C^p(K, \mathbb{R}) \times C^p(K, \mathbb{R}) \to \mathbb{R}$ on $C^p(K, \mathbb{R})$. Equivalently, the choice of non-negative weight function induces an inner product on the quotient space $W = C^p(K, \mathbb{R}) / \{ b : \lvert b \rvert = 0 \}$.
 We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
@@ -736,8 +736,8 @@ has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i = \mat
 \section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
 In this section we discuss the computational details involved in evaluating the rank function on the boundary matrices whose columns take the form~\eqref{eq:alt_sum}. 
-As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, and the singular values of $X$ are given by the square roots of eigenvalues of $X X^T$ (or $X^T X$), we focus on iterative methods specialized for symmetric matrices. 
-%In particular, we focus on the Lanczos iteration applied to positive semi-definite matrices, diagonally dominant (DD) and strictly diagonally dominant (SDD) matrices, and combinatorial Laplacians. We also show how these methods made be adapted to efficiently compute~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}.
+As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, which as we've mentioned are given by the square roots of eigenvalues of the corresponding Laplace operator, we focus on iterative methods specialized for symmetric positive semi-definite matrices arising as Laplacians. 
+In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}
@@ -848,10 +848,10 @@ In the next section, we demonstrate how to reduce this complexity using the stru
 % ----- Laplacian's encoding geometry: https://arxiv.org/pdf/1105.2712.pdf ----
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
-\subsubsection{Combinatorial Laplacians}\label{sec:comb_lap}
+\subsubsection{The efficiency of the Laplacian \texttt{matvec}}\label{sec:comb_lap}
 The efficiency of the Lanczos method depends on two crucial components: the three-term recurrence and fast matrix-vector product. 
-In contrast, whereas $x \mapsto Lx = (\partial_1 \partial_1^T)x$ can be carried out in essentially linear time time in the number of edges of the underlying graph, it is not immediately clear whether $x \mapsto \partial_p \partial_p^T x$ can be carried out in a time linear in the number of $p+1$ simplices for more general $p > 1$. 
-The former only arises in the decomposition of symmetric matrices and the latter depends the existence of combinatorial structure in the $x \mapsto A x$ operation. 
+The former only arises in the decomposition of symmetric matrices and the latter depends on the structure of the $x \mapsto A x$ operation. 
+Though the Laplacian operator we consider here are all symmetric---enabling the use of the three-term recurrence---and $x \mapsto Lx = (\partial_1 \partial_1^T)x$ can be carried out in linear time in the number of edges of the underlying graph, it is not immediately clear whether $x \mapsto \partial_p \partial_p^T x$ can be carried out in a time linear in the number of $p+1$ simplices for more general $p > 1$, or whether the computation is efficient in practice. Moreover, as mentioned in~\ref{}, the exact form of the matrix-vector product depends on the type of Laplacian operator. 
 Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
@@ -863,14 +863,14 @@ To begin, consider the graph Laplacian. the linear and quadratic forms of $L$ ma
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 %	  x^T L x = \sum\limits_{i \sim j} f(v_i, v_j) (x_i - x_j)^2  & &&
 \end{flalign}
+Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
+In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
 %For an abstract simplicial complex $K$ defined over vertex set $V$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 
 %The \emph{coboundary operator} $\delta_p : C_{p}(K, \mathbb{R}) \to C_{p+1}(K, \mathbb{R})$ that sends $p$-chains to $p+1$-chains is the well known dual of $\partial_p$. 
 
 %~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
 %Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation .
-Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
-As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
-In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
  
 To characterize the explicit forms of $L_p^{\mathrm{up}}$ for $p \geq 1$, we need an appropriate generalization the path-connected relation from~\eqref{eq:lap_quad_from}. To make this clear, we require more notation.
 Let $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and let $d_f(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} f(\sigma)^2$ denote the \emph{degree} of $\tau$.
