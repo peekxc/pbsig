@@ -2,3 +2,9 @@
 	path = extern/pybind11
 	url = ../../pybind/pybind11
 	branch = stable
+[submodule "extern/pthash"]
+	path = extern/pthash
+	url = https://github.com/jermp/pthash.git
+[submodule "extern/essentials"]
+	path = extern/essentials
+	url = https://github.com/jermp/essentials.git
