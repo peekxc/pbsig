@@ -11,12 +11,18 @@ from pbsig.vis import plot_complex
 
 # %% Load dataset 
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
-dataset = { k : pht_preprocess_pc(S, nd=64) for k, S in mpeg7(simplify=150).items() }
+dataset = mpeg7()
 
 #%% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-L = up_laplacian(S, p=0, form='lo')
+L = up_laplacian(S, p=0, form='lo', weight=lambda s: max((X @ np.array([1,0]))[s]) + 2.0)
+
+from scipy.sparse import eye
+from scipy.sparse.linalg import aslinearoperator
+cI = aslinearoperator(0.01*eye(L.shape[0]))
+
+# timeit.timeit(lambda: )
 
 # fv = X @ np.array([0,1])
 # K = MutableFiltration(S, f = lambda s: max(fv[s]))
@@ -74,6 +80,8 @@ profile = line_profiler.LineProfiler()
 profile.add_function(sig.precompute)
 profile.add_function(sig.L._matvec)
 profile.add_function(sig.L._matmat)
+profile.add_function(sig.L.L_up.precompute_degree)
+profile.add_function(sig.update_weights)
 profile.enable_by_count()
 sig.precompute()
 profile.print_stats(output_unit=1e-3)
@@ -90,7 +98,7 @@ for k, X in dataset.items():
 ## Precompute the singular values associated with the DT for each shape 
 #keys = list(filter(lambda k: k[0] == 'watch', Sigs.keys())) # [(i,sig) for i,(k,sig) in enumerate(Sigs.items()) if k in keys]
 for ii, key in enumerate(Sigs.keys()):
-  Sigs[key].precompute(pp=0.30, tol=1e-4, w=0.30, normed=False)
+  Sigs[key].precompute(pp=0.30, tol=1e-4, w=1.30, normed=True)
 
 s1 = Sigs[('watch',1)]()
 s2 = Sigs[('watch',2)]()
@@ -106,35 +114,6 @@ plt.plot(*dataset[('watch',1)].T)
 plt.plot(*dataset[('watch',2)].T)
 
 ## Stabilize signature with PoU 
-
-## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
-def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
-  
-  ## Center if requested 
-  a = a - np.mean(a) if center else a
-  b = b - np.mean(b) if center else b
-
-  ## Scale if requested
-  normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
-  a = normalize(a) if (scale and not(np.all(a == a[0]))) else a
-  b = normalize(b) if (scale and not(np.all(b == b[0]))) else b
-
-  ## Align the signals by maximizing cross correlation
-  d1 = b-phase_align(a,b)
-  d2 = b-phase_align(np.flip(a),b) if check_reverse else d1
-
-  ## Compute whatever distance distance 
-  if method == "mae":
-    d = min(np.mean(np.abs(d1)), np.mean(np.abs(d2)))
-  elif method == "mse":
-    d = min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2)))
-  elif method == "rmse":
-    d = np.sqrt(min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2))))
-  elif method == "euc":
-    d = min(np.sum(np.abs(d1)), np.sum(np.abs(d1)))
-  else: 
-    raise ValueError(f"Invalid distance measure '{method}'")
-  return d
 
 ## See if they align
 from pbsig.signal_tools import phase_align
@@ -229,24 +208,30 @@ show(row(
   column(*[row(*s) for s in shapes])
 ))
 
+Counter([k[0] for k in Sigs.keys()])
 
 # phase_align(mu_sig('turtle',4), mu_sig('turtle',1), return_offset=True)
 
 for s1,s2 in product(['bone', 'watch', 'bird'], ['bone', 'watch', 'bird']):
   for i,j in combinations(range(1, 4), 2):
-    print(f"{s1}-{i}, {s2}-{j} ~ d={signal_dist(mu_sig(s1,i), mu_sig(s2,j))}")
+    print(f"{s1}-{i}, {s2}-{j} ~ d={signal_dist(mu_sig(s1,i), mu_sig(s2,j), scale=False, center=False, method='convolve')}")
 
-
+from pbsig.color import scale_interval, hist_equalize
 from pbsig.signal_tools import phase_align
 from itertools import combinations
-d = []
-params = dict(smoothing=(0.65, 2.0, 0))
-for (k1,k2) in combinations(Sigs.keys(),2):
+from math import comb
+d = np.zeros(int((len(Sigs)*(len(Sigs)-1))/2))
+params = dict(smoothing=(0.90, 1.5, 0))
+for ii, (k1,k2) in enumerate(combinations(Sigs.keys(),2)):
   a,b = Sigs[k1](**params), Sigs[k2](**params)
-  d.append(signal_dist(a,b,scale=False))
+  d[ii] = signal_dist(a,b,scale=True,center=False, method='mse')
+
+list(combinations(Sigs.keys(),2))
 
 from pbsig.vis import plot_dist
-plot_dist(d)
+plot_dist(d, width=350, height=350)
+# plot_dist(hist_equalize(np.array(d)), width=350, height=350)
+# plot_dist(np.log(d))
 
 from scipy.spatial.distance import pdist, squareform
 from pbsig.utility import * 

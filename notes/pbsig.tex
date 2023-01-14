@@ -863,7 +863,7 @@ To begin, consider the graph Laplacian. the linear and quadratic forms of $L$ ma
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 %	  x^T L x = \sum\limits_{i \sim j} f(v_i, v_j) (x_i - x_j)^2  & &&
 \end{flalign}
-Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the (weighted) degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
+Observe that, if $G = (V, E)$ has $n$ vertices and $m$ edges, the matrix-vector product in~\eqref{eq:lap_quad_from} can be evaluated in $O(m)$ time and $O(n)$ storage via two linear-time edge traversals: one to accumulate the degree of each vertex, and one to subtract off components $x_j$ from incident edges at $i$. 
 As the orientation of higher dimensional simplices changes the sign of the off-diagonal entries in $L_p^\ast$, it is not immediately clear whether~\eqref{eq:lap_quad_from} generalizes for $p > 0$.
 In particular, writing down the explicit expression of the matrix-vector product of $L_p^{\text{up}}$ requires  evaluating the sign of each oriented $[\tau] \in K^{p}$ in the boundary of each of its proper 1-d cofaces $[\sigma] \in K^{p+1}$. 
 %For an abstract simplicial complex $K$ defined over vertex set $V$, recall the $p$-th chain group $C_p(K, \mathbb{R})$ with coefficients in $\mathbb{R}$ forms a vector space over $\mathbb{R}$ with  basis $\{[\sigma] : \sigma \in K^p \}$, and that the boundary operator $\partial_p : C_p(K, \mathbb{R}) \to C_{p-1}(K, \mathbb{R})$ satisfies $\partial_{p-1} \circ \partial_p = 0$. 

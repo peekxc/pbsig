@@ -689,6 +689,7 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       wpr = wpl
     wq = np.array([float(weight(s)) for s in S.faces(p+1)])
     assert len(wpl) == ns[p] and len(wq) == ns[p+1], "Invalid weight arrays given."
+    assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
       B = boundary_matrix(S, p = p+1)
       L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
@@ -847,4 +848,36 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)
 
+from pbsig.signal_tools import phase_align
+## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
+def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
+  
+  ## Center if requested 
+  a = a - np.mean(a) if center else a
+  b = b - np.mean(b) if center else b
 
+  ## Scale if requested
+  normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
+  a = normalize(a) if (scale and not(np.all(a == a[0]))) else a
+  b = normalize(b) if (scale and not(np.all(b == b[0]))) else b
+
+  ## Align the signals by maximizing cross correlation
+  d1 = b-phase_align(a,b)
+  d2 = b-phase_align(np.flip(a),b) if check_reverse else d1
+
+  ## Compute whatever distance distance 
+  if method == "mae":
+    d = min(np.mean(np.abs(d1)), np.mean(np.abs(d2)))
+  elif method == "mse":
+    d = min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2)))
+  elif method == "rmse":
+    d = np.sqrt(min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2))))
+  elif method == "euc":
+    d = min(np.sum(np.abs(d1)), np.sum(np.abs(d1)))
+  elif method == "convolve":
+    base_area = np.trapz(np.convolve(a,a))
+    d = np.linalg.norm(base_area - np.trapz(np.convolve(b, phase_align(a,b))))
+    d = min(d, np.linalg.norm(base_area - np.trapz(np.convolve(b, phase_align(np.flip(a),b)))))
+  else: 
+    raise ValueError(f"Invalid distance measure '{method}'")
+  return d

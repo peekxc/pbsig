@@ -119,28 +119,38 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   S = contours[:,0,:]
   return(S)
   
-def mpeg7(contour: bool = True, simplify: int = 150):
+def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
   import io
-  # from . import *
   from os.path import exists
   from pbsig import data as package_data_mod
   from pbsig.utility import simplify_outline
   from PIL import Image, ImageFilter
-  #base_dir = package_data_mod.__path__._path[0] + '/mpeg7'
-  base_dir = _package_data('mpeg7')
+  import pickle 
+  base_dir = _package_data('')
+  if simplify == 150 and contour == True and which == "default":
+    mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
+    return mpeg7
   mpeg7 = []
-  # for fn in os.listdir(base_dir):
-  #   if fn[-3:] == 'gif':
-  #     mpeg7.append(Image.open(base_dir+'/'+fn))
-  # for member in open_tar(base_dir+"/mpeg7.tar.xz", mode="r:xz"):
-  #   f = tar.extractfile(member)
-  #   if member.size > 0:
-  #     content = f.read()
-  #     mpeg7.append(Image.open(io.BytesIO(content)))
-  # med types: "bird", "bell"
-  # bad types: "lizzard", "chicken"
-  shape_types = ["turtle", "watch", "bird", "bone", "bell", "bat", "beetle", "butterly", "car", "cup", "dog"]
-  shape_nums = [1,2,3,4,5,6,7,8] #3,4,5
+  _all_shapes = ['Bone', 'Comma', 'Glas', 'HCircle', 'Heart', 'Misk', 'apple', 'bat', 
+       'beetle', 'bell', 'bird', 'bottle', 'brick', 'butterfly', 
+       'camel', 'car', 'carriage', 'cattle', 'cellular_phone', 'chicken',
+       'children', 'chopper', 'classic', 'confusions', 'confusions.eps',
+       'confusions.fig', 'crown', 'cup', 'deer', 'device0', 'device1',
+       'device2', 'device3', 'device4', 'device5', 'device6', 'device7',
+       'device8', 'device9', 'dog', 'elephant', 'face', 'fish',
+       'flatfish', 'fly', 'fork', 'fountain', 'frog', 'guitar', 'hammer',
+       'hat', 'horse', 'horseshoe', 'jar', 'key', 'lizzard', 'lmfish',
+       'octopus', 'pencil', 'personal_car', 'pocket', 'rat', 'ray',
+       'sea_snake', 'shapedata', 'shapedata.eps', 'shapedata.fig', 'shoe',
+       'spoon', 'spring', 'stef', 'teddy', 'tree', 'truck', 'turtle',
+       'watch']
+  default_shapes = [
+    "turtle", "watch", "bird", "bone", "bell", "bat", "beetle", "butterly", 
+    "car", "cup", "teddy", "spoon", "shoe", "ray", "sea_snake", "personal_car", 
+    "key", "horse", "hammer", "frog", "fork", "flatfish", "elephant"
+  ]
+  shape_types = default_shapes if which == "default" else _all_shapes
+  shape_nums = range(20) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
   normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
   dataset = {}
   for st in shape_types:

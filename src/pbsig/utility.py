@@ -121,7 +121,7 @@ def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), 
   return(intervals)
   
 ## From: https://stackoverflow.com/questions/3160699/python-progress-bar
-def progressbar(it, count=None, prefix="", size=60, out=sys.stdout): # Python3.6+
+def progressbar(it, count=None, prefix="", size=60, out=sys.stdout, newline: bool = True): # Python3.6+
   count = len(it) if count == None else count 
   def show(j):
     x = int(size*j/count)
@@ -130,18 +130,7 @@ def progressbar(it, count=None, prefix="", size=60, out=sys.stdout): # Python3.6
   for i, item in enumerate(it):
     yield item
     show(i+1)
-  print("\n", flush=True, file=out)
-
-def progressbar_nested(it, inner_count=None, prefix="", size=60, out=sys.stdout): # Python3.6+
-  count = len(it) if count == None else count 
-  def show(j):
-    x = int(size*j/count)
-    print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count}", end='\r', file=out, flush=True)
-  show(0)
-  for i, item in enumerate(it):
-    yield item
-    show(i+1)
-  print("\n", flush=True, file=out)
+  print("\n" if newline else "", flush=True, file=out)
 
 def is_sorted(L: Iterable, compare: Callable = le):
   a, b = tee(L)
