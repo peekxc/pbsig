@@ -44,7 +44,9 @@ ext_modules = [
     '_laplacian', 
     sources = ['src/pbsig/laplacian.cpp'], 
     include_dirs=[
-      '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
+      '/Users/mpiekenbrock/pbsig/extern/pybind11/include', 
+      '/Users/mpiekenbrock/pbsig/extern/pthash/include',
+      '/Users/mpiekenbrock/pbsig/extern/pthash/external'
     ], 
     extra_compile_args=extra_compile_args,
     language='c++17', 

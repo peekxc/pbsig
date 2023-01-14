@@ -7,7 +7,7 @@ import primme
 from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
-from scipy.sparse.csgraph import structural_rank
+from scipy.sparse.csgraph import *
 
 ## Local imports
 from .simplicial import * 
@@ -16,6 +16,7 @@ import _lanczos as lanczos
 import _laplacian as laplacian
 
 # Neumanns majorization doesn't apply? rank_lb = sum(np.sort(diagonal(A)) >= tol)
+## TODO: replace with new operator norm bounds for the Laplacian?
 def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True) -> int:
   assert A.shape[0] == A.shape[1], "Matrix 'A' must be square"
   if upper: 
@@ -356,6 +357,7 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
 # def as_positive_definite(A: Union[ArrayLike, LinearOperator], c: float = 0.0):
 
 def diagonal(A: Union[ArrayLike, LinearOperator]):
+  """ Generic to get the diagonal of a sparse matrix, an array, or a linear operator """
   if hasattr(A, 'diagonal'):
     return A.diagonal()
   else: 
@@ -444,7 +446,6 @@ def as_linear_operator(A, stats=True):
 
 
 ## TODO: make generalized up- and down- adjacency matrices for simplicial complexes
-
 
 class UpLaplacianPy(LinearOperator):
   """ 
@@ -718,7 +719,7 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       raise ValueError(f"Unknown form '{form}'.")
 
 
-class UpLaplacian(LinearOperator):
+class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
   """ 
   Linear operator for weighted p up-Laplacians of simplicial complexes. 
   
@@ -731,7 +732,7 @@ class UpLaplacian(LinearOperator):
 
   The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
   """
-  __slots__ = ('shape', 'dtype', 'simplices', 'faces', 'L_up')
+  __slots__ = ('shape', 'dtype')
   # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
 
   ## TODO: Remove 'F'? Add more params?
@@ -748,73 +749,63 @@ class UpLaplacian(LinearOperator):
     self.shape = (len(F), len(F))
     self.dtype = np.dtype(np.float32) if dtype is None else dtype
     
-    ## TODO: replace with soft containers via combinatorial ranks
+    ## TODO: replace with soft containers/properties via combinatorial ranks
     self.simplices = S
     self.faces = F
 
     ## Parameterize the internal operator
     nv, _np = max([max(s) for s in self.simplices])+1, len(F)
     q_ranks = rank_combs(self.simplices, k=p+2, n=nv)
-    if p == 0:  
-      self.L_up = laplacian.UpLaplacian0(q_ranks, nv, _np) # TODO: Inherit from these instead? 
-    else:
-      self.L_up = laplacian.UpLaplacian1(q_ranks, nv, _np) 
-    self.L_up.compute_indexes()
-    self.L_up.precompute_degree()
+    laplacian.UpLaplacian0.__init__(self, q_ranks, nv, _np)
 
-  def precompute_degree(self) -> None:
-    self.L_up.precompute_degree()
+    ## Precompute things necessary for evaluation
+    self.compute_indexes()
+    self.precompute_degree()
 
   def diagonal(self) -> ArrayLike:
-    return self.L_up.degrees
+    return self.degrees
 
   @property 
   def face_left_weights(self): 
-    return self.L_up.fpl
+    return self.fpl
 
   @face_left_weights.setter
   def face_left_weights(self, value: ArrayLike) -> None:
     assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L_up.fpl = value.astype(self.dtype)
+    self.fpl = value.astype(self.dtype)
 
   @property 
   def face_right_weights(self): 
-    return self.L_up.fpr
+    return self.fpr
 
   @face_right_weights.setter
   def face_right_weights(self, value: ArrayLike) -> None:
     assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L_up.fpr = value.astype(self.dtype)
+    self.fpr = value.astype(self.dtype)
 
   @property
   def simplex_weights(self): 
-    return self.L_up.fq
+    return self.fq
   
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
-    assert len(value) == len(self.L_up.fq) and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == len(self.fq) and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.L_up.fq = value.astype(self.dtype)
+    self.fq = value.astype(self.dtype)
 
   def index(self, face: SimplexLike) -> int:
-    face_rank = rank_comb(face, n=self.L_up.nv, k=len(face))
-    return self.L_up.index_map[face_rank]
+    face_rank = rank_comb(face, n=self.nv, k=len(face))
+    return self.index_map[face_rank]
 
   def set_weights(self, lw = None, cw = None, rw = None):
-    self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.L_up.np)
-    self.simplex_weights = cw if cw is not None else np.repeat(1.0, self.L_up.nq)
-    self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.L_up.np)
-    self.L_up.precompute_degree()
+    self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.np)
+    self.simplex_weights = cw if cw is not None else np.repeat(1.0, self.nq)
+    self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.np)
+    self.precompute_degree()
     return self 
-
-
-
-  ## Attach lambdas for speed
-  _matvec: Callable[ArrayLike, ArrayLike] = lambda self, x: self.L_up._matvec(x)
-  _matmat: Callable[ArrayLike, ArrayLike] = lambda self, x: self.L_up._matmat(x)
-
+    
   # def _matvec(self, x: ArrayLike) -> ArrayLike:
   #   # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
   #   return self.L_up._matvec(x)
@@ -849,37 +840,3 @@ def is_symmetric(A) -> bool:
   vl = vl[sortl]
   vu = vu[sortu]
   return np.allclose(vl, vu)
-
-from pbsig.signal_tools import phase_align
-## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
-def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
-  
-  ## Center if requested 
-  a = a - np.mean(a) if center else a
-  b = b - np.mean(b) if center else b
-
-  ## Scale if requested
-  normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
-  a = normalize(a) if (scale and not(np.all(a == a[0]))) else a
-  b = normalize(b) if (scale and not(np.all(b == b[0]))) else b
-
-  ## Align the signals by maximizing cross correlation
-  d1 = b-phase_align(a,b)
-  d2 = b-phase_align(np.flip(a),b) if check_reverse else d1
-
-  ## Compute whatever distance distance 
-  if method == "mae":
-    d = min(np.mean(np.abs(d1)), np.mean(np.abs(d2)))
-  elif method == "mse":
-    d = min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2)))
-  elif method == "rmse":
-    d = np.sqrt(min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2))))
-  elif method == "euc":
-    d = min(np.sum(np.abs(d1)), np.sum(np.abs(d1)))
-  elif method == "convolve":
-    base_area = np.trapz(np.convolve(a,a))
-    d = np.linalg.norm(base_area - np.trapz(np.convolve(b, phase_align(a,b))))
-    d = min(d, np.linalg.norm(base_area - np.trapz(np.convolve(b, phase_align(np.flip(a),b)))))
-  else: 
-    raise ValueError(f"Invalid distance measure '{method}'")
-  return d

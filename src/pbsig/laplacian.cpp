@@ -13,6 +13,7 @@
 #include <pybind11/stl.h>
 
 #include "combinatorial.h"
+#include "pthash.hpp"
 
 // Namespace directives and declarations
 namespace py = pybind11;
@@ -34,9 +35,12 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
   return(std::array< uint_64, 2 >{ i, j });
 }
 
+
+
 // TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
+  typedef pthash::single_phf< pthash::murmurhash2_64, pthash::dictionary_dictionary, true > pthash_type; 
   const size_t nv;
   const size_t np;
   const size_t nq; 
@@ -49,6 +53,9 @@ struct UpLaplacian {
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights
   vector< F > degrees;                    // weighted degrees; pre-computed
+  pthash::build_configuration hash_config;// hash configuration
+  mutable pthash_type index_map_pmhf;          // pmhf
+  vector< uint_64 > offsets;            // offsets to get the right index
   UpLaplacian(const vector< uint_64 > qr_, const size_t nv_, const size_t np_) 
     : nv(nv_), np(np_), nq(qr_.size()), qr(qr_)  {
     shape = { np, np };
@@ -59,6 +66,43 @@ struct UpLaplacian {
     degrees = vector< F >(np, 0.0);
   }
 
+  void benchmark_index() {
+    // using namespace pthash;
+    hash_config.c = 6.0;
+    hash_config.alpha = 0.94;
+    hash_config.minimal_output = true;  // makes perfect hash function *minimal*
+    hash_config.verbose_output = true;                    
+
+    // Collect the faces: sort by lexicographical ordering
+    vector< uint64_t > fr;
+    fr.reserve(qr.size()); 
+    for (auto qi : qr){
+      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ fr.push_back(face_rank); });
+    }
+    std::sort(fr.begin(), fr.end());
+    fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
+
+    // Build the pmhf in-memory
+    // pthash_type f;
+    index_map_pmhf.build_in_internal_memory(fr.begin(), fr.size(), hash_config);
+
+    /* Compute and print the number of bits spent per key. */
+    double bits_per_key = static_cast<double>(index_map_pmhf.num_bits()) / index_map_pmhf.num_keys();
+    py::print("function uses ", bits_per_key, " [bits/key]");
+
+    // /* Sanity check! */
+    // if (check(keys.begin(), keys.size(), f)) std::cout << "EVERYTHING OK!" << std::endl;
+
+    offsets.resize(fr.size());
+    for (size_t i = 0; i < fr.size(); ++i){
+      // std::cout << "f(" << fr.at(i) << ") = " << index_map_pmhf(fr.at(i)) << '\n';
+      auto ind = (uint_64) index_map_pmhf(fr.at(i));
+      offsets[ind] = i;
+    }
+    for (size_t i = 0; i < 10; ++i){
+      py::print("f(", fr.at(i), ") = ", offsets.at(index_map_pmhf(fr.at(i))));
+    }
+  }  
 
   // Prepares indexing hash function 
   void compute_indexes(){
@@ -135,7 +179,7 @@ struct UpLaplacian {
         const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
 				for_each_combination(begin(p_ranks), begin(p_ranks)+2, end(p_ranks), [&](auto a, auto b){
           const auto ii = index_map[*a];
-          const auto jj = index_map[*(a+1)];
+          const auto jj = index_map[*(b-1)]; // to remove compiler warning
 					y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
           y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii];
           cc = (cc + 1) % 2;
@@ -198,7 +242,7 @@ struct UpLaplacian {
     // }
 };
 
-// Package: extern
+// Package: pip install --no-deps --no-build-isolation --editable .
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
@@ -217,7 +261,8 @@ PYBIND11_MODULE(_laplacian, m) {
     .def("precompute_degree", &UpLaplacian< 0, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 0, float, true >::compute_indexes)
     .def("_matvec", &UpLaplacian< 0, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat);
+    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat)
+    .def("benchmark_index", &UpLaplacian< 0, float, true >::benchmark_index);
   py::class_< UpLaplacian< 1, float, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 1, float, true >::shape)
@@ -233,7 +278,9 @@ PYBIND11_MODULE(_laplacian, m) {
     .def("precompute_degree", &UpLaplacian< 1, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 1, float, true >::compute_indexes)
     .def("_matvec", &UpLaplacian< 1, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat);
+    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat)
+    .def("benchmark_index", &UpLaplacian< 1, float, true >::benchmark_index);
+    
     // .def("_matvec", &UpLaplacian0_LS< float, true >::_matvec)
     // .def("precompute_degree", &UpLaplacian0_LS< float, true >::precompute_degree);
   // m.def("vectorized_func", py::vectorize(my_func));s

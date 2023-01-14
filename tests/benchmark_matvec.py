@@ -1,7 +1,35 @@
+## Tests various closed-form expressions for Laplacian matrices
+import numpy as np 
+from itertools import combinations
+from scipy.sparse import diags
+from pbsig.persistence import boundary_matrix
+from pbsig.simplicial import *
+from pbsig.utility import *
+from pbsig.linalg import *
+
+def generate_dataset(n: int = 15, d: int = 2):
+  X = np.random.uniform(size=(n,d))
+  K = delaunay_complex(X) 
+  return X, K
+
+## Generate random data set with weighted scalar product
+X, S = generate_dataset(300, 2)
+fv = np.random.uniform(size=X.shape[0], low=0.0, high=1.0)
+
+#LM = up_laplacian(S, weight=lambda s: max(fv[s]), form='array')
+LO = up_laplacian(S, weight=lambda s: max(fv[s]), form='lo')
+
+
+fr = rank_combs(LO.faces, k=1, n=LO.nv)
+LO.benchmark_index()
+
+
+## It is a bit faster! averaged over 30 runs! Maybe subclass!
 import timeit
-timeit.timeit(lambda: lo @ x, number=150)
-lo.prepare(1)
-timeit.timeit(lambda: lo @ x, number=150)
+x = np.random.uniform(size=S.shape[0])
+timeit.timeit(lambda: LO @ x, number=1500) # 0.057967034001194406
+timeit.timeit(lambda: LM @ x, number=1500) # 0.014970820997405099
+timeit.timeit(lambda: LO._matvec(x), number=1500) # 0.04564935999951558 
 
 import line_profiler
 profile = line_profiler.LineProfiler()
