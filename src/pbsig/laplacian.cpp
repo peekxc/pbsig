@@ -95,7 +95,6 @@ struct UpLaplacian {
 
     offsets.resize(fr.size());
     for (size_t i = 0; i < fr.size(); ++i){
-      // std::cout << "f(" << fr.at(i) << ") = " << index_map_pmhf(fr.at(i)) << '\n';
       auto ind = (uint_64) index_map_pmhf(fr.at(i));
       offsets[ind] = i;
     }
@@ -129,6 +128,13 @@ struct UpLaplacian {
         //   cc++;
         // }
   }
+  // Online pass exact values here
+  // TODO: replace this with a new container that swap unordered_map on runtime
+  constexpr auto index(uint_64 face_rank) noexcept -> uint_64 {
+    return offsets[index_map_pmhf(face_rank)];
+  }
+    
+
   // Precomputes the degree term
   void precompute_degree(){
     if (fpl.size() != np || fq.size() != nq || fpl.size() != np){ return; }
