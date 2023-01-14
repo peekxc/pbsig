@@ -198,7 +198,7 @@ struct UpLaplacian {
     // }
 };
 
-// Package: pip install --no-deps --no-build-isolation --editable .
+// Package: extern
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
