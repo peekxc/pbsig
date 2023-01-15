@@ -154,9 +154,9 @@ namespace combinatorial {
 	}
 	
 	// Table to cache low values of the binomial coefficient
-	template< size_t n, size_t k >
+	template< size_t n, size_t k, typename value_t = size_t >
 	struct BinomialCoefficientTable {
-	  size_t combinations[n+1][k];
+	  value_t combinations[n+1][k];
 	  constexpr BinomialCoefficientTable() : combinations() {
 			auto n_dispatcher = make_index_dispatcher< n+1 >();
 			auto k_dispatcher = make_index_dispatcher< k >();
@@ -204,7 +204,7 @@ namespace combinatorial {
 	// Compare must return -1 for <(key, index), 0 for ==(key, index), and 1 for >(key, index)
 	// Guaranteed to return an index in [0, n-1] representing the lower_bound
 	template< typename T, typename Compare > [[nodiscard]]
-	int binary_search(const T key, size_t n, Compare p) {
+	int binary_search(const T key, size_t n, Compare p) noexcept {
 	  int low = 0, high = n - 1, best = 0; 
 		while( low <= high ){
 			int mid = int{ midpoint(low, high) };

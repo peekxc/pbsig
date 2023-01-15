@@ -36,11 +36,56 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
 }
 
 
+template < typename I = int64_t, typename Hasher = pthash::murmurhash2_64, typename Encoder = pthash::dictionary_dictionary >
+struct IndexMap {
+  typedef I value_type;
+  typedef pthash::single_phf< Hasher, Encoder, true > pthash_type;   
+  
+  pthash::build_configuration config;      // hash configuration
+  pthash_type pmhf;                        // pmhf
+  vector< I > offsets;                     // offsets to get the right index
+  
+  // Index map
+  IndexMap(float c = 6.0, float alpha = 0.94, bool minimal = true, bool verbose = true){
+    config.c = c;
+    config.alpha = alpha;
+    config.minimal_output = minimal;  // makes perfect hash function *minimal*
+    config.verbose_output = verbose;
+  }
+
+  template< typename InputIt > 
+  void build(InputIt b, const InputIt e){
+    const size_t n_elems = std::distance(b,e);
+    pmhf.build_in_internal_memory(b, n_elems, config);
+    
+    offsets.resize(n_elems);
+    I i = 0; 
+    std::for_each(b,e,[&](auto elem){
+      auto key = (I) pmhf(elem);
+      offsets.at(key) = i++;
+    });
+  };
+
+  // Not safe! must pass exact values here
+  constexpr auto operator[](I key) const noexcept -> I {
+    return offsets[pmhf(key)];
+  };
+};
+
+// /* Compute and print the number of bits spent per key. */
+// double bits_per_key = static_cast<double>(index_map_pmhf.num_bits()) / index_map_pmhf.num_keys();
+// py::print("function uses ", bits_per_key, " [bits/key]");
+
+// /* Sanity check! */
+// if (check(keys.begin(), keys.size(), f)) std::cout << "EVERYTHING OK!" << std::endl;
+
+// mutable unordered_map< I, I > index_map; 
 
 // TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
-  typedef pthash::single_phf< pthash::murmurhash2_64, pthash::dictionary_dictionary, true > pthash_type; 
+  using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
+  // using Map_t = unordered_map< uint_64, uint_64 >;
   const size_t nv;
   const size_t np;
   const size_t nq; 
@@ -48,14 +93,13 @@ struct UpLaplacian {
   const vector< uint_64 > qr;            // p+1 ranks
   // const function< uint_32 (uint64_t) > h; // indexing function 
   mutable vector< F > y;                  // workspace
-  mutable unordered_map< uint_64, uint_64 > index_map;    // indexing function ; mutabel needed for dumb reasons
+  // mutable unordered_map< uint_64, uint_64 > index_map;    // indexing function ; mutabel needed for dumb reasons
+  Map_t index_map; 
   vector< F > fpl;                        // p-simplex left weights 
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights
   vector< F > degrees;                    // weighted degrees; pre-computed
-  pthash::build_configuration hash_config;// hash configuration
-  mutable pthash_type index_map_pmhf;          // pmhf
-  vector< uint_64 > offsets;            // offsets to get the right index
+
   UpLaplacian(const vector< uint_64 > qr_, const size_t nv_, const size_t np_) 
     : nv(nv_), np(np_), nq(qr_.size()), qr(qr_)  {
     shape = { np, np };
@@ -65,43 +109,6 @@ struct UpLaplacian {
     fq = vector< F >(nq, 1.0); 
     degrees = vector< F >(np, 0.0);
   }
-
-  void benchmark_index() {
-    // using namespace pthash;
-    hash_config.c = 6.0;
-    hash_config.alpha = 0.94;
-    hash_config.minimal_output = true;  // makes perfect hash function *minimal*
-    hash_config.verbose_output = true;                    
-
-    // Collect the faces: sort by lexicographical ordering
-    vector< uint64_t > fr;
-    fr.reserve(qr.size()); 
-    for (auto qi : qr){
-      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ fr.push_back(face_rank); });
-    }
-    std::sort(fr.begin(), fr.end());
-    fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
-
-    // Build the pmhf in-memory
-    // pthash_type f;
-    index_map_pmhf.build_in_internal_memory(fr.begin(), fr.size(), hash_config);
-
-    /* Compute and print the number of bits spent per key. */
-    double bits_per_key = static_cast<double>(index_map_pmhf.num_bits()) / index_map_pmhf.num_keys();
-    py::print("function uses ", bits_per_key, " [bits/key]");
-
-    // /* Sanity check! */
-    // if (check(keys.begin(), keys.size(), f)) std::cout << "EVERYTHING OK!" << std::endl;
-
-    offsets.resize(fr.size());
-    for (size_t i = 0; i < fr.size(); ++i){
-      auto ind = (uint_64) index_map_pmhf(fr.at(i));
-      offsets[ind] = i;
-    }
-    for (size_t i = 0; i < 10; ++i){
-      py::print("f(", fr.at(i), ") = ", offsets.at(index_map_pmhf(fr.at(i))));
-    }
-  }  
 
   // Prepares indexing hash function 
   void compute_indexes(){
@@ -118,22 +125,21 @@ struct UpLaplacian {
     std::sort(fr.begin(), fr.end());
     fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
 
-    // Create the index map
-    for (uint64_t i = 0; i < fr.size(); ++i){
-      index_map.emplace(fr[i], i);
-    }
+    // Build the index map
+    index_map.build(fr.begin(), fr.end());
+    // auto indices = vector< uint64_t >(fr.size(), 0);
+    // std::iota(indices.begin(), indices.end(), 0);
+
+    // // Create the index map
+    // for (uint64_t i = 0; i < fr.size(); ++i){
+    //   index_map.emplace(fr[i], i);
+    // }
         // auto it = index_map.find(fr);
         // if (it == index_map.end()) {
         //   index_map.emplace_hint(it, fr, cc);
         //   cc++;
         // }
   }
-  // Online pass exact values here
-  // TODO: replace this with a new container that swap unordered_map on runtime
-  constexpr auto index(uint_64 face_rank) noexcept -> uint_64 {
-    return offsets[index_map_pmhf(face_rank)];
-  }
-    
 
   // Precomputes the degree term
   void precompute_degree(){
@@ -156,14 +162,13 @@ struct UpLaplacian {
 
     // The matvec
     size_t q_ind = 0;
-    // auto q_vertices = array< uint_64, p+2 >();
     auto p_ranks = array< uint64_t, p+2 >();
+
+    #pragma omp simd
     for (auto qi: qr){
       if constexpr (p == 0){
 				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
-        // const auto ii = index_map[q_vertices[0]]; // TODO: could speed up by assuming vertices start from 0 / remove index map
-        // const auto jj = index_map[q_vertices[1]];// TODO: could speed up by assuming vertices start from 0 / remove index map
-        const auto ii = p_ranks[0]; 
+        const auto ii = p_ranks[0]; // index_map[q_vertices[0]]; 
         const auto jj = p_ranks[1];
         y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
         y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
@@ -262,13 +267,13 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readwrite("fpl", &UpLaplacian< 0, float, true >::fpl)
     .def_readwrite("fpr", &UpLaplacian< 0, float, true >::fpr)
     .def_readwrite("fq", &UpLaplacian< 0, float, true >::fq)
-    .def_readonly("index_map", &UpLaplacian< 0, float, true >::index_map)
+    // .def_readonly("index_map", &UpLaplacian< 0, float, true >::index_map)
     .def_readonly("degrees", &UpLaplacian< 0, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 0, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 0, float, true >::compute_indexes)
     .def("_matvec", &UpLaplacian< 0, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat)
-    .def("benchmark_index", &UpLaplacian< 0, float, true >::benchmark_index);
+    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat);
+    // .def("benchmark_index", &UpLaplacian< 0, float, true >::benchmark_index);
   py::class_< UpLaplacian< 1, float, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 1, float, true >::shape)
@@ -279,13 +284,13 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readwrite("fpl", &UpLaplacian< 1, float, true >::fpl)
     .def_readwrite("fpr", &UpLaplacian< 1, float, true >::fpr)
     .def_readwrite("fq", &UpLaplacian< 1, float, true >::fq)
-    .def_readonly("index_map", &UpLaplacian< 1, float, true >::index_map)
+    // .def_readonly("index_map", &UpLaplacian< 1, float, true >::index_map)
     .def_readonly("degrees", &UpLaplacian< 1, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 1, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 1, float, true >::compute_indexes)
     .def("_matvec", &UpLaplacian< 1, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat)
-    .def("benchmark_index", &UpLaplacian< 1, float, true >::benchmark_index);
+    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat);
+    // .def("benchmark_index", &UpLaplacian< 1, float, true >::benchmark_index);
     
     // .def("_matvec", &UpLaplacian0_LS< float, true >::_matvec)
     // .def("precompute_degree", &UpLaplacian0_LS< float, true >::precompute_degree);

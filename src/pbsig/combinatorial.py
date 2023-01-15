@@ -6,6 +6,8 @@ import _combinatorial as comb_mod
 
 # comb_mod.rank_combs(np.array([0,1,2], dtype=int), 3, 10)
 
+# bisect.bisect_left(range(n), idx, lo=0, hi=n, key=lambda x: comb(x,k))
+
 def rank_C2(i: int, j: int, n: int) -> int:
   i, j = (j, i) if j < i else (i, j)
   return(int(n*i - i*(i+1)/2 + j - i - 1))
@@ -14,6 +16,11 @@ def unrank_C2(x: int, n: int) -> tuple:
   i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
   j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
   return(i,j) 
+
+# def max_vertex(idx: int, k: int, n: int) -> int:
+#    ## locates insertion point for x in a
+#   return get_max(n, k - 1, comb(w, k) <= idx)
+#   # get_max_vertex(idx, k, n)
 
 def unrank_comb(r: int, k: int, n: int):
   result = np.zeros(k, dtype=int)

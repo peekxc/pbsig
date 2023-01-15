@@ -239,7 +239,7 @@ r_R(i,j) \neq 0 \Leftrightarrow R[i,j] \neq 0
 \end{equation}
 In other words, due to equation~\eqref{eq:uniq_pivot}, the existence of any non-zero entry in $R$ may be inferred from the ranks of its submatrices.   
 This is important, as although $R$ is not unique, its lowest non-zero ``pivot'' entries are---and these entries define the persistence diagram. 
-We record a fact that exploits this idea and, as we will show, has non-trivial computational implications.
+We now record a fact that exploits this idea and, as we will show, has non-trivial computational implications.
 \begin{lemma}\label{lemma:rank}
 For any filtration $K_\bullet$ of size $N = \lvert K \rvert$, let $R = \partial V$ denote the decomposition of the filtered boundary matrix $\partial \in \mathbb{F}^{N \times N}$ given in equation~\ref{eq:boundary_matrix}. Then, for any pair $(i,j)$ satisfying $1 \leq i < j \leq N$, we have:
 	\begin{equation}\label{eq:lower_left_rank}
@@ -252,7 +252,7 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 %In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
 An explicit proof of this can be found in~\cite{dey2022computational}, though it was noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It essentially follows by combining the Pairing Uniqueness Lemma with the fact that the reduced matrix $R$ is obtained from $\partial$ via left-to-right column operations, which preserve the ranks of every such submatrix.
 Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
-The first proposition we prove is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number in a simpler way as a sum of rank functions. 
+A little known proposition that follows from this, which has also been pointed out in~\cite{dey2022computational}, is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number in a simpler way as a sum of rank functions. 
 \begin{proposition}[Dey \& Wang~\cite{dey2022computational}]\label{prop:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
@@ -262,9 +262,9 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet
 	\end{equation}
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{proposition}
-\noindent A detailed proof of Proposition~\ref{prop:rank_reduction} is given in the appendix. It turns out Lemma~\ref{lemma:rank} can also be further generalized to arbitrary rectangles $R = [i,j] \times [k,l]$ in $\Delta_+^N$, see the fourth picture in Figure~\ref{fig:mult}.
-Geometrically, these rank computations manifest as $\mu$\emph{-queries}: box-parameterized multiplicity queries which count the number of persistence pairs that intersect a fixed ``box'' placed in the index persistence plane~\cite{chen2011output}. 
-As a result, the $p$-th multiplicity function can also be defined in a rank-based formulation akin to~\eqref{eq:betti_four}, which we record here as well. 
+\noindent We give a detailed proof of Proposition~\ref{prop:rank_reduction} in the appendix. It turns out Lemma~\ref{lemma:rank} can also be further generalized to arbitrary rectangles $R = [i,j] \times [k,l]$ in $\Delta_+^N$, see the fourth picture in Figure~\ref{fig:mult}.
+Geometrically, these rank computations manifest as $\mu$\emph{-queries}: box-parameterized multiplicity queries which count the number of persistence pairs that intersect a fixed ``box'' placed in the index persistence plane. 
+As a result, the $p$-th multiplicity function can also be defined in a rank-based formulation akin to~\eqref{eq:betti_four}, which was proven independently by Chen \& Kerber~\cite{chen2011output}. 
 \begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
 	\begin{equation}\label{eq:mu_four}
@@ -398,7 +398,6 @@ For simplicity of presentation, but without loss in generality, we assume the or
 	\hat{\partial}_p^{i,j}(h) := V_p^i(h)^+ \circ \partial_p \circ W_{p+1}^j(h)
 \end{equation}
 where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matrix $\mathrm{diag}(\{\, g_h(\sigma_1), g_h(\sigma_2), \dots, g_h(\sigma_N) \, \})$ obtained by setting $g_h(\sigma) = (S_x \circ f_h)(\sigma)$ if $\mathrm{dim}(\sigma) = p$ for all $\sigma \in K$ and $g_h(\sigma) = 0$ otherwise. The definition of $V_p^x$ synonymous, where $\tilde{g}_h(\sigma) = 1 - (S_x \circ f_h)(\sigma)$ and $A^+$ denotes the pseudo-inverse of $A$. Thus, definition~\ref{def:time_boundary_matrix} corresponds to a \emph{fixed} $p$-th boundary matrix $\partial_p$ whose rows and columns are weighted by $V_p^i(h)$ and $W_{p+1}^j(h)$, respectively. As a result, there is no need to explicitly maintain an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of simplices as a function of $\mathcal{H}$ to obtain persistence-related information, as is done by the vineyards algorithm~\cite{cohen2006vines}---it is enough to simply preserve the correct sign pattern.
-Extending from this idea, we now turn to the main results: a spectral relaxation of the counting invariants, and the resulting implications. 
 
 %% TODO: proof of sign pattern stuff 
 
@@ -513,7 +512,8 @@ Extending from this idea, we now turn to the main results: a spectral relaxation
 %In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
-\subsection{Relaxation definition} 
+%\subsection{Relaxation definition} 
+Extending from the ideas outlined in the previous section, we now turn to the main results: a spectral relaxation of the counting invariants, and the resulting implications. 
 We begin with a spectral characterization of the rank function. Given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}

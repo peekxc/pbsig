@@ -14,7 +14,11 @@ from pybind11.setup_helpers import Pybind11Extension, build_ext
 
 base_path = os.path.dirname(__file__)
 extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-extra_compile_args += ["-std=c++17", "-Wall", "-Wextra", "-O2"]
+extra_compile_args += ["-std=c++17", "-Wall", "-Wextra"]
+
+
+extra_compile_args += "-march=native -fopenmp -O3" ## If optimizing for performance 
+# extra_compile_args += "-O0" ## debug mode otherwise  
 
 flags = distutils.sysconfig.get_config_var("CFLAGS")
 print(f"COMPILER FLAGS: { str(flags) }")
