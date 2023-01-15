@@ -37,8 +37,6 @@ auto unrank_combs(py::array_t< int > ranks, const int n, const int k) -> py::arr
 auto boundary_ranks(const int p_rank, const int n, const int k) -> py::array_t< int > {
   vector< int > face_ranks = vector< int >();
 	combinatorial::apply_boundary(p_rank, n, k, [&face_ranks](size_t r){
-    // testing 
-    //py::print(r);
     face_ranks.push_back(r);
   });
   return py::cast(face_ranks);

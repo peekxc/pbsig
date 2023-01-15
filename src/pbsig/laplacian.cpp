@@ -14,6 +14,7 @@
 
 #include "combinatorial.h"
 #include "pthash.hpp"
+#include <omp.h>
 
 // Namespace directives and declarations
 namespace py = pybind11;
@@ -35,7 +36,6 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
   return(std::array< uint_64, 2 >{ i, j });
 }
 
-
 template < typename I = int64_t, typename Hasher = pthash::murmurhash2_64, typename Encoder = pthash::dictionary_dictionary >
 struct IndexMap {
   typedef I value_type;
@@ -46,7 +46,7 @@ struct IndexMap {
   vector< I > offsets;                     // offsets to get the right index
   
   // Index map
-  IndexMap(float c = 6.0, float alpha = 0.94, bool minimal = true, bool verbose = true){
+  IndexMap(float c = 6.0, float alpha = 0.94, bool minimal = true, bool verbose = false){
     config.c = c;
     config.alpha = alpha;
     config.minimal_output = minimal;  // makes perfect hash function *minimal*
@@ -67,6 +67,7 @@ struct IndexMap {
   };
 
   // Not safe! must pass exact values here
+  [[nodiscard]]
   constexpr auto operator[](I key) const noexcept -> I {
     return offsets[pmhf(key)];
   };
@@ -84,17 +85,16 @@ struct IndexMap {
 // TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
+  using value_type = F; 
   using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
   // using Map_t = unordered_map< uint_64, uint_64 >;
   const size_t nv;
   const size_t np;
   const size_t nq; 
   array< size_t, 2 > shape;  // TODO: figure out how to initialize in constructor
-  const vector< uint_64 > qr;            // p+1 ranks
-  // const function< uint_32 (uint64_t) > h; // indexing function 
+  const vector< uint_64 > qr;             // p+1 ranks
   mutable vector< F > y;                  // workspace
-  // mutable unordered_map< uint_64, uint_64 > index_map;    // indexing function ; mutabel needed for dumb reasons
-  Map_t index_map; 
+  Map_t index_map;                        // indexing function
   vector< F > fpl;                        // p-simplex left weights 
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights
@@ -127,18 +127,9 @@ struct UpLaplacian {
 
     // Build the index map
     index_map.build(fr.begin(), fr.end());
-    // auto indices = vector< uint64_t >(fr.size(), 0);
-    // std::iota(indices.begin(), indices.end(), 0);
-
-    // // Create the index map
     // for (uint64_t i = 0; i < fr.size(); ++i){
     //   index_map.emplace(fr[i], i);
     // }
-        // auto it = index_map.find(fr);
-        // if (it == index_map.end()) {
-        //   index_map.emplace_hint(it, fr, cc);
-        //   cc++;
-        // }
   }
 
   // Precomputes the degree term
@@ -200,63 +191,48 @@ struct UpLaplacian {
       q_ind += 1;
     }
   }
+} // UpLaplacian
 
-  // Matvec operation: Lx |-> y for any vector x
-  auto _matvec(const py::array_t< F >& x_) const noexcept -> py::array_t< F > {
-    py::buffer_info x_buffer = x_.request();    // Obtain direct access
-    __matvec(static_cast< F* >(x_buffer.ptr));  // stores result in internal y 
-    return py::cast(y);
+// Matvec operation: Lx |-> y for any vector x
+template< typename Laplacian, typename F = typename Laplacian::value_type > 
+auto _matvec(const Laplacian& L, const py::array_t< F >& x_) noexcept -> py::array_t< F > {
+  py::buffer_info x_buffer = x_.request();    // Obtain direct access
+  L.__matvec(static_cast< F* >(x_buffer.ptr));  // stores result in internal y 
+  return py::cast(L.y);
+}
+
+// Y = L @ X 
+template< typename Laplacian, typename F = typename Laplacian::value_type > 
+auto _matmat(const Laplacian& L, const py::array_t< F, py::array::f_style | py::array::forcecast >& X_) -> py::array_t< F > {
+  const ssize_t n_rows = X_.shape(0);
+  const ssize_t n_cols = X_.shape(1);
+  // Obtain direct access
+  py::buffer_info x_buffer = X_.request();
+  F* X = static_cast< F* >(x_buffer.ptr);
+
+  // Allocate memory 
+  auto result = vector< F >();
+  result.reserve(L.shape[0]*n_cols);
+
+  // Each matvec outputs to y. Copy to result via output iterator
+  auto out = std::back_inserter(result);
+  for (ssize_t j = 0; j < n_cols; ++j){
+    L.__matvec(X+(j*n_rows));
+    std::copy(L.y.begin(), L.y.end(), out);
   }
+  
+  // From: https://github.com/pybind/pybind11/blob/master/include/pybind11/numpy.h 
+  array< ssize_t, 2 > Y_shape = { static_cast< ssize_t >(L.shape[0]), n_cols };
+  return py::array_t< F , py::array::f_style | py::array::forcecast >(Y_shape, result.data());
+} 
 
-  // Y = L @ X 
-  auto _matmat(const py::array_t< F, py::array::f_style | py::array::forcecast >& X_) const -> py::array_t< F > {
-    const ssize_t n_rows = X_.shape(0);
-    const ssize_t n_cols = X_.shape(1);
-    // Obtain direct access
-    py::buffer_info x_buffer = X_.request();
-    F* X = static_cast< F* >(x_buffer.ptr);
-
-    // Allocate memory 
-    auto result = vector< F >();
-    result.reserve(shape[0]*n_cols);
-
-    // Each matvec outputs to y. Copy to result via output iterator
-    auto out = std::back_inserter(result);
-    for (ssize_t j = 0; j < n_cols; ++j){
-      __matvec(X+(j*n_rows));
-      std::copy(y.begin(), y.end(), out);
-    }
-   
-    // From: https://github.com/pybind/pybind11/blob/master/include/pybind11/numpy.h 
-    array< ssize_t, 2 > Y_shape = { static_cast< ssize_t >(shape[0]), n_cols };
-    return py::array_t< F , py::array::f_style | py::array::forcecast >(Y_shape, result.data());
-  } 
-
-  //  x = x.reshape(-1)
-  //   self._v.fill(0)
-  //   self._v += self.degree * x
-  //   for s_ind, s in enumerate(self.simplices):
-  //     for (f1, f2), sgn_ij in zip(combinations(s.boundary(), 2), self.sgn_pattern):
-  //       ii, jj = self.index(f1), self.index(f2)
-  //       self._v[ii] += sgn_ij * x[jj] * self._wfl[ii] * self._ws[s_ind] * self._wfr[jj]
-  //       self._v[jj] += sgn_ij * x[ii] * self._wfl[jj] * self._ws[s_ind] * self._wfr[ii]
-  //   return self._v
-      // F qw = 0.0;
-    // for (size_t qi = 0; qi < nq; ++qi){
-    //   std::array< size_t, p+1 > q_simplex = lex_unrank_2_array(qr[qi], nv);
-    //   for (size_t qi = 0; qi < nq; ++qi){
-    //   std::fill(y.begin(), y.end(), 0);
-    //     for (size_t cc = 0; cc < nv; ++cc){
-    //       y[cc] += xe[cc] * Df[cc] * fv[cc] * fv[cc];
-    //     }
-    //   }
-    // }
-};
+using array_t_FF = py::array_t< float, py::array::f_style | py::array::forcecast >;
 
 // Package: pip install --no-deps --no-build-isolation --editable .
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
+  
   py::class_< UpLaplacian< 0, float, true > >(m, "UpLaplacian0")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 0, float, true >::shape)
@@ -267,13 +243,12 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readwrite("fpl", &UpLaplacian< 0, float, true >::fpl)
     .def_readwrite("fpr", &UpLaplacian< 0, float, true >::fpr)
     .def_readwrite("fq", &UpLaplacian< 0, float, true >::fq)
-    // .def_readonly("index_map", &UpLaplacian< 0, float, true >::index_map)
     .def_readonly("degrees", &UpLaplacian< 0, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 0, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 0, float, true >::compute_indexes)
-    .def("_matvec", &UpLaplacian< 0, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 0, float, true >::_matmat);
-    // .def("benchmark_index", &UpLaplacian< 0, float, true >::benchmark_index);
+    .def("_matvec", [](const UpLaplacian< 0, float, true >& L, const py::array_t< float >& x) { return _matvec(L, x); })
+    .def("_matmat", [](const UpLaplacian< 0, float, true >& L, const array_t_FF& X){ return _matmat(L, X); });
+
   py::class_< UpLaplacian< 1, float, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 1, float, true >::shape)
@@ -284,18 +259,11 @@ PYBIND11_MODULE(_laplacian, m) {
     .def_readwrite("fpl", &UpLaplacian< 1, float, true >::fpl)
     .def_readwrite("fpr", &UpLaplacian< 1, float, true >::fpr)
     .def_readwrite("fq", &UpLaplacian< 1, float, true >::fq)
-    // .def_readonly("index_map", &UpLaplacian< 1, float, true >::index_map)
     .def_readonly("degrees", &UpLaplacian< 1, float, true >::degrees)
     .def("precompute_degree", &UpLaplacian< 1, float, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 1, float, true >::compute_indexes)
-    .def("_matvec", &UpLaplacian< 1, float, true >::_matvec)
-    .def("_matmat", &UpLaplacian< 1, float, true >::_matmat);
-    // .def("benchmark_index", &UpLaplacian< 1, float, true >::benchmark_index);
-    
-    // .def("_matvec", &UpLaplacian0_LS< float, true >::_matvec)
-    // .def("precompute_degree", &UpLaplacian0_LS< float, true >::precompute_degree);
-  // m.def("vectorized_func", py::vectorize(my_func));s
-  //m.def("call_go", &call_go);
+    .def("_matvec", [](const UpLaplacian< 1, float, true >& L, const py::array_t< float >& x) { return _matvec(L, x); })
+    .def("_matmat", [](const UpLaplacian< 1, float, true >& L, const array_t_FF& X){ return _matmat(L, X); });
 }
 
   // const size_t nv;

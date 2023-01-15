@@ -13,7 +13,7 @@ def generate_dataset(n: int = 15, d: int = 2):
   return X, K
 
 ## Generate random data set with weighted scalar product
-X, S = generate_dataset(2000, 2)
+X, S = generate_dataset(1000, 2)
 fv = np.random.uniform(size=X.shape[0], low=0.0, high=1.0)
 
 LM = up_laplacian(S, weight=lambda s: max(fv[s]), form='array')

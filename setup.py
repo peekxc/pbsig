@@ -17,7 +17,7 @@ extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
 extra_compile_args += ["-std=c++17", "-Wall", "-Wextra"]
 
 
-extra_compile_args += "-march=native -fopenmp -O3" ## If optimizing for performance 
+extra_compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
 # extra_compile_args += "-O0" ## debug mode otherwise  
 
 flags = distutils.sysconfig.get_config_var("CFLAGS")
@@ -50,7 +50,8 @@ ext_modules = [
     include_dirs=[
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include', 
       '/Users/mpiekenbrock/pbsig/extern/pthash/include',
-      '/Users/mpiekenbrock/pbsig/extern/pthash/external'
+      '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
+      '/Users/mpiekenbrock/pbsig/src/pbsig/'
     ], 
     extra_compile_args=extra_compile_args,
     language='c++17', 
@@ -84,6 +85,7 @@ ext_modules = [
 # 	)
 # ]
 
+# python -m build --skip-dependency-check --no-isolation --wheel
 setup(
   name="pbsig",
   author="Matt Piekenbrock",
