@@ -9,7 +9,7 @@ The connection between the persistent homology (PH) groups and their correspondi
 From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
 %They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
 %More recently, Bauer studied persistence in a form a matching. 
-Cohen-Steiner et al.~\cite{cohen2005stability} studied PH from a discrete perspective by defining the persistence via \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$, the $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is defined as: 
+Cohen-Steiner et al.~\cite{cohen2005stability} studied PH from a more discrete perspective by defining the persistence via \emph{multiplicities}: given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$, its homological critical values $\{ a_i \}_{i=1}^n$, and an interleaved sequence $\{ b_i \}_{i=0}^n$ satisfying $b_{i-1} < a_i < b_i$ for all $1 \leq i \leq n$,~\cite{cohen2005stability} defined the $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ as the multiset: 
 \begin{equation}\label{eq:dgm}
 \mathrm{dgm}_p(f) := \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta	
 \end{equation}
@@ -18,14 +18,14 @@ where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\m
 \begin{equation}\label{eq:multiplicity}
 	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 \leq i < j \leq n+ 1
 \end{equation}
-Equation~\eqref{eq:multiplicity} illuminates an intrinsic connection between the multiplicity function and the persistent Betti numbers. 
+Equation~\eqref{eq:multiplicity} illuminates an intrinsic connection between the persistence diagram and the persistent Betti numbers. 
 Namely, the inclusion-exclusion property that~\eqref{eq:multiplicity} obeys suggests that diagrams completely characterize their PBNs.
 Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
 \begin{equation}\label{eq:betti_mult}
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
 \end{equation}
 % TODO: move to computation section?
-The direct consequence of~\cite{edelsbrunner2022computational} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, combinations of Betti numbers recover portions of $\mathrm{dgm}_p(\mathcal{X})$  via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
+The direct consequence of ~\eqref{eq:betti_mult} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, combinations of Betti numbers recover portions of $\mathrm{dgm}_p(\mathcal{X})$  via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
 
 %The focus of this effort inverts this mindset: we focus on recovering \emph{portions} of the diagram by fixing the the index pairs $(i,j)$ ahead of time.
 
@@ -65,7 +65,7 @@ Like persistence diagrams, the stability of PBN functions justifies their use an
 To some extent, this matches intuition: whereas betti numbers and multiplicities are mere counting invariants, a persistence diagram is a multiset of pairs containing strictly more information about the topology of the underlying space. 
 Nonetheless, the counting invariants have certain computational advantages over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
 Namely, the computations are \emph{localized} in the sense that computing $\beta_p^{i,j}$ only requires knowledge of $K_i$ and $K_j$. As counting invariants, both $\mu_p^\ast$ and $\beta_p^{\ast}$ may be determined through rank computations alone~\cite{zomorodian2004computing}. 
-Indeed,~\eqref{eq:multiplicity} implies one may actually recover the diagram through at most $2n-1$ multiplicity computations via a divide-and-conquer like approach on the index-persistence plane~\cite{chen2011output}. The duality between the counting invariants and the persistence diagram suggests an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach persistence-related computations entirely. 
+Indeed,~\eqref{eq:multiplicity} implies one may actually recover the diagram through at most $2n-1$ multiplicity computations via a divide-and-conquer like approach on the index-persistence plane~\cite{chen2011output}. The duality between PBNs and the persistence diagram suggests an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach persistence-related computations entirely. 
 
 % This was the first output-sensitive algorithm. 
 %we generalize this In the spirit of~\eqref{eq:measure}, 

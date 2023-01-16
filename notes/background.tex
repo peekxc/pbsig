@@ -37,12 +37,12 @@ In particular, given a $p$-chain $c \in C_p(K)$, $\partial_p[c]$ is defined line
 %We assume every $p$-chain is \emph{oriented} such that $K$ is an \emph{oriented simplicial complex}.
  Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is a well-defined group called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$. The dimension of the $p$-th homology group $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the \emph{$p$-th Betti number} of $K$. 
 
-Let $K_\bullet = \{K_i\}_{i\in [m]}$ denote a filtration of size $\lvert K_\bullet \rvert = m$, 
+Let $K_\bullet = \{K_i\}_{i\in [N]}$ denote a filtration of size $\lvert K_\bullet \rvert = N$, 
 %let $\Delta_{+} = \{ (i,j) : i < j, i, j \in \mathbb{R} \}$ denote the upper half-plane, 
-and let $\Delta_{+}^m = \{ (i,j) : 0 \leq i \leq j \leq m \}$ denote the set of filtration index pairs. 
-For every such pair $(i,j) \in \Delta_{+}^m$, the inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j}$  at the level of homology:
+and let $\Delta_{+}^N = \{ (i,j) : 0 \leq i \leq j \leq N \}$ denote the set of filtration index pairs. 
+For every such pair $(i,j) \in \Delta_{+}^N$, the sequence of inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j} :  H_p(K_i) \to H_p(K_j)$ at the level of homology:
 \begin{equation}\label{eq:hom_map}
-	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_m) = H_p(K_\bullet) 
+	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_N) = H_p(K_\bullet) 
 \end{equation}
 When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decomposes $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
 The $p$-th persistent homology groups are the images of these transformations and the $p$-th persistent Betti numbers are their dimensions:

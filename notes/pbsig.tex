@@ -176,7 +176,7 @@ Some technical details, illustrative examples, and pseudocode are relegated to t
 %In what follows, we briefly outline the computation of the 
 To motivate this effort, we begin by deriving a lesser known
 %\footnote{To the authors knowledge, only two works have } 
-expression of the persistent Betti number, beginning with its definition. 
+expression of the persistent Betti number. We begin with a bit of notation. 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
 Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively, and let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the $p$-th boundary operator. 
 We use $\partial$ to denote the $N \times N$ filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ induced by $K_\bullet$, given by:
@@ -196,14 +196,15 @@ Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th
 	& = \mathrm{dim} \left( Z_p(K_i) / (Z_p(K_i) \cap B_p(K_j) \right) \\
 	& \numberthis = \mathrm{dim} \left( Z_p(K_i) \right) - \mathrm{dim}\left( Z_p(K_i) \cap B_p(K_j) \right ) 
 \end{align*}
-By definition, the constitutive groups are certain subspaces the boundary operator of a pair of complexes $(K_i, K_j)$: 
+By definition, the boundary and cycle groups $B_p(K_j)$ and $Z_p(K_i)$ are subspaces of the operators $\partial_p(K_i)$ and $\partial_{p+1}(K_j)$: 
 \begin{equation}\label{eq:pbn_simple}
 	\beta_p^{i,j} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j)) \; \big) 
 \end{equation}
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
-Consider computing $\beta_p^{i,j}$ via the expression~\eqref{eq:pbn_simple} from matrix representatives $\partial_p \in \mathbb{F}^{n \times m}$.
-Since $\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$ may be reduced to a rank computation via the equality $\min(n,m) = \mathrm{rank}(\partial_p(K_i)) + \mathrm{nullity}(\partial_p(K_i))$, the complexity of first term may be reduced to the complexity of computing the rank of a (sparse) $n \times m$ matrix. 
-In contrast, the second term---the persistence part---typically requires finding a basis in intersection of the two subspaces via either column reductions or projection-based techniques. In general, the algorithms outlined in section~\ref{sec:related_work} that accomplish this do so in $O(N^3)$ time and $O(N^2)$ in memory.
+Now, consider computing $\beta_p^{i,j}$ via the expression~\eqref{eq:pbn_simple} from matrix representatives $\partial_p \in \mathbb{F}^{n \times m}$.
+%$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
+Since the nullity of a operator may be reduced to a rank computation via the equality $\min(n,m) = \mathrm{rank}(\partial_p(K_i)) + \mathrm{nullity}(\partial_p(K_i))$, the complexity of first term may be reduced to the complexity of computing the rank of a (sparse) $n \times m$ matrix. 
+In contrast, the second term---the persistence part---typically requires finding a basis in intersection of the two subspaces via either column reductions or projection-based techniques. In general, all of the algorithms outlined in section~\ref{sec:related_work} that accomplish this do so in $O(N^3)$ time and $O(N^2)$ in memory.
 
 % Golub and Van Loan 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
@@ -222,7 +223,7 @@ To illustrate an alternative approach, we require more notation. If $A$ is a $m 
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
 	\includegraphics[width=0.85\textwidth]{betti_add}
-	\caption{From left to right, $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$, where $i,j \in \Delta_+^m$; the same $\beta_p^{i,j}$  with $i,j \in \Delta_+$; the additivity of $\beta_p^{\ast}$ implies $\mu_p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of the Pairing Uniqueness Lemma---in this case 	$\mu_p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}
+	\caption{From left to right, $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$, where $i,j \in \Delta_+^N$; the same $\beta_p^{i,j}$  with $i,j \in \Delta_+$; the additivity of $\beta_p^{\ast}$ implies $\mu_p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref{eq:uniq_pivot}---in this case $\mu_p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}
 	%$r_R(i,j) = 3 - 2 + 1 - 2 = 0$ yields whether the entry $R[i,j]$ is non-zero.}
 	\label{fig:mult}
 \end{figure}
@@ -237,8 +238,8 @@ The structure theorem from~\cite{zomorodian2004computing} shows that 1-parameter
 \begin{equation}\label{eq:uniq_pivot}
 r_R(i,j) \neq 0 \Leftrightarrow R[i,j] \neq 0
 \end{equation}
-In other words, due to equation~\eqref{eq:uniq_pivot}, the existence of any non-zero entry in $R$ may be inferred from the ranks of its submatrices.   
-This is important, as although $R$ is not unique, its lowest non-zero ``pivot'' entries are---and these entries define the persistence diagram. 
+In other words, the existence of non-zero ``pivot'' entries in $R$ may be inferred from the ranks of its submatrices.   
+This is important, as although $R$ is not unique, its non-zero pivots are---these pivots define the persistence diagram. 
 We now record a fact that exploits this idea and, as we will show, has non-trivial computational implications.
 \begin{lemma}\label{lemma:rank}
 For any filtration $K_\bullet$ of size $N = \lvert K \rvert$, let $R = \partial V$ denote the decomposition of the filtered boundary matrix $\partial \in \mathbb{F}^{N \times N}$ given in equation~\ref{eq:boundary_matrix}. Then, for any pair $(i,j)$ satisfying $1 \leq i < j \leq N$, we have:
@@ -250,9 +251,8 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 \noindent
 %\noindent \textbf{Remark: } Though Lemma~\ref{lemma:rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in its restriction to $p$-dimensional homology exclusively, for any fixed $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ recovers the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
 %In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
-An explicit proof of this can be found in~\cite{dey2022computational}, though it was noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It essentially follows by combining the Pairing Uniqueness Lemma with the fact that the reduced matrix $R$ is obtained from $\partial$ via left-to-right column operations, which preserve the ranks of every such submatrix.
-Lemma~\ref{lemma:rank} was the essential motivating step used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first output-sensitive algorithm given for computing persistent homology of a filtered complex.
-A little known proposition that follows from this, which has also been pointed out in~\cite{dey2022computational}, is that Lemma~\ref{lemma:rank} may be used to write the persistent Betti number in a simpler way as a sum of rank functions. 
+An explicit proof of this can be found in~\cite{dey2022computational}, though it was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It can be shown by combining the Pairing Uniqueness Lemma with the fact that $R$ is obtained from $\partial$ via left-to-right column operations, which preserve the ranks of every such submatrix.
+A lesser known fact that exploits Lemma~\ref{lemma:rank}---also pointed out in~\cite{dey2022computational}---is that~\eqref{eq:lower_left_rank} enables the PBN to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$.
 \begin{proposition}[Dey \& Wang~\cite{dey2022computational}]\label{prop:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
@@ -262,17 +262,19 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet
 	\end{equation}
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{proposition}
-\noindent We give a detailed proof of Proposition~\ref{prop:rank_reduction} in the appendix. It turns out Lemma~\ref{lemma:rank} can also be further generalized to arbitrary rectangles $R = [i,j] \times [k,l]$ in $\Delta_+^N$, see the fourth picture in Figure~\ref{fig:mult}.
-Geometrically, these rank computations manifest as $\mu$\emph{-queries}: box-parameterized multiplicity queries which count the number of persistence pairs that intersect a fixed ``box'' placed in the index persistence plane. 
-As a result, the $p$-th multiplicity function can also be defined in a rank-based formulation akin to~\eqref{eq:betti_four}, which was proven independently by Chen \& Kerber~\cite{chen2011output}. 
+\noindent For completeness, we give our own detailed proof of Proposition~\ref{prop:rank_reduction} in the appendix. 
+The connection between the PBN and the multiplicity function from~\eqref{eq:multiplicity} may be used to generalize Lemma~\ref{lemma:rank} to arbitrary rectangles $R = [i,j] \times [k,l]$ in $\Delta_+^N$---for geometric intuition, see Figure~\ref{fig:mult}.
+By combining Proposition~\ref{prop:rank_reduction} with~\eqref{eq:multiplicity}, we recover a submatrix-rank-based $p$-th multiplicity function $\mu_p^{R}(\cdot)$, which to the authors knowledge was first pointed out by Chen \& Kerber~\cite{chen2011output}: 
 \begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
-Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
+Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size $N = \lvert K \rvert$, and a $R = [i,j] \times [k,l]$ whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
 	\begin{equation}\label{eq:mu_four}
 	\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent As a result, the complexity of computing either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$. We summarize this fact with two corollaries. Let $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with at most $O((p+1)k)$ non-zero $\mathbb{F}$ entries. Then we have:
+\noindent The computational relevance of Propositions~\ref{prop:rank_reduction} and ~\ref{prop:rank_reduction} is that the complexity of computing either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$, which was in fact the core observation used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first \emph{output sensitive} persistence algorithm.
+%~\ref{eq:measure}
+We record this fact formally with two corollaries. Let $\mathrm{R}_p(k)$ denotes the complexity of computing the rank of square $k \times k$ matrix with at most $O((p+1)k)$ non-zero $\mathbb{F}$ entries. Then we have:
 \begin{corollary}
 	Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$ and indices $(\,i,j\,) \in \Delta_+^N$, computing $\beta_p^{i,j}$ using expression~\eqref{eq:betti_four} requires $O\big(\max \{\mathrm{R}_{p}(n_i), \mathrm{R}_{p+1}(m_j) \} \big)$ time, where $n_i = \lvert K_i^p \rvert$ and $m_j = \lvert K_j^{p+1} \rvert$.
 	%$O(\mathrm{R}_p(n, i, p), \, R_\partial(m, j, p+1) \,\})$ where $R_\partial(a,b,c)$ is the complexity of computing the rank of a $c$-dimensional $a\times b$ boundary matrix with $b\cdot (c+1)$ non-zero $\mathbb{F}$ entries. 
@@ -286,9 +288,18 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K \rvert$
 	%with $n < m$
 \end{corollary} 
 
-\noindent In conclusion, compared to other classical methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$, such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary matrices. 
-Note the only distinction between the interpretation of~\eqref{eq:mu_four} and that of~\eqref{eq:measure} is that the former is indexed on the index-persistence plane $\Delta_+^N$ whereas the latter is indexed over $\Delta_+$. 
-If we work only with persistence modules with real-valued coefficients, not only do we inherit the measure-theoretic perspective from~\eqref{eq:measure}, but we may also replace the non-zero entries of $\partial_p$ with real-valued coefficients. 
+\noindent In conclusion, compared to other classical methods of obtaining $\beta_p^{\ast}(K_\bullet)$ and $\mu_p^\ast(K_\bullet)$, such as those in~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have is that their computations are performed directly on \emph{unfactored} boundary (sub)matrices. 
+
+In contrast to the persistence diagram, note that both of counting invariants are neither stable nor smooth as they are integer-valued quantities.
+However, as~\eqref{eq:mu_four} makes clear, the restriction to sub-matrices is akin to computing $R$-parameterized multiplicities over the index-persistence plane $\Delta_+^N$. 
+Moreover, suppose we: 
+\begin{enumerate}
+	\item Restrict ourselves to $H(K; \mathbb{R})$
+	\item Index $K_\bullet$ over the (real) upper-half plane $\Delta_+$
+	\item Parameterize $C_p(K_\bullet; \mathbb{R})$ with real-valued entries
+\end{enumerate}
+A natural question arises from this set of assumptions: what connections can be made between the computational expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} and their measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure}?
+%By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
 We dedicate the rest of the paper to exploring the consequences of this fact. 
 
 %We exploit various properties of the rank function to 
