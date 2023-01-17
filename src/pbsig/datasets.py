@@ -61,7 +61,7 @@ def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich"
   pixels = np.asarray(image.convert('L'))
   return(pixels)
 
-def freundenthal_image(image: ArrayLike, threshold: int = 200):
+def freudenthal_image(image: ArrayLike, threshold: int = 200):
   """
   Given an grayscale image and a threshold between [0, 255], returns the 'Freundenthal triangulation'
   of the embedding given by keeping every pixel below the supplied threshold as a vertex and connecting 

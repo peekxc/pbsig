@@ -3,7 +3,8 @@ import numpy as np
 import ot
 
 from math import comb
-from typing import Iterable
+from typing import *
+from numbers import Integral
 from itertools import combinations
 from numpy.typing import ArrayLike
 from . import rotate_S1
@@ -59,6 +60,27 @@ def pht_0(X: ArrayLike, E: ArrayLike, nd: int = 32, transform: bool = True, prog
       dgm[which_inf,1] = max(fv)
       dgms0[i] = dgm
   return(dgms0)
+
+## What is the directional transfrom?
+## Maybe it should be an iterable of filter functions (defined for every simplex!)
+# See https://arxiv.org/pdf/1912.12759.pdf
+# also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
+def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32):
+  class DT_Iterable():
+    def __init__(self, theta):
+      self.theta = theta
+    def __iter__(self):
+      for t in self.theta:
+        fv = X @ np.array([np.cos(t), np.sin(t)])
+        yield lambda s: max(fv[s]) ## todo fix this 
+    def __len__(self):
+      return len(self.theta)
+  # if theta is None: 
+  #   return DT_Iterable(theta)
+  # else:
+  assert isinstance(theta, Integral) or isinstance(theta, Iterable)
+  theta = np.linspace(0, 2*np.pi, theta, endpoint=False) if isinstance(theta, Integral) else np.array(theta)
+  return DT_Iterable(theta)
 
 def wasserstein_mod_rot(D0, D1, p: float = 1.0, **kwargs) -> float:
   """

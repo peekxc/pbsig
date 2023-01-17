@@ -3,16 +3,31 @@ import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
 
 from pbsig import * 
-from pbsig.datasets import letter_image, freundenthal_image
+from pbsig.datasets import letter_image, freudenthal_image
 from pbsig.betti import lower_star_betti_sig
 from pbsig.utility import progressbar
+from pbsig.pht import directional_transform
 
 ## Get letter data set
 A_img = letter_image('A')
-X, S = freundenthal_image(A_img)
+X, S = freudenthal_image(A_img)
 
 ## Build signatures for a random 
-img_sig = MuSignature(S, family, R)
+dt = directional_transform(X)
+R = sample_rect_halfplane(1)[0,:]
+img_sig = MuSignature(S, dt, R)
+
+img_sig.precompute()
+
+
+plt.plot(img_sig())
+
+fv = X @ np.array([np.cos(0), np.sin(1)])
+
+# F = lambda s: max(fv[s])
+# s = next(S.faces(1))
+# f = next(iter(dt))
+
 
 
 

@@ -18,7 +18,7 @@ def unrank_C2(x: int, n: int):
   return(i,j) 
 
 ## Generate a random set of rectangles in the upper half plane 
-def sample_rect_halfplane(n: int, area: tuple = (0, 0.05)):  
+def sample_rect_halfplane(n: int, area: tuple = (0, 0.05), disjoint: bool = False):  
   """ 
   Generate random rectilinear boxes with area between [lb,ub] in upper-half plane via rejection sampling 
   """

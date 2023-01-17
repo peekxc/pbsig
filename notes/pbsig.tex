@@ -699,7 +699,7 @@ Observe that when $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2
 \begin{equation*}
 	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X X^T + \epsilon \, I_n) X X^T \right] 
 \end{equation*}
-For $M = X X^T$ a a given non-singular, positive definite matrix, its \emph{relative condition number} $\kappa(M)$ is defined as: 
+For $M = X X^T$ a a given non-singular, positive definite matrix, its \emph{condition number} $\kappa(M)$ is defined as: 
 \begin{equation}
 	\kappa(M) = \lVert M^{-1} \rVert \lVert M \rVert = \lvert \lambda_1(M) \rvert \; / \; \lvert \lambda_n(M) \rvert
 \end{equation}
@@ -846,9 +846,9 @@ Thus, we may reveal the spectrum $\Lambda(A)$ of $A$---effectively the lengths o
 \end{equation}
 % Insert similarity transforms  
 Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
-Computing eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+Computing the eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q = Q_1 Q_2 \dots Q_{n-2}$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using non-Strassen-like operations, and thus this reduction to tridiagonal form dominates the computation. 
+Note the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, whereas the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using non-Strassen-like operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
 Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As the Lanczos method is the central iterative method we study in this effort, we review it below. 
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
@@ -912,19 +912,19 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
  The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector $v \mapsto Av$ operator. 
- Observe that since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
- In fact, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations. We summarize these benefits with a Lemma. 
-\begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
-	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ has complexity $O(\mathcal{M}(n))$ time, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\mathcal{M}(n), n\}\cdot r)$ time and $O(n)$ storage complexity, when computation is done in exact arithmetic. 
-\end{lemma}
+Observe that since $A$ is not modified at all during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
+Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies the Lanczos iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations. We summarize these benefits with a Lemma. 
+\begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
+	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
+\end{proposition}
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
 Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method.
 \begin{corollary}\label{cor:finite_arith_lanczos}
-	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\mathcal{M}(n), n\} \cdot r)$ time and $\Omega(n)$ storage complexity. 
+	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
 \end{corollary}
 \noindent
-In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation which manifest as loss of orthogonality between the Lanczos vectors. These errors not only affect the iterations convergence towards an in invariant subspace, but actually muddle the termination condition entirely. 
-Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
+In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation which manifest as loss of orthogonality between the Lanczos vectors. These errors not only affect the iterations convergence rate towards an in invariant subspace, but in fact muddle the termination condition entirely. 
+Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or space complexities by non-trivial factors. 
 As these extensions are multifaceted, non-trivial, and beyond the scope of the present work, we defer their discussion to the appendix~\ref{subsec:rounding}. The curious reader is referred to~\cite{} and references therein for an overview. 
 
 %Independent of orthogonality-enforcement scheme of choice,
@@ -1150,6 +1150,7 @@ For example, consider creating a classifier for the alphabet of English characte
 
 It would be beneficial to have an invariant that was sensitive to the geometries between shapes, but also stable in some sense.
 
+\subsection{Example 1: Letters}
 \newpage
 
 % --- APPLICATION 3: Directional transforms ---- 
