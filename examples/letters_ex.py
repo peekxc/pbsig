@@ -7,6 +7,26 @@ from pbsig.datasets import letter_image, freundenthal_image
 from pbsig.betti import lower_star_betti_sig
 from pbsig.utility import progressbar
 
+## Get letter data set
+A_img = letter_image('A')
+X, S = freundenthal_image(A_img)
+
+## Build signatures for a random 
+img_sig = MuSignature(S, family, R)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Load the letters images
 A_img = letter_image('A')
 
@@ -14,7 +34,7 @@ A_img = letter_image('A')
 plt.imshow(A_img, cmap="gray")
 
 ## Compute the Freundental triangulation to get an embedded simplicial complex
-X, E, T = freundenthal_image(A_img)
+X, S = freundenthal_image(A_img)
 
 ## Plot triangulation 
 plot_mesh2D(X, E, T)
