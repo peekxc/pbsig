@@ -1,13 +1,12 @@
-from typing import *
 import numpy as np 
-
-from pbsig.utility import smooth_upstep, smooth_dnstep
+from typing import *
 from scipy.sparse import diags
 from scipy.sparse.linalg import eigsh
 from scipy.sparse.csgraph import structural_rank
 from .persistence import * 
 from .apparent_pairs import *
 from .linalg import *
+from .utility import progressbar, smooth_upstep, smooth_dnstep
 
 def rank_C2(i: int, j: int, n: int):
   i, j = (j, i) if j < i else (i, j)
@@ -599,7 +598,7 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     raise ValueError("Invlaid input")
   return 0 
 
-from pbsig.utility import progressbar
+
 class MuSignature:
   """ 
   A multiplicity (mu) signature M is a shape statistic M(i) generated from a parameterized family F = { f1, f2, ..., fk }

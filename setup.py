@@ -1,10 +1,4 @@
 # -*- coding: utf-8 -*-
-# Install with: python setup.py install
-# Build with: python setup.py bdist_wheel
-# from skbuild import setup
-# from setuptools import find_packages
-#from glob import glob
-#from pybind11.setup_helpers import Pybind11Extension, build_ext
 import os 
 import sysconfig
 import distutils.sysconfig
@@ -12,17 +6,21 @@ from typing import Any, Dict
 from setuptools import setup, Extension, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
 
+## Get base path to package
 base_path = os.path.dirname(__file__)
-extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-extra_compile_args += ["-std=c++17", "-Wall", "-Wextra"]
 
-
-extra_compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
-# extra_compile_args += "-O0" ## debug mode otherwise  
-
+## Print the platform- and compiler-dependent flags 
 flags = distutils.sysconfig.get_config_var("CFLAGS")
 print(f"COMPILER FLAGS: { str(flags) }")
 
+## Configure additional compiler flags
+extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
+extra_compile_args += ["-std=c++17", "-Wall", "-Wextra"]
+extra_compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
+# extra_compile_args += "-O0" ## debug mode  
+extra_compile_args = list(set(extra_compile_args))
+
+## Configure the native extension modules
 ext_modules = [
   Pybind11Extension(
     '_boundary', 
@@ -77,15 +75,7 @@ ext_modules = [
   )
 ]
 
-
-# ext_modules = [
-# 	Pybind11Extension(
-# 	"boundary",
-# 		sorted(glob("boundary.cpp")),
-# 	)
-# ]
-
-# python -m build --skip-dependency-check --no-isolation --wheel
+# Build: python -m build --skip-dependency-check --no-isolation --wheel
 setup(
   name="pbsig",
   author="Matt Piekenbrock",
@@ -99,36 +89,4 @@ setup(
   package_dir={'': 'src'}, # < root >/src/* contains packages
   packages=['pbsig'],
   package_data={'pbsig': ['data/*.bsp', 'data/*.txt', 'data/*.csv']},
-  # cmake_install_dir='src/pbsig'
-  #cmake_args=['-DSOME_FEATURE:BOOL=OFF']
 )
-# package_dir = \
-# {'': 'src'}
-
-# packages = \
-# ['set_cover', 'set_cover.sc_ext']
-
-# package_data = \
-# {'': ['*'],
-#  'set_cover.sc_ext': ['extern/pybind11/*',
-#                       'extern/pybind11/detail/*',
-#                       'extern/pybind11/stl/*']}
-
-# setup_kwargs = {
-#     'name': 'set-cover',
-#     'version': '0.1.0',
-#     'description': 'My Package with C++ Extensions',
-#     'long_description': None,
-#     'author': 'Matt Piekenbrock',
-#     'author_email': None,
-#     'maintainer': None,
-#     'maintainer_email': None,
-#     'url': None,
-#     'package_dir': package_dir,
-#     'packages': packages,
-#     'package_data': package_data,
-# }
-# from build import *
-# build(setup_kwargs)
-
-# setup(**setup_kwargs)

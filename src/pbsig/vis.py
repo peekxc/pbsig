@@ -5,8 +5,8 @@ import networkx as nx
 from typing import * 
 
 from .combinatorial import inverse_choose
-from .color import bin_color
-from .linalg import cmds
+from .color import *
+from .linalg import *
 
 import bokeh 
 from bokeh.plotting import figure, show
@@ -46,10 +46,14 @@ def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
 
 
 def plot_complex(S, pos = None, notebook=True, **kwargs):
-
   """
-  S := simplicial complex
-  pos := one of 'mds', 'spring', or a np.ndarray instance
+  Plots a simplicial complex in 2D with Bokeh 
+  
+  Parameters: 
+    S := simplicial complex
+    pos := one of 'mds', 'spring', or a np.ndarray instance of vertex positions
+    notebook := use Bokeh's 'output_notebook()' functionality
+    **kwargs := additional arguments to pass to figure()
   """
   
   ## Default scales
@@ -93,16 +97,17 @@ def plot_complex(S, pos = None, notebook=True, **kwargs):
   p.axis.visible = False
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
+
+
+  ## Create the (p >= 2)-simplex renderer
+  
+
+  ## Create edge renderer
   edge_x = [pos[e,0] for e in S.faces(1)]
   edge_y = [pos[e,1] for e in S.faces(1)]
-
-  ## Edge widths
-  from pbsig.color import bin_color, colors_to_hex, linear_gradient
   e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
   e_widths = (e_sizes / np.max(e_sizes))*edge_scale
   #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
-
-  ## Create edge renderer
   edge_data = {
     'xs' : edge_x,
     'ys' : edge_y,
@@ -123,18 +128,3 @@ def plot_complex(S, pos = None, notebook=True, **kwargs):
 
   p.toolbar.logo = None
   show(p)
-
-# def plot_graph(G):
-#   from bokeh.plotting import figure
-#   from bokeh.models import GraphRenderer, Ellipse
-#   from bokeh.palettes import Spectral8
-
-#   # list the nodes and initialize a plot
-#   N = G.number_of_nodes()
-#   node_indices = list(range(N))
-#   plot = figure(title="Graph layout demonstration", tools="", toolbar_location=None)
-#   graph = GraphRenderer()
-
-#   graph.node_renderer.glyph = Ellipse(height=0.1, width=0.2, fill_color="fill_color")
-#   graph.node_renderer.data_source.data = dict(index=node_indices, fill_color=Spectral8)
-#   graph.edge_renderer.data_source.data = dict(start=[0]*N, end=node_indices)

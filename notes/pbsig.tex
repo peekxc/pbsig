@@ -84,14 +84,23 @@
 \newcommand{\rvline}{\hspace*{-\arraycolsep}\vline\hspace*{-\arraycolsep}}
 
 
-\title{\vspace{-2.0em} \vspace{-0.5em}}
+\title{\vspace{-2.0em} Smooth Betti curves in dynamic settings \\ 
+using persistent spectral theory
+\vspace{-0.5em}}
+
 \author{Matt Piekenbrock}
 \date{}
 
 \begin{document}
-\noindent
+\maketitle
 
-
+\begin{abstract}
+Using a duality result between persistence diagrams and persistence measures, we introduce a continuous relaxation of the persistent Betti number (PBN) for persistence modules indexed over the real line. Like the PBN, the relaxation obeys the additivity and inclusion-exclusion properties known to Betti numbers and is characterized via subspaces of certain simplicial boundary operators. 
+Unlike the PBN, the approximation satisfies a number of stability and continuity properties typically reserved for persistence diagrams. In particular, we show it is globally Lipshitz continuous, smooth over the positive semi-definite cone, and is equivalent to replacing certain boundary operators with continuously differentiable L{\"o}wner operators.
+These operators manifest as combinatorial Laplacians that encode rich geometric information in their non-harmonic spectra, providing several avenues for geometric data analysis. 
+Surprisingly, we find the relaxation may be efficiently computed an order of magnitude faster than the standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
+As exemplary applications, we study its utility in capturing topological behavior of dynamic metric spaces and enabling shape comparison via the persistent homology transform.
+\end{abstract}
 
 \section{Introduction}\label{sec:intro}
 \subsection*{Motivation} TODO 
@@ -561,7 +570,9 @@ These relaxations approximate the $\mathrm{sgn}_+$ function by integrating smoot
 where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
 In contrast to the $\mathrm{sgn}_+$ function, it was shown in~\cite{bi2013approximation} that if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable on $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
 By substituting $\mathrm{sgn}_+ \mapsto \phi$ in~\eqref{eq:rank_def}, several of these  properties naturally extend to the rank function. 
-In particular, if $X \in \mathbb{R}^{n \times m}$ admits a singular value decomposition $X = U\Sigma V^T$ and is paired with a scalar-valued $\phi$ continuously differentiable at every $\sigma \in \Sigma$, then for any $\epsilon > 0$ the corresponding \emph{Löwner} operator $\Phi_\epsilon : \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$: 
+In particular, if $X \in \mathbb{R}^{n \times m}$ admits a singular value decomposition $X = U\Sigma V^T$ and is paired with a scalar-valued $\phi$ continuously differentiable at every $\sigma \in \Sigma$, then for any $\epsilon > 0$ the corresponding \emph{Löwner operator} $\Phi_\epsilon$
+%$\Phi_\epsilon : \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$
+from~\cite{ding2018spectral}: 
 % $f$ is continuous differentiable at every eigenvalue of $X$
 %This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
 %$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
@@ -575,7 +586,7 @@ In particular, if $X \in \mathbb{R}^{n \times m}$ admits a singular value decomp
 %\end{align*}
 is a continuously differentiable operator in $\mathbb{R}^{n \times m}$. 
 %The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
-In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then operator~\eqref{eq:lowner} is also twice continuously differentiable at $X$~\cite{bi2013approximation}. 
+In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then operator~\eqref{eq:lowner} is also twice continuously differentiable~\cite{ding2018spectral} at $X$. 
 Before summarizing the additional properties this operator has and its relationship with the rank function, we given a definition:
 \begin{definition}[Continuous Rank Approximation]
 	Given $X \in \mathbb{R}^{n \times m}$ admitting a singular value decomposition $X = U \Sigma V^T$ where $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$, a fixed approximation parameter $\epsilon > 0$, and a choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, we define the \emph{continuous rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ as: 
@@ -769,9 +780,9 @@ yielding the following \emph{weighted combinatorial laplacian}:
 \begin{equation}\label{eq:weighted_up_laplace}
 	\Delta_p(K, f) := W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T  + \partial_{p}^T W_p^{-1} \partial_p W_{p+1}
 \end{equation} 
-Note that none of the constitutive terms are symmetric matrices, in general. 
+In general, none of the constitutive terms in~\eqref{eq:weighted_up_laplace} are symmetric matrices, unless $W_p = I_n$ (for $L_p^{\text{up}}$) or $W_{p+1} = I_m$ (for $L_p^{\text{dn}}$). 
 %$W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T$ 
-However, since
+However, note that $L_p^{\text{up}}$ may be written as follows: 
 \begin{equation}\label{eq:l_up}
 	L_p^{\text{up}}(K, f) = W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T  = W_p^{-1/2} \big( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1/2}  \big ) W_p^{1/2} 
 \end{equation}
@@ -779,14 +790,14 @@ is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W
 The same result holds for up-, down-, and combinatorial Laplacians~\cite{}. We refer to this inner positive semi-definite matrix as the \emph{symmetric} weighted up-Laplacian of $K$. 
 
 Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{def:time_boundary_matrix}. Assume that the filter function $f : K \to \mathbb{R}_+$ is strictly positive. By taking the product $(\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T$ for some choice of $h \in \mathcal{H}$, we have:
-\begin{align*}
+\begin{align*}\label{eq:param_up_lap}
 	\hat{L}_p^{\text{up}}(K, f) &= (\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T \\
 	&= (V_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (V_p^i)^{+} \\
 	&\propto (V_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (V_p^i)^{+/2}  \numberthis
 \end{align*}
 where $A^{+/2} = (A^{1/2})^+$. Thus, in this way we think of our definition of a parameterized boundary matrix as corresponding to a choice of a \emph{non-negative scalar-product} on the vector space $C^p(K, \mathbb{R})$, which induces a (degenerate) inner product $\langle \cdot, \cdot \rangle : C^p(K, \mathbb{R}) \times C^p(K, \mathbb{R}) \to \mathbb{R}$ on $C^p(K, \mathbb{R})$. Equivalently, our choice of weight function induces an inner product on the quotient space $W = C^p(K, \mathbb{R}) / \{ b : \lvert b \rvert = 0 \}$.
 We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
-\begin{equation}
+\begin{equation}\label{eq:param_normalized_up_lap}
 	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = (\widetilde{D}_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (\widetilde{D}_p^i)^{+/2} 
 \end{equation}
 has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i = \mathrm{diag}(\{ \mathrm{deg}_w(\sigma_1), \mathrm{deg}_w(\sigma_2), \dots, \mathrm{deg}_w(\sigma_n) \})$ corresponds to the weighted degree matrix. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. For now we conclude this section with a proposition. 
@@ -817,9 +828,9 @@ Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{
 
 \section{Computational Implications}\label{sec:methodology}
 %\subsection*{An quadratic-time rank computation}
-In this section, we discuss the  computational advantages one obtains by approximating the counting invariants with a spectral relaxation in the form of~\eqref{}.
-As~\eqref{eq:rank_def} is defined completely in terms of the singular values of $X$, which as we've mentioned are given by the square roots of eigenvalues of the corresponding Laplace operator, we focus on iterative methods specialized for symmetric positive semi-definite matrices arising as Laplacians. 
-In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
+In this section, we discuss computational advantages that stem from replacing the counting invariants with their spectral-based approximations from definition~\ref{def:smooth_mu}.
+As the continuous relaxations are defined completely in terms of the singular value function which are the square roots of eigenvalues of the combinatorial Laplace operator, we focus on iterative methods specialized for symmetric positive semi-definite matrices arising arising from such Laplacians. 
+%In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}
@@ -914,7 +925,8 @@ Although this assumption is unrealistic in practical settings, it gives us a gro
 \noindent
 In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation which manifest as loss of orthogonality between the Lanczos vectors. These errors not only affect the iterations convergence towards an in invariant subspace, but actually muddle the termination condition entirely. 
 Much effort has been expended---spanning several decades~\cite{}---developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or storage complexities by non-trivial factors. 
-Because these extensions are varied, non-trivial, and multifaceted, we defer their discussion to section~\ref{subsec:rounding}. 
+As these extensions are multifaceted, non-trivial, and beyond the scope of the present work, we defer their discussion to the appendix~\ref{subsec:rounding}. The curious reader is referred to~\cite{} and references therein for an overview. 
+
 %Independent of orthogonality-enforcement scheme of choice,
 
 %As Lemma~\ref{lemma:exact_arith_lanczos} makes clear, the usefulness of the Lanczos iteration hinges on the availability of a fast matrix-vector product. 
@@ -930,12 +942,12 @@ Because these extensions are varied, non-trivial, and multifaceted, we defer the
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
 \subsection{The efficiency of the Laplacian \texttt{matvec}}\label{sec:comb_lap}
-As Lemma~\ref{lemma:exact_arith_lanczos} show, the efficiency of the Lanczos method depends the exploitation of the three-term recurrence and the existence of a fast matrix-vector product. 
+As Lemma~\ref{lemma:exact_arith_lanczos} shows, the efficiency of the Lanczos method depends crucially on the exploitation of the three-term recurrence and the existence of a fast matrix-vector product. 
 The former only arises in the decomposition of symmetric matrices---which we obtain by considering Laplace operators---while the latter depends on the structure of the $x \mapsto A x$ operation. 
 In general, a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ with an average of $\nu$ nonzeros per row incurs approximately $(2\nu + 8)n$ flops per Lanczos step, implying a $O(n\nu r)$ time complexity for a single iteration~\cite{golub2013matrix}. 
 This is markedly improves in the case of the graph Laplacian: the $x \mapsto \partial_p \partial_p^T x$ operation can be carried out in a time linear in the number of edges in $G$ via a direct scan. 
-In contrast, generalizing to the combinatorial Laplacian for more general $p > 1$ has a few subtleties, depends on the specific Laplace operator or choice.
-Towards revealing exploitable structure to accelerate the rank computation, we examine this more in detail.
+In contrast, generalizing to the combinatorial Laplacian for more general $p > 1$ has a few subtleties, depends on the specific Laplace operator one computes.
+Towards revealing exploitable structure to accelerate the computation, we examine this more in detail.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
@@ -989,6 +1001,9 @@ Since a $p$-simplex has $p+1$ proper faces in its boundary, and we need to itera
 \end{lemma}
 \noindent From a practical perspective, $p \geq 0$ is generally a very small constant---typically no more than $2$---thus we conclude that we can evaluate $x \mapsto \partial_{p+1} \partial_{p+1}^T x$ is $\approx O(m)$ time, essentially linear in the number of $p+1$ simplices. 
 More details on the practical optimization one may make, along with pseudocode of the two-phase algorithm for general $p \geq 0$, is given in appendix~\ref{sec:up_laplace_matvec}.
+
+
+\subsection{Effective Resistance \& The Laplacian Paradigm}
 
 %\subsubsection*{Effective Resistance \& The Laplacian Paradigm}
 %We now turn to our main result. 
@@ -1104,13 +1119,14 @@ More details on the practical optimization one may make, along with pseudocode o
 %\subsection*{Complexity}
 % \subfile{rank_complexity} % include numerical rank definition
 
-In general, the spectra of a given Laplacian operator encodes certain aspects of the underlying spaces combinatorial structure. 
-For example, the Laplacians of a simplicial complex encode its basic topology via its homology groups, which is characterized by the nullspace of the corresponding operator.
-The dimension of the nullspace is identical for many Laplacians, whether they are normalized, weighted, signless, and so on~\cite{}.
-In contrast, these operators differ in the nonzero part of the spectrum, which when equipped with a scalar-product encode specific geometric features in addition to topological properties. For example, weighting edges of the graph Laplacian originally studied by Kirchoff typically has natural interpretations as electrical \emph{conductance}/\emph{resistance} that aris electrical circuit networks, due to Ohms law and conservation of flow. 
-By normalizing 
-\emph{normalized} graph Laplacian arises naturally as a \emph{diffusion operator} in the study of transition probabilities. 
-As another example, the signless Laplacian...
+In general, both combinatorial and topological aspects of a given topological space are encoded in the spectra of Laplacian operators. 
+For example, the Laplacians of a simplicial complex encode its basic topology via its homology groups, which is characterized by the nullspace of the corresponding operator---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
+In contrast, these operators differ in the nonzero part of the spectrum, which when equipped with a scalar-product encode specific geometric features in addition to topological properties. 
+
+%For example, weighting edges of the graph Laplacian originally studied by Kirchoff typically has natural interpretations as electrical \emph{conductance}/\emph{resistance} that aris electrical circuit networks, due to Ohms law and conservation of flow. 
+%By normalizing 
+%\emph{normalized} graph Laplacian arises naturally as a \emph{diffusion operator} in the study of transition probabilities. 
+%As another example, the signless Laplacian...
 
 % --- APPLICATION 2: Continuous Persistent Betti Curves (PBCs) as Shape Signatures --- 
 % Benefits of rank(A) \approx < nuclear norm of A >

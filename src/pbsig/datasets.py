@@ -1,17 +1,19 @@
 import os
+import io
 import numpy as np
-import importlib.resources as pkg_resources
- 
+import pickle 
+
+from os.path import exists
 from scipy.spatial.distance import pdist, cdist, squareform
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import * 
 from numpy.typing import ArrayLike
 from pathlib import Path
 
 # Package relative imports 
 from .utility import *
-
-# def random_graph(n: int, p: float):
+from .combinatorial import *
+from .simplicial import *
 from .__init__ import _package_data
 
 
@@ -32,16 +34,14 @@ def animal_svgs():
 def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"], nwide=51):
   """
   Generates a letter image 
-  
   """
-  from pbsig import data as package_data_mod
-  data_path = package_data_mod.__path__._path[0]
+  base_dir = _package_data('fonts')
   fonts = ['lato-bold','opensans','ostrich', 'oswald','roboto']
   fonts_fn = ["Lato-Bold", "OpenSans-Bold", "ostrich-regular", "Oswald-Bold", "Roboto-Bold"]
   if font == ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"]:
-    font_path = data_path + '/Lato-Bold.ttf'
+    font_path = base_dir + '/Lato-Bold.ttf'
   elif isinstance(font, str) and font.lower() in fonts:
-    font_path = data_path +'/' + fonts_fn[fonts.index(font.lower())] + '.ttf'
+    font_path = base_dir +'/' + fonts_fn[fonts.index(font.lower())] + '.ttf'
   else:
     # TODO: allow font paths 
     raise ValueError("invalid font given")
@@ -95,12 +95,8 @@ def freundenthal_image(image: ArrayLike, threshold: int = 200):
     np.min(v_pos[:,0]) + (np.max(v_pos[:,0])-np.min(v_pos[:,0]))/2,
     np.min(v_pos[:,1]) + (np.max(v_pos[:,1])-np.min(v_pos[:,1]))/2
   ])
-  V = scale_diameter(v_pos - center) 
-  return(V, E, T)
-
-# def letters():
-#   from pbsig import data as package_data_mod
-  #   data_path = package_data_mod.__path__._path[0]
+  X = scale_diameter(v_pos - center) 
+  return(X, SimplicialComplex(T))
 
 def open_tar(fn: str, mode: str = "r:gz"):
   import tarfile
@@ -120,13 +116,7 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   return(S)
   
 def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
-  import io
-  from os.path import exists
-  from pbsig import data as package_data_mod
-  from pbsig.utility import simplify_outline
-  from PIL import Image, ImageFilter
-  import pickle 
-  base_dir = _package_data('')
+  base_dir = _package_data('mpeg7')
   if simplify == 150 and contour == True and which == "default":
     mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
     return mpeg7

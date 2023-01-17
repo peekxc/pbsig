@@ -7,6 +7,9 @@ dist
 **/**.egg-info
 js/node_modules
 */node*/**
+trash
+.vscode
+.textpadtmp
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
