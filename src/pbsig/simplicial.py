@@ -529,7 +529,8 @@ class MutableFiltration(MutableMapping):
     return new
 
   def faces(self, p: int = None) -> Iterable:
-    return filter(lambda s: len(s) == p+1, self.values())
+    assert isinstance(p, Integral) or p is None, f"Invalid p:{p} given"
+    return self.values() if p is None else filter(lambda s: len(s) == p+1, self.values())
 
   def __repr__(self) -> str:
     # from collections import Counter
@@ -683,7 +684,7 @@ def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tupl
     assert p is None or isinstance(p, Integral), "p must be integer, or None"
     if isinstance(K, SimplicialComplex) or isinstance(K, MutableFiltration):
       if p is None:
-        simplices = list(K.values())
+        simplices = list(K.faces())
         D = _boundary(simplices, simplices)
       else:
         p_simplices = K.faces(p=p)

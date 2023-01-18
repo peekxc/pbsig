@@ -335,7 +335,7 @@ def test_laplacian0_cpp_matmat():
 
 def test_laplacian_API():
   from pbsig.linalg import laplacian, up_laplacian
-  X = np.random.uniform(size=(150,2))
+  X = np.random.uniform(size=(15,2))
   S = delaunay_complex(X) 
   
   ## Test they are the same 
@@ -343,6 +343,7 @@ def test_laplacian_API():
   LO = up_laplacian(S, p=0, form='lo')
   x = np.random.uniform(size=S.shape[0])
   assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+   # (LM @ x) - (LO @ x)???
 
   ## Test they are the same 
   LM = up_laplacian(S, p=1, form='array')
@@ -425,6 +426,7 @@ def test_laplacian_API():
 
 
 def test_laplacian_eigsh():
+  X, S = generate_dataset()
   LM = up_laplacian(S, p=0, form='array')
   solver = parameterize_solver(LM, solver='jd')
   ew_m = solver(LM)

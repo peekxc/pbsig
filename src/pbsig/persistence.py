@@ -556,18 +556,18 @@ def is_reduced(R: lil_array) -> bool:
 
 from pbsig.simplicial import FiltrationLike 
 
-def ph(K: FiltrationLike, p: int = 0, factor: bool = False):
-  """
-  Computes the p-th persistent homology a filtration 'K'. 
+# def ph(K: FiltrationLike, p: int = 0, factor: bool = False):
+#   """
+#   Computes the p-th persistent homology a filtration 'K'. 
 
-  Returns: 
-    (1) dgm := The p-th persistence diagram of K (if factor == False), or;
-    (2) (Dp, Dq, Rp, Rq, Vp, Vq) := The matrices used to compute the decomposition R = D V 
-  """
-  D0, D1 = boundary_matrix(K, p=(0,1))
-  R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-  Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
-  Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
+#   Returns: 
+#     (1) dgm := The p-th persistence diagram of K (if factor == False), or;
+#     (2) (Dp, Dq, Rp, Rq, Vp, Vq) := The matrices used to compute the decomposition R = D V 
+#   """
+#   D0, D1 = boundary_matrix(K, p=(0,1))
+#   R0, R1, V0, V1 = reduction_pHcol(D0, D1)
+#   Vf = dict(sorted(zip(to_str(V), fv0), key=index(1)))
+#   Ef = dict(sorted(zip(to_str(E), fe0), key=index(1)))
 
 
 # from enum import Enum
@@ -723,6 +723,36 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
     valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
   return(valid)
 
+
+def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> ArrayLike :
+  """ Returns the persistence diagram from (K, R) """
+  rlow = low_entry(R)
+  sdim = np.array([s.dimension() for s in iter(K.values())])
+  
+  ## Get the indices of the creators and destroyers
+  if any(rlow == -1):
+    creator_mask = rlow == -1
+    creator_dim = sdim[creator_mask]
+    birth = np.flatnonzero(creator_mask)
+    death = np.repeat(np.inf, len(birth))
+    death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
+  else:
+    birth = np.empty(shape=(0, 1))
+    death = np.empty(shape=(0, 1))
+
+  ## Match the barcodes with the index set of the filtration
+  key_dtype = type(next(K.keys()))
+  filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
+  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf}
+  birth = np.array([index2f[i] for i in birth])
+  death = np.array([index2f[i] for i in death])
+  
+  ## Assemble the diagram
+  dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
+  if collapse: 
+    dgm = dgm[~np.isclose(dgm['death'] - dgm['birth'], 0.0)]
+  return dgm 
+
 ## TODO: redo with filtration class at some point
 def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, **kwargs):
   """
@@ -754,46 +784,12 @@ def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, **kw
     R = D.copy().tolil()
     pHcol(R, V)
     assert validate_decomp(D, R, V)
-    rlow = low_entry(R)
-    sdim = np.array([s.dimension() for s in iter(K.values())])
-    
-    ## Get the indices of the creators and destroyers
-    if any(rlow == -1):
-      creator_mask = rlow == -1
-      creator_dim = sdim[creator_mask]
-      birth = np.flatnonzero(creator_mask)
-      death = np.repeat(np.inf, len(birth))
-      death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
-    else:
-      birth = np.empty(shape=(0, 1))
-      death = np.empty(shape=(0, 1))
-
-    ## Match the barcodes with the index set of the filtration
-    key_dtype = type(next(K.keys()))
-    filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
-    index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf}
-    birth = np.array([index2f[i] for i in birth])
-    death = np.array([index2f[i] for i in death])
-    
-    ## Assemble the diagram
-    dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
-      
-      # dgm = np.fromiter(zip(creator_dim, birth, death), dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
-      # dgm = dgm[np.argsort(dgm, order=['dim', 'birth', 'death'])]
-      # assert all(dgm['birth'] <= dgm['death'])
-      # dgm = np.vstack([np.c_[
-      #   np.fromiter(repeat(d, sum(creator_dim == d)), dtype='i2'), 
-      #   birth[creator_dim == d].astype('f4'), 
-      #   death[creator_dim == d].astype('f4')
-      # ] for d in np.unique(creator_dim)])
-      # np.array(dgm, dtype=[('dim', 'i2'), ('birth', 'f4'), ('death', 'f4')])
-
-
-      ## Generators 
-      # V[np.ix_(creator_mask,creator_mask)]
-      # [simplices[int(i)] for i in dgm_index[0][:,0]]
-      # [simplices[int(i)] for i in dgm_index[0][:,1] if i != np.inf]
-      # b = np.flatnonzero(rlow[rlow != -1])
+    dgm = generate_dgm(K, R)      
+    ## Generators 
+    # V[np.ix_(creator_mask,creator_mask)]
+    # [simplices[int(i)] for i in dgm_index[0][:,0]]
+    # [simplices[int(i)] for i in dgm_index[0][:,1] if i != np.inf]
+    # b = np.flatnonzero(rlow[rlow != -1])
 
     # assert validate_decomp(D0, R0, V0, D1, R1, V1)
   return(dgm)

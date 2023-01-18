@@ -38,7 +38,11 @@ def cancel_pivot(A, i, j, piv: Optional[int] = None):
   return(s)
 
 def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
-  """ The vineyards algorithm """
+  """ 
+  The vineyards algorithm 
+  
+  Critical cases: 2, 5, 7
+  """
   assert R.shape[0] == V.shape[0], "Must be matching boundary matrices"
   assert R.shape[0] == R.shape[1] and V.shape[0] == V.shape[1], "Must be square"
   m = R.shape[1] # num simplices in filtration
@@ -48,20 +52,21 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
     if pos[i] and pos[i+1]:
       if V[i,i+1] != 0:
         s = cancel_pivot(V, i, i+1, piv=i) 
-      if any(np.logical_and(piv == i, piv == i+1)):
+      if any(piv == i) and any(piv == i+1):
         k,l = np.flatnonzero(piv == i).item(), np.flatnonzero(piv == (i+1)).item()
-        if R[i,l] != 0:
+        if R[i,l] != 0: # Case 1.1.1 and 1.1.2
+          status = 1 if k < l else 2
           k,l = (k,l) if k < l else (l,k) # ensure k < l
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
           s = cancel_pivot(R, k, l)
           V[:,[l]] += s*V[:,[k]] if s != 0 else V[:,[k]]
-          yield 1
-        else:
+          yield status
+        else: # Case 1.2 still! 
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
-          yield 2
-      else:
+          yield 3 # should be same as below
+      else: # Case 1.2
         permute_tr(R, i, "both")
         permute_tr(V, i, "both")
         yield 3
@@ -72,7 +77,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
           R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
-          yield 4
+          yield 4 
         else:
           s = cancel_pivot(V, i, i+1, piv=i)
           R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
@@ -336,13 +341,13 @@ def plot_linear_homotopy(F0: Dict, F1: Dict):
   ax.set_ylim(min([min(f0), min(f1)]), max([max(f0), max(f1)]))
   ax.scatter(np.repeat(0, n), f0, s=3.5)
   ax.scatter(np.repeat(1, n), f1, s=3.5)
-  all((ax.text(-0.025, y, s=c, ha='center', va='center') for c, y in F0.items()))
-  all((ax.text(1.025, y, s=c, ha='center', va='center') for c, y in F1.items()))
+  # all((ax.text(-0.025, y, s=c, ha='center', va='center') for c, y in F0.items()))
+  # all((ax.text(1.025, y, s=c, ha='center', va='center') for c, y in F1.items()))
   for i in F0.keys():
     pp, qq = (0, F0[i]), (1, F1[i])
     ax.plot(*np.vstack((pp, qq)).T, c='blue', linewidth=0.5)
 
-def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interval: Tuple = (0, 1), plot: bool = False):
+def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interval: tuple = (0, 1), plot: bool = False):
   """
   Decomposes a linear homotopy h: R x [0,1] -> R between two sequences 'f' and 'g' into an ordered set of adjacent transpositions. 
   
@@ -375,8 +380,8 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     raise ValueError("Unknown input for f,g detected")
   
   ## Sort the map to line up the filtration values
-  F0 = dict(sorted(f.items(), key=lambda kv: kv[1]))
-  F1 = dict(sorted(g.items(), key=lambda kv: kv[1]))
+  F0 = dict(sorted(f.items(), key=lambda kv: kv[1])) if not(is_sorted(f.values())) else f.copy()
+  F1 = dict(sorted(g.items(), key=lambda kv: kv[1])) if not(is_sorted(g.values())) else g.copy()
   
   ## Create permutations representing the symbols of each filtration value
   n = len(f)
@@ -390,7 +395,7 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
 
   ## Compute the adjacent transpositions in a valid order following a linear homotopy
   s, e = interval
-  tr = array('I')
+  tr, dom_vals = array('I'), array('f')
   eps = 10*np.finfo(float).resolution
   while p != q:
     cross_f = np.zeros(n-1) ## how early does a pair cross
@@ -398,21 +403,32 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     for i, (sa, sb) in enumerate(pairwise(p)):
       # pair_dc = pair_is_discordant(sa,sb,p,q)
       if pair_is_discordant(sa,sb,p,q): # and inversion_dist(swap(p, i),q) < tau_dist: # discordant pair
-        int_pt = intersection(line((s, F0[sa]), (e, F1[sa])), line((s, F0[sb]), (e, F1[sb])))
-        assert int_pt[0] >= (s-eps) and int_pt[0] <= (e+eps)
-        cross_f[i] = int_pt[0]
+        ## Try to handle degenerate cases: they are discordant, so they need to swap!
+        if np.isclose(F0[sa], F0[sb]):
+          cross_f[i] = 0.0
+        elif np.isclose(F1[sa], F1[sb]):
+          cross_f[i] = 1.0
+        else:
+          int_pt = intersection(line((s, F0[sa]), (e, F1[sa])), line((s, F0[sb]), (e, F1[sb])))
+          assert int_pt[0] >= (s-eps) and int_pt[0] <= (e+eps) # check if intersection lies beyond [s,e]
+          if int_pt[0] <= (s-eps) or int_pt[0] >= (e+eps):
+            # print(f"L1: {F0[sa]} <--> {F1[sa]}, L2: {F0[sb]} <--> {F1[sb]} (X: {int_pt[0]},{int_pt[1]}")
+            cross_f[i] = np.inf 
+          else:
+            cross_f[i] = int_pt[0]
       else: 
         cross_f[i] = np.inf
-    assert not(all(cross_f == np.inf))
+    assert not(all(cross_f == np.inf)), "Failed to find a valid crossing "
     ci = np.argmin(cross_f)
     if ci != np.inf:
       tr.append(ci)
+      dom_vals.append(cross_f[ci])
       # tr_s.append((p[ci], p[ci+1]))
     else: 
       raise ValueError("invalid transposition case encountered")
     p = swap(p, ci)
   assert p == q, "Failed to sort permutations"
-  return(np.asarray(tr, dtype=int))
+  return(np.asarray(tr, dtype=int), np.asarray(dom_vals, dtype=float))
 
 def inversions(elements):
   A = np.fromiter(iter(elements), dtype=np.int32)

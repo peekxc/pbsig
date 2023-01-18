@@ -8,9 +8,55 @@ from pbsig.betti import lower_star_betti_sig
 from pbsig.utility import progressbar
 from pbsig.pht import directional_transform
 
+## TODO: create persistence image using Mu queries 
+
 ## Get letter data set
 A_img = letter_image('A')
-X, S = freudenthal_image(A_img)
+X, S = denthal_image(A_img)
+
+E = np.array(list(S.faces(1)))
+dgm0 = ph0_lower_star(X @ np.array([0,1]), E, max_death="max")
+
+from itertools import *
+breaks = np.linspace(-1.0, 1.0, 15)
+delta = np.diff(breaks)[0]
+B = []
+for i,j in product(breaks, breaks):
+  if i + delta <= j:
+    B.append([i, i+delta, j, j+delta])
+B = np.array(B)
+
+pt = dgm0[0,:]
+for cc, (i,j,k,l) in enumerate(B):
+  if i <= pt[0] and pt[0] <= j and k <= pt[1] and pt[1] <= l:
+    print(cc)
+
+for i,j,k,l in B: plt.plot([i,j,j,i,i], [k,k,l,l,k])
+
+fv = X @ np.array([0,1])
+f = lambda s: max(fv[s])
+# box_signatures = [MuSignature(S, [f], b) for b in B]
+from pbsig.betti import mu_sig
+box_signatures = [mu_sig(S, b, f, p=0, w=0.0,  tol=1e-12, pp=1.0) for b in B]
+
+D1 = boundary_matrix(S, p=1)
+
+from pbsig.color import bin_color 
+BS = np.array([bs((1e-4, 1.0, 0)) for bs in box_signatures]) # eps, p, method = 0.5, 1.0, 0
+bs_col = bin_color(BS)
+# for cc, (i,j,k,l) in enumerate(B): 
+#   plt.plot([i,j,j,i,i], [k,k,l,l,k], color=bs_col[cc])
+
+# bokeh 
+import bokeh
+from bokeh.colors import RGB
+from bokeh.plotting import figure, output_notebook, show
+output_notebook()
+p = figure(width=300, height=300)
+for cc, (i,j,k,l) in enumerate(B): 
+  c = RGB(*(bs_col[cc]*255).astype(np.int32))
+  p.rect(i+(j-i)/2, k+(l-k)/2, j-i, l-k, fill_color=c)
+show(p)
 
 ## Build signatures for a random 
 dt = directional_transform(X)

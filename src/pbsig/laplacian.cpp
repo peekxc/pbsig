@@ -86,15 +86,16 @@ struct IndexMap {
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
   using value_type = F; 
-  using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
-  // using Map_t = unordered_map< uint_64, uint_64 >;
+  // using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
+  using Map_t = unordered_map< uint_64, uint_64 >;
   const size_t nv;
   const size_t np;
   const size_t nq; 
   array< size_t, 2 > shape;  // TODO: figure out how to initialize in constructor
   const vector< uint_64 > qr;             // p+1 ranks
+  vector< uint_64 > pr;                   // p ranks; not necessary but good to have
   mutable vector< F > y;                  // workspace
-  Map_t index_map;                        // indexing function
+  mutable Map_t index_map;                        // indexing function
   vector< F > fpl;                        // p-simplex left weights 
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights
@@ -113,23 +114,22 @@ struct UpLaplacian {
   // Prepares indexing hash function 
   void compute_indexes(){
     //auto index_map = std::unordered_map< uint64_t, uint64_t >; // Maps face ranks to sequential indices 
-    vector< uint64_t > fr;
-    fr.reserve(qr.size()); 
+    pr.reserve(qr.size()); 
 
     // Collect the faces 
     for (auto qi : qr){
-      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ fr.push_back(face_rank); });
+      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ pr.push_back(face_rank); });
     }
 
     // Only consider unique faces; sort by lexicographical ordering
-    std::sort(fr.begin(), fr.end());
-    fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
+    std::sort(pr.begin(), pr.end());
+    pr.erase(std::unique(pr.begin(), pr.end()), pr.end());
 
     // Build the index map
-    index_map.build(fr.begin(), fr.end());
-    // for (uint64_t i = 0; i < fr.size(); ++i){
-    //   index_map.emplace(fr[i], i);
-    // }
+    // index_map.build(fr.begin(), fr.end());
+    for (uint64_t i = 0; i < pr.size(); ++i){
+      index_map.emplace(pr[i], i);
+    }
   }
 
   // Precomputes the degree term
@@ -155,7 +155,7 @@ struct UpLaplacian {
     size_t q_ind = 0;
     auto p_ranks = array< uint64_t, p+2 >();
 
-    #pragma omp simd
+    // #pragma omp simd
     for (auto qi: qr){
       if constexpr (p == 0){
 				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
@@ -191,7 +191,7 @@ struct UpLaplacian {
       q_ind += 1;
     }
   }
-} // UpLaplacian
+}; // UpLaplacian
 
 // Matvec operation: Lx |-> y for any vector x
 template< typename Laplacian, typename F = typename Laplacian::value_type > 
@@ -226,45 +226,56 @@ auto _matmat(const Laplacian& L, const py::array_t< F, py::array::f_style | py::
   return py::array_t< F , py::array::f_style | py::array::forcecast >(Y_shape, result.data());
 } 
 
-using array_t_FF = py::array_t< float, py::array::f_style | py::array::forcecast >;
+using array_t_FF = py::array_t< double, py::array::f_style | py::array::forcecast >;
 
 // Package: pip install --no-deps --no-build-isolation --editable .
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
   
-  py::class_< UpLaplacian< 0, float, true > >(m, "UpLaplacian0")
+  py::class_< UpLaplacian< 0, double, true > >(m, "UpLaplacian0")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
-    .def_readonly("shape", &UpLaplacian< 0, float, true >::shape)
-    .def_readonly("nv", &UpLaplacian< 0, float, true >::nv)
-    .def_readonly("np", &UpLaplacian< 0, float, true >::np)
-    .def_readonly("nq", &UpLaplacian< 0, float, true >::nq)
-    .def_readonly("qr", &UpLaplacian< 0, float, true >::qr)
-    .def_readwrite("fpl", &UpLaplacian< 0, float, true >::fpl)
-    .def_readwrite("fpr", &UpLaplacian< 0, float, true >::fpr)
-    .def_readwrite("fq", &UpLaplacian< 0, float, true >::fq)
-    .def_readonly("degrees", &UpLaplacian< 0, float, true >::degrees)
-    .def("precompute_degree", &UpLaplacian< 0, float, true >::precompute_degree)
-    .def("compute_indexes", &UpLaplacian< 0, float, true >::compute_indexes)
-    .def("_matvec", [](const UpLaplacian< 0, float, true >& L, const py::array_t< float >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 0, float, true >& L, const array_t_FF& X){ return _matmat(L, X); });
+    .def_readonly("shape", &UpLaplacian< 0, double, true >::shape)
+    .def_readonly("nv", &UpLaplacian< 0, double, true >::nv)
+    .def_readonly("np", &UpLaplacian< 0, double, true >::np)
+    .def_readonly("nq", &UpLaplacian< 0, double, true >::nq)
+    .def_readonly("qr", &UpLaplacian< 0, double, true >::qr)
+    .def_readonly("pr", &UpLaplacian< 0, double, true >::pr)
+    .def_readwrite("fpl", &UpLaplacian< 0, double, true >::fpl)
+    .def_readwrite("fpr", &UpLaplacian< 0, double, true >::fpr)
+    .def_readwrite("fq", &UpLaplacian< 0, double, true >::fq)
+    .def_readonly("degrees", &UpLaplacian< 0, double, true >::degrees)
+    .def_property_readonly("dtype", [](const UpLaplacian< 0, double, true >& L){
+      auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
+      return dtype; 
+    })
+    .def("precompute_degree", &UpLaplacian< 0, double, true >::precompute_degree)
+    .def("compute_indexes", &UpLaplacian< 0, double, true >::compute_indexes)
+    .def("_matvec", [](const UpLaplacian< 0, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
+    .def("_matmat", [](const UpLaplacian< 0, double, true >& L, const array_t_FF& X){ return _matmat(L, X); });
 
-  py::class_< UpLaplacian< 1, float, true > >(m, "UpLaplacian1")
+  py::class_< UpLaplacian< 1, double, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
-    .def_readonly("shape", &UpLaplacian< 1, float, true >::shape)
-    .def_readonly("nv", &UpLaplacian< 1, float, true >::nv)
-    .def_readonly("np", &UpLaplacian< 1, float, true >::np)
-    .def_readonly("nq", &UpLaplacian< 1, float, true >::nq)
-    .def_readonly("qr", &UpLaplacian< 1, float, true >::qr)
-    .def_readwrite("fpl", &UpLaplacian< 1, float, true >::fpl)
-    .def_readwrite("fpr", &UpLaplacian< 1, float, true >::fpr)
-    .def_readwrite("fq", &UpLaplacian< 1, float, true >::fq)
-    .def_readonly("degrees", &UpLaplacian< 1, float, true >::degrees)
-    .def("precompute_degree", &UpLaplacian< 1, float, true >::precompute_degree)
-    .def("compute_indexes", &UpLaplacian< 1, float, true >::compute_indexes)
-    .def("_matvec", [](const UpLaplacian< 1, float, true >& L, const py::array_t< float >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 1, float, true >& L, const array_t_FF& X){ return _matmat(L, X); });
+    .def_readonly("shape", &UpLaplacian< 1, double, true >::shape)
+    .def_readonly("nv", &UpLaplacian< 1, double, true >::nv)
+    .def_readonly("np", &UpLaplacian< 1, double, true >::np)
+    .def_readonly("nq", &UpLaplacian< 1, double, true >::nq)
+    .def_readonly("qr", &UpLaplacian< 1, double, true >::qr)
+    .def_readonly("pr", &UpLaplacian< 1, double, true >::pr)
+    .def_readwrite("fpl", &UpLaplacian< 1, double, true >::fpl)
+    .def_readwrite("fpr", &UpLaplacian< 1, double, true >::fpr)
+    .def_readwrite("fq", &UpLaplacian< 1, double, true >::fq)
+    .def_readonly("degrees", &UpLaplacian< 1, double, true >::degrees)
+    .def_property_readonly("dtype", [](const UpLaplacian< 1, double, true >& L){
+      auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
+      return dtype; 
+    })
+    .def("precompute_degree", &UpLaplacian< 1, double, true >::precompute_degree)
+    .def("compute_indexes", &UpLaplacian< 1, double, true >::compute_indexes)
+    .def("_matvec", [](const UpLaplacian< 1, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
+    .def("_matmat", [](const UpLaplacian< 1, double, true >& L, const array_t_FF& X){ return _matmat(L, X); });
 }
+
 
   // const size_t nv;
   // const size_t np;

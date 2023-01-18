@@ -21,7 +21,7 @@ def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True
   assert A.shape[0] == A.shape[1], "Matrix 'A' must be square"
   if upper: 
     k_ = structural_rank(A) if isinstance(A, spmatrix) else A.shape[0]
-    bound = min([A.shape[0], A.shape[1], sum(diagonal(A) != 0), k_])  
+    bound = min([A.shape[0], A.shape[1], sum(np.array(diagonal(A)) != 0), k_])  
   else:
     ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
     n, m = A.shape
@@ -143,7 +143,10 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
   def _call_solver(A, **kwargs):
-    return solver(A, **(params | kwargs))
+    ew = solver(A, **(params | kwargs))
+    if len(ew) == 0: 
+      raise RuntimeError("Solver did not return any eigenvalues!")
+    return ew
   return _call_solver
 
 def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
@@ -732,7 +735,7 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
 
   The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
   """
-  __slots__ = ('shape', 'dtype')
+  # __slots__ = ('shape', 'dtype')
   # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
 
   ## TODO: Remove 'F'? Add more params?
@@ -746,16 +749,16 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
     from pbsig.combinatorial import rank_combs
 
     ## Configure properties
-    self.shape = (len(F), len(F))
-    self.dtype = np.dtype(np.float32) if dtype is None else dtype
+    # self.shape = (len(F), len(F))
+    # self.dtype = np.dtype(np.float32) if dtype is None else dtype
     
     ## TODO: replace with soft containers/properties via combinatorial ranks
-    self.simplices = S
-    self.faces = F
+    # self.simplices = S
+    # self.faces = F
 
     ## Parameterize the internal operator
-    nv, _np = max([max(s) for s in self.simplices])+1, len(F)
-    q_ranks = rank_combs(self.simplices, k=p+2, n=nv)
+    nv, _np = max([max(s) for s in S])+1, len(F)
+    q_ranks = rank_combs(S, k=p+2, n=nv)
     laplacian.UpLaplacian0.__init__(self, q_ranks, nv, _np)
 
     ## Precompute things necessary for evaluation
@@ -805,7 +808,7 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
     self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.np)
     self.precompute_degree()
     return self 
-    
+
   # def _matvec(self, x: ArrayLike) -> ArrayLike:
   #   # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
   #   return self.L_up._matvec(x)

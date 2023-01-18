@@ -14,11 +14,12 @@ flags = distutils.sysconfig.get_config_var("CFLAGS")
 print(f"COMPILER FLAGS: { str(flags) }")
 
 ## Configure additional compiler flags
-extra_compile_args = sysconfig.get_config_var('CFLAGS').split()
-extra_compile_args += ["-std=c++17", "-Wall", "-Wextra"]
-extra_compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
+compile_args = sysconfig.get_config_var('CFLAGS').split()
+# compile_args = ["-O3" if (arg[:2] == "-O" and int(arg[2]) in [0,1,2,3]) else arg for arg in compile_args]
+compile_args += ["-std=c++17", "-Wall", "-Wextra"]
+compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
 # extra_compile_args += "-O0" ## debug mode  
-extra_compile_args = list(set(extra_compile_args))
+# extra_compile_args = list(set(extra_compile_args))
 
 ## Configure the native extension modules
 ext_modules = [
@@ -26,7 +27,7 @@ ext_modules = [
     '_boundary', 
     sources = ['src/pbsig/boundary.cpp'], 
     # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
-    extra_compile_args=extra_compile_args,
+    extra_compile_args=compile_args,
     language='c++17', 
     cxx_std=1
   ), 
@@ -38,7 +39,7 @@ ext_modules = [
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include',
       '/Users/mpiekenbrock/pbsig/extern/spectra/include'
     ], 
-    extra_compile_args=extra_compile_args,
+    extra_compile_args=compile_args,
     language='c++17', 
     cxx_std=1
   ),
@@ -51,7 +52,7 @@ ext_modules = [
       '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
       '/Users/mpiekenbrock/pbsig/src/pbsig/'
     ], 
-    extra_compile_args=extra_compile_args,
+    extra_compile_args=compile_args,
     language='c++17', 
     cxx_std=1
   ), 
@@ -61,7 +62,7 @@ ext_modules = [
     include_dirs=[
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
     ], 
-    extra_compile_args=extra_compile_args,
+    extra_compile_args=compile_args,
     language='c++17', 
     cxx_std=1
   ),
@@ -69,7 +70,7 @@ ext_modules = [
     '_pbn', 
     sources = ['src/pbsig/pbn.cpp'], 
     # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
-    extra_compile_args=extra_compile_args,
+    extra_compile_args=compile_args,
     language='c++17', 
     cxx_std=1
   )

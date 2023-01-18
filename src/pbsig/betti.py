@@ -598,6 +598,47 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     raise ValueError("Invlaid input")
   return 0 
 
+def mu_sig(S: SimplicialComplex, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
+  assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
+  assert len(R) == 4, "Must be a rectangle"
+  i,j,k,l = R
+  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  
+  L = up_laplacian(S, p=p, form='lo')
+  eigh_solver = parameterize_solver(L, **kwargs)
+  fw = np.array([f(s) for s in L.faces])
+  sw = np.array([f(s) for s in L.simplices])
+  delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
+  fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+  fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+  EW = [None]*4
+  # min(eigh_solver(L)) vs min(eigh_solver(LM))
+  for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+    L.set_weights(None, J, None)
+    L.precompute_degree()
+    I_norm = I * L.diagonal() # degrees
+    L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
+    EW[cc] = eigh_solver(L)
+    #EW[cc][np.isclose(abs(EW[cc]), 0.0, atol=atol)] = 0.0 # compress
+    # if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+    #   print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+    #EW[cc] = np.maximum(EW[cc], 0.0)
+
+  def _transform(smoothing: tuple = (0.5, 1.0, 0)):
+    eps,p,method = smoothing
+    S = sgn_approx(eps=eps, p=p, method=method)
+    sig = np.sum(S(EW[0])) if len(EW[0]) > 0 else  0
+    sig -= np.sum(S(EW[1])) if len(EW[1]) > 0 else  0
+    sig -= np.sum(S(EW[2])) if len(EW[2]) > 0 else  0
+    sig += np.sum(S(EW[3])) if len(EW[3]) > 0 else  0
+    return sig
+  return _transform
+
 
 class MuSignature:
   """ 

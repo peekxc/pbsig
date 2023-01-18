@@ -303,9 +303,9 @@ In contrast to the persistence diagram, note that both of counting invariants ar
 However, as~\eqref{eq:mu_four} makes clear, the restriction to sub-matrices is akin to computing $R$-parameterized multiplicities over the index-persistence plane $\Delta_+^N$. 
 Moreover, suppose we: 
 \begin{enumerate}
-	\item Restrict ourselves to $H(K; \mathbb{R})$
+	\item Restrict ourselves to $H_p(K; \mathbb{R})$
 	\item Index $K_\bullet$ over the (real) upper-half plane $\Delta_+$
-	\item Parameterize $C_p(K_\bullet; \mathbb{R})$ with real-valued entries
+	\item Parameterize the chains $C_p(K_\bullet; \mathbb{R})$ with real-valued entries
 \end{enumerate}
 A natural question arises from this set of assumptions: what connections can be made between the computational expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} and their measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure}?
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
@@ -686,30 +686,30 @@ Basic properties of $\hat{\mu}$. % pseudo-monotonicity, additivity
 \subsubsection*{Stability}
 One disadvantage in working with counting-type functions restricted to portions of real-plane is that they are integer-valued and not smooth. 
 Namely, if $(K, f_h)$ is an $\mathcal{H}$-parameterized filtration, one may easily construct examples where $\lVert \mu_h^R - \mu_{h + \delta}^R \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small perturbation $\delta > 0$. 
-Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. In this section, we show how the smooth relaxation to both invariants counters this instability. 
+Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. 
+Relaxing $\mu_p^R \mapsto \hat{mu}_p^R$ fixes this instability whenever $\epsilon > 0$, though the Lipshitz constant may be arbitrarily high.  
 
-The first type of stability we consider is Lipshitz stability--that is, stability of the invariant with respect to small perturbations in the input. Namely, consider a filtration $(K, f)$ indexed over the real line $f : K \to \mathbb{R}$ whose filter function $f$ is perturbed by some positive amount $\epsilon > 0$. Ideally, we would like to show stability of $\hat{\mu}_{p,\epsilon}^R$
-
+Consider a filtration $(K, f)$ indexed over the real line $f : K \to \mathbb{R}$ whose filter function $f$ is perturbed by some positive amount $\epsilon > 0$. Ideally, we would like to show stability of $\hat{\mu}_{p,\epsilon}^R$ with respect to small perturbations to $\hat{\partial}_p$.
 % Lipshitz stability 
-% partition of unity + output-sensitive mention
-
-
-\subsubsection*{(1-$\epsilon$) Approximations}
-Observe that when $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$, Equation~\eqref{def:cont_rank} reduces to the rank approximation from~\cite{}: 
+% partition of unity + output-sensitive mention.
+Looking at equation~\eqref{def:cont_rank}, when $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$ the singular value function reduces to the rank approximation studied in~\cite{}, which is given explicitly by: 
 \begin{equation*}
 	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X X^T + \epsilon \, I_n) X X^T \right] 
 \end{equation*}
-For $M = X X^T$ a a given non-singular, positive definite matrix, its \emph{condition number} $\kappa(M)$ is defined as: 
+A similar expression may be derived for other choices of $\nu(\epsilon)$ and $p(x)$. Adding larger $\epsilon$ amount of mass to the diagonal is a common approach to improve the conditioning of a matrix. It also has the effect of making a singular matrix full rank, as the smallest eigenvalue of is at least $\epsilon$. % TODO: check? 
+Indeed, for $M = X X^T$ a given positive definite matrix, its \emph{condition number} $\kappa(M)$ is defined as: 
 \begin{equation}
 	\kappa(M) = \lVert M^{-1} \rVert \lVert M \rVert = \lvert \lambda_1(M) \rvert \; / \; \lvert \lambda_n(M) \rvert
 \end{equation}
-The quantity $\kappa(M)$ appears frequently in numerical linear algebra, as it is a direct measure of how sensitive the spectrum of $M$ is too perturbations in its entries. In particular, if $E \in \mathbb{R}^{n \times n}$ represents a small perturbation of $M \in \mathbb{R}^{n \times n}$, then: 
+The condition number $\kappa(M)$ directly measures of how sensitive the spectrum of $M$ is too perturbations in its entries. 
+%If $M$ is singular, then $\kappa(M)$ is infinite. 
+In particular, if $E \in \mathbb{R}^{n \times n}$ represents a small perturbation of $M \in \mathbb{R}^{n \times n}$, then: 
 \begin{equation}
 \frac{\lVert (M + E)^{-1}  - M^{-1} \rVert}{\lVert M^{-1} \rVert} \leq \kappa(M) \frac{\lVert E \rVert}{ \lVert M \rVert }
 \end{equation}
-Combining\eqref{}, we have: 
+Moreover, note that:  
 \begin{equation}
-\kappa(M) \leq \epsilon \dots 
+\lvert \lambda_n(M) \rvert  \leq \lvert \lambda_n(M + \epsilon I) \rvert  \leq \lvert \lambda_1(M) \rvert \leq \lvert \lambda_1(M + \epsilon) \rvert 
 \end{equation}
 From this expression, it's clear that $\epsilon$ not only plays the role of an accuracy parameter, but as a \emph{smoothing parameter}. Adding larger $\epsilon$ amount of mass to the diagonal of $M$ has the effect of lowering the Lipshitz constant of the corresponding operator $\lVert \Phi_\epsilon(X) \rVert_\ast$, improving its smoothness. Indeed, the operator norm is the Lipshitz constant. 
 %Moreover, by the cyclic property of the trace operator, since $X = \partial_1$ here and $L = \partial_1 \partial_1^T = [l_1, l_2, \dots, l_n]$ we have: 
@@ -1150,7 +1150,12 @@ For example, consider creating a classifier for the alphabet of English characte
 
 It would be beneficial to have an invariant that was sensitive to the geometries between shapes, but also stable in some sense.
 
-\subsection{Example 1: Letters}
+\subsection{Example 2: Shapes}
+\begin{figure}
+	\centering
+	\includegraphics[width=0.6\textwidth]{shape_signatures}
+\end{figure}
+
 \newpage
 
 % --- APPLICATION 3: Directional transforms ---- 
