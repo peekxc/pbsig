@@ -7,37 +7,37 @@ using std::optional;
 using std::size_t;
 using std::pair;
 
-template< typename M, typename F = typename M::value_type >
-concept Pivotable = requires(M a) {
-  { a.low(size_t(0)) } -> std::same_as< optional< pair< size_t, F > > >;
-	{ a.low_index(size_t(0)) } -> std::same_as< optional< size_t > >;
-	{ a.low_value(size_t(0)) } -> std::same_as< optional< F > >;
-};
-
+ // iadd_cols(i,j) <=> col(i) <- col(i) + col(j) 
+ // iadd_scaled_col(i,j,s) <=> col(i) <- col(i) + s*col(j)
 template< typename M, typename F = typename M::value_type >
 concept Addable = requires(M a) {
 	{ a.scale_col(size_t(0), F(0)) } -> std::same_as< void >;
-	{ a.add_cols(size_t(0), size_t(0), size_t(0)) } -> std::same_as< void >;
-	{ a.add_scaled_col(size_t(0), size_t(0), size_t(0), F(0)) } -> std::same_as< void >;
+	{ a.iadd_cols(size_t(0), size_t(0)) } -> std::same_as< void >;
+	{ a.iadd_scaled_col(size_t(0), size_t(0), F(0)) } -> std::same_as< void >;
 };
 
 // A type M is said to cancellable if it supports a cancel_lowest() method
 // where cancel_lowest(i,j) => lowest entry of column i is cancelled using lowest entry of column j
-// Only the method name is required here, since checking the semantics would have to be done at run-time
-template< typename M, typename F = typename M::value_type >
-concept Cancellable = requires(M a) {
-	{ a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< void >;
-};
+// template< typename M, typename F = typename M::value_type >
+// concept Cancellable = requires(M a) {
+// 	{ a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< void >;
+// };
+
+// Need notion of a 'column' 
 
 // A ReducibleMatrix:
 //	- has a dim() method that returns a pair of size-types  
-//  - has a find_low() method that accepts two indices and returns an optional pair 
+// 	- has efficient access to its lowest non-zero entries (both their row indices and their values)
 //  - satisfies Pivotable and Addable
 template< typename M, typename F = typename M::value_type >
 concept ReducibleMatrix = requires(M a){
 	{ a.dim() } -> std::same_as< pair< size_t, size_t > >;
-	{ a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
-} && Pivotable< M, F > && Addable< M, F > && Cancellable< M, F >;
+	{ a.low(size_t(0)) } -> std::same_as< optional< pair< size_t, F > > >;
+	{ a.low_index(size_t(0)) } -> std::same_as< optional< size_t > >;
+	{ a.low_value(size_t(0)) } -> std::same_as< optional< F > >;
+	{ a.clear_column(size_t(0)) } -> std::same_as< void >; // for the clearing optimization
+	// { a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
+} && Addable< M, F >;
 
 
 // A PermutableMatrix:

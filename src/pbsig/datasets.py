@@ -17,6 +17,13 @@ from .simplicial import *
 from .__init__ import _package_data
 
 
+def random_lower_star(n: int = 50):
+  X = np.random.uniform(size=(n,2))
+  fv = X @ np.array([0,1])
+  S = delaunay_complex(X)
+  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  return X, K
+
 def animal_svgs():
   """
   Loads a list of animal svgs

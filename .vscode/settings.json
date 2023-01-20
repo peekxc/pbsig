@@ -97,7 +97,11 @@
     "mutex": "cpp",
     "ratio": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "__functional_03": "cpp",
+    "fstream": "cpp",
+    "thread": "cpp",
+    "__memory": "cpp"
   },
   "python.linting.flake8Enabled": true,
   "python.linting.enabled": false,
