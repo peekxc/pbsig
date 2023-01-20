@@ -485,8 +485,12 @@ def low_entry(D: lil_array, j: Optional[int] = None):
     if isinstance(D, csc_matrix):
       nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
       return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
-    else: 
+    elif isinstance(D, spmatrix): 
       return(-1 if D[:,[j]].getnnz() == 0 else max(D[:,[j]].nonzero()[0]))
+    elif isinstance(D, np.ndarray):
+      return(-1 if all(D[:,j] == 0) else max(np.flatnonzero(D[:,j] != 0)))
+    else: 
+      raise ValueError(f"Invalid input type {type(D)}for D ")
 
 def pHcol(R: lil_array, V: lil_array, I: Optional[Iterable] = None):
   # assert isinstance(R, csc_matrix) and isinstance(V, csc_matrix), "Invalid inputs"

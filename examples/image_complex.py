@@ -89,14 +89,84 @@ for cc, (status,xval) in enumerate(zip(it, dom)):
     assert len(dgm0_vi) == (len(dgm0_dn[0]) + len(dgm0_dn[1]))
 
 
+## Moves (local)
+D = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
+R = np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]])
+V = np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]])
+assert np.allclose(R, (D @ V) % 2)
 
-from pbsig.persistence import generate_dgm
-dgm = generate_dgm(K, R0)
+def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
+  dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
+  for k in I[1:]:
+    tL, tR, tV = low_entry(R, k), R[:,[k]], V[:,[k]] # temporary 
+    add_column(R, k, dR)
+    add_column(V, k, dV)
+    if tL < dL: 
+      dL, dR, dV = tL, tR, tV
+  return dR, dV  
 
-lower_star_ph_dionysus(f, E, T)
-plot
+def move_right(R: lil_array, V: lil_array, i: int, j: int) -> None:
+  piv = low_entry(R) 
+  I = np.arange(i,j+1)[V[i,i:(j+1)] != 0]
+  #J = np.flatnonzero(np.logical_and(piv >= i, piv <= j, R[i,:] != 0))
+  dR, dV = restore_right(R, V, I)
+  #restore_right(R, V, J)
+  permute_cylic(R, i, j, "cols") ## change if full boundary matrix is used
+  permute_cylic(V, i, j, "both")
+  R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
+  
+print(R)
+print(V)
+move_right(R, V, 0, 2)
+print(R)
+print(V)
+np.allclose(R, permute_cylic_pure(D, i,j,"cols") @ V % 2 )
 
-from pbsig.vineyards import * 
+
+## Move left!
+i,j = 0, 2
+
+## First, obtain a coset representative that clears V[i:j,j]
+add_column(V, j, V[:,[1]])
+add_column(V, j, V[:,[0]])
+
+add_column(R, j, R[:,[1]])
+add_column(R, j, R[:,[0]])
+
+## Then permute via move left 
+permute_cylic(R, i, j, "cols", right=False)
+permute_cylic(V, i, j, "both", right=False)
+
+## Now reduce R through 
+
+low_entry(R[:,i:(j+1)])
+
+reduction_pHcol(D1, D2)
+
+# piv = low_entry(R) 
+# I = np.flip(np.arange(i,j+1)[V[i,i:(j+1)] != 0])
+# dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
+# for k,l in pairwise(I):
+#   tL, tR, tV = low_entry(R, l), R[:,[l]], V[:,[l]] # temporary 
+#   add_column(R, k, tR)
+#   add_column(V, k, tV)
+#   if tL < dL: 
+#     dL, dR, dV = tL, tR, tV
+
+permute_cylic(R, i, j, "cols") ## change if full boundary matrix is used
+permute_cylic(V, i, j, "both")
+
+DS = lil_array(D)
+cancel_column(DS, 1, DS[:,[0]])
+cancel_column(D, 1, D[:,[0]])
+
+i,j = 10, 25
+V0[i,i:j]
+
+
+# def move_right(R, V, i, j):
+
+
 
 # import matplotlib.pyplot as plt
 # plt.imshow(C(0.8))

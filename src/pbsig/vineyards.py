@@ -7,6 +7,40 @@ from array import array
 
 from .persistence import * 
 
+def permutation_matrix(p: Sequence[int]):
+  n = len(p)
+  P = coo_array((np.ones(n), (p, np.arange(n))), shape=(n,n), dtype=int)
+  return P
+
+def permute_cylic(A, i, j, type: str = "cols", right: bool = True):
+  """ Permutes A cyclically about [i,j] in-place """
+  bind = np.arange(i,j+1)
+  rind = np.roll(bind, -1 if right else 1)
+  if type == "cols":
+    A[:,bind] = A[:,rind]
+  elif type == "rows":
+    A[bind,:] = A[rind,:]
+  elif type == "both":
+    permute_cylic(A, i, j, "cols")
+    permute_cylic(A, i, j, "rows")
+
+def permute_cylic_pure(A, i, j, type: str = "cols", right: bool = True):
+  """ Permutes A cyclically about [i,j] in-place """
+  rind = np.roll(np.arange(i,j+1), -1 if right else 1)
+  if type == "cols":
+    bind = np.arange(A.shape[1])
+    bind[i:(j+1)] = rind
+    return A[:,bind]
+  elif type == "rows":
+    bind = np.arange(A.shape[0])
+    bind[i:(j+1)] = rind
+    return A[bind,:]
+  elif type == "both":
+    A = A.copy()
+    permute_cylic(A, i, j, "cols")
+    permute_cylic(A, i, j, "rows")
+    return A
+
 def permute_tr(A, i, type: str = "cols"):
   """ Transposes A via (i,i+1)"""
   if type == "cols":
@@ -16,6 +50,27 @@ def permute_tr(A, i, type: str = "cols"):
   elif type == "both":
     permute_tr(A, i, "cols")
     permute_tr(A, i, "rows")
+
+from scipy.sparse import coo_array
+# cancel_column(DS, 1, DS[:,[0]])
+def add_column(A, k, col):
+  """ Adds column 'col' to A[:,k] """
+  if isinstance(A.dtype, numbers.Real):
+    A[:,[k]] += col
+  elif isinstance(A.dtype, numbers.Integral) or np.issubdtype(A.dtype, np.integer): 
+    ## Modulo2 
+    if isinstance(A, np.ndarray):
+      A[:,[k]] = (A[:,[k]] + col) % 2
+    else: 
+      assert isinstance(A, lil_array), "invalid A types"
+      col = col.todense() if isinstance(col, spmatrix) else col 
+      A[:,[k]] = (col + A[:,[k]].todense()) % 2
+      # i, j = A[:,[k]].nonzero()
+      # A[:,[k]] = coo_array((data % 2,(ind, [0]*len(ind))), shape=A[:,[k]].shape).tolil() # awful 
+      #A[:,[k]] = lil_array(A.getcol(k).data % 2).T
+    return 0
+  else:
+    raise ValueError(f"Unknown coefficient type {A.dtype}")
 
 def cancel_pivot(A, i, j, piv: Optional[int] = None):
   """
@@ -27,15 +82,21 @@ def cancel_pivot(A, i, j, piv: Optional[int] = None):
 
   If A[piv,i] = 0, then the pivot cannot be canceled, and the matrices are unmodified. 
   """
-  ## Real-valued coefficients 
-  if piv is None: 
-    piv = low_entry(A, j)
+  piv = low_entry(A, j) if piv is None else piv
   c, d = A[piv,i], A[piv,j]
-  if (c == 0):
-    return(0.0)
-  s = -(d/c)
-  A[:,[j]] += s*A[:,[i]]
-  return(s)
+  if isinstance(A.dtype, numbers.Real):
+    ## Real-valued coefficients 
+    if (c == 0): return(0.0)
+    s = -(d/c)
+    A[:,[j]] += s*A[:,[i]]
+    return(s)
+  elif isinstance(A.dtype, numbers.Integral): 
+    ## Modulo2 
+    if (c == 0): return(0)
+    A[:,j] = (A[:,i] + A[:,j]) % 2
+    return 0
+  else:
+    raise ValueError(f"Unknown coefficient type {A.dtype}")
 
 def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
   """ 
