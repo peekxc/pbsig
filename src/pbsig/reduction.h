@@ -198,3 +198,74 @@ int restore_right(Matrix& R, Matrix& V, Iter b, const Iter e, Matrix& dr, Matrix
 	}
 	return(nr);
 }
+
+[[nodiscard]]
+inline auto move_right_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t > {
+  if (i > j){ throw std::invalid_argument("invalid");}
+  std::vector< size_t > v(n);
+  std::iota(v.begin(), v.end(), 0);
+  std::rotate(v.begin()+i, v.begin()+i+1, v.begin()+j+1);
+  return(v);
+}
+
+[[nodiscard]]
+inline auto move_left_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t >{
+  if (i < j){ throw std::invalid_argument("invalid");}
+  std::vector< size_t > v(n);
+  std::iota(v.begin(), v.end(), 0);
+  std::rotate(v.rbegin()+(n-(i+1)), v.rbegin()+(n-i), v.rbegin()+(n-j));
+  return(v);
+}
+
+using Eigen::Matrix< float, Dynamic, 1> VectorXf;
+
+template< PermutableMatrix Matrix, typename Iter, typename Lambda >
+void move_schedule_full(Matrix& R, Matrix& V, Iter sb, const Iter se, Lambda f){
+	using entry_t = typename Matrix::entry_t;
+	const size_t nc = R.dim().first;
+	const size_t nr = R.dim().second;
+	if (nc == 0 || nr == 0){ return; }
+	if (nc != nr){ throw std::invalid_argument("R must be square."); }
+	if (std::distance(sb,se) < 2 || std::distance(sb,se) % 2 != 0){  throw std::invalid_argument("Pairs of indices must be passed."); }
+	
+	for (size_t i, j; sb != se; sb += 2){
+		i = *sb, j = *(sb+1);
+		if (i == j){ continue; }
+		if (i > j || i >= (nc-1) || j >= nc){  throw std::invalid_argument("Invalid pairs (i,j) passed."); }
+
+		// Collect indices I
+		auto I = vector< size_t >();
+		// V.row(i, [&](auto col_idx, auto v){
+		// 	if ((col_idx >= i) & (col_idx <= j)){ I.push_back(col_idx); }
+		// });
+
+		// Collect indices J
+		auto J = vector< size_t >();
+		for (size_t c = 0; c < nc; ++c){
+			auto low_idx = R.low_index(c);
+			if (low_idx && (*low_idx) >= i && (low_idx) <= j && R(i,c) != 0){
+				J.push_back(c);
+			}
+		}
+
+		// Restore invariants
+		VectorXf dr1, dv1;
+		restore_right(R, V, I.begin(), I.end(), dr1, dv1); // don't wrap in if condition
+
+		// Restore invariants
+		if (!J.empty()){
+			VectorXf dr2, dv2;
+			restore_right(R, V, J.begin(), J.end(), dr2, dv2);
+		}
+
+		// Apply permutations
+		R.permute(move_right_permutation(i,j,nc));
+		V.permute(move_right_permutation(i,j,nc));
+
+		// Perform donor replacement
+		dr1.permute_rows(move_right_permutation(i,j,nr));
+		dv1.permute_rows(move_right_permutation(i,j,nr));
+		R.col(j) = dr1;
+		V.col(j) = dv1;
+	}
+}
