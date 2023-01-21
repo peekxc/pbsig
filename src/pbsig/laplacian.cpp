@@ -14,7 +14,7 @@
 
 #include "combinatorial.h"
 #include "pthash.hpp"
-#include <omp.h>
+// #include <omp.h>
 
 // Namespace directives and declarations
 namespace py = pybind11;

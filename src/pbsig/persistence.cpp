@@ -19,17 +19,8 @@ struct AddMod2 {
 };
 
 using FloatSparse = Eigen::SparseMatrix< float >;
-using ColumnVector = Eigen::Matrix< size_t, Eigen::Dynamic, 1>;
+using ColumnVector = Eigen::Matrix< float, Eigen::Dynamic, 1>;
 
-// Tests  whether value_type is 0
-template< typename F > 
-constexpr bool equals_zero(F val) noexcept {
-  if constexpr (std::is_integral_v< F >){
-    return val == 0; 
-  } else {
-    return std::abs(val) <= std::numeric_limits< F >::epsilon();
-  }
-}
 
 // Reducible spec
 // { a.dim() } -> std::same_as< pair< size_t, size_t > >;
@@ -50,13 +41,18 @@ using std::vector;
 
 struct FloatMatrix {
 	using value_type = float; 
-  using F = value_type; 
+  using entry_t = std::pair< size_t, value_type >;
+  using F = value_type;  // alias 
 	FloatSparse m;
 	
 	constexpr size_t n_rows() const { return m.rows(); };
 	constexpr size_t n_cols() const { return m.cols(); };
 	
   FloatMatrix(FloatSparse& pm) : m(pm) {};
+  
+  // FloatMatrix(FloatMatrix const& m) = default;
+  // FloatMatrix& operator=(FloatMatrix m) = default;
+  FloatMatrix(const size_t nr, const size_t nc) : m(FloatSparse(nr,nc)){ }
 
 	FloatMatrix(vector< size_t > I, vector< size_t > J, vector< float > x, const size_t nr, const size_t nc){
     using triplet_t = Eigen::Triplet< float >;
@@ -68,6 +64,11 @@ struct FloatMatrix {
     m = FloatSparse(nr,nc);
     m.setFromTriplets(nonzeros.begin(), nonzeros.end());
   };
+
+  auto column(size_t j){
+    FloatSparse c = m.col(j).head(n_rows()); // (Eigen::seqN(0, n_rows()),j);
+    return FloatMatrix(c);
+  }
 	
   // -- Interface to make the matrix addable --
   // { a.scale_col(size_t(0), F(0)) } -> std::same_as< void >;
@@ -110,16 +111,16 @@ struct FloatMatrix {
     return i == -1 ? std::nullopt : std::make_optional(std::pair< size_t, value_type >{ i, x });
 	}
 
-	// { a.low_index(size_t(0)) } -> std::same_as< optional< size_t > >;
-	auto low_index(size_t j) -> optional< size_t > {
+	// { a.low_index(size_t(0)) } -> std::same_as< int >;
+	auto low_index(size_t j) -> int {
 		auto le = low(j);
-		return(le ? std::make_optional(le->first) : std::nullopt);
+		return(le ? le->first : -1);
 	}
 	
 	// { a.low_value(size_t(0)) } -> std::same_as< optional< F > >;
-	auto low_value(size_t j) -> optional< F > {
+	auto low_value(size_t j) -> F {
 		auto le = low(j);
-		return(le ? std::make_optional(le->second) : std::nullopt);
+		return(le ? le->second : 0);
 	}
 
 	// { a.clear_column(size_t(0)) } -> std::same_as< void >;
@@ -197,14 +198,20 @@ struct FloatMatrix {
     }
     m = P * m * P;
   }
+	// { a.column_empty(size_t(0)) } -> std::same_as< bool >;
+	bool column_empty(size_t j){  
+    return low(j).has_value();
+  }
+  
+  // { a.operator()(size_t(0), size_t(0)) } -> std::same_as< F >;
+  auto operator()(size_t i, size_t j) const -> F {
+    return m.coeff(i,j);
+  }
 	
 	// template <typename ... Args>
 	// void row(Args&& ... args){ m.row(std::forward<Args>(args)...); }
 	
-	// // { a.column_empty(size_t(0)) } -> std::same_as< bool >;
-	// template <typename ... Args>
-	// bool column_empty(Args&& ... args){ return m.column_empty(std::forward<Args>(args)...); }
-	
+
 	// template <typename ... Args>
 	// void column(Args&& ... args){ m.column(std::forward<Args>(args)...); }
 	
@@ -282,15 +289,27 @@ auto phcol(Eigen::SparseMatrix< float > R_, Eigen::SparseMatrix< float > V_, std
 }
 
 
-// void test_sparse_matrix(Eigen::SparseMatrix< float >& A){
-//   auto M = FloatMatrix(A);
-//   auto piv = M.low(0);
-// }
- 
+auto move_right(Eigen::SparseMatrix< float > R_, Eigen::SparseMatrix< float > V_, size_t i, size_t j) -> std::pair< FloatSparse, FloatSparse > {
+  auto R = FloatMatrix(R_);
+  auto V = FloatMatrix(V_);
+  std::array< size_t, 2 > p = { i, j };
+  move_schedule_full(R, V, p.begin(), p.end(), [](){
+    return; 
+  });
+  const auto filter_zeros = [](const auto& row, const auto& col, const auto& value) -> bool {
+    return !equals_zero(value);
+  };
+  R.m.prune(filter_zeros);
+  V.m.prune(filter_zeros);
+  return std::make_pair(R.m, V.m);
+}
+
+// pip install --no-deps --no-build-isolation --editable .
 // /usr/local/Cellar/llvm/12.0.1/bin/clang -Wno-unused-result -Wsign-compare -Wunreachable-code -DNDEBUG -fwrapv -O2 -Wall -fPIC -O2 -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -fPIC -O2 -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/pbsig/extern/eigen -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/lib/python3.9/site-packages/pybind11/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 -c src/pbsig/persistence.cpp -o build/temp.macosx-10.9-x86_64-3.9/src/pbsig/persistence.o -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -fvisibility=hidden -g0 -stdlib=libc++ -std=c++1 -mmacosx-version-min=10.9 -Wno-unused-result -Wsign-compare -Wunreachable-code -DNDEBUG -fwrapv -O2 -Wall -fPIC -O2 -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -arch x86_64 -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -fPIC -O2 -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -arch x86_64 -std=c++20 -Wall -Wextra -march=native -O3 -fopenmp
 PYBIND11_MODULE(_persistence, m) {
   m.doc() = "persistence module";
   m.def("phcol", &phcol);
+  m.def("move_right", &move_right);
   // m.def("test_low", &test_sparse_matrix);
   
   py::class_< FloatMatrix >(m, "FloatMatrix")
@@ -308,7 +327,9 @@ PYBIND11_MODULE(_persistence, m) {
    .def("swap_rows", &FloatMatrix::swap_rows)
    .def("swap_cols", &FloatMatrix::swap_cols)
    .def("swap", &FloatMatrix::swap)
-   .def("permute_rows", &FloatMatrix::permute_rows)
+   .def("permute_rows", [](FloatMatrix& m, vector< size_t > p){
+      std::span< size_t > p_span(p);
+   })
    .def("permute_cols", &FloatMatrix::permute_cols)
    .def("permute", &FloatMatrix::permute)
    .def("as_spmatrix", [](FloatMatrix& M) -> FloatSparse {

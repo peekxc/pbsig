@@ -33,8 +33,8 @@ template< typename M, typename F = typename M::value_type >
 concept ReducibleMatrix = requires(M a){
 	{ a.dim() } -> std::same_as< pair< size_t, size_t > >;
 	{ a.low(size_t(0)) } -> std::same_as< optional< pair< size_t, F > > >;
-	{ a.low_index(size_t(0)) } -> std::same_as< optional< size_t > >;
-	{ a.low_value(size_t(0)) } -> std::same_as< optional< F > >;
+	{ a.low_index(size_t(0)) } -> std::same_as< int >;
+	{ a.low_value(size_t(0)) } -> std::same_as< F >;
 	{ a.clear_column(size_t(0)) } -> std::same_as< void >; // for the clearing optimization		
 	// { a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
 } && Addable< M, F >;
@@ -54,5 +54,5 @@ concept PermutableMatrix = requires(M a){
 	{ a.permute_cols(std::span< size_t >()) } -> std::same_as< void >;
 	{ a.column_empty(size_t(0)) } -> std::same_as< bool >;
 	{ a.operator()(size_t(0), size_t(0)) } -> std::same_as< F >; 
-	{ a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< void >; // to simplify the code greatly
+	{ a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< F >; // to simplify the code greatly
 } && ReducibleMatrix< M, F >;

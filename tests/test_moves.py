@@ -30,6 +30,9 @@ F = pm.FloatMatrix(A)
 F.iadd_scaled_col(2,1, -(-1.0/-1.0))
 
 
+F.permute_rows([0,1,2])
+
+
 
 from pbsig.datasets import random_lower_star
 from pbsig.simplicial import SimplicialComplex
@@ -44,6 +47,17 @@ R, V = pm.phcol(D, V, I)
 assert is_reduced(R)
 assert np.isclose((R - (D @ V)).sum(), 0.0)
 
+S = SimplicialComplex([[0],[1],[2],[0,1],[0,2],[1,2]])
+K = MutableFiltration(S)
+D = boundary_matrix(K)
+V = eye(D.shape[0])
+I = np.arange(0, D.shape[1])
+R, V = pm.phcol(D, V, I)
+assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
 
+print(R.todense())
+print(V.todense())
+Rm, Vm = pm.move_right(R, V, 3, 5)
+print(Rm.todense())
+print(Vm.todense())
 
-import pbsig.ext

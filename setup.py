@@ -16,8 +16,8 @@ print(f"COMPILER FLAGS: { str(flags) }")
 ## Configure additional compiler flags
 compile_args = sysconfig.get_config_var('CFLAGS').split()
 # compile_args = ["-O3" if (arg[:2] == "-O" and int(arg[2]) in [0,1,2,3]) else arg for arg in compile_args]
-compile_args += ["-std=c++20", "-Wall", "-Wextra"]
-compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
+compile_args += ["-std=c++20", "-Wall", "-Wextra" "-O0"]
+# compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
 # extra_compile_args += "-O0" ## debug mode  
 # extra_compile_args = list(set(extra_compile_args))
 

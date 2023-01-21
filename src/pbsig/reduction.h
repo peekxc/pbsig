@@ -4,7 +4,18 @@
 #include <iostream>
 #include <optional>
 #include <tuple>
+#include <algorithm> 
+#include <numeric> // iota
+#include <vector> 
 #include "reduction_concepts.h"
+
+#include <pybind11/pybind11.h>
+#include <pybind11/stl.h>
+#include <pybind11/iostream.h>
+#include <pybind11/numpy.h>
+namespace py = pybind11;
+#include <pybind11/eigen.h>
+#include <Eigen/Sparse>
 
 using std::pair; 
 using std::make_pair;
@@ -13,11 +24,40 @@ using std::optional;
 using std::tuple;
 using std::make_tuple;
 using std::vector; 
+// using VectorXf = Eigen::VectorXf;
 
 // Global static variable to store statistics
 // [0] stores number of column operations 
 // [1] stores number of field operations, if possible
 static std::array< size_t, 2 > reduction_stats; 
+
+template< typename F > 
+constexpr bool equals_zero(F val) noexcept {
+  if constexpr (std::is_integral_v< F >){
+    return val == 0; 
+  } else {
+    return std::abs(val) <= std::numeric_limits< F >::epsilon();
+  }
+}
+
+[[nodiscard]]
+inline auto move_right_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t > {
+  if (i > j){ throw std::invalid_argument("invalid");}
+  std::vector< size_t > v(n);
+  std::iota(v.begin(), v.end(), 0);
+  std::rotate(v.begin()+i, v.begin()+i+1, v.begin()+j+1);
+  return(v);
+}
+
+[[nodiscard]]
+inline auto move_left_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t >{
+  if (i < j){ throw std::invalid_argument("invalid");}
+  std::vector< size_t > v(n);
+  std::iota(v.begin(), v.end(), 0);
+  std::rotate(v.rbegin()+(n-(i+1)), v.rbegin()+(n-i), v.rbegin()+(n-j));
+  return(v);
+}
+
 
 template< bool clearing = true, ReducibleMatrix Matrix, typename Iter, typename Lambda >
 void pHcol_local(Matrix& R1, Matrix& V1, Matrix& R2, Matrix& V2, Iter b1, const Iter e1, Iter b2, const Iter e2, Lambda f){
@@ -153,71 +193,56 @@ void transpose_schedule_full(Matrix& R, Matrix& V, Iter sb, const Iter se, Lambd
 // Restore right: given column indices i \in [b, e) to restore, apply the donor concept to given indices 
 // Postcondition: dr and dv are populated as donor columns
 template< PermutableMatrix Matrix, typename Iter >
-int restore_right(Matrix& R, Matrix& V, Iter b, const Iter e, Matrix& dr, Matrix& dv){
+auto restore_right(Matrix& R, Matrix& V, Iter b, const Iter e) -> std::optional< pair< Matrix, Matrix > >{ 
 	using entry_t = typename Matrix::entry_t;
 	const size_t ne = std::distance(b, e); 
-	if (ne == 0){ return(0); }
-	
-	int nr = 0; 
-	auto d_low_index = R.low_index(*b);
-	auto d_low_index_new = std::optional< size_t >{ std::nullopt };
-	dr.clear_column(0); 
-	dv.clear_column(0);
-	R.col(*b) = dr; // need to support column assignment
-	V.col(*b) = dv; // need to support column assignment
-	
-	// Restore columns 
+	if (ne == 0){ return std::nullopt; }
+
+	py::print("restoring");
+	int d_low_index = R.low_index(*b), d_low_index_new = 0;
+	Matrix dr = R.column(*b);
+	Matrix dv = V.column(*b);
+	Matrix dr_new = Matrix(dr);
+	Matrix dv_new = Matrix(dv); 
+	py::print("dr: \n", dr.m);
+	py::print("dv: \n", dv.m);
 	for (b = std::next(b); b != e; ++b){
 		size_t k = *b;
 		d_low_index_new = R.low_index(k);
+
+		py::print("k: ", k);
 		
-		// Condition when to replace donor columns
-		const bool overwrite_donors = d_low_index_new.has_value() 
-			&& (d_low_index && d_low_index_new.value() < d_low_index.value())
-			|| (!d_low_index_new.has_value());
+		// Condition when to replace donor columns: to be used to save a copy 
+		const bool overwrite_donors = R.low_index(k) < d_low_index;
 		
 		// Determine if columns will need to be saved
 		if (overwrite_donors){
-			R.col(k) = dr_new;
-			V.col(k) = dv_new;
+			dr_new = R.column(k);
+			dv_new = V.column(k);
+			py::print("new donor R: \n", dr_new.m);
+			py::print("new donor V: \n", dv_new.m);
 		}
 		
 		// Do the reductions 
-		// R.iadd_cols(dr.begin(), dr.end(), k); // need to fix by adding new concepts, such as cancel lowest with a column 
-		// V.iadd_cols(dv.begin(), dv.end(), k);
-		++nr;
+		auto low_k = R.low(k);
+		auto low_donor = dr.low(0);
+		const auto s = !low_k ? 1.0 : -(low_k->second/low_donor->second);
+		R.m.col(k) = R.m.col(k) + s*dr.m;
+		V.m.col(k) = V.m.col(k) + s*dv.m;
+		
+		py::print("col R[k]: \n", R.column(k).m);
+		py::print("col V[k]: \n", V.column(k).m);
 
 		// Save the new donor columns if needed
 		if (overwrite_donors){
 			d_low_index = d_low_index_new;
 			dr = dr_new;
 			dv = dv_new;
-			dr_new.clear_column(0);
-			dv_new.clear_column(0);
 		}
 	}
-	return(nr);
+	// if constexpr (donors){ return std::make_pair(dr, dv); }
+	return std::make_optional(std::make_pair(dr, dv));
 }
-
-[[nodiscard]]
-inline auto move_right_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t > {
-  if (i > j){ throw std::invalid_argument("invalid");}
-  std::vector< size_t > v(n);
-  std::iota(v.begin(), v.end(), 0);
-  std::rotate(v.begin()+i, v.begin()+i+1, v.begin()+j+1);
-  return(v);
-}
-
-[[nodiscard]]
-inline auto move_left_permutation(size_t i, size_t j, const size_t n) -> std::vector< size_t >{
-  if (i < j){ throw std::invalid_argument("invalid");}
-  std::vector< size_t > v(n);
-  std::iota(v.begin(), v.end(), 0);
-  std::rotate(v.rbegin()+(n-(i+1)), v.rbegin()+(n-i), v.rbegin()+(n-j));
-  return(v);
-}
-
-using Eigen::Matrix< float, Dynamic, 1> VectorXf;
 
 template< PermutableMatrix Matrix, typename Iter, typename Lambda >
 void move_schedule_full(Matrix& R, Matrix& V, Iter sb, const Iter se, Lambda f){
@@ -227,7 +252,9 @@ void move_schedule_full(Matrix& R, Matrix& V, Iter sb, const Iter se, Lambda f){
 	if (nc == 0 || nr == 0){ return; }
 	if (nc != nr){ throw std::invalid_argument("R must be square."); }
 	if (std::distance(sb,se) < 2 || std::distance(sb,se) % 2 != 0){  throw std::invalid_argument("Pairs of indices must be passed."); }
-	
+
+	// auto dr = Matrix(R.n_rows(), 1);
+	// auto dv = Matrix(V.n_rows(), 1);
 	for (size_t i, j; sb != se; sb += 2){
 		i = *sb, j = *(sb+1);
 		if (i == j){ continue; }
@@ -235,37 +262,43 @@ void move_schedule_full(Matrix& R, Matrix& V, Iter sb, const Iter se, Lambda f){
 
 		// Collect indices I
 		auto I = vector< size_t >();
-		// V.row(i, [&](auto col_idx, auto v){
-		// 	if ((col_idx >= i) & (col_idx <= j)){ I.push_back(col_idx); }
-		// });
+		for (size_t c = i; c <= j; ++c){
+			if (!equals_zero(V(i, c))){
+				I.push_back(c);
+			}
+		}
+		py::print(I);
 
 		// Collect indices J
 		auto J = vector< size_t >();
 		for (size_t c = 0; c < nc; ++c){
 			auto low_idx = R.low_index(c);
-			if (low_idx && (*low_idx) >= i && (low_idx) <= j && R(i,c) != 0){
+			if (low_idx >= static_cast<int>(i) && low_idx <= static_cast<int>(j) && R(i,c) != 0){
 				J.push_back(c);
 			}
 		}
+		py::print(J);
 
 		// Restore invariants
-		VectorXf dr1, dv1;
-		restore_right(R, V, I.begin(), I.end(), dr1, dv1); // don't wrap in if condition
-
-		// Restore invariants
-		if (!J.empty()){
-			VectorXf dr2, dv2;
-			restore_right(R, V, J.begin(), J.end(), dr2, dv2);
-		}
-
-		// Apply permutations
-		R.permute(move_right_permutation(i,j,nc));
-		V.permute(move_right_permutation(i,j,nc));
-
-		// Perform donor replacement
-		dr1.permute_rows(move_right_permutation(i,j,nr));
-		dv1.permute_rows(move_right_permutation(i,j,nr));
-		R.col(j) = dr1;
-		V.col(j) = dv1;
+		auto donors = restore_right(R, V, I.begin(), I.end());
+		if (!J.empty()){ restore_right(R, V, J.begin(), J.end()); }
+		
+ 		// Apply permutations
+		std::vector< size_t > p = move_right_permutation(i,j,nc);
+		py::print(p);
+		std::span< size_t > p_span(p);
+		R.permute_cols(p_span);
+		V.permute(p_span);
+		
+		// Perform donor replacement, if necessary
+		if (donors.has_value()){
+			auto [dr,dv] = *donors;
+			dr.permute_rows(p_span);
+			dv.permute_rows(p_span);
+			py::print("dr: \n", dr.m);
+			py::print("dv: \n", dv.m);
+			R.m.col(j) = dr.m;
+			V.m.col(j) = dv.m;
+		}	
 	}
 }
