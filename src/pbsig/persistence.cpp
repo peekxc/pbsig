@@ -69,6 +69,23 @@ struct FloatMatrix {
     m.setFromTriplets(nonzeros.begin(), nonzeros.end());
   };
 	
+  // -- Interface to make the matrix addable --
+  // { a.scale_col(size_t(0), F(0)) } -> std::same_as< void >;
+  auto scale_col(size_t j, F val) -> void {
+    m.col(j) *= val;
+  }
+
+	// { a.iadd_cols(size_t(0), size_t(0)) } -> std::same_as< void >;
+	void iadd_cols(size_t i, size_t j){ 
+    m.col(i) += m.col(j);
+  }
+
+  // iadd_scaled_col(i,j,s) <=> col(i) <- col(i) + s*col(j)
+  // { a.iadd_scaled_col(size_t(0), size_t(0), F(0)) } -> std::same_as< void >;
+	auto iadd_scaled_col(size_t i, size_t j, F s) -> void {
+    m.col(i) += s*m.col(j);
+  }
+
   // { a.dim() } -> std::same_as< pair< size_t, size_t > >;
 	auto dim() -> pair< size_t, size_t > {
 		return std::make_pair(n_rows(), n_cols());
@@ -110,22 +127,18 @@ struct FloatMatrix {
     m.col(j) *= 0;
   }
 
-  // -- Interface to make the matrix addable --
-  // { a.scale_col(size_t(0), F(0)) } -> std::same_as< void >;
-  auto scale_col(size_t j, F val) -> void {
-    m.col(j) *= val;
-  }
-
-	// { a.iadd_cols(size_t(0), size_t(0)) } -> std::same_as< void >;
-	void iadd_cols(size_t i, size_t j){ 
-    m.col(i) += m.col(j);
-  }
-
-  // iadd_scaled_col(i,j,s) <=> col(i) <- col(i) + s*col(j)
-  // { a.iadd_scaled_col(size_t(0), size_t(0), F(0)) } -> std::same_as< void >;
-	auto iadd_scaled_col(size_t i, size_t j, F s) -> void {
-    m.col(i) += s*m.col(j);
-  }
+  // Zero-out the lowest non-zero of j using the lowest non-zero of i, if both exist (and its possible)
+	// { a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< F >;
+	auto cancel_lowest(size_t j, size_t i) -> F {
+		auto low_i = low(i); // row index, value 
+		auto low_j = low(j); // row index, value 
+		if (low_i && low_j && low_i->first == low_j->first){
+      const auto s = -(low_j->second/low_i->second);
+      iadd_scaled_col(j, i, s); // col(j) <- col(j) + s*col(i)
+      return s;
+		}
+    return 0;
+	}
 
   // -- Interface to make the matrix permutable --
 	
@@ -222,27 +235,30 @@ struct FloatMatrix {
 	// void assign_column(Args&& ... args){
 	// 	m.assign_column(std::forward<Args>(args)...);
 	// }
-		// Use column s to cancel lowest entry of t, if it exists
-	// { a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< void >;
-	// void cancel_lowest(size_t t, size_t s){
-	// 	auto low_t = low(t);
-	// 	auto low_s = low(s);
-	// 	if (low_t && low_s && low_s->first == low_t->first){
-  //     const auto lambda = -(low_t->second/low_s->second);
-  //     m.col(t) = m.col(t) + lambda* m.col(s); // (lambda * s + t |-> t)
-	// 	}
-	// }
-	// Given column j which has low row index 'j_low_index', find the column 'i' which has the same low row index
+
+	// Given column j with low(j) = r, find a column 'i' satisfying i < j and low(i) = low(j) = r
 	// { a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
-	// auto find_low(size_t j, size_t j_low_index) -> std::optional< pair< size_t, F > >  {
-	// 	for (size_t i = 0; i < j; ++i){
-	// 		auto low_i = low(i);
-	// 		if (low_i && low_i->first == j_low_index){
-	// 			return(make_optional(make_pair(i, low_i->second)));	// Note this is (column index, field value), not (row index, field value)
-	// 		}
-	// 	}
-	// 	return(std::nullopt);
-	// }
+	auto find_low(size_t j, size_t r) -> std::optional< pair< size_t, F > >  {
+		for (size_t i = 0; i < j; ++i){
+			auto low_i = low(i);
+			if (low_i && low_i->first == r){
+				return(make_optional(make_pair(i, low_i->second)));	// Note this is (column index, field value), not (row index, field value)
+			}
+		}
+		return(std::nullopt);
+	}
+
+  // Searches the low entries for a column 'k' satisfying low(k) = i
+	// { a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
+	auto search_low(size_t i) -> std::optional< pair< size_t, F > >  {
+		for (size_t k = 0; k < n_cols(); ++k){
+			auto low_k = low(k);
+			if (low_k && low_k->first == i){
+				return(make_optional(make_pair(k, low_k->second)));	// Note this is (column index, field value), not (row index, field value)
+			}
+		}
+		return(std::nullopt);
+	}
 };
 
 // TODO: The references don't matter here. Either accept and return triplet form, or 

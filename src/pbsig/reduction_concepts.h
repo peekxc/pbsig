@@ -35,7 +35,7 @@ concept ReducibleMatrix = requires(M a){
 	{ a.low(size_t(0)) } -> std::same_as< optional< pair< size_t, F > > >;
 	{ a.low_index(size_t(0)) } -> std::same_as< optional< size_t > >;
 	{ a.low_value(size_t(0)) } -> std::same_as< optional< F > >;
-	{ a.clear_column(size_t(0)) } -> std::same_as< void >; // for the clearing optimization
+	{ a.clear_column(size_t(0)) } -> std::same_as< void >; // for the clearing optimization		
 	// { a.find_low(size_t(0), size_t(0)) } -> std::same_as< std::optional< pair< size_t, F > > >; 
 } && Addable< M, F >;
 
@@ -53,5 +53,6 @@ concept PermutableMatrix = requires(M a){
 	{ a.permute_rows(std::span< size_t >()) } -> std::same_as< void >;
 	{ a.permute_cols(std::span< size_t >()) } -> std::same_as< void >;
 	{ a.column_empty(size_t(0)) } -> std::same_as< bool >;
-	{ a(size_t(0), size_t(0)) } -> std::same_as< F >; 
+	{ a.operator()(size_t(0), size_t(0)) } -> std::same_as< F >; 
+	{ a.cancel_lowest(size_t(0), size_t(0)) } -> std::same_as< void >; // to simplify the code greatly
 } && ReducibleMatrix< M, F >;

@@ -138,7 +138,6 @@ permute_cylic(R, i, j, "cols", right=False)
 permute_cylic(V, i, j, "both", right=False)
 
 ## Now reduce R through 
-
 low_entry(R[:,i:(j+1)])
 
 reduction_pHcol(D1, D2)
