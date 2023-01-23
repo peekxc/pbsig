@@ -585,3 +585,25 @@ def swap(p, i):
 #     return(r_tr)
 #   else:
 #     return(np.zeros((0, 2)))
+
+
+def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
+  dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
+  for k in I[1:]:
+    tL, tR, tV = low_entry(R, k), R[:,[k]], V[:,[k]] # temporary 
+    add_column(R, k, dR)
+    add_column(V, k, dV)
+    if tL < dL: 
+      dL, dR, dV = tL, tR, tV
+  return dR, dV  
+
+def move_right(R: lil_array, V: lil_array, i: int, j: int) -> None:
+  piv = low_entry(R) 
+  I = np.arange(i,j+1)[V[i,i:(j+1)] != 0]
+  J = np.flatnonzero(np.logical_and(piv >= i, piv <= j, R[i,:] != 0))
+  dR, dV = restore_right(R, V, I)
+  restore_right(R, V, J)
+  permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
+  permute_cylic(V, i, j, "both")
+  R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
+  

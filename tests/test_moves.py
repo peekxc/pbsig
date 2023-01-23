@@ -55,6 +55,9 @@ I = np.arange(0, D.shape[1])
 R, V = pm.phcol(D, V, I)
 assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
 
+## Test move right in python 
+from pbsig.vineyards import move_right
+
 print(R.todense())
 print(V.todense())
 Rm, Vm = pm.move_right(R, V, 3, 5)

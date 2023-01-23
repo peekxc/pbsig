@@ -71,6 +71,8 @@ assert is_reduced(R0)
 dgm0 = generate_dgm(K0, R0)
 
 # lower_star_ph_dionysus(fv0, E, T)
+
+## Execute naive vineyards
 n_crit = 0
 it = transpose_rv(R0, V0, schedule_tr)
 F = list(K0.values())
@@ -89,32 +91,16 @@ for cc, (status,xval) in enumerate(zip(it, dom)):
     assert len(dgm0_vi) == (len(dgm0_dn[0]) + len(dgm0_dn[1]))
 
 
+## Moves (global)
+
+
+
 ## Moves (local)
 D = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
 R = np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]])
 V = np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]])
 assert np.allclose(R, (D @ V) % 2)
 
-def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
-  dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
-  for k in I[1:]:
-    tL, tR, tV = low_entry(R, k), R[:,[k]], V[:,[k]] # temporary 
-    add_column(R, k, dR)
-    add_column(V, k, dV)
-    if tL < dL: 
-      dL, dR, dV = tL, tR, tV
-  return dR, dV  
-
-def move_right(R: lil_array, V: lil_array, i: int, j: int) -> None:
-  piv = low_entry(R) 
-  I = np.arange(i,j+1)[V[i,i:(j+1)] != 0]
-  #J = np.flatnonzero(np.logical_and(piv >= i, piv <= j, R[i,:] != 0))
-  dR, dV = restore_right(R, V, I)
-  #restore_right(R, V, J)
-  permute_cylic(R, i, j, "cols") ## change if full boundary matrix is used
-  permute_cylic(V, i, j, "both")
-  R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
-  
 print(R)
 print(V)
 move_right(R, V, 0, 2)
