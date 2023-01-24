@@ -99,12 +99,54 @@ D = scipy.sparse.bmat([[None, D], [np.zeros((3,3)), None]]).tolil()
 R = scipy.sparse.bmat([[None, R], [np.zeros((3,3)), None]]).tolil()
 V = scipy.sparse.bmat([[np.eye(3), None], [None, V]]).tolil()
 assert np.allclose(R.todense(), (D @ V).todense() % 2)
-
 R, V = R.astype(int), V.astype(int)
-move_right(R, V, 3, 5)
-assert np.allclose(R.todense(), (permute_cylic_pure(D, 3, 5) @ V).todense() % 2)
+
+## Move right (global)
+#move_right(R, V, 3, 5)
+#assert np.allclose(R.todense(), (permute_cylic_pure(D, 3, 5) @ V).todense() % 2)
+
+from itertools import combinations
 
 ## Move left (global)
+j, i = 5, 3
+def move_left(R, V, j, i):
+  """ Moves column j of (R,V) to position i, shifting intermediate columns up one. """
+  assert i < j, f"Invalid pair ({i},{j}) given (i >= j)"
+  
+  ## Clear column V[:,j] in rows (i:j+1) to allow permutation
+  I = []
+  for k in reversed(range(i,j)):
+    if V[k,j] != 0:
+      add_column(V, j, V[:,k]) # V[:,j] += col_V(k) 
+      add_column(R, j, R[:,k]) # R[:,j] += col_R(k)
+      I.append(k)
+  
+  ## Permute both R and V
+  R = permute_cylic_pure(R, i, j, type="both", right=False)
+  V = permute_cylic_pure(V, i, j, type="both", right=False)
+
+  ## Restore left 
+  ind_R = np.arange(R.shape[0])
+  low_R = low_entry(R)
+  can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
+  while len(can_R) > 0:
+    (l,r) = max(can_R, key=lambda lr: low_R[lr[0]])
+    add_column(R, r, R[:,[l]])
+    add_column(V, r, V[:,[l]])
+    low_R = low_entry(R)
+    can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
+
+  ## Check
+  PDP = permute_cylic_pure(D, i, j, type="both", right=False)
+  assert np.allclose((PDP @ V).todense() % 2, R.todense())
+  assert is_reduced(R)
+
+
+## Test 
+
+
+
+
 
 
 

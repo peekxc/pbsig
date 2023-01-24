@@ -2,6 +2,7 @@ import numpy as np
 import scipy.sparse 
 import _persistence as pm
 from scipy.sparse import * 
+from pbsig.persistence import *
 
 A = scipy.sparse.random(n=10, m=10, density=0.05).tocsc()
 F = pm.FloatMatrix(A)
@@ -43,7 +44,6 @@ D = boundary_matrix(K)
 V = eye(D.shape[0])
 I = np.arange(0, D.shape[1])
 R, V = pm.phcol(D, V, I)
-
 assert is_reduced(R)
 assert np.isclose((R - (D @ V)).sum(), 0.0)
 
@@ -64,3 +64,47 @@ Rm, Vm = pm.move_right(R, V, 3, 5)
 print(Rm.todense())
 print(Vm.todense())
 
+
+
+def test_move_left():
+  for cj in range(100):
+    np.random.seed(cj)
+    X, K = random_lower_star(5)
+    D = boundary_matrix(K)
+    V = eye(D.shape[0])
+    I = np.arange(0, D.shape[1])
+    R, V = pm.phcol(D, V, I)
+    assert is_reduced(R)
+    assert np.isclose((R - (D @ V)).sum(), 0.0)
+    D, R, V = D.astype(int).tolil(), R.astype(int).tolil(), V.astype(int).tolil()
+
+    ## Try random movements that respect the face poset
+    S = list(K.values())
+    valid_mr = []
+    for i,j in combinations(range(len(S)), 2):
+      if all([not(S[i] <= s) for s in S[(i+1):(j+1)]]):
+        valid_mr.append((i,j))
+    
+    cc = np.argmax(np.diff(np.array(valid_mr), axis=1))
+    i, j = valid_mr[cc]
+    # print(S[i])
+    # print(S[(i+1):(j+1)])
+    #plt.spy(R)
+    assert is_reduced(move_right(R, V, i, j, copy=True)[0])
+    #move_right(R, V, i, j, copy=True)  
+    move_right(R, V, i, j, copy=False)  
+    #plt.spy(R)
+
+    idx_set = np.arange(len(S))
+    rind = np.roll(np.arange(i,j+1), -1)
+    bind = np.arange(len(S))
+    bind[i:(j+1)] = rind
+    S = [S[i] for i in bind]
+    K = MutableFiltration(zip(idx_set, S))
+    PDP = boundary_matrix(K)  
+    # plt.spy(PDP @ V)
+
+    assert is_reduced(R)
+    assert np.allclose(((PDP @ V).todense() - R.todense()) % 2, 0)
+  
+  import matplotlib.pyplot as plt
