@@ -92,6 +92,22 @@ for cc, (status,xval) in enumerate(zip(it, dom)):
 
 
 ## Moves (global)
+D = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
+R = np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]])
+V = np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]])
+D = scipy.sparse.bmat([[None, D], [np.zeros((3,3)), None]]).tolil()
+R = scipy.sparse.bmat([[None, R], [np.zeros((3,3)), None]]).tolil()
+V = scipy.sparse.bmat([[np.eye(3), None], [None, V]]).tolil()
+assert np.allclose(R.todense(), (D @ V).todense() % 2)
+
+R, V = R.astype(int), V.astype(int)
+move_right(R, V, 3, 5)
+assert np.allclose(R.todense(), (permute_cylic_pure(D, 3, 5) @ V).todense() % 2)
+
+## Move left (global)
+
+
+
 
 
 

@@ -55,8 +55,24 @@ from scipy.sparse import coo_array
 # cancel_column(DS, 1, DS[:,[0]])
 def add_column(A, k, col):
   """ Adds column 'col' to A[:,k] """
-  if isinstance(A.dtype, numbers.Real):
-    A[:,[k]] += col
+  if isinstance(A.dtype, numbers.Real) or np.issubdtype(A.dtype, float):
+    A[:,[k]] += col 
+  elif isinstance(A.dtype, numbers.Integral) or np.issubdtype(A.dtype, np.integer): 
+    if isinstance(A, np.ndarray):
+      A[:,[k]] = (A[:,[k]] + col) % 2 ## Modulo2 
+    else: 
+      # assert isinstance(A, lil_array), "invalid A types"
+      col = col.todense() if isinstance(col, spmatrix) else col 
+      A[:,[k]] = (col + A[:,[k]].todense()) % 2 ## Modulo2 
+    return 0
+  else:
+    raise ValueError(f"Unknown coefficient type {A.dtype}")
+
+def cancel_column(A, k, col):
+  """ Adds column 'col' to A[:,k], canceling the lowest one """
+  if isinstance(A.dtype, numbers.Real) or np.issubdtype(A.dtype, float):
+    s = float(low_entry(A[:,[k]]))/float(low_entry(col))
+    A[:,[k]] -= s*col 
   elif isinstance(A.dtype, numbers.Integral) or np.issubdtype(A.dtype, np.integer): 
     ## Modulo2 
     if isinstance(A, np.ndarray):
@@ -588,6 +604,7 @@ def swap(p, i):
 
 
 def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
+  if len(I) == 0: return None 
   dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
   for k in I[1:]:
     tL, tR, tV = low_entry(R, k), R[:,[k]], V[:,[k]] # temporary 
@@ -599,8 +616,8 @@ def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
 
 def move_right(R: lil_array, V: lil_array, i: int, j: int) -> None:
   piv = low_entry(R) 
-  I = np.arange(i,j+1)[V[i,i:(j+1)] != 0]
-  J = np.flatnonzero(np.logical_and(piv >= i, piv <= j, R[i,:] != 0))
+  I = V[[i],:].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero[V[i,i:(j+1)] != 0] 
+  J = np.flatnonzero(np.logical_and(piv >= i, piv <= j, R[[i],:].todense() != 0))
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J)
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
