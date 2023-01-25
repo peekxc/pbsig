@@ -1,6 +1,9 @@
 import numpy as np
 from scipy.spatial.distance import pdist, cdist
 from itertools import * 
+from pbsig.simplicial import * 
+from pbsig.persistence import * 
+import _persistence as pm
 
 ## Precompute center of each pixel + indices to index with 
 def pixel_circle(n):
@@ -34,14 +37,45 @@ T = expand_triangles(nv, E)
 
 from pbsig.simplicial import SimplicialComplex, MutableFiltration
 from itertools import chain
-
 from pbsig.vis import plot_complex
 S = SimplicialComplex(chain(V, E, T))
 G = np.array(list(product(range(n), range(n))))
 plot_complex(S, pos=G)
 
 
-## benchmark moves 
+## Benchmark regular phcol 
+from pbsig.vineyards import move_stats
+OPS_PHCOL = [0]
+pm.reduction_stats(True)
+for p in np.linspace(0, 1, num=20):
+  fv = C(p).flatten() # sorted by (r,c) 
+  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  D = boundary_matrix(K)
+  V = eye(D.shape[0])
+  I = np.arange(0, D.shape[1])
+  R, V = pm.phcol(D, V, I)
+  OPS_PHCOL.extend([pm.reduction_stats(False)])
+
+## Benchmark vineyards
+from pbsig.vineyards import vineyards_stats, transpose_rv
+fv = C(0).flatten() # sorted by (r,c) 
+K = MutableFiltration(S, f=lambda s: max(fv[s]))
+D = boundary_matrix(K)
+V = eye(D.shape[0])
+I = np.arange(0, D.shape[1])
+R, V = pm.phcol(D, V, I)
+R = R.astype(int).tolil()
+V = V.astype(int).tolil()
+
+OPS_MOVES = [move_stats(reset=True)]
+for p in np.linspace(0, 1, num=20):
+  fv = C(p).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]))
+  OPS_MOVES.append(move_stats().copy())
+  print(p)
+
+
+## Benchmark moves 
 fv = C(0).flatten() # sorted by (r,c) 
 K = MutableFiltration(S, f=lambda s: max(fv[s]))
 D = boundary_matrix(K)
@@ -52,13 +86,14 @@ R = R.astype(int).tolil()
 V = V.astype(int).tolil()
 
 from pbsig.vineyards import move_stats
-OPS = [move_stats(reset=True)]
+OPS_MOVES = [move_stats(reset=True)]
 for p in np.linspace(0, 1, num=20):
   fv = C(p).flatten()
   update_lower_star(K, R, V, f=lambda s: max(fv[s]))
-  OPS.append(move_stats().copy())
+  OPS_MOVES.append(move_stats().copy())
   print(p)
 
+## Benchmark vineyards
 
 
 
