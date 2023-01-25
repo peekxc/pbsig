@@ -8,9 +8,40 @@ from array import array
 from .persistence import * 
 
 def permutation_matrix(p: Sequence[int]):
+  """ 
+  Returns the column representation of a permutation 
+  
+  Given the word representation of a permutation 'p' the appropriate permutation matrix acts on a matrix 'A' via: 
+  
+  P @ A @ P.T
+
+  where P.T applied on the right applies p to the columns, and P applied on the left applies p to the rows. 
+  """
   n = len(p)
-  P = coo_array((np.ones(n), (p, np.arange(n))), shape=(n,n), dtype=int)
+  P = coo_array((np.ones(n), (np.arange(n), p)), shape=(n,n), dtype=int)
   return P
+
+def move_left_permutation(i: int, j: int, n: int) -> ArrayLike:
+  """ """
+  assert 0 <= i and i <= j and j <= n, "Must satisfy i <= j <= n"
+  iind = np.arange(0, n)
+  if i == j: return iind # identity
+  bind = np.arange(i,j+1)
+  iind[bind] = np.roll(bind, 1)
+  return iind
+
+def move_right_permutation(i: int, j: int, n: int) -> ArrayLike:
+  """ 
+  Returns the word representation (the arrangement) of the permutation that moves i to j, where i < j, in id(n).
+  This has the effect of shifting all intermediate symbols between (i,j] down 1. 
+  """
+  assert 0 <= i and i <= j and j <= n, "Must satisfy i <= j <= n"
+  iind = np.arange(0, n)
+  if i == j: return iind # identity
+  bind = np.arange(i,j+1)
+  iind[bind] = np.roll(bind, -1)
+  return iind
+
 
 def permute_cylic(A, i, j, type: str = "cols", right: bool = True):
   """ Permutes A cyclically about [i,j] in-place """
@@ -624,9 +655,41 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
   assert all(J_check == J), "J index check failed"
   dR, dV = restore_right(R, V, I)
-  restore_right(R, V, J) ## array([ 3,  5,  7,  9, 13, 12, 11]) this should not affect the number of non-reduced columns
+  restore_right(R, V, J) # this should not affect the number of non-reduced columns
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
   permute_cylic(V, i, j, "both")
   R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
   return (R, V) if copy else None
   
+def move_left(R, V, j, i, copy: bool = False):
+  """ Moves column j of (R,V) to position i, shifting intermediate columns up one. """
+  assert i < j, f"Invalid pair ({i},{j}) given (i >= j)"
+  R,V = (R.copy(), V.copy()) if copy else (R,V)
+
+  ## Clear column V[:,j] in rows (i:j+1) to allow permutation
+  I = []
+  for k in reversed(range(i,j)):
+    if V[k,j] != 0:
+      add_column(V, j, V[:,k]) # V[:,j] += col_V(k) 
+      add_column(R, j, R[:,k]) # R[:,j] += col_R(k)
+      I.append(k)
+  
+  ## Permute both R and V
+  ## NOTE: Do *not* re-assign to R and V, otherwise this becomes a pure function 
+  permute_cylic(R, i, j, type="both", right=False)
+  permute_cylic(V, i, j, type="both", right=False)
+
+  ## Restore left 
+  ## Can still guarentee non-reduced low entries will be in [i,j]
+  ## Can we predict the 
+  ind_R = np.arange(R.shape[0])
+  low_R = low_entry(R)
+  can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
+  while len(can_R) > 0:
+    (l,r) = max(can_R, key=lambda lr: low_R[lr[0]])
+    # print((l,r))
+    add_column(R, r, R[:,[l]])
+    add_column(V, r, V[:,[l]])
+    low_R = low_entry(R)
+    can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
+  return (R,V) if copy else None

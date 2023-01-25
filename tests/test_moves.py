@@ -66,10 +66,10 @@ print(Vm.todense())
 
 
 
-def test_move_left():
+def test_move_right():
   for cj in range(100):
     np.random.seed(cj)
-    X, K = random_lower_star(5)
+    X, K = random_lower_star(15)
     D = boundary_matrix(K)
     V = eye(D.shape[0])
     I = np.arange(0, D.shape[1])
@@ -107,4 +107,42 @@ def test_move_left():
     assert is_reduced(R)
     assert np.allclose(((PDP @ V).todense() - R.todense()) % 2, 0)
   
-  import matplotlib.pyplot as plt
+
+from pbsig.vineyards import *
+def test_move_left():
+  for cj in range(100):
+    np.random.seed(cj)
+    X, K = random_lower_star(15)
+    D = boundary_matrix(K)
+    V = eye(D.shape[0])
+    I = np.arange(0, D.shape[1])
+    R, V = pm.phcol(D, V, I)
+    assert is_reduced(R)
+    assert np.isclose((R - (D @ V)).sum(), 0.0)
+    D, R, V = D.astype(int).tolil(), R.astype(int).tolil(), V.astype(int).tolil()
+
+    ## Try random movements that respect the face poset
+    S = list(K.values())
+    valid_ml = []
+    for i,j in combinations(range(len(S)), 2):
+      if not(any([s <= S[j] for s in S[i:j]])):
+        valid_ml.append((i,j))
+    
+    cc = np.argmax(np.diff(np.array(valid_ml), axis=1))
+    i, j = valid_ml[cc]
+    # print(S[j])
+    # print(S[i:j])
+    # plt.spy(R)
+    assert is_reduced(move_left(R, V, j, i, copy=True)[0])
+    #move_right(R, V, i, j, copy=True)  
+    move_left(R, V, j, i, copy=False)  
+    #plt.spy(R)
+
+
+    P = permutation_matrix(move_left_permutation(i,j, len(K)))
+    R = R.todense() % 2
+    V = V.todense() % 2 
+    PDP = (P @ D @ P.T).todense() % 2
+    assert is_reduced(R)
+    assert is_reduced((PDP @ V) % 2)
+    assert np.allclose(((PDP @ V) - R) % 2, 0)
