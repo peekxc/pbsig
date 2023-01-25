@@ -4,7 +4,8 @@ import copy
 from scipy.sparse import *
 from typing import * 
 from array import array 
-
+from itertools import combinations
+from .combinatorial import longest_subsequence, comb_mod
 from .persistence import * 
 
 def permutation_matrix(p: Sequence[int]):
@@ -701,3 +702,66 @@ def move_left(R, V, j, i, copy: bool = False):
     low_R = low_entry(R)
     can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
   return (R,V) if copy else None
+
+
+## LIS/LCS -> move scheduling
+def move_schedule(p: Sequence[int], method: str = "greedy", verbose: bool = False) -> Sequence[int]:
+  assert isinstance(method, str) and method in ["nearest", "random", "greedy"], f"Invalid schedule heuristic {method}"
+  assert all(np.sort(p) == np.arange(len(p))), "Invalid permutation; should be arrangement (word permutation) of [0,n-1]"
+  
+  ## Prep the LIS, its complement set, and p's extended sequence
+  lis = np.array(longest_subsequence(p))
+  com = np.setdiff1d(L_orig, lis)
+  L = np.array([-1] + list(L_orig) + [len(L_orig)])
+
+  ## Define successor, predecessor, and position functions
+  succ = lambda L, i: L[np.flatnonzero(i < L)[0]] if any(i < L) else N
+  pred = lambda L, i: L[np.flatnonzero(L < i)[-1]] if any(L < i) else -1
+  pos = lambda L, i: np.flatnonzero(L == i)[0]
+
+  ## Used to generate candidate moves 
+  def query_move(symbol, lst, lis):
+    i = pos(lst, symbol)
+    j = pos(lst, pred(lis, symbol)) ## b
+    k = pos(lst, succ(lis, symbol)) ## e
+    t = j if i < j else k    ## target index, using nearest heuristic 
+    return (i,t)
+
+  ## Generate the schedule
+  schedule = []
+  while not(is_sorted(L)):
+
+    ## Apply the heuristic to find the next move. 
+    ## Each move should increase the LIS monotonically
+    if method == "nearest":
+      d = com[0]
+      i,t = query_move(d, L, lis)
+    elif method == "random":
+      d = np.random.choice(com, size=1).item()
+      i,t = query_move(d, L, lis)
+    elif method == "greedy": 
+      Q = [query_move(s, L, lis) for s in com]
+      I = np.array(Q).flatten().astype(np.int32)
+      i,t = Q[np.argmin(comb_mod.interval_cost(I))]
+    else: 
+      assert isinstance(method, Callable)
+      Q = [query_move(s, L, lis) for s in com]
+      i,t = method(Q)
+    if verbose: print(f"L: {L}, LIS: {lis}, complement: {com}, symbol: {L[i]}")
+      
+    ## Move a symbol in the complement set and update the LIS and L 
+    sym = L[i]
+    assert sym in com, "Invalid symbol chosen"
+    com = np.setdiff1d(com, sym)
+    L = permute_cylic_pure(L, min(i,t), max(i,t), right=i < t)
+    lis = np.sort(np.append(lis, sym))
+    schedule.append((i,t))
+
+  ## Validate that the schedule does indeed sort to the identity permutation 
+  S = p.copy()
+  for i,j in schedule:
+    i,j = i-1,j-1
+    S = permute_cylic_pure(S, min(i,j), max(i,j), right=i < j)
+  assert is_sorted(S)
+  schedule = np.array(schedule, dtype=np.int32).flatten() - 1
+  return schedule
