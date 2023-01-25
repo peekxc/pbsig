@@ -47,30 +47,38 @@ def permute_cylic(A, i, j, type: str = "cols", right: bool = True):
   """ Permutes A cyclically about [i,j] in-place """
   bind = np.arange(i,j+1)
   rind = np.roll(bind, -1 if right else 1)
-  if type == "cols":
-    A[:,bind] = A[:,rind]
-  elif type == "rows":
-    A[bind,:] = A[rind,:]
-  elif type == "both":
-    permute_cylic(A, i, j, "cols", right=right)
-    permute_cylic(A, i, j, "rows", right=right)
+  if hasattr(A, "ndim") and A.ndim == 2: 
+    if type == "cols":
+      A[:,bind] = A[:,rind]
+    elif type == "rows":
+      A[bind,:] = A[rind,:]
+    elif type == "both":
+      permute_cylic(A, i, j, "cols", right=right)
+      permute_cylic(A, i, j, "rows", right=right)
+  else:
+    return np.array([A[x] for x in bind])
 
 def permute_cylic_pure(A, i, j, type: str = "cols", right: bool = True):
   """ Permutes A cyclically about [i,j] in-place """
   rind = np.roll(np.arange(i,j+1), -1 if right else 1)
-  if type == "cols":
-    bind = np.arange(A.shape[1])
+  if hasattr(A, "ndim") and A.ndim == 2: 
+    if type == "cols":
+      bind = np.arange(A.shape[1])
+      bind[i:(j+1)] = rind
+      return A[:,bind]
+    elif type == "rows":
+      bind = np.arange(A.shape[0])
+      bind[i:(j+1)] = rind
+      return A[bind,:]
+    elif type == "both":
+      A = A.copy()
+      permute_cylic(A, i, j, "cols", right=right)
+      permute_cylic(A, i, j, "rows", right=right)
+      return A
+  else:
+    bind = np.arange(len(A))
     bind[i:(j+1)] = rind
-    return A[:,bind]
-  elif type == "rows":
-    bind = np.arange(A.shape[0])
-    bind[i:(j+1)] = rind
-    return A[bind,:]
-  elif type == "both":
-    A = A.copy()
-    permute_cylic(A, i, j, "cols", right=right)
-    permute_cylic(A, i, j, "rows", right=right)
-    return A
+    return np.array([A[x] for x in bind])
 
 def permute_tr(A, i, type: str = "cols"):
   """ Transposes A via (i,i+1)"""

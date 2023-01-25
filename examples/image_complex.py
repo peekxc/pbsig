@@ -107,11 +107,40 @@ R, V = R.astype(int), V.astype(int)
 
 from itertools import combinations
 
-## Move left (global)
-j, i = 5, 3
+## LIS/LCS -> move scheduling
+from pbsig.combinatorial import longest_subsequence
 
-## Test 
+N = 500
+for cc in range(100):
+  np.random.seed(cc)
+  L_orig = np.random.choice(range(N), size=N, replace=False)
+  lis = np.array(longest_subsequence(L_orig))
+  com = np.setdiff1d(L_orig, lis)
+  L = np.array([-1] + list(L_orig) + [len(L_orig)])
 
+  ## Define successor, predecessor, and position functions
+  succ = lambda L, i: L[np.flatnonzero(i < L)[0]] if any(i < L) else N
+  pred = lambda L, i: L[np.flatnonzero(L < i)[-1]] if any(L < i) else -1
+  pos = lambda L, i: np.flatnonzero(L == i)[0]
+
+  ## Schedule
+  schedule = []
+  while not(is_sorted(L)):
+    # print(f"L: {L}, LIS: {lis}, to_move: {com}")
+    d, com = com[0], com[1:]
+    i = pos(L, d)
+    j = pos(L, pred(lis, d)) ## b
+    k = pos(L, succ(lis, d)) ## e
+    t = j if i < j else k ## target index, using nearest heuristic 
+    L = permute_cylic_pure(L, min(i,t), max(i,t), right=i < t)
+    lis = np.sort(np.append(lis, d))
+    schedule.append((i,t))
+
+  S = L_orig.copy()
+  for i,j in schedule:
+    i,j = i-1,j-1
+    S = permute_cylic_pure(S, min(i,j), max(i,j), right=i < j)
+  assert is_sorted(S)
 
 
 

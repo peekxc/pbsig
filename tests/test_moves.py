@@ -69,7 +69,7 @@ print(Vm.todense())
 def test_move_right():
   for cj in range(100):
     np.random.seed(cj)
-    X, K = random_lower_star(15)
+    X, K = random_lower_star(25)
     D = boundary_matrix(K)
     V = eye(D.shape[0])
     I = np.arange(0, D.shape[1])
@@ -112,7 +112,7 @@ from pbsig.vineyards import *
 def test_move_left():
   for cj in range(100):
     np.random.seed(cj)
-    X, K = random_lower_star(15)
+    X, K = random_lower_star(25)
     D = boundary_matrix(K)
     V = eye(D.shape[0])
     I = np.arange(0, D.shape[1])
@@ -146,3 +146,4 @@ def test_move_left():
     assert is_reduced(R)
     assert is_reduced((PDP @ V) % 2)
     assert np.allclose(((PDP @ V) - R) % 2, 0)
+    print(cj)
