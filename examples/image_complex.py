@@ -41,6 +41,37 @@ G = np.array(list(product(range(n), range(n))))
 plot_complex(S, pos=G)
 
 
+## benchmark moves 
+fv = C(0).flatten() # sorted by (r,c) 
+K = MutableFiltration(S, f=lambda s: max(fv[s]))
+D = boundary_matrix(K)
+V = eye(D.shape[0])
+I = np.arange(0, D.shape[1])
+R, V = pm.phcol(D, V, I)
+R = R.astype(int).tolil()
+V = V.astype(int).tolil()
+
+from pbsig.vineyards import move_stats
+OPS = [move_stats(reset=True)]
+for p in np.linspace(0, 1, num=20):
+  fv = C(p).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]))
+  OPS.append(move_stats().copy())
+  print(p)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Onto the vineyards! 
 from pbsig.persistence import *
 from pbsig.vineyards import *

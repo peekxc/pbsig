@@ -8,6 +8,8 @@ from itertools import combinations
 from .combinatorial import longest_subsequence, comb_mod
 from .persistence import * 
 
+_MOVE_STATS = { "n_right" : 0, "n_left" : 0, "n_cols_left" : 0, "n_cols_right" : 0 }
+
 def permutation_matrix(p: Sequence[int]):
   """ 
   Returns the column representation of a permutation 
@@ -664,6 +666,7 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   J = np.array([l for l in J if R[i,l] != 0])
   #J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
   #assert all(J_check == J), "J index check failed"
+  _MOVE_STATS["n_cols_right"] += len(I) + len(J)
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J) # this should not affect the number of non-reduced columns
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
@@ -683,7 +686,8 @@ def move_left(R, V, j, i, copy: bool = False):
       add_column(V, j, V[:,k]) # V[:,j] += col_V(k) 
       add_column(R, j, R[:,k]) # R[:,j] += col_R(k)
       I.append(k)
-  
+  _MOVE_STATS["n_cols_left"] += len(I) 
+
   ## Permute both R and V
   ## NOTE: Do *not* re-assign to R and V, otherwise this becomes a pure function 
   permute_cylic(R, i, j, type="both", right=False)
@@ -702,6 +706,7 @@ def move_left(R, V, j, i, copy: bool = False):
     add_column(V, r, V[:,[l]])
     low_R = low_entry(R)
     can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
+    _MOVE_STATS["n_cols_left"] += 1
   return (R,V) if copy else None
 
 
@@ -767,3 +772,30 @@ def move_schedule(p: Sequence[int], method: str = "greedy", verbose: bool = Fals
   assert is_sorted(S)
   schedule = np.array(schedule, dtype=np.int32) - 1 # flatten for c++ later
   return schedule
+
+def move_stats(reset: bool = False) -> None:
+  if reset:
+    _MOVE_STATS["n_right"] = 0
+    _MOVE_STATS["n_left"] = 0
+    _MOVE_STATS["n_cols_left"] = 0
+    _MOVE_STATS["n_cols_right"] = 0
+  return _MOVE_STATS.copy()
+
+from scipy.sparse import spmatrix
+def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, **kwargs):
+  """ Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' """
+  assert isinstance(V.dtype, numbers.Integral) or np.issubdtype(V.dtype, np.integer), "Only works mod2"
+  assert isinstance(R.dtype, numbers.Integral) or np.issubdtype(R.dtype, np.integer), "Only works mod2"
+  assert isinstance(K, MutableFiltration), "Invald filtration given"
+  L = MutableFiltration(K.values(), f = f)
+  L_map = { s : i for i,s in enumerate(L.values()) }
+  K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
+  schedule = move_schedule(K_perm, **kwargs)
+  for i,j in schedule:
+    if i < j:
+      move_right(R, V, i, j)
+      _MOVE_STATS["n_right"] += 1
+    else:
+      move_left(R, V, i, j) 
+      _MOVE_STATS["n_left"] += 1
+  

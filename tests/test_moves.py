@@ -216,13 +216,20 @@ def test_scheduled_moves():
     print(cj)
 
 
+def test_ls_moves():
+  from pbsig.vineyards import update_lower_star
+  from pbsig.vineyards import move_stats
+  X, K = random_lower_star(15)
+  D = boundary_matrix(K)
+  V = eye(D.shape[0])
+  I = np.arange(0, D.shape[1])
+  R, V = pm.phcol(D, V, I)
+  assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
+
+  fv = X @ np.array([np.cos(np.pi/4), np.sin(np.pi/4)])
+  R = R.astype(int).tolil()
+  V = V.astype(int).tolil()
+  assert update_lower_star(K, R, V, lambda s: max(fv[s])) is None
   
 
-
-K = MutableFiltration(S)
-D = boundary_matrix(K)
-V = eye(D.shape[0])
-I = np.arange(0, D.shape[1])
-R, V = pm.phcol(D, V, I)
-assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
 
