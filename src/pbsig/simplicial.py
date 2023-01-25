@@ -505,8 +505,9 @@ class MutableFiltration(MutableMapping):
   ## Simple copy operator 
   def copy(self) -> 'MutableFiltration':
     new = MutableFiltration()
-    new.data = self.data.copy()
-    new.shape = self.shape.copy()
+    from copy import deepcopy
+    new.data = deepcopy(self.data)
+    new.shape = deepcopy(self.shape)
     return new 
 
   ## Keys yields the index set. Set expand = True to get linearized order. 
@@ -530,12 +531,18 @@ class MutableFiltration(MutableMapping):
       it_vals = chain(it_vals, iter(v))
     return zip(it_keys, it_vals)
 
-  def reindex_keys(self, index_set: Iterable):
-    ''' Given a totally ordered key set of the same length of the filtation, reindexes '''
-    assert len(index_set) == len(self)
-    assert all((i <= j for i,j in pairwise(index_set)))
-    new = MutableFiltration(zip(iter(index_set), self.values()))
-    return new
+  def reindex(self, index_set: Union[Iterable, Callable]) -> None:
+    ''' Given a totally ordered key set of the same length of the filtation, or a callable, reindexes the simplices in the filtration '''
+    if isinstance(index_set, Iterable):
+      assert len(index_set) == len(self), "Index set length not match the number of simplices in the filtration!"
+      assert all((i <= j for i,j in pairwise(index_set))), "Index set is not totally ordered!"
+      new = MutableFiltration(zip(iter(index_set), self.values()))
+      self.data = new.data
+    elif isinstance(index_set, Callable):
+      new = MutableFiltration(simplices=self.values(), f=index_set)
+      self.data = new.data
+    else:
+      raise ValueError("invalid index set supplied")
 
   def faces(self, p: int = None) -> Iterable:
     assert isinstance(p, Integral) or p is None, f"Invalid p:{p} given"

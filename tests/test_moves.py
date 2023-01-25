@@ -230,6 +230,34 @@ def test_ls_moves():
   R = R.astype(int).tolil()
   V = V.astype(int).tolil()
   assert update_lower_star(K, R, V, lambda s: max(fv[s])) is None
+
+
+def test_vineyards():
+  from pbsig.datasets import random_lower_star
+  from pbsig.vineyards import transpose_rv, linear_homotopy
+  X, K = random_lower_star(15)
+  D = boundary_matrix(K)
+  V = eye(D.shape[0])
+  I = np.arange(0, D.shape[1])
+  R, V = pm.phcol(D, V, I)
+  assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
+
+  fv = X @ np.array([-1, 0])
+  L = MutableFiltration(K.values(), f=lambda s: max(fv[s]))
+
+  KD = { v:k for k,v in K.items() }
+  LD = { v:k for k,v in L.items() }
+  tr_schedule, dom = linear_homotopy(KD, LD, plot=False)
+
+  R = R.astype(int).tolil()
+  V = V.astype(int).tolil()
+  assert is_reduced(R)
+  for cc, s in enumerate(transpose_rv(R, V, tr_schedule)):
+    assert is_reduced(R), "R is not reduced"
+    assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+    assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
+  status = [s for s in transpose_rv(R, V, tr_schedule)]
   
 
+  #def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
 

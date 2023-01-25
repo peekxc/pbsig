@@ -275,9 +275,7 @@ auto phcol(Eigen::SparseMatrix< float > R_, Eigen::SparseMatrix< float > V_, std
   auto V = FloatMatrix(V_);
   size_t ii = 0;
   pHcol(R, V, I.begin(), I.end(), [&ii](){
-    if ((ii % 100) == 0 && PyErr_CheckSignals() != 0){
-      throw py::error_already_set();
-    }
+    if ((ii % 100) == 0 && PyErr_CheckSignals() != 0){ throw py::error_already_set(); }
     ii++;
   });
   const auto filter_zeros = [](const auto& row, const auto& col, const auto& value) -> bool {
@@ -288,6 +286,12 @@ auto phcol(Eigen::SparseMatrix< float > R_, Eigen::SparseMatrix< float > V_, std
   return std::make_pair(R.m, V.m);
 }
 
+auto reduction_stats(bool reset = false) -> size_t {
+  if (reset){
+    _reduction_stats[0] = 0;
+  }
+  return static_cast< size_t >(_reduction_stats[0]);
+}
 
 auto move_right(Eigen::SparseMatrix< float > R_, Eigen::SparseMatrix< float > V_, size_t i, size_t j) -> std::pair< FloatSparse, FloatSparse > {
   auto R = FloatMatrix(R_);
@@ -310,6 +314,7 @@ PYBIND11_MODULE(_persistence, m) {
   m.doc() = "persistence module";
   m.def("phcol", &phcol);
   m.def("move_right", &move_right);
+  m.def("reduction_stats", &reduction_stats);
   // m.def("test_low", &test_sparse_matrix);
   
   py::class_< FloatMatrix >(m, "FloatMatrix")

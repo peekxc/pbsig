@@ -29,7 +29,7 @@ using std::vector;
 // Global static variable to store statistics
 // [0] stores number of column operations 
 // [1] stores number of field operations, if possible
-static std::array< size_t, 2 > reduction_stats; 
+static std::array< size_t, 2 > _reduction_stats; 
 
 template< typename F > 
 constexpr bool equals_zero(F val) noexcept {
@@ -106,7 +106,7 @@ void pHcol(Matrix& R, Matrix& V, Iter b, const Iter e, Lambda f){
 			const field_t lambda = low_j->second / piv_i->second;
 			R.iadd_scaled_col(j, i, -lambda); 	// zeros pivot in column j
 			V.iadd_scaled_col(j, i, -lambda);   // col(j) <- col(j) + s*col(i)
-			++reduction_stats[0]; // Keep track of column operations
+			++_reduction_stats[0]; // Keep track of column operations
 			f();
 		}
     

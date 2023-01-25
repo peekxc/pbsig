@@ -5,6 +5,20 @@ s = Simplex([0,1,2,3])
 S = SimplicialComplex([[0,1,2,3,4]])
 
 
+## Testing reindexing capability 
+def test_filtration():
+  S = SimplicialComplex([[0,1,2,3,4]])
+  K = MutableFiltration(S)
+  L = K.copy()
+  K.reindex(lambda s: 10 + sum(s))
+  L_simplices = [tuple(s) for s in L.values()]
+  K_simplices = [tuple(s) for s in K.values()]
+  assert len(L_simplices) == len(K_simplices)
+  assert L_simplices != K_simplices
+  assert list(sorted(K_simplices)) == list(sorted(L_simplices))
+
+
+
 ## TODO: investigate gray code for fast iteration of ranks of simplices! 
 # x = np.argsort([int(format(int(s.dimension()), 'b') + format(rank_comb(s.vertices, k=4,n=10), 'b'),2) for s in S])
 # np.array(list(S))[x]

@@ -7,8 +7,10 @@ from array import array
 from itertools import combinations
 from .combinatorial import longest_subsequence, comb_mod
 from .persistence import * 
+from .simplicial import *
 
 _MOVE_STATS = { "n_right" : 0, "n_left" : 0, "n_cols_left" : 0, "n_cols_right" : 0 }
+_VINE_STATS = { "n_col" : 0, "n_tr" : 0 }
 
 def permutation_matrix(p: Sequence[int]):
   """ 
@@ -97,9 +99,9 @@ from scipy.sparse import coo_array
 # cancel_column(DS, 1, DS[:,[0]])
 def add_column(A, k, col):
   """ Adds column 'col' to A[:,k] """
-  if isinstance(A.dtype, numbers.Real) or np.issubdtype(A.dtype, float):
+  if np.issubdtype(A.dtype, np.floating):
     A[:,[k]] += col 
-  elif isinstance(A.dtype, numbers.Integral) or np.issubdtype(A.dtype, np.integer): 
+  elif np.issubdtype(A.dtype, np.integer): 
     if isinstance(A, np.ndarray):
       A[:,[k]] = (A[:,[k]] + col) % 2 ## Modulo2 
     else: 
@@ -142,16 +144,19 @@ def cancel_pivot(A, i, j, piv: Optional[int] = None):
   """
   piv = low_entry(A, j) if piv is None else piv
   c, d = A[piv,i], A[piv,j]
-  if isinstance(A.dtype, numbers.Real):
+  if np.issubdtype(A.dtype, np.floating):
     ## Real-valued coefficients 
     if (c == 0): return(0.0)
     s = -(d/c)
     A[:,[j]] += s*A[:,[i]]
     return(s)
-  elif isinstance(A.dtype, numbers.Integral): 
+  elif np.issubdtype(A.dtype, np.integer): 
     ## Modulo2 
     if (c == 0): return(0)
-    A[:,j] = (A[:,i] + A[:,j]) % 2
+    if (isinstance(A, np.ndarray)):
+      A[:,[j]] = (A[:,[i]] + A[:,[j]]) % 2
+    else:
+      A[:,[j]] = (A[:,[i]] + A[:,[j]]).todense() % 2
     return 0
   else:
     raise ValueError(f"Unknown coefficient type {A.dtype}")
@@ -166,11 +171,14 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
   assert R.shape[0] == R.shape[1] and V.shape[0] == V.shape[1], "Must be square"
   m = R.shape[1] # num simplices in filtration
   for i in I:
+    _VINE_STATS['n_tr'] += 1
     piv = low_entry(R)
     pos = piv == -1
     if pos[i] and pos[i+1]:
       if V[i,i+1] != 0:
-        s = cancel_pivot(V, i, i+1, piv=i) 
+        # s = cancel_pivot(V, i, i+1, piv=i) 
+        add_column(V, i+1, V[:,[i]])
+        _VINE_STATS['n_col'] += 1
       if any(piv == i) and any(piv == i+1):
         k,l = np.flatnonzero(piv == i).item(), np.flatnonzero(piv == (i+1)).item()
         if R[i,l] != 0: # Case 1.1.1 and 1.1.2
@@ -178,8 +186,11 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
           k,l = (k,l) if k < l else (l,k) # ensure k < l
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
-          s = cancel_pivot(R, k, l)
-          V[:,[l]] += s*V[:,[k]] if s != 0 else V[:,[k]]
+          # s = cancel_pivot(R, k, l)
+          # V[:,[l]] += s*V[:,[k]] if s != 0 else V[:,[k]]
+          add_column(V, l, V[:,[k]])
+          add_column(R, l, R[:,[k]])
+          _VINE_STATS['n_col'] += 1
           yield status
         else: # Case 1.2 still! 
           permute_tr(R, i, "both")
@@ -192,18 +203,26 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
     elif not(pos[i]) and not(pos[i+1]):
       if V[i,i+1] != 0: 
         if piv[i] < piv[i+1]: # pivot in i is higher than pivot in i+1
-          s = cancel_pivot(V, i, i+1, piv=i) ## V1[:,i+1] |-> s*V1[:,i] + V1[:,i+1], where s := ()
-          R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          #s = cancel_pivot(V, i, i+1, piv=i) ## V1[:,i+1] |-> s*V1[:,i] + V1[:,i+1], where s := ()
+          #R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          add_column(V, i+1, V[:,[i]])
+          add_column(R, i+1, R[:,[i]])
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
+          _VINE_STATS['n_col'] += 1
           yield 4 
         else:
-          s = cancel_pivot(V, i, i+1, piv=i)
-          R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          # s = cancel_pivot(V, i, i+1, piv=i)
+          # R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+          add_column(V, i+1, V[:,[i]])
+          add_column(R, i+1, R[:,[i]])
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
-          s = cancel_pivot(R, i, i+1)
-          V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+          # s = cancel_pivot(R, i, i+1)
+          # V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+          add_column(V, i+1, V[:,[i]])
+          add_column(R, i+1, R[:,[i]])
+          _VINE_STATS['n_col'] += 2
           yield 5
       else: # Case 2.2
         permute_tr(R, i, "both")
@@ -212,12 +231,17 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
     elif not(pos[i]) and pos[i+1]:
       if V[i,i+1] != 0:
         ## Case 3.1
-        s = cancel_pivot(V, i, i+1, piv=i)
-        R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+        # s = cancel_pivot(V, i, i+1, piv=i)
+        # R[:,[i+1]] += s*R[:,[i]] if s != 0 else R[:,[i]]
+        add_column(V, i+1, V[:,[i]])
+        add_column(R, i+1, R[:,[i]])
         permute_tr(R, i, "both")
         permute_tr(V, i, "both")
-        s = cancel_pivot(R, i, i+1)
-        V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+        # s = cancel_pivot(R, i, i+1)
+        # V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
+        add_column(R, i+1, R[:,[i]])
+        add_column(V, i+1, V[:,[i]])
+        _VINE_STATS['n_col'] += 2
         yield 7
       else:
         permute_tr(R, i, "both")
@@ -225,11 +249,13 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
         yield 8
     elif pos[i] and not(pos[i+1]):
       if V[i,i+1] != 0:
-        s = cancel_pivot(V, i, i+1, piv=i)
+        # s = cancel_pivot(V, i, i+1, piv=i)
+        add_column(V, i+1, V[:,[i]])
+        _VINE_STATS['n_col'] += 1
       permute_tr(R, i, "both")
       permute_tr(V, i, "both")
       yield 9
-    
+
 
 def transpose_dgm(R1, V1, R2, V2, i: int):
   assert (R1.shape[1] == V1.shape[0]), "Must be matching boundary matrices"
@@ -484,7 +510,7 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     plot := whether to plot the the homotopy. Useful for debugging/visualizing small cases. 
 
   Returns: 
-    tr := array of integers (a, b, ...) giving the adjacent transposition (a, a+1), (b, b+1), ... which sorts f |-> g
+    (tr, x) := array of integers (a, b, ...) giving the adjacent transposition (a, a+1), (b, b+1), ... which sorts f |-> g, and their doman values 'x' 
 
   If f,g are arrays, then the homotopy occurs between (f[i], g[i]) for all i. Otherwise the key of f are matched with those of g.  
   """
@@ -494,6 +520,10 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     f = { c : f for c, f in enumerate(f) }
     g = { c : f for c, f in enumerate(g) }
   elif isinstance(f, Dict) and isinstance(g, Dict):
+    assert f.keys() == g.keys(), "f and g should have the same key-sets"
+  elif isinstance(f, MutableFiltration) and isinstance(g, MutableFiltration):
+    f = { v:k for k,v in f.items() }
+    g = { v:k for k,v in g.items() }
     assert f.keys() == g.keys(), "f and g should have the same key-sets"
   else: 
     raise ValueError("Unknown input for f,g detected")
@@ -666,9 +696,9 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   J = np.array([l for l in J if R[i,l] != 0])
   #J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
   #assert all(J_check == J), "J index check failed"
-  _MOVE_STATS["n_cols_right"] += len(I) + len(J)
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J) # this should not affect the number of non-reduced columns
+  _MOVE_STATS["n_cols_right"] += len(I) + len(J)
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
   permute_cylic(V, i, j, "both")
   R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
@@ -781,21 +811,37 @@ def move_stats(reset: bool = False) -> None:
     _MOVE_STATS["n_cols_right"] = 0
   return _MOVE_STATS.copy()
 
+def vineyards_stats(reset: bool = False) -> None:
+  if reset:
+    _VINE_STATS["n_cols"] = 0
+    _VINE_STATS["n_tr"] = 0
+  return _VINE_STATS.copy()
+
 from scipy.sparse import spmatrix
-def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, **kwargs):
-  """ Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' """
+def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, vines: bool = False, **kwargs):
+  """ 
+  Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' 
+
+  Also updates K! 
+  
+  """
   assert isinstance(V.dtype, numbers.Integral) or np.issubdtype(V.dtype, np.integer), "Only works mod2"
   assert isinstance(R.dtype, numbers.Integral) or np.issubdtype(R.dtype, np.integer), "Only works mod2"
   assert isinstance(K, MutableFiltration), "Invald filtration given"
   L = MutableFiltration(K.values(), f = f)
-  L_map = { s : i for i,s in enumerate(L.values()) }
-  K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
-  schedule = move_schedule(K_perm, **kwargs)
-  for i,j in schedule:
-    if i < j:
-      move_right(R, V, i, j)
-      _MOVE_STATS["n_right"] += 1
-    else:
-      move_left(R, V, i, j) 
-      _MOVE_STATS["n_left"] += 1
+  if vines:
+    pass
+    # linear_homotopy(K, g)
+  else:
+    L_map = { s : i for i,s in enumerate(L.values()) }
+    K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
+    schedule = move_schedule(K_perm, **kwargs)
+    for i,j in schedule:
+      if i < j:
+        move_right(R, V, i, j)
+        _MOVE_STATS["n_right"] += 1
+      else:
+        move_left(R, V, i, j) 
+        _MOVE_STATS["n_left"] += 1
+    
   
