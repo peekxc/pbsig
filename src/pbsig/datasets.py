@@ -17,9 +17,15 @@ from .simplicial import *
 from .__init__ import _package_data
 
 
-def random_lower_star(n: int = 50):
+def random_lower_star(n: int = 50, v: list = [0,1]):
+  """ 
+  Generates a random lower-star filtration from a delaunay complex over n random points in the plane. 
+  The sublevel sets (lower-star) are given by the projection of each simplex onto the unit-vector v
+  """
+  assert len(v) == 2, "Invalid unit vector"
+  v = np.array(v)/np.linalg.norm(v)
   X = np.random.uniform(size=(n,2))
-  fv = X @ np.array([0,1])
+  fv = X @ np.array(v)
   S = delaunay_complex(X)
   K = MutableFiltration(S, f=lambda s: max(fv[s]))
   return X, K

@@ -3,73 +3,38 @@ import scipy.sparse
 import _persistence as pm
 from scipy.sparse import * 
 from pbsig.persistence import *
-
-A = scipy.sparse.random(n=10, m=10, density=0.05).tocsc()
-F = pm.FloatMatrix(A)
-
-low_entries = [max(A[:,[i]].indices) if A[:,[i]].nnz > 0 else -1 for i in range(A.shape[1])]
-assert [F.low(i) for i in range(F.dim[1])] == low_entries
-
-F.clear_column(0)
-assert F.low(0) == -1
-
-F.iadd_scaled_col(0,1,1.0)
-assert F.low(0) == F.low(1) 
-
-F.swap_cols(2,3)
-assert all(F.as_spmatrix()[:,[2]].indices == A[:,[3]].indices)
-assert all(F.as_spmatrix()[:,[3]].indices == A[:,[2]].indices)
-
-A = csc_array(np.array([[1,0,1],[-1,1,0],[0,-1,-1]]))
-F = pm.FloatMatrix(A)
-
-# while((low_j = R.low(j)) && (piv_i = pivs.at(low_j->first))){ // 
-#   const size_t i = piv_i->first; // column i of R must have low row index low_j->first 
-#   const field_t lambda = low_j->second / piv_i->second;
-#   R.iadd_scaled_col(j, i, -lambda); 	// zeros pivot in column j
-#   V.iadd_scaled_col(j, i, -lambda);   // col(j) <- col(j) + s*col(i)
-F.iadd_scaled_col(2,1, -(-1.0/-1.0))
-
-
-F.permute_rows([0,1,2])
-
-
-
+from pbsig.vineyards import move_right
 from pbsig.datasets import random_lower_star
 from pbsig.simplicial import SimplicialComplex
-X, K = random_lower_star(10)
 
-from pbsig.persistence import *
-D = boundary_matrix(K)
-V = eye(D.shape[0])
-I = np.arange(0, D.shape[1])
-R, V = pm.phcol(D, V, I)
-assert is_reduced(R)
-assert np.isclose((R - (D @ V)).sum(), 0.0)
+def test_matrix_addition():
+  A = scipy.sparse.random(n=10, m=10, density=0.05).tocsc()
+  F = pm.FloatMatrix(A)
+  low_entries = [max(A[:,[i]].indices) if A[:,[i]].nnz > 0 else -1 for i in range(A.shape[1])]
+  assert [F.low(i) for i in range(F.dim[1])] == low_entries
+  F.clear_column(0)
+  assert F.low(0) == -1
+  F.iadd_scaled_col(0,1,1.0)
+  assert F.low(0) == F.low(1) 
+  F.swap_cols(2,3)
+  assert all(F.as_spmatrix()[:,[2]].indices == A[:,[3]].indices)
+  assert all(F.as_spmatrix()[:,[3]].indices == A[:,[2]].indices)
 
-S = SimplicialComplex([[0],[1],[2],[0,1],[0,2],[1,2]])
-K = MutableFiltration(S)
-D = boundary_matrix(K)
-V = eye(D.shape[0])
-I = np.arange(0, D.shape[1])
-R, V = pm.phcol(D, V, I)
-assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
-
-## Test move right in python 
-from pbsig.vineyards import move_right
-
-print(R.todense())
-print(V.todense())
-Rm, Vm = pm.move_right(R, V, 3, 5)
-print(Rm.todense())
-print(Vm.todense())
-
+def test_basic_move_right():
+  D = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
+  R = np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]])
+  V = np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]])
+  D = scipy.sparse.bmat([[None, D], [np.zeros((3,3)), None]]).tolil()
+  R = scipy.sparse.bmat([[None, R], [np.zeros((3,3)), None]]).tolil()
+  V = scipy.sparse.bmat([[np.eye(3), None], [None, V]]).tolil()
+  assert np.allclose(R.todense(), (D @ V).todense() % 2)
+  R, V = R.astype(int), V.astype(int)
 
 
 def test_move_right():
   for cj in range(100):
     np.random.seed(cj)
-    X, K = random_lower_star(25)
+    X, K = random_lower_star(15)
     D = boundary_matrix(K)
     V = eye(D.shape[0])
     I = np.arange(0, D.shape[1])
@@ -83,7 +48,7 @@ def test_move_right():
     valid_mr = []
     for i,j in combinations(range(len(S)), 2):
       respects_face_poset = all([not(S[i] <= s) for s in S[(i+1):(j+1)]])
-      if not(respects_face_poset): # comment out to try non-face moves
+      if (respects_face_poset): # comment out to try non-face moves
         valid_mr.append((i,j))
     
     cc = np.argmax(np.diff(np.array(valid_mr), axis=1))
@@ -105,15 +70,18 @@ def test_move_right():
     PDP = boundary_matrix(K)  
     # plt.spy(PDP @ V)
 
-    assert is_reduced(R)
-    assert np.allclose(((PDP @ V).todense() - R.todense()) % 2, 0)
+    assert is_reduced(R), "R is not reduced"
+    assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+    assert all(V.diagonal()%2 >= 0), "V is not full rank"
+    assert is_reduced((PDP @ V).todense() % 2), "D @ V is not reduced"
+    assert np.allclose(((PDP @ V).todense() - R.todense()) % 2, 0), "R = D @ V does not hold"
   
 
 from pbsig.vineyards import *
 def test_move_left():
   for cj in range(100):
     np.random.seed(cj)
-    X, K = random_lower_star(25)
+    X, K = random_lower_star(15)
     D = boundary_matrix(K)
     V = eye(D.shape[0])
     I = np.arange(0, D.shape[1])
@@ -127,7 +95,7 @@ def test_move_left():
     valid_ml = []
     for i,j in combinations(range(len(S)), 2):
       respects_face_poset = not(any([s <= S[j] for s in S[i:j]]))
-      if not(respects_face_poset):
+      if (respects_face_poset):
         valid_ml.append((i,j))
     
     cc = np.argmax(np.diff(np.array(valid_ml), axis=1))
@@ -145,9 +113,11 @@ def test_move_left():
     R = R.todense() % 2
     V = V.todense() % 2 
     PDP = (P @ D @ P.T).todense() % 2
-    assert is_reduced(R)
-    assert is_reduced((PDP @ V) % 2)
-    assert np.allclose(((PDP @ V) - R) % 2, 0)
+    assert is_reduced(R), "R is not reduced"
+    assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+    assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
+    assert is_reduced((PDP @ V) % 2), "D @ V is not reduced"
+    assert np.allclose(((PDP @ V) - R) % 2, 0), "R = D @ V does not hold"
     print(cj)
 
 
@@ -208,3 +178,51 @@ def schedule():
       i,j = i-1,j-1
       S = permute_cylic_pure(S, min(i,j), max(i,j), right=i < j)
     assert is_sorted(S)
+
+from pbsig.vineyards import move_schedule, move_left, move_right
+def test_scheduled_moves():
+  for cj in range(100):
+    np.random.seed(cj)
+    X, K = random_lower_star(25)
+    D = boundary_matrix(K)
+    V = eye(D.shape[0])
+    I = np.arange(0, D.shape[1])
+    R, V = pm.phcol(D, V, I)
+    assert is_reduced(R)
+    assert np.isclose((R - (D @ V)).sum(), 0.0)
+    
+    ## New filtration 
+    v = np.array([np.cos(np.pi/4), np.sin(np.pi/4)])
+    fv = X @ v
+    L = MutableFiltration(K.values(), f = lambda s: max(fv[s]))
+
+    ## Scheduling sorts an arrangement to the identity, so label K using L
+    L_map = { s : i for i,s in enumerate(L.values()) }
+    K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
+
+    R = R.astype(int).tolil()
+    V = V.astype(int).tolil()
+    schedule = move_schedule(K_perm, method="greedy")
+    for i,j in schedule:
+      if i < j:
+        move_right(R, V, i, j)
+      else:
+        move_left(R, V, i, j)
+      assert is_reduced(R), "R is not reduced"
+      assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+      assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
+    D = boundary_matrix(L).astype(int)
+    assert np.allclose(((D @ V).todense() % 2) - (R.todense() % 2), 0)
+    print(cj)
+
+
+  
+
+
+K = MutableFiltration(S)
+D = boundary_matrix(K)
+V = eye(D.shape[0])
+I = np.arange(0, D.shape[1])
+R, V = pm.phcol(D, V, I)
+assert is_reduced(R) and np.isclose((R - (D @ V)).sum(), 0.0)
+

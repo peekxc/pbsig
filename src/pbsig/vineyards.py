@@ -658,7 +658,8 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   assert i < j, f"Invalid pair ({i},{j}) given (i >= j)"
   R, V = (R.copy(), V.copy()) if copy else (R, V)
   piv = low_entry(R) 
-  I = V[[i],:].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero[V[i,i:(j+1)] != 0] 
+  IR = V[i,i:(j+1)].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero[V[i,i:(j+1)] != 0] # relative indices
+  I = np.arange(i,j+1)[IR] # global indices
   J = np.flatnonzero(np.logical_and(piv >= i, piv <= j)) # R[[i],:].todense() != 0
   J = np.array([l for l in J if R[i,l] != 0])
   #J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
@@ -710,12 +711,13 @@ def move_schedule(p: Sequence[int], method: str = "greedy", verbose: bool = Fals
   assert all(np.sort(p) == np.arange(len(p))), "Invalid permutation; should be arrangement (word permutation) of [0,n-1]"
   
   ## Prep the LIS, its complement set, and p's extended sequence
+  m = len(p)
   lis = np.array(longest_subsequence(p))
-  com = np.setdiff1d(L_orig, lis)
-  L = np.array([-1] + list(L_orig) + [len(L_orig)])
+  com = np.setdiff1d(p, lis)
+  L = np.array([-1] + list(p) + [m])
 
   ## Define successor, predecessor, and position functions
-  succ = lambda L, i: L[np.flatnonzero(i < L)[0]] if any(i < L) else N
+  succ = lambda L, i: L[np.flatnonzero(i < L)[0]] if any(i < L) else m
   pred = lambda L, i: L[np.flatnonzero(L < i)[-1]] if any(L < i) else -1
   pos = lambda L, i: np.flatnonzero(L == i)[0]
 
@@ -763,5 +765,5 @@ def move_schedule(p: Sequence[int], method: str = "greedy", verbose: bool = Fals
     i,j = i-1,j-1
     S = permute_cylic_pure(S, min(i,j), max(i,j), right=i < j)
   assert is_sorted(S)
-  schedule = np.array(schedule, dtype=np.int32).flatten() - 1
+  schedule = np.array(schedule, dtype=np.int32) - 1 # flatten for c++ later
   return schedule

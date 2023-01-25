@@ -109,76 +109,9 @@ R, V = R.astype(int), V.astype(int)
 ## 1. ensure face poset is respected (done; not needed!)
 ## 2. Implement greedy heuristic (done)
 
-
-
-
-
-
-
-## Moves (local)
-D = np.array([[1, 0, 1], [0, 1, 1], [1, 1, 0]])
-R = np.array([[1, 1, 0], [0, 1, 0], [1, 0, 0]])
-V = np.array([[1, 1, 1], [0, 1, 1], [0, 0, 1]])
-assert np.allclose(R, (D @ V) % 2)
-
 print(R)
 print(V)
 move_right(R, V, 0, 2)
 print(R)
 print(V)
 np.allclose(R, permute_cylic_pure(D, i,j,"cols") @ V % 2 )
-
-
-## Move left!
-i,j = 0, 2
-
-## First, obtain a coset representative that clears V[i:j,j]
-add_column(V, j, V[:,[1]])
-add_column(V, j, V[:,[0]])
-
-add_column(R, j, R[:,[1]])
-add_column(R, j, R[:,[0]])
-
-## Then permute via move left 
-permute_cylic(R, i, j, "cols", right=False)
-permute_cylic(V, i, j, "both", right=False)
-
-## Now reduce R through 
-low_entry(R[:,i:(j+1)])
-
-reduction_pHcol(D1, D2)
-
-# piv = low_entry(R) 
-# I = np.flip(np.arange(i,j+1)[V[i,i:(j+1)] != 0])
-# dL, dR, dV = low_entry(R, I[0]), R[:,[I[0]]], V[:,[I[0]]]
-# for k,l in pairwise(I):
-#   tL, tR, tV = low_entry(R, l), R[:,[l]], V[:,[l]] # temporary 
-#   add_column(R, k, tR)
-#   add_column(V, k, tV)
-#   if tL < dL: 
-#     dL, dR, dV = tL, tR, tV
-
-permute_cylic(R, i, j, "cols") ## change if full boundary matrix is used
-permute_cylic(V, i, j, "both")
-
-DS = lil_array(D)
-cancel_column(DS, 1, DS[:,[0]])
-cancel_column(D, 1, D[:,[0]])
-
-i,j = 10, 25
-V0[i,i:j]
-
-
-# def move_right(R, V, i, j):
-
-
-
-# import matplotlib.pyplot as plt
-# plt.imshow(C(0.8))
-
-# from pbsig.datasets import freudenthal_image
-
-
-# freudenthal_image(C(0))
-
-

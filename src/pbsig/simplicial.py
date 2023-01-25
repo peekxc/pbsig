@@ -405,21 +405,30 @@ class MutableFiltration(MutableMapping):
     return SortedSet(None, key) if iterable is None else SortedSet(iter(map(Simplex, iterable)), key)
   
   # simplices: Sequence[SimplexLike], I: Optional[Collection] = None
-  def __init__(self, iterable: Union[SimplicialComplex, Iterable] = None, f: Optional[Callable] = None) -> None:
+  # Accept: 
+  # x simplices_iterable, f = None (this shouldnt work)
+  # simplices_iterable, f = Callable
+  # (index_iterable, simplices_iterable)
+  # SimplicialComplex, f = None 
+  # SimplicialComplex, f = Callable 
+  def __init__(self, simplices: Union[SimplicialComplex, Iterable] = None, f: Optional[Callable] = None) -> None:
     self.data = SortedDict()
     self.shape = tuple()
-    if isinstance(iterable, SimplicialComplex):
+    if isinstance(simplices, SimplicialComplex):
       if isinstance(f, Callable):
-        self += ((f(s), s) for s in iterable)
+        self += ((f(s), s) for s in simplices)
       elif f is None:
-        index_set = np.arange(len(iterable))  
-        iterable = sorted(iter(iterable), key=lambda s: (len(s), tuple(s), s)) # dimension, lex, face poset
-        self += zip(iter(index_set), iterable)
+        index_set = np.arange(len(simplices))  
+        simplices = sorted(iter(simplices), key=lambda s: (len(s), tuple(s), s)) # dimension, lex, face poset
+        self += zip(iter(index_set), simplices)
       else:
         raise ValueError("Invalid input for simplicial complex")
-    elif isinstance(iterable, Iterable):
-      self += iterable ## accept pairs, like a normal dict
-    elif iterable is None:
+    elif isinstance(simplices, Iterable):
+      if isinstance(f, Callable):
+        self += ((f(s), s) for s in simplices)
+      else:
+        self += simplices ## accept pairs, like a normal dict
+    elif simplices is None:
       pass
     else: 
       raise ValueError("Invalid input")
