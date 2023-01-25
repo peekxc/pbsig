@@ -108,9 +108,11 @@ R, V = R.astype(int), V.astype(int)
 from itertools import combinations
 
 ## LIS/LCS -> move scheduling
-from pbsig.combinatorial import longest_subsequence
+from pbsig.combinatorial import longest_subsequence, comb_mod
 
-N = 500
+#method = "nearest" # otherwise make it a heuristic callable that chooses from a set of pairs
+method = "greedy"
+N = 40
 for cc in range(100):
   np.random.seed(cc)
   L_orig = np.random.choice(range(N), size=N, replace=False)
@@ -123,26 +125,52 @@ for cc in range(100):
   pred = lambda L, i: L[np.flatnonzero(L < i)[-1]] if any(L < i) else -1
   pos = lambda L, i: np.flatnonzero(L == i)[0]
 
+  ## Used to generate candidate moves 
+  def query_move(symbol, lst, lis):
+    i = pos(lst, symbol)
+    j = pos(lst, pred(lis, symbol)) ## b
+    k = pos(lst, succ(lis, symbol)) ## e
+    t = j if i < j else k    ## target index, using nearest heuristic 
+    return (i,t)
+
   ## Schedule
   schedule = []
   while not(is_sorted(L)):
-    # print(f"L: {L}, LIS: {lis}, to_move: {com}")
-    d, com = com[0], com[1:]
-    i = pos(L, d)
-    j = pos(L, pred(lis, d)) ## b
-    k = pos(L, succ(lis, d)) ## e
-    t = j if i < j else k ## target index, using nearest heuristic 
+    if method == "nearest":
+      d = com[0]
+      i,t = query_move(d, L, lis)
+    elif method == "random":
+      d = np.random.choice(com, size=1).item()
+      i,t = query_move(d, L, lis)
+    elif method == "greedy": 
+      Q = [query_move(s, L, lis) for s in com]
+      I = np.array(Q).flatten().astype(np.int32)
+      i,t = Q[np.argmin(comb_mod.interval_cost(I))]
+    else: 
+      assert isinstance(method, Callable)
+      Q = [query_move(s, L, lis) for s in com]
+      i,t = method(Q)
+    
+    print(f"L: {L}, LIS: {lis}, complement: {com}, symbol: {L[i]}")
+    
+    ## Move a symbol in the complement set and update the LIS and L 
+    sym = L[i]
+    assert sym in com, "Invalid symbol chosen"
+    com = np.setdiff1d(com, sym)
     L = permute_cylic_pure(L, min(i,t), max(i,t), right=i < t)
-    lis = np.sort(np.append(lis, d))
+    lis = np.sort(np.append(lis, sym))
     schedule.append((i,t))
 
+  ## Check 
   S = L_orig.copy()
   for i,j in schedule:
     i,j = i-1,j-1
     S = permute_cylic_pure(S, min(i,j), max(i,j), right=i < j)
   assert is_sorted(S)
 
-
+## TODO: 
+## 1. ensure face poset is respected (done; not needed!)
+## 2. Implement greedy heuristic
 
 
 

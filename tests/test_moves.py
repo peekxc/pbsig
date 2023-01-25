@@ -82,7 +82,8 @@ def test_move_right():
     S = list(K.values())
     valid_mr = []
     for i,j in combinations(range(len(S)), 2):
-      if all([not(S[i] <= s) for s in S[(i+1):(j+1)]]):
+      respects_face_poset = all([not(S[i] <= s) for s in S[(i+1):(j+1)]])
+      if not(respects_face_poset): # comment out to try non-face moves
         valid_mr.append((i,j))
     
     cc = np.argmax(np.diff(np.array(valid_mr), axis=1))
@@ -125,7 +126,8 @@ def test_move_left():
     S = list(K.values())
     valid_ml = []
     for i,j in combinations(range(len(S)), 2):
-      if not(any([s <= S[j] for s in S[i:j]])):
+      respects_face_poset = not(any([s <= S[j] for s in S[i:j]]))
+      if not(respects_face_poset):
         valid_ml.append((i,j))
     
     cc = np.argmax(np.diff(np.array(valid_ml), axis=1))

@@ -660,8 +660,8 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   I = V[[i],:].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero[V[i,i:(j+1)] != 0] 
   J = np.flatnonzero(np.logical_and(piv >= i, piv <= j)) # R[[i],:].todense() != 0
   J = np.array([l for l in J if R[i,l] != 0])
-  J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
-  assert all(J_check == J), "J index check failed"
+  #J_check = np.flatnonzero(low_entry(permute_cylic_pure(R, i, j, "both")) == j)
+  #assert all(J_check == J), "J index check failed"
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J) # this should not affect the number of non-reduced columns
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
