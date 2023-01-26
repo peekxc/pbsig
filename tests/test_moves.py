@@ -215,6 +215,13 @@ def test_scheduled_moves():
     assert np.allclose(((D @ V).todense() % 2) - (R.todense() % 2), 0)
     print(cj)
 
+def test_schedule_coarsening():
+  from pbsig.vineyards import move_schedule
+  n = 150
+  p = np.random.choice(range(n), size=n, replace=False)
+  SS = [move_schedule(p, coarsen=c, verbose=False).shape[0] for c in np.linspace(0, 1, 30)]
+  assert SS[0] == n - 1, "Minimum coarseness should in theory require n-1 moves"
+  assert all(np.diff(SS) <= 0), "Move schedules at different coarseness levels not monotone"
 
 def test_ls_moves():
   from pbsig.vineyards import update_lower_star

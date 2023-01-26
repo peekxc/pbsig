@@ -757,13 +757,30 @@ def move_left(R, V, j, i, copy: bool = False):
 
 
 ## LIS/LCS -> move scheduling
-def move_schedule(p: Sequence[int], method: str = "nearest", verbose: bool = False) -> Sequence[int]:
+def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.0, verbose: bool = False) -> Sequence[int]:
+  """
+  Constructs a schedule of cyclic permutations called _moves_ which sorts 'p' to the identity using its longest increasing subsequence.
+
+  Parameters:
+    p: word permutation (0-indexed) to sort.
+    method: Heuristic to employ in picking move permutations. One of ['nearest', 'greedy', 'random']. 
+    coarsen: schedule coarsening parameter between [0,1]. A value of 1.0 yields a schedule of minimal size.
+    verbose: whether to display the LCS, LIS, the complement set, and the symbol to move at each choice. 
+
+  Returns: 
+    array of moves (m x 2) where each row (i,j) specifies move_right(i,j) if i < j and move_left(j,i) otherwise 
+  """
   assert isinstance(method, str) and method in ["nearest", "random", "greedy"], f"Invalid schedule heuristic {method}"
   assert all(np.sort(p) == np.arange(len(p))), "Invalid permutation; should be arrangement (word permutation) of [0,n-1]"
-  
-  ## Prep the LIS, its complement set, and p's extended sequence
+  assert coarsen >= 0.0 and coarsen <= 1.0, "invalid coarsening parameter"
+
+  ## Prep the LIS, with optional schedule coarsening
   m = len(p)
-  lis = np.array(longest_subsequence(p))
+  lis = np.array(longest_subsequence(p)) 
+  d = int(np.ceil(len(lis)*coarsen))
+  lis = np.sort(np.random.choice(lis, size=max(1,d), replace=False))
+
+  # Make the complement set + p's extended sequence
   com = np.setdiff1d(p, lis)
   L = np.array([-1] + list(p) + [m])
 
@@ -777,7 +794,17 @@ def move_schedule(p: Sequence[int], method: str = "nearest", verbose: bool = Fal
     i = pos(lst, symbol)
     j = pos(lst, pred(lis, symbol)) ## b
     k = pos(lst, succ(lis, symbol)) ## e
-    t = j if i < j else k    ## target index, using nearest heuristic 
+    assert j <= k 
+    if i < j:   # s is behind predecessor
+      t = max(j, 0)
+    elif k < i: # s is ahead of successor
+      t = min(k, m)
+    else: 
+      # s is actually in the lis, which only happens in coarsening case
+      # don't move it all
+      assert j < i and i < k, "invalid combination" 
+      t = i
+    #t = j if i < j else k    ## target index, using nearest heuristic 
     return (i,t)
 
   ## Generate the schedule
@@ -809,6 +836,8 @@ def move_schedule(p: Sequence[int], method: str = "nearest", verbose: bool = Fal
     L = permute_cylic_pure(L, min(i,t), max(i,t), right=i < t)
     lis = np.sort(np.append(lis, sym))
     schedule.append((i,t))
+  
+  if verbose: print(f"L: {L}, LIS: {lis}, complement: {com}, symbol: {L[i]}")  
 
   ## Validate that the schedule does indeed sort to the identity permutation 
   S = p.copy()
@@ -834,7 +863,8 @@ def vineyards_stats(reset: bool = False) -> None:
   return _VINE_STATS.copy()
 
 from scipy.sparse import spmatrix
-def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, vines: bool = False, **kwargs):
+from pbsig.utility import progressbar
+def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, vines: bool = False, progress: bool = False, **kwargs):
   """ 
   Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' 
 
@@ -847,7 +877,9 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
   L = MutableFiltration(K.values(), f = f)
   if vines:
     schedule, _ = linear_homotopy(K, L)
-    status = [s for s in transpose_rv(R, V, schedule)]
+    if len(schedule) > 0:
+      schedule_it = transpose_rv(R, V, schedule) if not(progress) else progressbar(transpose_rv(R, V, schedule), count=len(schedule))
+      for s in schedule_it: continue 
     K.reindex(f)
   else:
     L_map = { s : i for i,s in enumerate(L.values()) }

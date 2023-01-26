@@ -18,14 +18,14 @@ def pixel_circle(n):
     return np.exp(e*(abs(x_dist - radius)/width)).reshape((n,n))
   return _circle
 
-n = 5
+n = 9
 C = pixel_circle(n)
-X = C(0)
+S = freudenthal(C(0))
 assert X.flags.c_contiguous
 
 from pbsig.vis import plot_complex
 from pbsig.simplicial import freudenthal, SimplicialComplex, MutableFiltration
-S = freudenthal(C(0))
+
 G = np.array(list(product(range(n), range(n))))
 #normalize_unit = lambda x: (x - min(x))/(max(x) - min(x))
 plot_complex(S, pos=G, color = C(0.56).flatten(), palette="gray", bin_kwargs = dict(lb=0.0, ub=1.0))
@@ -33,19 +33,60 @@ plot_complex(S, pos=G, color = C(0.56).flatten(), palette="gray", bin_kwargs = d
 
 ## Benchmark regular phcol 
 from pbsig.vineyards import move_stats
-OPS_PHCOL = [0]
+OPS_PHCOL_10 = [0]
 pm.reduction_stats(True)
-for p in np.linspace(0, 1, num=20):
+for p in np.linspace(0, 1, num=10):
   fv = C(p).flatten() # sorted by (r,c) 
   K = MutableFiltration(S, f=lambda s: max(fv[s]))
   D = boundary_matrix(K)
   V = eye(D.shape[0])
   I = np.arange(0, D.shape[1])
   R, V = pm.phcol(D, V, I)
-  OPS_PHCOL.extend([pm.reduction_stats(False)])
+  OPS_PHCOL_10.extend([pm.reduction_stats(False)])
+
+OPS_PHCOL_100 = [0]
+pm.reduction_stats(True)
+for p in np.linspace(0, 1, num=10):
+  fv = C(p).flatten() # sorted by (r,c) 
+  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  D = boundary_matrix(K)
+  V = eye(D.shape[0])
+  I = np.arange(0, D.shape[1])
+  R, V = pm.phcol(D, V, I)
+  OPS_PHCOL_100.extend([pm.reduction_stats(False)])
+
+## Vineyards baseline via phcol 
+f, g = C(0.0).flatten(), C(1.0).flatten() 
+K = MutableFiltration(S, f=lambda s: max(f[s]))
+L = MutableFiltration(S, f=lambda s: max(g[s]))
+schedule, dom = linear_homotopy(K, L)
+OPS_PHCOL_FULL = [0]
+pm.reduction_stats(True)
+simplices = list(iter(S))
+for i, x in progressbar(zip(schedule, dom), count=len(schedule)):
+  fv = (1-x)*f + x*g
+  index_set = [max(fv[s]) for s in simplices]
+  K = MutableFiltration(zip(index_set, simplices))
+  D, V = boundary_matrix(K), eye(D.shape[0]) 
+  R, V = pm.phcol(D, V, list(range(len(K))))
+  OPS_PHCOL_FULL.extend([pm.reduction_stats(False)])
+  simplices[i], simplices[i+1] = simplices[i+1], simplices[i]
+
+
+
+# L = K.copy()
+# TR = []
+# for p in np.linspace(1/100, 1.35, num=100):
+#   g = C(p).flatten()
+#   L.reindex(lambda s: max(g[s]))
+#   schedule, _ = linear_homotopy(K, L)
+#   TR.extend(schedule)
+#   K.reindex(lambda s: max(g[s]))
+
 
 ## Benchmark vineyards
 from pbsig.vineyards import vineyards_stats, transpose_rv
+from pbsig.utility import progressbar
 fv = C(0).flatten() # sorted by (r,c) 
 K = MutableFiltration(S, f=lambda s: max(fv[s]))
 D = boundary_matrix(K)
@@ -57,11 +98,16 @@ V = V.astype(int).tolil()
 R = R.todense()
 V = V.todense()
 OPS_VINES = [vineyards_stats(reset=True)]
-for p in np.linspace(0, 1, num=100):
+for p in progressbar(np.linspace(0, 1, num=100), 100):
   fv = C(p).flatten()
-  update_lower_star(K, R, V, f=lambda s: max(fv[s]), vines=True)
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), vines=True, progress=True)
   OPS_VINES.append(vineyards_stats().copy())
-  print(p)
+  #print(p)
+
+## Make plots of the 
+
+
+
 
 ## TODO: solve the bottlenecks to make experimentation feasible!
 import line_profiler
@@ -85,8 +131,8 @@ I = np.arange(0, D.shape[1])
 R, V = pm.phcol(D, V, I)
 R = R.astype(int).tolil()
 V = V.astype(int).tolil()
-R = R.todense()
-V = V.todense()
+# R = R.todense()
+# V = V.todense()
 from pbsig.vineyards import move_stats
 OPS_MOVES = [move_stats(reset=True)]
 for p in np.linspace(0, 1, num=20):
@@ -95,6 +141,31 @@ for p in np.linspace(0, 1, num=20):
   #assert K.keys() do some test 
   OPS_MOVES.append(move_stats().copy())
   print(p)
+
+
+
+## Compare the cost by varying the number of moves (d) as a function of the size (n)
+n = 5
+C = pixel_circle(n)
+S = freudenthal(C(0))
+
+fv = C(0).flatten() # sorted by (r,c) 
+K = MutableFiltration(S, f=lambda s: max(fv[s]))
+D, V = boundary_matrix(K), eye(len(K))
+R, V = pm.phcol(D, V, range(len(K)))
+R, V = R.astype(int).tolil(), V.astype(int).tolil()
+
+from pbsig.vineyards import move_stats
+OPS_MOVES = [move_stats(reset=True)]
+for p in np.linspace(0, 1, num=20):
+  fv = C(p).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]))
+  OPS_MOVES.append(move_stats().copy())
+  print(p)
+
+
+
+
 
 
 
