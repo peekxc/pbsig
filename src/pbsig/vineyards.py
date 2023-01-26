@@ -690,7 +690,7 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   assert i < j, f"Invalid pair ({i},{j}) given (i >= j)"
   R, V = (R.copy(), V.copy()) if copy else (R, V)
   piv = low_entry(R) 
-  IR = V[i,i:(j+1)].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero[V[i,i:(j+1)] != 0] # relative indices
+  IR = V[i,i:(j+1)].nonzero()[1] if isinstance(V, spmatrix) else np.flatnonzero(V[i,i:(j+1)] != 0) # relative indices
   I = np.arange(i,j+1)[IR] # global indices
   J = np.flatnonzero(np.logical_and(piv >= i, piv <= j)) # R[[i],:].todense() != 0
   J = np.array([l for l in J if R[i,l] != 0])
@@ -741,7 +741,7 @@ def move_left(R, V, j, i, copy: bool = False):
 
 
 ## LIS/LCS -> move scheduling
-def move_schedule(p: Sequence[int], method: str = "greedy", verbose: bool = False) -> Sequence[int]:
+def move_schedule(p: Sequence[int], method: str = "nearest", verbose: bool = False) -> Sequence[int]:
   assert isinstance(method, str) and method in ["nearest", "random", "greedy"], f"Invalid schedule heuristic {method}"
   assert all(np.sort(p) == np.arange(len(p))), "Invalid permutation; should be arrangement (word permutation) of [0,n-1]"
   
@@ -822,7 +822,7 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
   """ 
   Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' 
 
-  Also updates K! 
+  Also updates K via reindexing! 
   
   """
   assert isinstance(V.dtype, numbers.Integral) or np.issubdtype(V.dtype, np.integer), "Only works mod2"
@@ -830,8 +830,9 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
   assert isinstance(K, MutableFiltration), "Invald filtration given"
   L = MutableFiltration(K.values(), f = f)
   if vines:
-    pass
-    # linear_homotopy(K, g)
+    schedule, _ = linear_homotopy(K, L)
+    status = [s for s in transpose_rv(R, V, schedule)]
+    K.reindex(f)
   else:
     L_map = { s : i for i,s in enumerate(L.values()) }
     K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
@@ -843,5 +844,6 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
       else:
         move_left(R, V, i, j) 
         _MOVE_STATS["n_left"] += 1
+    K.reindex(f)
     
   

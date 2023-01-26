@@ -45,7 +45,7 @@ def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   show(p)
 
 
-def plot_complex(S, pos = None, notebook=True, **kwargs):
+def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
   """
   Plots a simplicial complex in 2D with Bokeh 
   
@@ -57,9 +57,23 @@ def plot_complex(S, pos = None, notebook=True, **kwargs):
   """
   
   ## Default scales
-  vertex_scale, edge_scale = 6.0, 0.25 
   if (notebook): output_notebook(verbose=False, hide_banner=True)
   TOOLTIPS = [ ("index", "$index") ]
+
+  color = np.ones(len(S)) if color is None else color
+  #assert isinstance(color, Sequence)
+  if len(color) == S.shape[0]:
+    v_color = color
+    e_color = [max(color[e]) for e in S.faces(1)]
+    t_color = [max(color[t]) for t in S.faces(2)]
+  elif len(color) == len(S):
+    d = np.array([len(s)-1 for s in S], dtype=np.int8)
+    v_color = color[d==0]
+    e_color = color[d==1]
+    t_color = color[d==2]
+  else: 
+    raise ValueError(f"Invalid color argument {type(color)}")
+
 
   ## Deduce embedding
   pos = "mds" if pos is None else pos
@@ -98,33 +112,43 @@ def plot_complex(S, pos = None, notebook=True, **kwargs):
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
 
+  default_bin_kwargs = dict(lb=min(color), ub=max(color), color_pal=palette) 
+  bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
 
   ## Create the (p >= 2)-simplex renderer
-  
+  t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
+  t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
+  t_col = bin_color(t_color, **bin_kwargs)
+  t_renderer = p.patches(t_x, t_y, color=t_col, alpha=0.60, line_width=2)
 
   ## Create edge renderer
-  edge_x = [pos[e,0] for e in S.faces(1)]
-  edge_y = [pos[e,1] for e in S.faces(1)]
+  e_scale = 0.25
+  e_x = [pos[e,0] for e in S.faces(1)]
+  e_y = [pos[e,1] for e in S.faces(1)]
   e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
-  e_widths = (e_sizes / np.max(e_sizes))*edge_scale
+  e_widths = (e_sizes / np.max(e_sizes))*e_scale
+  e_col = bin_color(e_color,  **bin_kwargs)
   #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
-  edge_data = {
-    'xs' : edge_x,
-    'ys' : edge_y,
-    'color' : np.repeat("#808080", len(edge_x)),
+  e_data = {
+    'xs' : e_x,
+    'ys' : e_y,
+    'color' : e_col, # np.repeat("#808080", len(edge_x)),
     'line_width': e_widths
   }
-  edge_source = ColumnDataSource(data=edge_data)
-  edge_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=0.80, source=edge_source)
+  e_source = ColumnDataSource(data=e_data)
+  e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
   
   ## Create node renderer
-  node_data = {
+  v_scale = 35.0
+  v_col = bin_color(v_color,  **bin_kwargs)
+  v_data = {
     'x' : pos[:,0],
     'y' : pos[:,1],
-    'size' : np.repeat(vertex_scale, S.shape[0])
+    'size' : np.repeat(v_scale, S.shape[0]), 
+    'color' : v_col
   }
-  node_source = ColumnDataSource(data=node_data)
-  node_renderer = p.circle('x', 'y', color="red", alpha=1.0, source=node_source)
+  v_source = ColumnDataSource(data=v_data)
+  v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
 
   p.toolbar.logo = None
   show(p)

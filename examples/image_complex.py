@@ -3,6 +3,7 @@ from scipy.spatial.distance import pdist, cdist
 from itertools import * 
 from pbsig.simplicial import * 
 from pbsig.persistence import * 
+from pbsig.vineyards import * 
 import _persistence as pm
 
 ## Precompute center of each pixel + indices to index with 
@@ -18,29 +19,16 @@ def pixel_circle(n):
   return _circle
 
 n = 5
-C = pixel_circle(5)
+C = pixel_circle(n)
 X = C(0)
 assert X.flags.c_contiguous
 
-## Freudenthal triangulation
-from pbsig.utility import expand_triangles
-nv = np.prod(X.shape)
-V = np.fromiter(range(nv), dtype=int)
-v_map = { (i,j) : v for v, (i,j) in enumerate(product(range(n), range(n))) } 
-
-E = []
-for (i,j) in product(range(n), range(n)):
-  K13 = [(i-1, j), (i-1, j+1), (i, j+1)] # claw graph 
-  E.extend([(v_map[(i,j)], v_map[e]) for e in K13 if e[0] in range(n) and e[1] in range(n)])
-E = np.unique(np.array(E), axis=0)
-T = expand_triangles(nv, E)
-
-from pbsig.simplicial import SimplicialComplex, MutableFiltration
-from itertools import chain
 from pbsig.vis import plot_complex
-S = SimplicialComplex(chain(V, E, T))
+from pbsig.simplicial import freudenthal, SimplicialComplex, MutableFiltration
+S = freudenthal(C(0))
 G = np.array(list(product(range(n), range(n))))
-plot_complex(S, pos=G)
+#normalize_unit = lambda x: (x - min(x))/(max(x) - min(x))
+plot_complex(S, pos=G, color = C(0.56).flatten(), palette="gray", bin_kwargs = dict(lb=0.0, ub=1.0))
 
 
 ## Benchmark regular phcol 
@@ -67,11 +55,11 @@ R, V = pm.phcol(D, V, I)
 R = R.astype(int).tolil()
 V = V.astype(int).tolil()
 
-OPS_MOVES = [move_stats(reset=True)]
+OPS_VINES = [vineyards_stats(reset=True)]
 for p in np.linspace(0, 1, num=20):
   fv = C(p).flatten()
-  update_lower_star(K, R, V, f=lambda s: max(fv[s]))
-  OPS_MOVES.append(move_stats().copy())
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), vines=True)
+  OPS_VINES.append(vineyards_stats().copy())
   print(p)
 
 
@@ -84,12 +72,14 @@ I = np.arange(0, D.shape[1])
 R, V = pm.phcol(D, V, I)
 R = R.astype(int).tolil()
 V = V.astype(int).tolil()
-
+# R = R.todense()
+# V = V.todense()
 from pbsig.vineyards import move_stats
 OPS_MOVES = [move_stats(reset=True)]
 for p in np.linspace(0, 1, num=20):
   fv = C(p).flatten()
   update_lower_star(K, R, V, f=lambda s: max(fv[s]))
+  #assert K.keys() do some test 
   OPS_MOVES.append(move_stats().copy())
   print(p)
 

@@ -130,8 +130,10 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
 	from matplotlib import cm
-	if isinstance(color_pal, str) and color_pal in list(cm.cmaps_listed.keys()):
-		color_pal = cm.get_cmap(color_pal).colors
+	if isinstance(color_pal, str):
+		col = cm.get_cmap(color_pal)
+		color_pal = [col(i) for i in range(0, 255)]
+		# color_pal = cm.get_cmap(color_pal).colors
 	else: 
 		raise ValueError("Unknown color map")
 	x = scale_interval(x, **kwargs)

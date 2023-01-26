@@ -1,21 +1,20 @@
 from __future__ import annotations
-
-import numpy as np 
 from numbers import Number
+from abc import abstractmethod
 from typing import *
-from itertools import *
 from numpy.typing import ArrayLike
-from scipy.spatial import Delaunay
-from .utility import edges_from_triangles, cycle_window
+
+## Module imports 
+import numpy as np 
 import networkx as nx
+from itertools import *
+from scipy.spatial import Delaunay
 from networkx import Graph 
 from scipy.sparse import diags, csc_matrix, issparse
 from scipy.linalg import issymmetric
-from pbsig.utility import lexsort_rows, pairwise
-from itertools import chain 
 
-from abc import abstractmethod
-from typing import MutableSequence, Protocol, TypeVar
+## Local imports 
+from .utility import edges_from_triangles, cycle_window, lexsort_rows, pairwise
 
 @runtime_checkable
 class Comparable(Protocol):
@@ -42,6 +41,24 @@ def edge_iterator(A):
   for i,j in zip(*A.nonzero()):
     if i < j: 
       yield (i,j)
+
+def freudenthal(X: ArrayLike):
+  """ Freudenthal triangulation of an image """
+  assert isinstance(X, np.ndarray) and X.ndim == 2, "Expected 2d ndarray"
+  from pbsig.utility import expand_triangles
+  from itertools import chain
+  n, m = X.shape[0], X.shape[1]
+  nv = np.prod(X.shape)
+  V = np.fromiter(range(nv), dtype=int)
+  v_map = { (i,j) : v for v, (i,j) in enumerate(product(range(n), range(m))) } 
+  E = []
+  for (i,j) in product(range(n), range(m)):
+    K13 = [(i-1, j), (i-1, j+1), (i, j+1)] # claw graph 
+    E.extend([(v_map[(i,j)], v_map[e]) for e in K13 if e[0] in range(n) and e[1] in range(m)])
+  E = np.unique(np.array(E), axis=0)
+  T = expand_triangles(nv, E)
+  S = SimplicialComplex(chain(V, E, T))
+  return S
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
