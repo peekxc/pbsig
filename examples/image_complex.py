@@ -18,7 +18,7 @@ def pixel_circle(n):
     return np.exp(e*(abs(x_dist - radius)/width)).reshape((n,n))
   return _circle
 
-n = 9
+n = 5
 C = pixel_circle(n)
 X = C(0)
 assert X.flags.c_contiguous
@@ -63,6 +63,18 @@ for p in np.linspace(0, 1, num=100):
   OPS_VINES.append(vineyards_stats().copy())
   print(p)
 
+## TODO: solve the bottlenecks to make experimentation feasible!
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(linear_homotopy)
+profile.add_function(update_lower_star)
+profile.add_function(transpose_rv)
+profile.add_function(add_column)
+profile.enable_by_count()
+fv = C(0.20).flatten()
+update_lower_star(K, R, V, f=lambda s: max(fv[s]), vines=True)
+profile.print_stats(output_unit=1e-3)
+
 
 ## Benchmark moves 
 fv = C(0).flatten() # sorted by (r,c) 
@@ -83,10 +95,6 @@ for p in np.linspace(0, 1, num=20):
   #assert K.keys() do some test 
   OPS_MOVES.append(move_stats().copy())
   print(p)
-
-## TODO: solve the bottlenecks to make experimentation feasible!
-import line_profiler
-
 
 
 

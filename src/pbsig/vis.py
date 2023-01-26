@@ -58,7 +58,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   
   ## Default scales
   if (notebook): output_notebook(verbose=False, hide_banner=True)
-  TOOLTIPS = [ ("index", "$index") ]
+  TOOLTIPS = [ ("index", "$value") ]
 
   color = np.ones(len(S)) if color is None else color
   #assert isinstance(color, Sequence)
@@ -119,7 +119,14 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
   t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
   t_col = bin_color(t_color, **bin_kwargs)
-  t_renderer = p.patches(t_x, t_y, color=t_col, alpha=0.60, line_width=2)
+  t_data = {
+    'xs' : t_x,
+    'ys' : t_y,
+    'color' : t_col, # np.repeat("#808080", len(edge_x)),
+    'value' : t_color
+  }
+  t_source = ColumnDataSource(data=t_data)
+  t_renderer = p.patches('xs', 'ys', color='color', alpha=0.70, line_width=2, source=t_source)
 
   ## Create edge renderer
   e_scale = 0.25
@@ -133,7 +140,8 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     'xs' : e_x,
     'ys' : e_y,
     'color' : e_col, # np.repeat("#808080", len(edge_x)),
-    'line_width': e_widths
+    'line_width': e_widths, 
+    'value' : e_color
   }
   e_source = ColumnDataSource(data=e_data)
   e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
@@ -145,7 +153,8 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     'x' : pos[:,0],
     'y' : pos[:,1],
     'size' : np.repeat(v_scale, S.shape[0]), 
-    'color' : v_col
+    'color' : v_col,
+    'value' : v_color
   }
   v_source = ColumnDataSource(data=v_data)
   v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)

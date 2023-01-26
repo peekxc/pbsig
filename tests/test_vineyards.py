@@ -1,8 +1,34 @@
-from typing import Dict, Iterable
+from typing import *
 import numpy as np
-from pbsig.persistence import barcodes, boundary_matrix, rips, reduction_pHcol, persistence_pairs
-from pbsig.simplicial import delaunay_complex
-from pbsig.vineyards import linear_homotopy, line_intersection
+from scipy.sparse import *
+from pbsig.persistence import *
+from pbsig.simplicial import *
+from pbsig.vineyards import linear_homotopy, transpose_rv
+from pbsig.datasets import *
+import _persistence as pm
+
+
+def test_vineyards():
+  X, K = random_lower_star(5)
+  D, V = boundary_matrix(K), eye(len(K))
+  R, V = pm.phcol(D, V, range(len(K)))
+  R = R.astype(int).tolil()
+  V = V.astype(int).tolil()
+  for t in (np.linspace(0, 2*np.pi, 12)+np.pi/2):
+    fv = X @ np.array([np.cos(t), np.sin(t)])
+    L = MutableFiltration(K.values(), f=lambda s: max(fv[s]))
+    S, _ = linear_homotopy(K, L)
+    for s in transpose_rv(R, V, S):
+      assert is_reduced(R), "R is not reduced"
+      assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+      assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
+
+
+
+
+
+
+
 
 np.random.seed(1234)
 X = np.random.uniform(size=(10,2), low=0,high=1.0)

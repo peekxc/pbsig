@@ -480,7 +480,12 @@ def low_entry(D: lil_array, j: Optional[int] = None):
   """ Provides O(1) access to all the low entries of D, if D is CSC """
   #assert isinstance(D, csc_matrix)
   if j is None: 
-    return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
+    assert isinstance(D, spmatrix) or isinstance(D, np.ndarray)
+    m = np.repeat(-1, D.shape[1])
+    r,c = D.nonzero() if isinstance(D, spmatrix) else np.argwhere(D != 0).T
+    np.maximum.at(m,c,r)
+    return m
+    # return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
   else: 
     if isinstance(D, csc_matrix):
       nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
