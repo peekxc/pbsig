@@ -9,7 +9,7 @@ import _persistence as pm
 
 
 def test_vineyards():
-  X, K = random_lower_star(5)
+  X, K = random_lower_star(15)
   D, V = boundary_matrix(K), eye(len(K))
   R, V = pm.phcol(D, V, range(len(K)))
   R = R.astype(int).tolil()
@@ -24,11 +24,44 @@ def test_vineyards():
       assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
 
 
+def test_discordant_pairs():
+  from itertools import combinations
+  from math import comb
+  # def pair_is_discordant(a: int, b: int, p: Sequence, q: Sequence) -> bool:
+  #   ap, bp = p.index(a), p.index(b)
+  #   aq, bq = q.index(a), q.index(b)
+  #   return(False if ap == aq and bp == bq else np.sign(ap - bp) == -np.sign(aq - bq))
+  n = 15
+  p = list(np.random.choice(range(n), size=n, replace=False))
+  q = list(np.random.choice(range(n), size=n, replace=False))
+  
+  ## Test logical understanding of inverse permutation 
+  p_inv = np.argsort(p)
+  q_inv = np.argsort(q)
+  concordant = lambda i,j: np.sign(p_inv[i] - p_inv[j]) == np.sign(q_inv[i] - q_inv[j])
+  assert all([p.index(i) == p_inv[i] for i in range(n)])
+  assert all([q.index(i) == q_inv[i] for i in range(n)])
 
+  ## Kendall tau tests 
+  kendall_dist = inversion_dist(p,q)
+  for i,j in combinations(range(n), 2):
+    assert not(concordant(i,j)) == pair_is_discordant(i,j,p,q)
+  n_concord = sum([concordant(i,j) for i, j in combinations(range(n), 2)])
+  n_discord = sum([not(concordant(i,j)) for i, j in combinations(range(n), 2)])
+  assert (comb(n,2) - n_concord) == n_discord
+  assert kendall_dist == n_discord
 
+  ## Update p_inv, q_inv under transpositions
+  p_inv = np.argsort(p)
+  for i in np.random.choice(range(n-1), size=100):
+    p_inv[p[i]] += 1
+    p_inv[p[i+1]] -= 1
+    p[i], p[i+1] = p[i+1], p[i]
+    assert all([p.index(x) == p_inv[x] for x in range(n)])
 
+    
 
-
+  
 
 np.random.seed(1234)
 X = np.random.uniform(size=(10,2), low=0,high=1.0)

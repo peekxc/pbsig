@@ -477,7 +477,13 @@ def rips_boundary(X: ArrayLike, p: int, diam: float = np.inf, sorted: bool = Fal
     return(D, (fw, cw)) # face, coface weights
 
 def low_entry(D: lil_array, j: Optional[int] = None):
-  """ Provides O(1) access to all the low entries of D, if D is CSC """
+  """ 
+  Provides fast access to all the low entries of a given matrix 'D'
+  
+  If D is CSC, low(D,j) takes O(1) time
+  If 
+  
+  """
   #assert isinstance(D, csc_matrix)
   if j is None: 
     assert isinstance(D, spmatrix) or isinstance(D, np.ndarray)
@@ -492,6 +498,7 @@ def low_entry(D: lil_array, j: Optional[int] = None):
       return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
     elif isinstance(D, spmatrix): 
       return(-1 if D[:,[j]].getnnz() == 0 else max(D[:,[j]].nonzero()[0]))
+      # max(zip(*R[:,[1]].nonzero()), key=lambda rc: (rc[0], rc[1] != 0))
     elif isinstance(D, np.ndarray):
       return(-1 if all(D[:,j] == 0) else max(np.flatnonzero(D[:,j] != 0)))
     else: 

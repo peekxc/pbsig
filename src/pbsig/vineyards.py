@@ -515,6 +515,8 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
   If f,g are arrays, then the homotopy occurs between (f[i], g[i]) for all i. Otherwise the key of f are matched with those of g.  
   """
   pairwise = lambda C: zip(C, C[1:])
+
+  ## Convert to dictionaries f: < simplex > -> < filtration value > 
   if isinstance(f, np.ndarray) and isinstance(g, np.ndarray):
     assert len(f) == len(g), "Invalid inputs; should be equal size"
     f = { c : f for c, f in enumerate(f) }
@@ -532,9 +534,16 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
   F0 = dict(sorted(f.items(), key=lambda kv: kv[1])) if not(is_sorted(f.values())) else f.copy()
   F1 = dict(sorted(g.items(), key=lambda kv: kv[1])) if not(is_sorted(g.values())) else g.copy()
   
+  ## Reindex the simplices to permutations
+  g_map = { s : i for i,s in enumerate(g.keys()) }
+  p = list(np.array([g_map[s] for s in f.keys()], dtype=np.int32))
+  q = list(np.fromiter(g_map.values(), dtype=np.int32))
+  F0 = dict(zip(p, F0.values()))
+  F1 = dict(zip(q, F1.values()))
+  # p, q = list(F0.keys()), list(F1.keys())
+
   ## Create permutations representing the symbols of each filtration value
   n = len(f)
-  p, q = list(F0.keys()), list(F1.keys())
   f0 = np.fromiter(F0.values(), dtype=float)
   f1 = np.fromiter(F1.values(), dtype=float)
   assert is_sorted(f0) and is_sorted(f1)
@@ -543,6 +552,8 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
   if plot: plot_linear_homotopy(F0, F1)
 
   ## Compute the adjacent transpositions in a valid order following a linear homotopy
+  p_inv, q_inv = np.argsort(p), np.argsort(q)
+  discordant = lambda i,j: np.sign(p_inv[i] - p_inv[j]) != np.sign(q_inv[i] - q_inv[j])
   s, e = interval
   tr, dom_vals = array('I'), array('f')
   eps = 10*np.finfo(float).resolution
@@ -551,7 +562,8 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     # tau_dist = inversion_dist(p, q)
     for i, (sa, sb) in enumerate(pairwise(p)):
       # pair_dc = pair_is_discordant(sa,sb,p,q)
-      if pair_is_discordant(sa,sb,p,q): # and inversion_dist(swap(p, i),q) < tau_dist: # discordant pair
+      #if pair_is_discordant(sa,sb,p,q): # and inversion_dist(swap(p, i),q) < tau_dist: # discordant pair
+      if discordant(sa,sb):
         ## Try to handle degenerate cases: they are discordant, so they need to swap!
         if np.isclose(F0[sa], F0[sb]):
           cross_f[i] = 0.0
@@ -575,7 +587,11 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
       # tr_s.append((p[ci], p[ci+1]))
     else: 
       raise ValueError("invalid transposition case encountered")
-    p = swap(p, ci)
+    # p = swap(p, ci)
+    ## Update inverse maps
+    p_inv[p[ci]] += 1
+    p_inv[p[ci+1]] -= 1
+    p[ci], p[ci+1] = p[ci+1], p[ci]
   assert p == q, "Failed to sort permutations"
   return(np.asarray(tr, dtype=int), np.asarray(dom_vals, dtype=float))
 
