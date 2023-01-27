@@ -164,12 +164,16 @@ for n in range(5,13):
     stats = { k : [] for k,x in move_stats(reset=True).items() }
     for radius in np.linspace(0, 1, num=n_time_pts):
       fv = C(radius).flatten()
-      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="greedy")
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="random")
       for k,v in move_stats().items():
         stats[k].extend([v])
     OPS_MOVES_ND[(cc,n)] = stats
-    print(cc)
+    #print(cc)
+  print(n)
 
+# import pickle
+# with open('OPS_MODES_ND.pickle', 'wb') as handle:
+#   pickle.dump(OPS_MOVES_ND, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 
@@ -209,15 +213,21 @@ for cc, cf in enumerate(np.linspace(0, 1, 6)):
 
 ## Greedy strategy 
 K,R,V = init_rv()
-stats = { k : [] for k,x in move_stats(reset=True).items() }
+greedy_stats = { k : [] for k,x in move_stats(reset=True).items() }
 for radius in np.linspace(0, 1, num=n_time_pts):
   fv = C(radius).flatten()
   update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="greedy")
   for k,v in move_stats().items():
-    stats[k].extend([v])
+    greedy_stats[k].extend([v])
 
 ## Naive strategy
-
+K,R,V = init_rv()
+naive_stats = { k : [] for k,x in move_stats(reset=True).items() }
+for radius in np.linspace(0, 1, num=n_time_pts):
+  fv = C(radius).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="naive")
+  for k,v in move_stats().items():
+    naive_stats[k].extend([v])
 
 # import pickle
 # with open('coarsening_data.pickle', 'wb') as handle:
@@ -240,9 +250,9 @@ ct4 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys()
 ct5 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 5]).T
 
 
-
+from bokeh import colors
 from bokeh.plotting import figure, show
-from bokeh.models import ColumnDataSource, BasicTickFormatter
+from bokeh.models import ColumnDataSource, BasicTickFormatter, Band
 CT = [ct0,ct1,ct2,ct5] #,ct3,ct4
 
 from pbsig.color import bin_color
@@ -257,11 +267,15 @@ p = figure(
 # p.yaxis.formatter.use_scientific = True 
 p.yaxis.formatter = BasicTickFormatter(use_scientific=True)
 p.output_backend = "svg"
+naive_y = calculate_total(naive_stats)
+p.line(x, naive_y, color="red", line_width=2.5, line_dash="dashed", legend_label="0 (naive)")
 for i, (ct, col) in enumerate(zip(CT, ct_colors)):
   x = np.arange(ct.shape[0])/ct.shape[0]
   col = colors.RGB(*(col*255).astype(int))
   legend_text = f"{i}"
   legend_text = f"{i} (none)" if i == 0 else legend_text
+  legend_text = f"{i} (33%)" if i == 1 else legend_text
+  legend_text = f"{i} (66%)" if i == 2 else legend_text
   legend_text = f"{i} (maximum)" if i == 3 else legend_text
   p.line(x, ct.mean(axis=1), color=col, line_width=2.25, legend_label=legend_text)
   band_source = ColumnDataSource({
@@ -280,7 +294,7 @@ p.legend.border_line_color = "black"
 p.legend.label_height = 10
 p.legend.glyph_height = 10
 p.legend.spacing = 2
-greedy_y = calculate_total(stats)
+greedy_y = calculate_total(greedy_stats)
 p.line(x, greedy_y, color="orange", line_width=2.5, line_dash="dotdash", legend_label="3 (greedy)")
 show(p)
 

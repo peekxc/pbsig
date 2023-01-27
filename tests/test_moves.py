@@ -232,7 +232,8 @@ def test_schedule_naive():
   assert len(_naive_move_schedule(p)) > 0
   assert len(_naive_move_schedule(p)) > 0, "naive moves enacts side effects"
   assert len(_naive_move_schedule(p, right=False)) > 0
-  
+  assert all([i < j for i,j in _naive_move_schedule(p, right=True)])
+  assert all([i > j for i,j in _naive_move_schedule(p, right=False)])
 
 def test_ls_moves():
   from pbsig.vineyards import update_lower_star

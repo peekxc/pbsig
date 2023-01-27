@@ -794,18 +794,23 @@ def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.
 
   Parameters:
     p: word permutation (0-indexed) to sort.
-    method: Heuristic to employ in picking move permutations. One of ['nearest', 'greedy', 'random']. 
+    method: Heuristic to employ in picking move permutations. One of ['nearest', 'greedy', 'random', 'naive']. 
     coarsen: schedule coarsening parameter between [0,1]. A value of 1.0 yields a schedule of minimal size.
     verbose: whether to display the LCS, LIS, the complement set, and the symbol to move at each choice. 
 
   Returns: 
     array of moves (m x 2) where each row (i,j) specifies move_right(i,j) if i < j and move_left(j,i) otherwise 
   """
-  assert isinstance(method, str) and method in ["nearest", "random", "greedy"], f"Invalid schedule heuristic {method}"
+  assert isinstance(method, str) and method in ["nearest", "random", "greedy", "naive"], f"Invalid schedule heuristic {method}"
   assert all(np.sort(p) == np.arange(len(p))), "Invalid permutation; should be arrangement (word permutation) of [0,n-1]"
   assert coarsen >= 0.0 and coarsen <= 1.0, "invalid coarsening parameter"
 
-  ## Prep the LIS, with optional schedule coarsening
+  ## If naive is fine, use insertion sort 
+  if method == "naive":
+    schedule = np.array(_naive_move_schedule(p), dtype=np.int32)
+    return schedule
+
+  ## Otherwise, prep the LIS w/ optional schedule coarsening
   m = len(p)
   lis = np.array(longest_subsequence(p)) 
   d = int(np.ceil(len(lis)*coarsen))
