@@ -756,6 +756,37 @@ def move_left(R, V, j, i, copy: bool = False):
   return (R,V) if copy else None
 
 
+def _naive_move_schedule(p: Sequence[int], right: bool = True):
+  assert all(np.sort(p) == np.arange(len(p))), "Must be permutation"
+  n = len(p)
+  moves = []
+  p, q = p.copy(), p.copy()
+  if right:   ## move right 
+    i = n - 1
+    while (i > 0):
+      j = i
+      while j < n and p[j-1] > p[j]:
+        p[j], p[j-1] = p[j-1], p[j]
+        j += 1
+      if i != j: moves.append((i-1,j-1))  
+      i -= 1
+    assert np.all(np.diff(p) == 1)
+  else:
+    i = 1 
+    while (i < n):
+      j = i
+      while j > 0 and p[j-1] > p[j]:
+        p[j], p[j-1] = p[j-1], p[j]
+        j -= 1
+      if i != j: moves.append((i,j))  
+      i += 1
+  
+  ## Validate and return 
+  for i,j in moves:
+    q = permute_cylic_pure(q, min(i,j), max(i,j), right=i < j)
+  assert np.all(np.diff(q) == 1), "Naive scheduling failed"
+  return moves
+
 ## LIS/LCS -> move scheduling
 def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.0, verbose: bool = False) -> Sequence[int]:
   """
@@ -886,6 +917,7 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
     K_perm = np.array([L_map[s] for s in K.values()], dtype=np.int32)
     schedule = move_schedule(K_perm, **kwargs)
     for i,j in schedule:
+      if i == j: continue
       if i < j:
         move_right(R, V, i, j)
         _MOVE_STATS["n_right"] += 1

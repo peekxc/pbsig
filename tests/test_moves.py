@@ -223,6 +223,17 @@ def test_schedule_coarsening():
   assert SS[0] == n - 1, "Minimum coarseness should in theory require n-1 moves"
   assert all(np.diff(SS) <= 0), "Move schedules at different coarseness levels not monotone"
 
+def test_schedule_naive():
+  from pbsig.vineyards import move_schedule, _naive_move_schedule
+  n = 100
+  np.random.seed(1234)
+  p = np.random.choice(range(n), size=n, replace=False)
+  assert any(np.diff(p) != -1), "p was sorted"
+  assert len(_naive_move_schedule(p)) > 0
+  assert len(_naive_move_schedule(p)) > 0, "naive moves enacts side effects"
+  assert len(_naive_move_schedule(p, right=False)) > 0
+  
+
 def test_ls_moves():
   from pbsig.vineyards import update_lower_star
   from pbsig.vineyards import move_stats

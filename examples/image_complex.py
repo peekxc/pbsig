@@ -21,7 +21,6 @@ def pixel_circle(n):
 n = 9
 C = pixel_circle(n)
 S = freudenthal(C(0))
-assert X.flags.c_contiguous
 
 from pbsig.vis import plot_complex
 from pbsig.simplicial import freudenthal, SimplicialComplex, MutableFiltration
@@ -145,24 +144,196 @@ for p in np.linspace(0, 1, num=20):
 
 
 ## Compare the cost by varying the number of moves (d) as a function of the size (n)
-n = 5
+np.random.seed(1234)
+for n in range(5,13):
+  C = pixel_circle(n)
+  S = freudenthal(C(0))
+
+  def init_rv():
+    fv = C(0).flatten() # sorted by (r,c) 
+    K = MutableFiltration(S, f=lambda s: max(fv[s]))
+    D, V = boundary_matrix(K), eye(len(K))
+    R, V = pm.phcol(D, V, range(len(K)))
+    R, V = R.astype(int).tolil(), V.astype(int).tolil()
+    return K, R, V
+
+  n_time_pts = 25
+  OPS_MOVES_ND = { }
+  for cc, cf in enumerate(np.linspace(0, 1, 6)):
+    K,R,V = init_rv()
+    stats = { k : [] for k,x in move_stats(reset=True).items() }
+    for radius in np.linspace(0, 1, num=n_time_pts):
+      fv = C(radius).flatten()
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="greedy")
+      for k,v in move_stats().items():
+        stats[k].extend([v])
+    OPS_MOVES_ND[(cc,n)] = stats
+    print(cc)
+
+
+
+
+
+
+
+
+
+## Compare the cost by varying the number of moves (d) as a function of the size (n)
+from pbsig.vineyards import *
+np.random.seed(1234)
+n = 9
 C = pixel_circle(n)
 S = freudenthal(C(0))
+n_time_pts = 25
 
-fv = C(0).flatten() # sorted by (r,c) 
-K = MutableFiltration(S, f=lambda s: max(fv[s]))
-D, V = boundary_matrix(K), eye(len(K))
-R, V = pm.phcol(D, V, range(len(K)))
-R, V = R.astype(int).tolil(), V.astype(int).tolil()
+def init_rv():
+  fv = C(0).flatten() # sorted by (r,c) 
+  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  D, V = boundary_matrix(K), eye(len(K))
+  R, V = pm.phcol(D, V, range(len(K)))
+  R, V = R.astype(int).tolil(), V.astype(int).tolil()
+  return K, R, V
 
-from pbsig.vineyards import move_stats
-OPS_MOVES = [move_stats(reset=True)]
-for p in np.linspace(0, 1, num=20):
-  fv = C(p).flatten()
-  update_lower_star(K, R, V, f=lambda s: max(fv[s]))
-  OPS_MOVES.append(move_stats().copy())
-  print(p)
+OPS_MOVES = { }
+for cc, cf in enumerate(np.linspace(0, 1, 6)):
+  for i in range(10): ## repeat to average
+    K,R,V = init_rv()
+    stats = { k : [] for k,x in move_stats(reset=True).items() }
+    for radius in np.linspace(0, 1, num=n_time_pts):
+      fv = C(radius).flatten()
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="random")
+      for k,v in move_stats().items():
+        stats[k].extend([v])
+    OPS_MOVES[(cc,i)] = stats
+  print(cc)
 
+## Greedy strategy 
+K,R,V = init_rv()
+stats = { k : [] for k,x in move_stats(reset=True).items() }
+for radius in np.linspace(0, 1, num=n_time_pts):
+  fv = C(radius).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="greedy")
+  for k,v in move_stats().items():
+    stats[k].extend([v])
+
+## Naive strategy
+
+
+# import pickle
+# with open('coarsening_data.pickle', 'wb') as handle:
+#   pickle.dump(OPS_MOVES, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+
+## Load the first figure
+import pickle
+# with open('coarsening_data.pickle', 'wb') as handle:
+#   pickle.dump(OPS_MOVES, handle, protocol=pickle.HIGHEST_PROTOCOL)
+OPS_MOVES = pickle.load(open('coarsening_data.pickle', 'rb'))
+
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+ct0 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 0]).T
+ct1 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 1]).T
+ct2 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 2]).T
+ct3 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 3]).T
+ct4 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 4]).T
+ct5 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 5]).T
+
+
+
+from bokeh.plotting import figure, show
+from bokeh.models import ColumnDataSource, BasicTickFormatter
+CT = [ct0,ct1,ct2,ct5] #,ct3,ct4
+
+from pbsig.color import bin_color
+#ct_colors = ["blue", "green", "yellow", "orange", "red", "black"]
+ct_colors = bin_color(range(5), color_pal="inferno")
+p = figure(
+  title="Move schedule totals on grayscale image data (9x9)", 
+  x_axis_label='Time', y_axis_label='Cumulative number of column operations',
+  x_range=(0,1), width=500, height=350, 
+  tooltips=None
+)
+# p.yaxis.formatter.use_scientific = True 
+p.yaxis.formatter = BasicTickFormatter(use_scientific=True)
+p.output_backend = "svg"
+for i, (ct, col) in enumerate(zip(CT, ct_colors)):
+  x = np.arange(ct.shape[0])/ct.shape[0]
+  col = colors.RGB(*(col*255).astype(int))
+  legend_text = f"{i}"
+  legend_text = f"{i} (none)" if i == 0 else legend_text
+  legend_text = f"{i} (maximum)" if i == 3 else legend_text
+  p.line(x, ct.mean(axis=1), color=col, line_width=2.25, legend_label=legend_text)
+  band_source = ColumnDataSource({
+    'base': x,
+    'lower': ct.min(axis=1),
+    'upper': ct.max(axis=1)
+  })
+  band = Band(base="base", lower='lower', upper='upper', source=band_source, fill_alpha=0.10, fill_color=col)
+  p.add_layout(band)
+  # display legend in top left corner (default is top right corner)
+p.legend.location = "top_left"
+p.legend.title = "Coarsening level"
+p.legend.border_line_width = 1
+p.legend.border_line_color = "black"
+# p.legend.label_text_line_height = 0.2
+p.legend.label_height = 10
+p.legend.glyph_height = 10
+p.legend.spacing = 2
+greedy_y = calculate_total(stats)
+p.line(x, greedy_y, color="orange", line_width=2.5, line_dash="dotdash", legend_label="3 (greedy)")
+show(p)
+
+from bokeh.io import export_svg, export_png
+export_svg(p, filename="coarsening_grayscale.svg")
+export_png(p, filename="coarsening_grayscale.png" )
+
+
+
+# change appearance of legend text
+p.legend.label_text_font = "times"
+p.legend.label_text_font_style = "italic"
+p.legend.label_text_color = "navy"
+
+# change border and background of legend
+p.legend.border_line_width = 3
+p.legend.border_line_color = "navy"
+p.legend.border_line_alpha = 0.8
+p.legend.background_fill_color = "navy"
+p.legend.background_fill_alpha = 0.2
+
+show(p)
+
+p = figure(x_range=(0,1), y_range=(0, 7000))
+source = ColumnDataSource({
+  'base':x,
+  'lower':ct.min(axis=1),
+  'upper':ct.max(axis=1)
+})
+band = Band(base='base', lower='lower', upper='upper', source=source, fill_alpha=0.5)
+p.add_layout(band)
+show(p)
+
+
+
+
+
+# import statsmodels.api as sm
+# lowess = sm.nonparametric.lowess(coarsen_totals.mean(axis=1), x, frac=0.1)
+# p.line(lowess[:,0], lowess[:,1], color="blue", line_width=2.5)
+# 
+
+
+
+## Bokeh plot of the cumulative number of column ops as a function of coarseness 
+n_cols_total = []
+for i,k in enumerate(OPS_MOVES.keys()):
+  n_cols_total.append(np.array(OPS_MOVES[k]['n_cols_left']) + np.array(OPS_MOVES[k]['n_cols_right']))
+
+from bokeh.plotting import figure, show
+p = figure(title="Cumulative column operations vs coarseness", x_axis_label='Time', y_axis_label='Cum. # column cps')
+lr = [p.line(np.arange(len(lt))/len(lt), lt) for lt in n_cols_total]
+  
 
 
 
