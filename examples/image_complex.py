@@ -145,7 +145,8 @@ for p in np.linspace(0, 1, num=20):
 
 ## Compare the cost by varying the number of moves (d) as a function of the size (n)
 np.random.seed(1234)
-for n in range(5,13):
+OPS_MOVES_ND = { }
+for n in range(5,11,1): ## grid sizes
   C = pixel_circle(n)
   S = freudenthal(C(0))
 
@@ -157,23 +158,48 @@ for n in range(5,13):
     R, V = R.astype(int).tolil(), V.astype(int).tolil()
     return K, R, V
 
-  n_time_pts = 25
-  OPS_MOVES_ND = { }
-  for cc, cf in enumerate(np.linspace(0, 1, 6)):
+  n_time_pts = 10
+  n_coarse_lvls = 5
+  # n_retrials = 10
+  for cc, cf in enumerate(np.linspace(0, 1, n_coarse_lvls)):
     K,R,V = init_rv()
     stats = { k : [] for k,x in move_stats(reset=True).items() }
     for radius in np.linspace(0, 1, num=n_time_pts):
       fv = C(radius).flatten()
-      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="random")
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="greedy")
       for k,v in move_stats().items():
         stats[k].extend([v])
     OPS_MOVES_ND[(cc,n)] = stats
-    #print(cc)
+  #print(cc)
   print(n)
 
 # import pickle
 # with open('OPS_MODES_ND.pickle', 'wb') as handle:
 #   pickle.dump(OPS_MOVES_ND, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+ct0 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 5]).T
+ct1 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 6]).T
+ct2 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 7]).T
+ct3 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 8]).T
+ct4 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 9]).T
+ct5 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 10]).T
+
+n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,11)]
+from bokeh import colors
+p = figure(width=300, height=300)
+#x = np.arange(n_coarse_lvls)
+x = np.arange(n_time_pts)
+CT = [ct0,ct1,ct2,ct3,ct4,ct5]
+# for ct in CT:p.scatter(x, ct.max(axis=0))
+line_colors = bin_color(range(len(CT)+1), color_pal="inferno")
+for ct, lc in zip(CT, line_colors):
+  #for j in range(ct.shape[1]):
+  j = 4
+  #p.line(x, ct[:,j]/n_simplices[j], color=colors.RGB(*(lc*255).astype(int)))
+  p.line(x, ct[:,j], color=colors.RGB(*(lc*255).astype(int)), line_dash='dotted')
+show(p)
+# [freudenthal(pixel_circle(n)(0)).shape for n in range(5,11)]
 
 
 
