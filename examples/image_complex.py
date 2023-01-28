@@ -184,23 +184,27 @@ ct2 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.
 ct3 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 8]).T
 ct4 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 9]).T
 ct5 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 10]).T
+## Maybe try out different number of time discretization instead of coarseness?
 
 n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,11)]
 from bokeh import colors
-p = figure(width=300, height=300)
-#x = np.arange(n_coarse_lvls)
-x = np.arange(n_time_pts)
+p = figure(
+  title="Schedule scaling on grayscale image data (9x9)", 
+  x_axis_label='Grid Size', y_axis_label='Schedule column operations / m',
+  width=400, height=300
+)
 CT = [ct0,ct1,ct2,ct3,ct4,ct5]
-# for ct in CT:p.scatter(x, ct.max(axis=0))
-line_colors = bin_color(range(len(CT)+1), color_pal="inferno")
-for ct, lc in zip(CT, line_colors):
-  #for j in range(ct.shape[1]):
-  j = 4
-  #p.line(x, ct[:,j]/n_simplices[j], color=colors.RGB(*(lc*255).astype(int)))
-  p.line(x, ct[:,j], color=colors.RGB(*(lc*255).astype(int)), line_dash='dotted')
+x = np.arange(len(CT))
+line_colors = bin_color(range(n_coarse_lvls), color_pal="inferno")
+for j, lc in enumerate(line_colors):
+  nc_y = np.array([max(ct[:,j]) for ct in CT])
+  p.scatter(x, nc_y/n_simplices, color=colors.RGB(*(lc*255).astype(int)))
 show(p)
+#x = np.arange(n_coarse_lvls)
+#x = np.arange(n_time_pts)
 # [freudenthal(pixel_circle(n)(0)).shape for n in range(5,11)]
-
+#p.line(x, ct[:,j]/n_simplices[j], color=colors.RGB(*(lc*255).astype(int)))
+#p.line(x, ct[:,j], color=colors.RGB(*(lc*255).astype(int)), line_dash='dotted')
 
 
 
