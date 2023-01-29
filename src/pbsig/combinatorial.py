@@ -77,6 +77,55 @@ def inverse_choose(x: int, k: int):
 from bisect import bisect_left, bisect_right
 from functools import cmp_to_key
 
+def all_longest_subseq(x: Sequence[int]):
+  assert all(np.sort(x) == np.arange(len(x)))
+
+  pred = lambda y,i: max(y[y < i]) if any(y < i) else None
+  succ = lambda y,i: min(y[y > i]) if any(y > i) else None
+  E = np.array([], dtype=int)       # T data structure
+  L = np.zeros(len(x), dtype=int)   # L[i] := length of LIS ending in i
+
+  ## Stage 1: compute length of the LIS that ends on x[i]
+  for i, m in enumerate(x):
+    E = np.append(E, m)
+    if pred(E, m) is not None: 
+      L[m] = L[pred(E,m)]+1
+    else:
+      L[m] = 1
+    if succ(E, m) is not None and L[succ(E,m)] == L[m]:
+      E = E[E != succ(E, m)]
+  Q = np.argsort(x) # inverse permutation 
+  L = L[x] ## because our permutations are word permutations
+  assert all(L == L[x][Q])
+
+  ## Get left and right successor/predecessor info
+  L = L.astype(int)
+  L1 = [x[max(np.flatnonzero(L[:j] == l))] if any(L[:j] == l) else None for j,l in enumerate(L) ] # =
+  L2 = [x[max(np.flatnonzero(L[:j] == l-1))] if any(L[:j] == l-1) else None for j,l in enumerate(L) ]  # -1
+  
+  ## Recursively enumerate LIS's
+  k = max(L) # all LIS lengths
+  results = set()
+  def enum_lis(z: int, out: Sequence[int]):
+    if L[Q[z]] == k or z < out[L[Q[z]]]: # (L[z]+1 <= k and
+      out[L[Q[z]]-1] = z
+    else: 
+      return 
+    z1 = L2[Q[z]]
+    if z1 is None:
+      results.add(tuple(out))
+      # print(out)
+      return # I think this is needed
+    else:
+      enum_lis(z1, out)
+    while z1 is not None and L1[Q[z1]] is not None:
+      enum_lis(L1[Q[z1]], out)
+      z1 = L2[Q[z1]]
+  out = np.array([x[max(np.flatnonzero(L == i))] for i in range(1, k+1)])
+  z = out[-1]
+  for z in reversed(x): enum_lis(z, out)
+  return results
+
 ## From: https://stackoverflow.com/questions/3992697/longest-increasing-subsequence
 def longest_subsequence(seq, mode='strictly', order='increasing', key=None, index=False):
   bisect = bisect_left if mode.startswith('strict') else bisect_right
