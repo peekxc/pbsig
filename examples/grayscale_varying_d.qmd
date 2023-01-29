@@ -1,0 +1,130 @@
+---
+title: "Untitled"
+format: html
+jupyter: python3
+---
+
+```{python}
+import numpy as np
+import pickle
+d_vary = pickle.load(open('d_vary.pickle', 'rb'))
+greedy_stats = d_vary["greedy"]
+naive_stats = d_vary["naive"] 
+OPS_MOVES = d_vary["(d,i)"]
+```
+
+
+```{python}
+from bokeh import colors
+from bokeh.plotting import figure, show
+from bokeh.models import ColumnDataSource, BasicTickFormatter, Band
+from pbsig.color import bin_color
+
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+ct0 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 0]).T
+ct1 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 1]).T
+ct2 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 2]).T
+ct3 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 3]).T
+ct4 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 4]).T
+ct5 = np.vstack([calculate_total(OPS_MOVES[(cc,i)]) for cc,i in OPS_MOVES.keys() if cc == 5]).T
+CT = [ct0,ct1,ct2,ct5] #,ct3,ct4
+
+#ct_colors = ["blue", "green", "yellow", "orange", "red", "black"]
+ct_colors = bin_color(range(5), color_pal="inferno")
+p = figure(
+  title="Move schedule totals on grayscale image data (9x9)", 
+  x_axis_label='Time', y_axis_label='Cumulative number of column operations',
+  x_range=(0,1), width=500, height=350, 
+  tooltips=None
+)
+# p.yaxis.formatter.use_scientific = True 
+p.yaxis.formatter = BasicTickFormatter(use_scientific=True)
+p.output_backend = "svg"
+
+for i, (ct, col) in enumerate(zip(CT, ct_colors)):
+  x = np.arange(ct.shape[0])/ct.shape[0]
+  col = colors.RGB(*(col*255).astype(int))
+  legend_text = f"{i}"
+  legend_text = f"{i} (none)" if i == 0 else legend_text
+  legend_text = f"{i} (33%)" if i == 1 else legend_text
+  legend_text = f"{i} (66%)" if i == 2 else legend_text
+  legend_text = f"{i} (maximum)" if i == 3 else legend_text
+  p.line(x, ct.mean(axis=1), color=col, line_width=2.25, legend_label=legend_text)
+  band_source = ColumnDataSource({
+    'base': x,
+    'lower': ct.min(axis=1),
+    'upper': ct.max(axis=1)
+  })
+  band = Band(base="base", lower='lower', upper='upper', source=band_source, fill_alpha=0.10, fill_color=col)
+  p.add_layout(band)
+  # display legend in top left corner (default is top right corner)
+p.legend.location = "top_left"
+p.legend.title = "Strategy"
+p.legend.border_line_width = 1
+p.legend.border_line_color = "black"
+# p.legend.label_text_line_height = 0.2
+p.legend.label_height = 10
+p.legend.glyph_height = 10
+p.legend.spacing = 2
+
+naive_y = calculate_total(naive_stats)
+p.line(x, naive_y, color="red", line_width=2.5, line_dash="dashed", legend_label="0 (naive)")
+
+greedy_y = calculate_total(greedy_stats)
+p.line(x, greedy_y, color="orange", line_width=2.5, line_dash="dotdash", legend_label="3 (greedy)")
+show(p)
+```
+
+
+```{python}
+## Compare the cost by varying the number of moves (d) as a function of the size (n)
+from pbsig.vineyards import *
+np.random.seed(1234)
+n = 9
+C = pixel_circle(n)
+S = freudenthal(C(0))
+n_time_pts = 25
+
+def init_rv():
+  fv = C(0).flatten() # sorted by (r,c) 
+  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  D, V = boundary_matrix(K), eye(len(K))
+  R, V = pm.phcol(D, V, range(len(K)))
+  R, V = R.astype(int).tolil(), V.astype(int).tolil()
+  return K, R, V
+
+OPS_MOVES = { }
+for cc, cf in enumerate(np.linspace(0, 1, 6)):
+  for i in range(10): ## repeat to average
+    K,R,V = init_rv()
+    stats = { k : [] for k,x in move_stats(reset=True).items() }
+    for radius in np.linspace(0, 1, num=n_time_pts):
+      fv = C(radius).flatten()
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="random")
+      for k,v in move_stats().items():
+        stats[k].extend([v])
+    OPS_MOVES[(cc,i)] = stats
+  print(cc)
+
+## Greedy strategy 
+K,R,V = init_rv()
+greedy_stats = { k : [] for k,x in move_stats(reset=True).items() }
+for radius in np.linspace(0, 1, num=n_time_pts):
+  fv = C(radius).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="greedy")
+  for k,v in move_stats().items():
+    greedy_stats[k].extend([v])
+
+## Naive strategy
+K,R,V = init_rv()
+naive_stats = { k : [] for k,x in move_stats(reset=True).items() }
+for radius in np.linspace(0, 1, num=n_time_pts):
+  fv = C(radius).flatten()
+  update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="naive")
+  for k,v in move_stats().items():
+    naive_stats[k].extend([v])
+
+
+d_vary = {"naive": naive_stats, "greedy" : greedy_stats, "(d,i)": OPS_MOVES }
+
+```

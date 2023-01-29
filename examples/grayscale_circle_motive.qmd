@@ -1,0 +1,66 @@
+---
+title: "Untitled"
+format: html
+jupyter: python3
+---
+
+
+```{python}
+import numpy as np
+import pickle
+
+naive_phcol = np.array(pickle.load(open("/Users/mpiekenbrock/pbsig/grayscale_img_naive_red.pickle", "rb"))).astype(int)
+vine_status = np.array(pickle.load(open("/Users/mpiekenbrock/pbsig/grayscale_img_vineyards_status.pickle", "rb"))).astype(int)
+tr_cost = np.array([2,2,0,1,2,0,2,0,1])
+vine_cost = tr_cost[vine_status-1]
+vine_cost[0] += naive_phcol[0]
+```
+
+
+```{python}
+from bokeh import * 
+from bokeh.models import * 
+N = len(vine_cost)
+# r = 586/(1562*0.42) # h/w ratio
+p = figure(
+  width=600, height=int(350), y_axis_type="log", 
+  title="Dynamic Persistence cost: 9x9 circle image data set", 
+  #tools="reset,save"
+)
+p.xaxis.axis_label = "Time index"
+p.yaxis.axis_label = "Cumulative column operations"
+p.output_backend = "svg"
+
+p.line(np.arange(N), np.cumsum(vine_cost),  line_width=2.5, color="blue",legend_label="Vineyards")
+p.line(np.arange(N), np.cumsum(naive_phcol),  line_width=2.5, color="black", legend_label="phcol (all)")
+
+phcol_1_ind = np.minimum(np.floor(np.linspace(0,1,100)*N).astype(int), N-1)
+phcol_1 = np.cumsum(naive_phcol[phcol_1_ind]).astype(int)
+p.scatter(phcol_1_ind, phcol_1, size=12, color="black", alpha=1.0, marker="x")
+p.line(phcol_1_ind, phcol_1, color="purple",  line_width=2.5, legend_label="phcol (100)")
+
+phcol_2_ind = np.minimum(np.floor(np.linspace(0,1,10)*N).astype(int), N-1)
+phcol_2 = np.cumsum(naive_phcol[phcol_2_ind])
+p.scatter(phcol_2_ind, phcol_2, size=12, color="black", alpha=1.0, marker="x")
+p.line(phcol_2_ind, phcol_2, color="green", line_width=2.5, legend_label="phcol (10)")
+p.title.text_font_size = '16px'
+
+p.legend.location = (380,130) #"top_right"
+p.legend.padding = 6
+# p.legend.title = "Strategy"
+p.xaxis.formatter.power_limit_high = 1
+p.xaxis.formatter.power_limit_low = 0
+p.xaxis.formatter.use_scientific = True 
+p.xaxis.formatter.precision = 0
+p.xaxis.minor_tick_line_alpha  = 0
+p.xaxis.axis_label_text_font_size = '18px'
+p.yaxis.axis_label_text_font_size = '18px'
+p.xaxis.major_label_text_font_size = '15px'
+p.yaxis.major_label_text_font_size = '15px'
+show(p)
+```
+
+```{python}
+# from bokeh.io import export_svg, export_png
+# export_png(p, filename="~/move_schedules/circle_vineyards_.png")
+```

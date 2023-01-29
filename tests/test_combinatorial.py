@@ -106,3 +106,79 @@ def test_boundary():
   # for i, v in enumerate(S)
 
 
+
+def test_enumerate_lis(x: Sequence[int]):
+  
+  #x = np.random.choice(np.arange(10), size=10, replace=False)
+  x = np.array([0, 4, 1, 5, 3, 2])
+
+  assert isinstance(x, Sequence) and all(np.sort(x) == np.arange(len(x)))
+  #if len(x) <= 1: yield x; return
+  pred = lambda y,i: max(y[y < i]) if any(y < i) else None
+  succ = lambda y,i: min(y[y > i]) if any(y > i) else None
+  E = np.array([], dtype=int) # T data structure
+  L = np.zeros(len(x), dtype=int) # L[i] := length of LIS ending in i
+
+  ## Stage 1: compute length of the LIS that ends on x[i]
+  for i, m in enumerate(x):
+    E = np.append(E, m)
+    if pred(E, m) is not None: 
+      L[m] = L[pred(E,m)]+1
+    else:
+      L[m] = 1
+    if succ(E, m) is not None and L[succ(E,m)] == L[m]:
+      E = E[E != succ(E, m)]
+  Q = np.argsort(x) # inverse permutation 
+  L = L[x] ## because our permutations are word permutations
+  assert all(L == L[x][Q])
+  assert all(L == np.array([1,2,2,3,3,3]))
+
+  ## Enumerate LIS
+  L = L.astype(int)
+  L1 = [x[max(np.flatnonzero(L[:j] == l))] if any(L[:j] == l) else None for j,l in enumerate(L) ] # =
+  L2 = [x[max(np.flatnonzero(L[:j] == l-1))] if any(L[:j] == l-1) else None for j,l in enumerate(L) ]  # -1
+  # L = L[Q]
+  # L1 = np.array(L1)[Q]
+  # L2 = np.array(L2)[Q]
+  ## Stage 2: obtain the initial LIS
+  # index = np.argmax(L)
+  # S = np.zeros(int(L[index])).astype(int)
+  # S[-1] = index
+  # j = L[index] - 1
+  # for i in reversed(np.arange(0, index+1)):
+  #   if L[i] == j:
+  #     S[j] = int(i)
+  #     j -= 1
+
+
+
+  ## Recursively enumerate LIS's
+  k = max(L) # all LIS lengths
+  results = []
+  # out = np.array([0, 1, 2])
+  # iinvert again ? L[x]
+  def enum_lis(z: int, out: Sequence[int]):
+    if L[Q[z]] == k or z < out[L[Q[z]]]: # (L[z]+1 <= k and
+      out[L[Q[z]]-1] = z
+    else: 
+      return 
+    z1 = L2[Q[z]]
+    if z1 is None:
+      results.append(out.copy())
+      print(out)
+      return # I think this is needed
+    else:
+      enum_lis(z1, out)
+    while z1 is not None and L1[z1] is not None:
+      enum_lis(L1[z1], out)
+      z1 = L2[z1]
+  # L = L[x] 
+  z = 2
+  out = np.array([0, 1, 2])
+  enum_lis(2, out)
+  enum_lis(3, out)
+  enum_lis(5, out)
+  enum_lis(1, out)
+  enum_lis(4, out)
+  enum_lis(0, out)
+  #enum_lis(x[S][-1], x[S])

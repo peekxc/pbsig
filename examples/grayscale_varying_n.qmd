@@ -1,0 +1,92 @@
+---
+title: "Untitled"
+format: html
+jupyter: python3
+---
+
+## Bokeh plot code
+
+```{python}
+import numpy as np
+import pickle 
+from pbsig.simplicial import freudenthal
+OPS_MOVES_ND = pickle.load(open('OPS_MOVES_ND.pickle', 'rb'))
+
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+ct0 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 5]).T
+ct1 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 6]).T
+ct2 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 7]).T
+ct3 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 8]).T
+ct4 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 9]).T
+ct5 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 10]).T
+CT = [ct0,ct1,ct2,ct3,ct4,ct5]
+## Maybe try out different number of time discretization instead of coarseness?
+n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,11)]
+```
+
+```{python}
+from pbsig.color import bin_color
+from bokeh.models import *
+from bokeh import colors
+from scipy import stats
+n_coarse_levels = CT[0].shape[1]
+p = figure(
+  title="Schedule scaling on grayscale image data (n x n)", 
+  x_axis_label='Grid Size (n)', y_axis_label='Schedule column operations / m',
+  width=400, height=300
+)
+x = np.arange(len(CT))
+line_colors = bin_color(range(n_coarse_lvls), color_pal="inferno")
+for j, lc in enumerate(line_colors):
+  p_col = colors.RGB(*(lc*255).astype(int))
+  nc_y = np.array([max(ct[:,j]) for ct in CT])
+  p.scatter(x, nc_y/n_simplices, color=p_col)
+  # j = 0
+  pts = np.array([max(ct[:,j])/n_simplices[i] for i, ct in enumerate(CT)])
+  lr = stats.linregress(x,pts)
+  slope = Slope(gradient=lr.slope, y_intercept=lr.intercept, line_color=p_col, line_dash='dashed', line_width=1.5)
+  p.add_layout(slope)
+
+show(p)
+
+```
+
+
+
+## Original code 
+
+```{python}
+## Compare the cost by varying the number of moves (d) as a function of the size (n)
+np.random.seed(1234)
+OPS_MOVES_ND = { }
+for n in range(5,11,1): ## grid sizes
+  C = pixel_circle(n)
+  S = freudenthal(C(0))
+
+  def init_rv():
+    fv = C(0).flatten() # sorted by (r,c) 
+    K = MutableFiltration(S, f=lambda s: max(fv[s]))
+    D, V = boundary_matrix(K), eye(len(K))
+    R, V = pm.phcol(D, V, range(len(K)))
+    R, V = R.astype(int).tolil(), V.astype(int).tolil()
+    return K, R, V
+
+  n_time_pts = 10
+  n_coarse_lvls = 5
+  # n_retrials = 10
+  for cc, cf in enumerate(np.linspace(0, 1, n_coarse_lvls)):
+    K,R,V = init_rv()
+    stats = { k : [] for k,x in move_stats(reset=True).items() }
+    for radius in np.linspace(0, 1, num=n_time_pts):
+      fv = C(radius).flatten()
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), coarsen=cf, method="greedy")
+      for k,v in move_stats().items():
+        stats[k].extend([v])
+    OPS_MOVES_ND[(cc,n)] = stats
+  #print(cc)
+  print(n)
+
+# import pickle
+# with open('OPS_MOVES_ND.pickle', 'wb') as handle:
+#   pickle.dump(OPS_MOVES_ND, handle, protocol=pickle.HIGHEST_PROTOCOL)
+```
