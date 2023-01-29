@@ -19,9 +19,11 @@ ct2 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.
 ct3 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 8]).T
 ct4 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 9]).T
 ct5 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 10]).T
-CT = [ct0,ct1,ct2,ct3,ct4,ct5]
+ct6 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 11]).T
+ct7 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 12]).T
+CT = [ct0,ct1,ct2,ct3,ct4,ct5,ct6,ct7]
 ## Maybe try out different number of time discretization instead of coarseness?
-n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,11)]
+n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,13)]
 ```
 
 ```{python}
@@ -32,21 +34,22 @@ from scipy import stats
 n_coarse_levels = CT[0].shape[1]
 p = figure(
   title="Schedule scaling on grayscale image data (n x n)", 
-  x_axis_label='Grid Size (n)', y_axis_label='Schedule column operations / m',
+  x_axis_label='Number of simplices (m)', y_axis_label='Number of column operations / m',
   width=400, height=300
 )
-x = np.arange(len(CT))
+# x = np.arange(len(CT))+5
+x = np.array(n_simplices)
 line_colors = bin_color(range(n_coarse_lvls), color_pal="inferno")
 for j, lc in enumerate(line_colors):
   p_col = colors.RGB(*(lc*255).astype(int))
   nc_y = np.array([max(ct[:,j]) for ct in CT])
-  p.scatter(x, nc_y/n_simplices, color=p_col)
+  p.scatter(x, nc_y/n_simplices, color=p_col, legend="")
   # j = 0
   pts = np.array([max(ct[:,j])/n_simplices[i] for i, ct in enumerate(CT)])
   lr = stats.linregress(x,pts)
   slope = Slope(gradient=lr.slope, y_intercept=lr.intercept, line_color=p_col, line_dash='dashed', line_width=1.5)
   p.add_layout(slope)
-
+p.legend
 show(p)
 
 ```
@@ -55,11 +58,14 @@ show(p)
 
 ## Original code 
 
+Compare the cost by varying the number of moves (d) as a function of the size (n)
 ```{python}
-## Compare the cost by varying the number of moves (d) as a function of the size (n)
+import numpy as np
+import pickle 
 np.random.seed(1234)
-OPS_MOVES_ND = { }
-for n in range(5,11,1): ## grid sizes
+# OPS_MOVES_ND = pickle.load(open('OPS_MOVES_ND.pickle', 'rb'))
+# OPS_MOVES_ND = { }
+for n in range(11,13): ## grid sizes
   C = pixel_circle(n)
   S = freudenthal(C(0))
 
@@ -89,4 +95,114 @@ for n in range(5,11,1): ## grid sizes
 # import pickle
 # with open('OPS_MOVES_ND.pickle', 'wb') as handle:
 #   pickle.dump(OPS_MOVES_ND, handle, protocol=pickle.HIGHEST_PROTOCOL)
+```
+
+
+## New code 
+
+```{python}
+## Compare the cost by varying the number of moves (d) as a function of the size (n)
+from pbsig.vineyards import * 
+np.random.seed(1234)
+OPS_MOVES_NL = { }
+n_lis = 20
+n_time_pts = 8
+for n in range(5,16,1): ## grid sizes
+  C = pixel_circle(n)
+  S = freudenthal(C(0))
+
+  def init_rv():
+    fv = C(0).flatten() # sorted by (r,c) 
+    K = MutableFiltration(S, f=lambda s: max(fv[s]))
+    D, V = boundary_matrix(K), eye(len(K))
+    R, V = pm.phcol(D, V, range(len(K)))
+    R, V = R.astype(int).tolil(), V.astype(int).tolil()
+    return K, R, V
+
+
+  for l in range(n_lis):
+    K,R,V = init_rv()
+    stats = { k : [] for k,x in move_stats(reset=True).items() }
+    for radius in np.linspace(0, 1, num=n_time_pts):
+      fv = C(radius).flatten()
+      update_lower_star(K, R, V, f=lambda s: max(fv[s]), method="greedy", random_lis=True)
+      for k,v in move_stats().items():
+        stats[k].extend([v])
+    OPS_MOVES_NL[(l,n)] = stats
+  #print(cc)
+  print(n)
+
+# import pickle
+# with open('OPS_MOVES_NL.pickle', 'wb') as handle:
+#   pickle.dump(OPS_MOVES_NL, handle, protocol=pickle.HIGHEST_PROTOCOL)
+```
+
+```{python}
+import numpy as np
+import pickle 
+from pbsig.simplicial import freudenthal
+OPS_MOVES_ND = pickle.load(open('OPS_MOVES_ND.pickle', 'rb'))
+
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+ct0 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 5]).T
+ct1 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 6]).T
+ct2 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 7]).T
+ct3 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 8]).T
+ct4 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 9]).T
+ct5 = np.vstack([calculate_total(OPS_MOVES_ND[(cc,n)]) for cc,n in OPS_MOVES_ND.keys() if n == 10]).T
+CT = [ct0,ct1,ct2,ct3,ct4,ct5]
+## Maybe try out different number of time discretization instead of coarseness?
+n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,11)]
+```
+
+## Plot the new
+```{python}
+from pbsig.color import bin_color
+from bokeh.models import *
+from bokeh import colors
+from scipy import stats
+from pbsig.simplicial import freudenthal
+# OPS_MOVES_NT = pickle.load(open('OPS_MOVES_NT.pickle', 'rb'))
+n_simplices = [sum(freudenthal(pixel_circle(n)(0)).shape) for n in range(5,15)]
+
+NL_TOTALS = {}
+calculate_total = lambda ms: np.array(ms["n_cols_left"]) + np.array(ms["n_cols_right"])
+for n in range(5, 15):
+  NL_TOTALS[n] = np.array([max(calculate_total(OPS_MOVES_NL[(i,n)])) for i in range(0,20)])
+
+five_num = lambda x: (np.min(x), np.max(x), np.median(x), np.quantile(x, 0.25), np.quantile(x, 0.75))
+stats = [five_num(NL_TOTALS[n]/n_simplices[n-5]) for n in range(5, 15)]
+stats = np.vstack(stats)
+x = np.arange(5, 5+stats.shape[0])
+p = figure(
+  title="Schedule scaling on grayscale image data (n x n)", 
+  x_axis_label='Grid Size (n)', y_axis_label='Schedule column operations / m',
+  width=400, height=300, 
+  # x_range=(min(x)-1,max(x))
+)
+
+p.rect(x=x, y=stats[:,2], width=0.45, height=stats[:,4]-stats[:,3], line_color="black")
+
+whisker_source = ColumnDataSource(data=dict(base=x, upper=stats[:,1], lower=stats[:,0]))
+wr = Whisker(base="base", upper="upper", lower="lower", source=whisker_source, level="annotation", line_width=2)
+wr.upper_head.size=20
+wr.lower_head.size=20
+p.add_layout(wr)
+
+show(p)
+
+
+# x = np.arange(len(CT))
+# line_colors = bin_color(range(n_coarse_lvls), color_pal="inferno")
+# for j, lc in enumerate(line_colors):
+#   p_col = colors.RGB(*(lc*255).astype(int))
+#   nc_y = np.array([max(ct[:,j]) for ct in CT])
+#   p.scatter(x, nc_y/n_simplices, color=p_col)
+#   # j = 0
+#   pts = np.array([max(ct[:,j])/n_simplices[i] for i, ct in enumerate(CT)])
+#   lr = stats.linregress(x,pts)
+#   slope = Slope(gradient=lr.slope, y_intercept=lr.intercept, line_color=p_col, line_dash='dashed', line_width=1.5)
+#   p.add_layout(slope)
+
+# show(p)
 ```

@@ -787,8 +787,9 @@ def _naive_move_schedule(p: Sequence[int], right: bool = True):
   assert np.all(np.diff(q) == 1), "Naive scheduling failed"
   return moves
 
+from pbsig.combinatorial import *
 ## LIS/LCS -> move scheduling
-def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.0, verbose: bool = False) -> Sequence[int]:
+def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.0, random_lis: bool = False, verbose: bool = False) -> Sequence[int]:
   """
   Constructs a schedule of cyclic permutations called _moves_ which sorts 'p' to the identity using its longest increasing subsequence.
 
@@ -810,9 +811,22 @@ def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.
     schedule = np.array(_naive_move_schedule(p), dtype=np.int32)
     return schedule
 
+  ## Sample from ranodm LIS if warranetd
+  if random_lis:
+    LIS = list(all_longest_subseq(p))
+    # np.array([list(_MOVE_STATS['WHAT'][1]).index(i) for i in _MOVE_STATS['WHAT'][0]])
+    LIS = [list(l) for l in LIS]
+    p_ = list(p)
+    is_true_lis = lambda K: is_sorted([p_.index(k) for k in K])
+    LIS = [l for l in LIS if is_true_lis(l)]
+    lis = np.array(LIS[np.random.choice(range(len(LIS)), size=1).item()])
+    assert is_sorted(lis) and (len(np.unique(lis)) == len(lis)), "LIS {lis} not sorted"
+    #print( np.array(longest_subsequence(p)) )
+  else:
+    lis = np.array(longest_subsequence(p)) 
+
   ## Otherwise, prep the LIS w/ optional schedule coarsening
   m = len(p)
-  lis = np.array(longest_subsequence(p)) 
   d = int(np.ceil(len(lis)*coarsen))
   lis = np.sort(np.random.choice(lis, size=max(1,d), replace=False))
 
@@ -830,7 +844,10 @@ def move_schedule(p: Sequence[int], method: str = "nearest", coarsen: float = 1.
     i = pos(lst, symbol)
     j = pos(lst, pred(lis, symbol)) ## b
     k = pos(lst, succ(lis, symbol)) ## e
-    assert j <= k 
+    #_MOVE_STATS["WHAT"] = [lis, lst, pos, pred, succ, symbol]
+    if j > k:
+       f"predecessor {j} of {symbol} is not behind successor {k} of {symbol} in {lis}"
+    assert j <= k, f"predecessor {j} of {symbol} is not behind successor {k} of {symbol} in {lis}"
     if i < j:   # s is behind predecessor
       t = max(j, 0)
     elif k < i: # s is ahead of successor

@@ -174,3 +174,7 @@ def test_enumerate_lis(x: Sequence[int]):
   z = out[-1]
   for z in reversed(x): enum_lis(z, out)
   #return results
+
+def test_lis_enum():
+  L = all_longest_subseq(np.random.choice(np.arange(150), size=150, replace=False))
+  assert all([is_sorted(l) for l in L])
