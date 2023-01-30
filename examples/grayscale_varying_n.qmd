@@ -33,23 +33,41 @@ from bokeh import colors
 from scipy import stats
 n_coarse_levels = CT[0].shape[1]
 p = figure(
-  title="Schedule scaling on grayscale image data (n x n)", 
+  # width=600, height=int(350)
+  title="Schedule scaling on grayscale image data", 
   x_axis_label='Number of simplices (m)', y_axis_label='Number of column operations / m',
-  width=400, height=300
+  width=500, height=350
 )
+p.output_backend = "svg"
+percents = np.linspace(0, 1, 5)
+# percents = ["m", "3/4 d+(m-d)*3/4",]
+
 # x = np.arange(len(CT))+5
 x = np.array(n_simplices)
-line_colors = bin_color(range(n_coarse_lvls), color_pal="inferno")
-for j, lc in enumerate(line_colors):
+line_colors = bin_color(range(n_coarse_lvls+1), color_pal="inferno")
+for j, lc in enumerate(line_colors[:n_coarse_lvls]):
   p_col = colors.RGB(*(lc*255).astype(int))
   nc_y = np.array([max(ct[:,j]) for ct in CT])
-  p.scatter(x, nc_y/n_simplices, color=p_col, legend="")
-  # j = 0
+  p.scatter(x, nc_y/n_simplices, color=p_col, size=6,legend_label=f"{percents[j]:.2}")
   pts = np.array([max(ct[:,j])/n_simplices[i] for i, ct in enumerate(CT)])
   lr = stats.linregress(x,pts)
   slope = Slope(gradient=lr.slope, y_intercept=lr.intercept, line_color=p_col, line_dash='dashed', line_width=1.5)
   p.add_layout(slope)
-p.legend
+
+p.title.text_font_size = '20px'
+p.legend.location = (320,10) #"top_right"
+p.legend.padding = 4
+p.legend.title = "Schedule size"
+p.xaxis.formatter.power_limit_high = 1
+p.xaxis.formatter.power_limit_low = 0
+p.xaxis.formatter.use_scientific = True 
+p.xaxis.formatter.precision = 0
+p.xaxis.minor_tick_line_alpha  = 0
+p.xaxis.axis_label_text_font_size = '18px'
+p.yaxis.axis_label_text_font_size = '18px'
+p.xaxis.major_label_text_font_size = '18px'
+p.yaxis.major_label_text_font_size = '18px'
+
 show(p)
 
 ```
