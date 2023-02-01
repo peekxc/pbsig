@@ -642,9 +642,11 @@ def is_symmetric(A) -> bool:
 ## TODO: change weight to optionally be a string when attr system added to SC's
 def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
-    Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex K. 
+    Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex S. 
 
-    Given B_p = boundary_matrix(K, p), this function defines the (generic) weighted p-th up-laplacian L as: 
+    TODO: use the real up-Laplacian, defer weights to user
+
+    Given B_p = boundary_matrix(S, p), this function defines the (generic) weighted p-th up-laplacian L as: 
 
     Lp := W_p^l @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ W_p^r
     
@@ -733,7 +735,7 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
   where W* represents diagonal weight matrices on the p-th (or p+1) simplices and Dp represents 
   the p-th oriented boundary matrix of the simplicial complex. 
 
-  The operator is always matrix-free in the sense that no matrix is actually stored in this class. 
+  This operator is always matrix-free in the sense that no matrix is actually stored in the instance. 
   """
   # __slots__ = ('shape', 'dtype')
   # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
@@ -747,14 +749,6 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
     assert p == 0 or p == 1, "Only p in {0,1} supported for now"
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
     from pbsig.combinatorial import rank_combs
-
-    ## Configure properties
-    # self.shape = (len(F), len(F))
-    # self.dtype = np.dtype(np.float32) if dtype is None else dtype
-    
-    ## TODO: replace with soft containers/properties via combinatorial ranks
-    # self.simplices = S
-    # self.faces = F
 
     ## Parameterize the internal operator
     nv, _np = max([max(s) for s in S])+1, len(F)
@@ -808,14 +802,6 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
     self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.np)
     self.precompute_degree()
     return self 
-
-  # def _matvec(self, x: ArrayLike) -> ArrayLike:
-  #   # assert x.ndim == 1 or (x.ndim == 2 and 1 in x.shape)
-  #   return self.L_up._matvec(x)
-
-  # def _matmat(self, X: ArrayLike) -> ArrayLike:
-  #   # assert isinstance(X, np.ndarray) and X.ndim == 2, "Invalid 'X'"
-  #   return self.L_up._matmat(X)
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:

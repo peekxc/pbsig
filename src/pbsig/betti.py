@@ -412,163 +412,6 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
-## TODO: incorporate tolerance: x > np.max(<s_vals>)*np.max(D*.shape)*np.finfo(D*.dtype).eps to make small epsilons match rank 
-def lower_star_betti_sig(F: Iterable, p_simplices: ArrayLike, nv: int, a: float, b: float, method: Optional[str] = None, w: float = 0.0, epsilon: float = 0.0, keep_terms: bool = False):
-  """
-  F := Iterable of (nv)-sized arrays representing vertex filtration heights
-  p_simplices := (m x p) numpy matrix of (p+1)-simplices
-  nv := number of vertices 
-  a := birth
-  b := death 
-  method := one of ["rank", "nuclear", "generic", "frobenius"]
-  w := +/- width around chain value 
-  epsilon := rank approximation constant
-  """
-  from .betti import lower_star_boundary
-  from .utility import smoothstep
-  from scipy.sparse.csgraph import structural_rank
-  assert isinstance(p_simplices, np.ndarray), "simplices must be a numpy matrix for now"
-  p_dim = p_simplices.shape[1]
-  
-  if p_dim == 3: # betti-1
-    E, T = edges_from_triangles(p_simplices, nv), p_simplices
-    tol = tolerance(T.shape[0], E.shape[0])
-  elif p_dim == 2: # betti-0
-    tol = tolerance(p_simplices.shape[0], nv)
-  else: 
-    raise ValueError("invalid simplices")
-
-  ## Each method accepts a set of eigenvalues (squared singular values!)
-  if method is None or method == "rank":
-    base_f = lambda x: abs(x) > tol(max(x)) # done: should match numpy matrix rank up to machine precision prob! 
-    w = 0.0
-    reduce_f = lambda x: sum(x)
-  elif method == "nuclear":
-    base_f = lambda x: [np.sqrt(xi) if xi > tol(max(x)) else 0.0 for xi in x]
-    reduce_f = lambda x: sum(x)
-  elif method == "generic":
-    base_f = lambda x: [abs(xi/(xi+epsilon)) if abs(xi) > tol(max(x)) else 0.0 for xi in x]
-    reduce_f = lambda x: sum(x)
-  elif method == "fro" or method == "frobenius":
-    base_f = lambda x: x
-    reduce_f = lambda x: np.sqrt(sum(x))
-  else: 
-    raise ValueError("Invalid method")
-
-  ## Parameterize the smoothstep functions
-  # ss_a = smoothstep(lb = a - w/2, ub = a + w/2, reverse = True)
-  # ss_b = smoothstep(lb = b - w/2, ub = b + w/2, reverse = True)
-  # ss_ac = smoothstep(lb = a - w/2, ub = a + w/2, reverse = False)
-  eps = tol(np.sqrt(len(p_simplices)*2)) # use bound on spectral norm to get tol instead of np.finfo(float).eps?
-  ss_a = smoothstep(lb = a-w, ub = a+eps, down = True)     #   1 (a-w) -> 0 (a), includes (-infty, a]
-  ss_b = smoothstep(lb = b-w, ub = b+eps, down = True)     #   1 (b-w) -> 0 (b), includes (-infty, b]
-  ss_ac = smoothstep(lb = a-w, ub = a+eps, down = False)   # 0 (a-w) -> 1 (a), includes (a, infty)
-
-  ## Compute the terms 
-  relax_f = lambda x: reduce_f(base_f(x))
-  shape_sig = [] if keep_terms else array('d')
-  terms = np.zeros(4)
-
-  if p_dim == 3: ## Betti-1
-    E, T = edges_from_triangles(p_simplices, nv), p_simplices
-    D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
-    D2, tw = lower_star_boundary(np.repeat(1.0, nv), simplices=T)
-    D1_nz_pattern, D2_nz_pattern = np.sign(D1.data), np.sign(D2.data)
-
-    for f in F:
-      terms.fill(0) ## reset
-      ## Term 1
-      T1 = ss_a(f[E].max(axis=1))
-      terms[0] = relax_f(np.array(T1))
-
-      ## Term 2 
-      if np.any(T1):
-        D1.data = D1_nz_pattern * np.repeat(T1, 2)
-        L = D1 @ D1.T
-        T2 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[1] = -relax_f(np.array(T2))
-
-      ## Term 3
-      t_chain_val = ss_b(f[T].max(axis=1))
-      if np.any(t_chain_val):
-        D2.data = np.array([x if x != 0 else 0.0 for x in D2_nz_pattern * np.repeat(t_chain_val, 3)])
-        L = D2 @ D2.T
-        T3 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[2] = -relax_f(np.array(T3))
-
-      ## Term 4
-      d2_01, d2_02, d2_12 = f[T[:,[0,1]]].max(axis=1), f[T[:,[0,2]]].max(axis=1), f[T[:,[1,2]]].max(axis=1)
-      sa = ss_ac(np.ravel(np.vstack((d2_01, d2_02, d2_12)).T))
-      sb = np.repeat(t_chain_val, 3)
-      if np.any(sa*sb):
-        D2.data = np.array([x if x != 0 else 0.0 for x in D2_nz_pattern * (sa * sb)])
-        L = D2 @ D2.T
-        T4 = eigsh(L, return_eigenvectors=False, k=structural_rank(L))
-        terms[3] = relax_f(np.array(T4))
-
-      ## Append to shape signature and continue
-      shape_sig.append(np.sum(terms) if not(keep_terms) else terms)
-  elif p_dim == 2: # Betti-0
-    E = p_simplices
-    D1, ew = lower_star_boundary(np.repeat(1.0, nv), simplices=E)
-    assert D1.has_sorted_indices
-    D1_nz_pattern = np.sign(D1.data)
-    
-    for f in F:
-      ## Eps can cause issues if non-identical vertex values too close
-      if method == "rank" and all(eps < abs(np.unique(np.diff(sorted(f))))):
-        import warnings
-        warnings.warn("Spectral-norm tolerance too large for accurate rank estimation")
-      terms.fill(0)
-      
-      ## Term 1
-      terms[0] = relax_f(np.array([t for t in ss_a(f)]))
-      #terms[0] = sum([t if abs(t) > 1e-13 else 0 for t in ss_a(f)])
-      
-      ## Term 3
-      edge_f = f[E].max(axis=1)
-      chain_vals = ss_b(edge_f)
-      if np.any(chain_vals > 0):
-        assert D1.has_sorted_indices
-        D1.data = np.array([x if x != 0 else 0.0 for x in D1_nz_pattern * np.repeat(chain_vals, 2)])
-        L = D1 @ D1.T
-        k = structural_rank(L)
-        if k > 0: 
-          k = k - 1 if k == min(D1.shape) else k
-          T3 = eigsh(L, return_eigenvectors=False, k=k)
-          terms[2] = -relax_f(np.array(T3))
-        else: 
-          terms[2] = 0 
-        #terms[2] = -sum([t if abs(t) > 1e-13 else 0 for t in T3])
-
-      ## Term 4
-      #chain_vals = ss_b(edge_f) * ss_ac(edge_f)
-      ## Note: L.sum(axis=*) may be > 0  even in rank case
-      A_exc = ss_ac(f[E]).flatten()
-      B_inc = np.repeat(ss_b(edge_f), 2)
-      if np.any(chain_vals > 0):
-        assert D1.has_sorted_indices
-        D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
-        #D1.data = A_exc * B_inc
-        #D1.data = D1_nz_pattern * np.repeat(np.array([x if x != 0 else 0.0 for x in chain_vals]), 2)
-        #return(D1)
-        L = D1 @ D1.T
-        k = structural_rank(L)
-        if k > 0: 
-          k = k - 1 if k == min(D1.shape) else k
-          T4 = eigsh(L, return_eigenvectors=False, k=k)
-          terms[3] = relax_f(np.array(T4))
-        else: 
-          terms[3] = 0.0
-      ## TODO: deflate rows/column by abs(L.A).sum(axis=0) == 0?
-        #terms[3] = sum([t if abs(t) > 1e-13 else 0 for t in T4])
-      
-      ## Append to shape signature and continue
-      shape_sig.append(np.sum(terms) if not(keep_terms) else terms)
-  else: 
-    raise ValueError("Not supported yet")
-  return(np.asarray(shape_sig))
-
 def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, smoothing: tuple = (0.5, 1.5, 0), w: float = 0.0):
   """
   Given a weighted up laplacian 'UL', computes
@@ -589,10 +432,10 @@ def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
 
     ## Multiplicity formula 
     fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
-    t1 = smooth_rank(L.set_weights(fj, fk, fj).precompute())
-    t2 = smooth_rank(L.set_weights(fi, fk, fi).precompute())
-    t3 = smooth_rank(L.set_weights(fj, fl, fj).precompute())
-    t4 = smooth_rank(L.set_weights(fi, fl, fi).precompute())
+    t1 = smooth_rank(L.set_weights(fj, fk, fj))
+    t2 = smooth_rank(L.set_weights(fi, fk, fi))
+    t3 = smooth_rank(L.set_weights(fj, fl, fj))
+    t4 = smooth_rank(L.set_weights(fi, fl, fi))
     return t1 - t2 - t3 + t4
   else: 
     raise ValueError("Invlaid input")
@@ -620,7 +463,7 @@ def mu_sig(S: SimplicialComplex, R: tuple, f: Callable, p: int = 0, w: float = 0
   # min(eigh_solver(L)) vs min(eigh_solver(LM))
   for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
     L.set_weights(None, J, None)
-    L.precompute_degree()
+    # L.precompute_degree()
     I_norm = I * L.diagonal() # degrees
     L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
     EW[cc] = eigh_solver(L)
@@ -642,16 +485,16 @@ def mu_sig(S: SimplicialComplex, R: tuple, f: Callable, p: int = 0, w: float = 0
 
 class MuSignature:
   """ 
-  A multiplicity (mu) signature M is a shape statistic M(i) generated from a parameterized family F = { f1, f2, ..., fk }
+  A multiplicity (mu) signature M is a shape statistic M(i) generated from a parameterized family of F = { f1, f2, ..., fk }
 
-  Concisely, for a fixed pair (S, r) where 'S' is simplicial complex and 'r' a box in the upper half-plane, M(i) 
-  is real number representing the (smoothed) cardinality of dgm(S, fi) restricted to 'r'. 
+  Given a pair (S, r) where 'S' is simplicial complex and 'r' a box in the upper half-plane, 
+  the quantity M(i) is real number representing the *smoothed* cardinality of dgm(S, fi) restricted to 'r'
 
   Constructor parameters: 
-    S := Fixed simplicial complex to evaluate 
-    F := Iterable of functions, each representing a scalar-product equipped to S
+    S := Fixed simplicial complex 
+    F := Iterable of filter functions, each representing scalar-products equipped to S
     R := Rectangle in the upper half-plane 
-    p := dimension of persistence diagram to restrict R too. 
+    p := dimension of persistence to restrict R too
 
   Methods: 
     precompute := precomputes the signature
@@ -665,10 +508,6 @@ class MuSignature:
     self.family = family
     self.np = S.shape[p]
     self.nq = S.shape[p+1]
-    # self.S = S 
-    # self.F = F
-    # self.tol = tol
-    # self._signature = np.zeros(k, dtype=float)
   
   ## Does not change eigenvalues!
   def precompute(self, w: float = 0.0, normed: bool = False, **kwargs) -> None:
@@ -854,8 +693,7 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], S: SimplicialComplex, R: Col
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]
  
-  Each rectangle r = (a,b,c,d) \in R where a < b <= c < d, representing the box
-  [a,b] x [c,d] in the upper half-plane. 
+  Each r = (a,b,c,d) should satisfy a < b <= c < d so as to parameterize a box [a,b] x [c,d] in the upper half-plane. 
   
   Specialization/overloads: 
     * Use (-inf,a,a,inf) to calculate the Betti number at index a

@@ -2,13 +2,13 @@
 An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$.
 %The $p$-skeleton of $\mathrm{skel}_p(K)$ is the the restriction of $K$ to its simplices with dimension $\leq p$. 
 We denote with $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$ and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
-A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$ and \emph{essential} if $i \neq j$ implies $K_i \neq K_j$:
+A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$:
 %Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
 \begin{equation}
 	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
 \end{equation} 
 Equivalently, we may at times define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over a totally ordered index set $I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. Here, we consider two index sets: $[n] = \{ 1, \dots, n\}$ and $\mathbb{R}$. 
-Note that any finite filtration may be trivially converted into an essential, simplexwise filtration via a set of \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. For simplicity, but without loss of generality, we exclusively consider essential simplexwise filtrations and for brevity refer to them as filtrations.
+Note that any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. For simplicity, but without loss of generality, we exclusively consider simplexwise filtrations and for brevity refer to them as filtrations.
 %\\
 %\\
 %\noindent
@@ -32,8 +32,8 @@ where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ is the numbe
 \begin{equation}\label{eq:alt_sum}
 	\partial_p[\sigma] := \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
 \end{equation}
-The concepts of boundaries and orientation generalizes beyond simplices. Given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$, the collection on which under addition yields an $\mathbb{F}$-vector space denoted $C_p(K)$.
-In particular, given a $p$-chain $c \in C_p(K)$, $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. Elements $c \in \partial_p[c']$ are called \emph{boundaries} unless $\partial_p[c] = 0$, in which case they are called \emph{cycles}.
+Generalizing beyond simplices, given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$ whose boundary $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. 
+The collection of chains under addition yields an $\mathbb{F}$-vector space $C_p(K)$, whose elements $c \in \partial_p[c']$ are called \emph{boundaries} unless $\partial_p[c] = 0$, in which case they are called \emph{cycles}.
 %We assume every $p$-chain is \emph{oriented} such that $K$ is an \emph{oriented simplicial complex}.
  Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is a well-defined group called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$. The dimension of the $p$-th homology group $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the \emph{$p$-th Betti number} of $K$. 
 

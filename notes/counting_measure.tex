@@ -16,10 +16,9 @@ Cohen-Steiner et al.~\cite{cohen2005stability} studied PH from a more discrete p
 %the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
 where $\Delta$ denotes the diagonal, counted with infinite multiplicity, and $\mu_p^{i,j}$ is the  \emph{multiplicity function}, defined as: 
 \begin{equation}\label{eq:multiplicity}
-	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right) \quad\quad \text{for } 0 \leq i < j \leq n+ 1
+	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
 \end{equation}
-Equation~\eqref{eq:multiplicity} illuminates an intrinsic connection between the persistence diagram and the persistent Betti numbers. 
-Namely, the inclusion-exclusion property that~\eqref{eq:multiplicity} obeys suggests that diagrams completely characterize their PBNs.
+for all $0 \leq i < j \leq n+ 1$. The inclusion-exclusion property that~\eqref{eq:multiplicity} conveys suggests that diagrams completely characterize their PBNs, illuminating an intrinsic connection between diagrams and their Betti numbers. 
 Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
 \begin{equation}\label{eq:betti_mult}
 	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
@@ -63,8 +62,7 @@ Thus, PBN functions are stable functions: small changes in continuous scalar-val
 
 Like persistence diagrams, the stability of PBN functions justifies their use and study in continuously parameterized settings. Despite this, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{} rather than PBNs or multiplicities (notable exceptions include~\cite{cerri2013betti, chen2011output}). 
 To some extent, this matches intuition: whereas betti numbers and multiplicities are mere counting invariants, a persistence diagram is a multiset of pairs containing strictly more information about the topology of the underlying space. 
-Nonetheless, the counting invariants have certain computational advantages over the ``standard'' reduction algorithm from~\cite{edelsbrunner2022computational}. 
-Namely, the computations are \emph{localized} in the sense that computing $\beta_p^{i,j}$ only requires knowledge of $K_i$ and $K_j$. As counting invariants, both $\mu_p^\ast$ and $\beta_p^{\ast}$ may be determined through rank computations alone~\cite{zomorodian2004computing}. 
+Nonetheless, the counting invariants have certain computational advantages over the reduction algorithm from~\cite{edelsbrunner2022computational}---their computations are \emph{localized} to subcomplexes of the filtration, and they may be determined through only rank computations~\cite{zomorodian2004computing}. 
 Indeed,~\eqref{eq:multiplicity} implies one may actually recover the diagram through at most $2n-1$ multiplicity computations via a divide-and-conquer like approach on the index-persistence plane~\cite{chen2011output}. The duality between PBNs and the persistence diagram suggests an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach persistence-related computations entirely. 
 
 % This was the first output-sensitive algorithm. 

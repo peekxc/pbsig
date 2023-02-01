@@ -776,23 +776,6 @@ def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, **kw
 
   If p is not specified, all p-dimensional barcodes are generated up to the dimension of the filtration.
   """
-  # if isinstance(K, dict):
-  #   if p == 0:
-  #     v0, e0 = f
-  #     V_names = [str(v) for v in K['vertices']]
-  #     E_names = [str(tuple(e)) for e in K['edges']]
-  #     VF0 = dict(zip(V_names, v0))
-  #     EF0 = dict(zip(E_names, e0))
-  #     D0, D1 = boundary_matrix(K, p=(0,1))
-  #     D1 = D1[np.ix_(np.argsort(v0), np.argsort(e0))]
-  #     R0, R1, V0, V1 = reduction_pHcol(D0, D1)
-  #     P0 = persistence_pairs(R0, R1, f=(VF0,EF0) if index == False else None, **kwargs)
-  #   elif p is None:
-  #     D = boundary_matrix(K)
-  #     V = sps.identity(D.shape[1]).tolil()
-  #     R = D.copy().tolil()
-  #     pHcol(R, V)
-  #     assert validate_decomp(D, R, V)
   assert isinstance(K, MutableFiltration), "Only accepts filtration objects for now"
   if p is None:
     D = boundary_matrix(K)

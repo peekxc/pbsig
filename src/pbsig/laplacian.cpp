@@ -13,7 +13,7 @@
 #include <pybind11/stl.h>
 
 #include "combinatorial.h"
-#include "pthash.hpp"
+// #include "pthash.hpp"
 // #include <omp.h>
 
 // Namespace directives and declarations
@@ -36,42 +36,42 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
   return(std::array< uint_64, 2 >{ i, j });
 }
 
-template < typename I = int64_t, typename Hasher = pthash::murmurhash2_64, typename Encoder = pthash::dictionary_dictionary >
-struct IndexMap {
-  typedef I value_type;
-  typedef pthash::single_phf< Hasher, Encoder, true > pthash_type;   
+// template < typename I = int64_t, typename Hasher = pthash::murmurhash2_64, typename Encoder = pthash::dictionary_dictionary >
+// struct IndexMap {
+//   typedef I value_type;
+//   typedef pthash::single_phf< Hasher, Encoder, true > pthash_type;   
   
-  pthash::build_configuration config;      // hash configuration
-  pthash_type pmhf;                        // pmhf
-  vector< I > offsets;                     // offsets to get the right index
+//   pthash::build_configuration config;      // hash configuration
+//   pthash_type pmhf;                        // pmhf
+//   vector< I > offsets;                     // offsets to get the right index
   
-  // Index map
-  IndexMap(float c = 6.0, float alpha = 0.94, bool minimal = true, bool verbose = false){
-    config.c = c;
-    config.alpha = alpha;
-    config.minimal_output = minimal;  // makes perfect hash function *minimal*
-    config.verbose_output = verbose;
-  }
+//   // Index map
+//   IndexMap(float c = 6.0, float alpha = 0.94, bool minimal = true, bool verbose = false){
+//     config.c = c;
+//     config.alpha = alpha;
+//     config.minimal_output = minimal;  // makes perfect hash function *minimal*
+//     config.verbose_output = verbose;
+//   }
 
-  template< typename InputIt > 
-  void build(InputIt b, const InputIt e){
-    const size_t n_elems = std::distance(b,e);
-    pmhf.build_in_internal_memory(b, n_elems, config);
+//   template< typename InputIt > 
+//   void build(InputIt b, const InputIt e){
+//     const size_t n_elems = std::distance(b,e);
+//     pmhf.build_in_internal_memory(b, n_elems, config);
     
-    offsets.resize(n_elems);
-    I i = 0; 
-    std::for_each(b,e,[&](auto elem){
-      auto key = (I) pmhf(elem);
-      offsets.at(key) = i++;
-    });
-  };
+//     offsets.resize(n_elems);
+//     I i = 0; 
+//     std::for_each(b,e,[&](auto elem){
+//       auto key = (I) pmhf(elem);
+//       offsets.at(key) = i++;
+//     });
+//   };
 
-  // Not safe! must pass exact values here
-  [[nodiscard]]
-  constexpr auto operator[](I key) const noexcept -> I {
-    return offsets[pmhf(key)];
-  };
-};
+//   // Not safe! must pass exact values here
+//   [[nodiscard]]
+//   constexpr auto operator[](I key) const noexcept -> I {
+//     return offsets[pmhf(key)];
+//   };
+// };
 
 // /* Compute and print the number of bits spent per key. */
 // double bits_per_key = static_cast<double>(index_map_pmhf.num_bits()) / index_map_pmhf.num_keys();
@@ -85,7 +85,9 @@ struct IndexMap {
 // TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
+  static constexpr int dim = p;
   using value_type = F; 
+  // typename p dim;
   // using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
   using Map_t = unordered_map< uint_64, uint_64 >;
   const size_t nv;
@@ -111,6 +113,7 @@ struct UpLaplacian {
     degrees = vector< F >(np, 0.0);
   }
 
+  
   // Prepares indexing hash function 
   void compute_indexes(){
     //auto index_map = std::unordered_map< uint64_t, uint64_t >; // Maps face ranks to sequential indices 
@@ -224,7 +227,35 @@ auto _matmat(const Laplacian& L, const py::array_t< F, py::array::f_style | py::
   // From: https://github.com/pybind/pybind11/blob/master/include/pybind11/numpy.h 
   array< ssize_t, 2 > Y_shape = { static_cast< ssize_t >(L.shape[0]), n_cols };
   return py::array_t< F , py::array::f_style | py::array::forcecast >(Y_shape, result.data());
-} 
+}
+
+// const vector< uint_64 > qr;             // p+1 ranks
+// vector< uint_64 > pr;    
+// nv;
+//   const size_t np;
+//   const size_t nq 
+template< class Laplacian > 
+auto _simplices_from_ranks(const Laplacian& L) -> py::array_t< int > {
+  vector< int > simplices; 
+  simplices.reserve(static_cast< int >(L.nq*(L.dim+1)));
+  auto out = std::back_inserter(simplices);
+  combinatorial::lex_unrank(L.qr.begin(), L.qr.end(), size_t(L.nv), size_t(L.dim+2), out);
+  array< ssize_t, 2 > _shape = { static_cast< ssize_t >(L.nq), L.dim+2 };
+  return py::array_t< int , py::array::c_style | py::array::forcecast >(_shape, simplices.data());
+  // return py::cast(simplices);
+}
+
+template< class Laplacian > 
+auto _faces_from_ranks(const Laplacian& L) -> py::array_t< int > {
+  vector< int > faces; 
+  faces.reserve(static_cast< int >(L.np*(L.dim)));
+  auto out = std::back_inserter(faces);
+  combinatorial::lex_unrank(L.pr.begin(), L.pr.end(), size_t(L.nv), size_t(L.dim+1), out);
+   
+  array< ssize_t, 2 > _shape = { static_cast< ssize_t >(L.np), L.dim+1 };
+  return py::array_t< int , py::array::c_style | py::array::forcecast >(_shape, faces.data());
+}
+
 
 using array_t_FF = py::array_t< double, py::array::f_style | py::array::forcecast >;
 
@@ -249,11 +280,17 @@ PYBIND11_MODULE(_laplacian, m) {
       auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
       return dtype; 
     })
+    .def_property_readonly("simplices", [](const UpLaplacian< 0, double, true >& L){
+      return _simplices_from_ranks(L);
+    })
+    .def_property_readonly("faces", [](const UpLaplacian< 0, double, true >& L){
+      return _faces_from_ranks(L);
+    })
     .def("precompute_degree", &UpLaplacian< 0, double, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 0, double, true >::compute_indexes)
     .def("_matvec", [](const UpLaplacian< 0, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 0, double, true >& L, const array_t_FF& X){ return _matmat(L, X); });
-
+    .def("_matmat", [](const UpLaplacian< 0, double, true >& L, const array_t_FF& X){ return _matmat(L, X); })
+    ;
   py::class_< UpLaplacian< 1, double, true > >(m, "UpLaplacian1")
     .def(py::init< const vector< uint64_t >, size_t, size_t >())
     .def_readonly("shape", &UpLaplacian< 1, double, true >::shape)
@@ -270,10 +307,17 @@ PYBIND11_MODULE(_laplacian, m) {
       auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
       return dtype; 
     })
+    .def_property_readonly("simplices", [](const UpLaplacian< 0, double, true >& L){
+      return _simplices_from_ranks(L);
+    })
+    .def_property_readonly("faces", [](const UpLaplacian< 0, double, true >& L){
+      return _faces_from_ranks(L);
+    })
     .def("precompute_degree", &UpLaplacian< 1, double, true >::precompute_degree)
     .def("compute_indexes", &UpLaplacian< 1, double, true >::compute_indexes)
     .def("_matvec", [](const UpLaplacian< 1, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 1, double, true >& L, const array_t_FF& X){ return _matmat(L, X); });
+    .def("_matmat", [](const UpLaplacian< 1, double, true >& L, const array_t_FF& X){ return _matmat(L, X); })
+    ;
 }
 
 
