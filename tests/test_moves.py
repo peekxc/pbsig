@@ -76,6 +76,28 @@ def test_move_right():
     assert is_reduced((PDP @ V).todense() % 2), "D @ V is not reduced"
     assert np.allclose(((PDP @ V).todense() - R.todense()) % 2, 0), "R = D @ V does not hold"
   
+def test_move_right2():
+  cj = int(np.random.choice(range(100), size=1))
+  np.random.seed(cj)
+  X, K = random_lower_star(15)
+  D = boundary_matrix(K)
+  V = eye(D.shape[0])
+  I = np.arange(0, D.shape[1])
+  R, V = pm.phcol(D, V, I)
+  assert is_reduced(R)
+  assert np.isclose((R - (D @ V)).sum(), 0.0)
+  D, R, V = D.astype(int).tolil(), R.astype(int).tolil(), V.astype(int).tolil()
+
+  S = list(K.values())
+  valid_mr = list(combinations(range(len(S)), 2))
+  for i,j in valid_mr:
+    n_piv = sum(low_entry(R)[i:(j+1)] != -1)
+    assert is_reduced(move_right(R, V, i, j, copy=True)[0])
+    move_right(R, V, i, j, copy=False)  
+    assert sum(low_entry(R)[i:(j+1)] != -1) == n_piv
+    assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
+    assert all(V.diagonal()%2 >= 0), "V is not full rank"
+
 
 from pbsig.vineyards import *
 def test_move_left():

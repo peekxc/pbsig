@@ -741,7 +741,6 @@ def move_left(R, V, j, i, copy: bool = False):
 
   ## Restore left 
   ## Can still guarentee non-reduced low entries will be in [i,j]
-  ## Can we predict the 
   ind_R = np.arange(R.shape[0])
   low_R = low_entry(R)
   can_R = [(l,r) for l,r in combinations(ind_R, 2) if low_R[l] == low_R[r] and low_R[l] != -1]
