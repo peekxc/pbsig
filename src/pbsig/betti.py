@@ -209,48 +209,7 @@ def relax_identity(X: ArrayLike, q: float = 1.0, complement: bool = False, ub: f
   # C = np.array([(p1 + (1-ti) * (p0 - p1) + ti * (p2 - p1))[1] for ti in T])
   # return(C)
 
-def subdifferential(A): 
-  U, _, Vt = np.linalg.svd(A, full_matrices=False)
-  return(U @ Vt)
 
-def pb_gradient(f: Callable, t: Any, b: float, d: float, Sg: Callable, summands: bool = False, h: float = 100*np.finfo(float).resolution): 
-  K = rips(f(t), diam=d, p=2)
-  D1 = boundary_matrix(K, p=1)
-  D2 = boundary_matrix(K, p=2)
-
-  ## Jacobian finite difference for D1 
-  e_sgn = np.tile([-1, 1], len(K['edges']))
-  ew_p = e_sgn * np.maximum(b - np.repeat(rips_weights(f(t + h), K['edges']), 2), 0.0)
-  ew_m = e_sgn * np.maximum(b - np.repeat(rips_weights(f(t - h), K['edges']), 2), 0.0)
-  # csc_matrix(((tw_p - tw_m)/(2*h), D2.indices, D2.indptr), shape=D2.shape)
-  D1_jac = D1.copy()
-  D1_jac.data = (ew_p - ew_m)/(2*h)
-
-  ## Jacobian finite difference for D2
-  # Wrong! 
-  t_sgn = np.tile([1, -1, 1], len(K['triangles']))
-  tw_p = t_sgn * np.maximum(d - np.repeat(rips_weights(f(t + h), K['triangles']), 3), 0.0)
-  tw_m = t_sgn * np.maximum(d - np.repeat(rips_weights(f(t - h), K['triangles']), 3), 0.0)
-  D2_jac = D2.copy()
-  # csc_matrix(((tw_p - tw_m)/(2*h), D2.indices, D2.indptr), shape=D2.shape)
-  D2_jac.data = (tw_p - tw_m)/(2*h)
-
-  ## Gradients! 
-  # from autograd import grad
-  # import warnings
-  # gs = grad(S)
-  # with warnings.catch_warnings():
-  #   warnings.simplefilter("ignore")
-  # g0 = np.sum([gs(ew) for ew in pdist(f(t))])
-  g0 = np.sum([Sg(ew) for ew in pdist(f(t))])
-  g1 = np.matrix(subdifferential(D1.A).flatten('F')) @ np.matrix(D1_jac.A.flatten('F')).T
-  g2 = np.matrix(subdifferential(D2.A).flatten('F')) @ np.matrix(D2_jac.A.flatten('F')).T
-
-  ## 1D-case
-  if isinstance(t, float): 
-    g1 = g1.item()
-    g2 = g2.item()
-  return((g0, g1, g2) if summands else g0 - (g1 + g2))
 
 
 def plot_direction(V: ArrayLike, T: ArrayLike, W: ArrayLike, cmap: str = 'jet'):
@@ -307,37 +266,6 @@ def lower_star_boundary(weights: ArrayLike, threshold: Optional[float] = np.inf,
     return(D, sw)
 
 
-def lower_star_pb_terms(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float):
-  E = edges_from_triangles(T, V.shape[0])
-  
-  D1, ew = lower_star_boundary(W, simplices=E)
-  D1.data = np.sign(D1.data)*np.maximum(a - np.repeat(ew, 2), 0.0)
-  
-  D2, tw = lower_star_boundary(W, simplices=T)
-  D2.data = np.sign(D2.data)*np.maximum(b - np.repeat(tw, 3), 0.0)
-  
-  D2_g, D2_h = D2.copy().tocoo(), D2.copy().tocoo()
-  D2_g.data = np.sign(D2_g.data)*np.maximum(b - tw[D2_g.col], 0.0)
-  D2_h.data = np.sign(D2_h.data)*np.maximum(ew[D2_h.row] - a, 0.0)
-  
-  D0 = csc_matrix(np.diag(np.maximum(a - ew, 0.0)))
-  return(D0, D1, D2, D2_g, D2_h)
-
-def rips_pb_terms(D: ArrayLike, a: float, b: float, max_diam: Optional[float] = np.inf):
-  from betti import rips_boundary
-  D1, (vw, ew) = rips_boundary(D, p=1, diam=max_diam, sorted=False)
-  D1.data = np.sign(D1.data)*np.maximum(a - np.repeat(ew, 2), 0.0)
-  D2, (ew, tw) = rips_boundary(D, p=2, diam=max_diam, sorted=False)
-  D2.data = np.sign(D2.data)*np.maximum(b - np.repeat(tw, 3), 0.0)
-  D0 = csc_matrix(np.diag(np.maximum(a - ew, 0.0)))
-  
-  D2_g, D2_h = D2.copy().tocoo(), D2.copy().tocoo() 
-  D2_g.data = np.sign(D2_g.data)*np.maximum(b - tw[D2_g.col], 0.0) # maybe signum 
-  D2_h.data = np.sign(D2_h.data)*np.maximum(ew[D2_h.row] - a, 0.0) 
-  D2_g.eliminate_zeros()
-  D2_h.eliminate_zeros()
-  return(D0, D1, D2, D2_g, D2_h)
-
 def _pb_relaxations(D0, D1, D2, H, type, terms, **kwargs):
   if isinstance(type, list) or type == "norm_nuc" or type == "nuc":
     from scipy.sparse.linalg import aslinearoperator, svds
@@ -381,30 +309,6 @@ def _pb_relaxations(D0, D1, D2, H, type, terms, **kwargs):
     d2_t = np.sum(s2 > np.max(s2)*np.max(D2.shape)*np.finfo(D2.dtype).eps)
     dh_t = np.sum(sh > np.max(sh)*np.max(H.shape)*np.finfo(H.dtype).eps)
   return(d0_t - d1_t - d2_t + dh_t if not(terms) else (d0_t, d1_t, d2_t, dh_t))
-
-def rips_pb(D: ArrayLike, a: float, b: float, type: str = ["norm_nuc", "nuc", "fro", "approx", "rank"], max_diam: Optional[float] = np.inf, terms: bool = False, **kwargs):
-  D0, D1, D2, D2_g, D2_h = rips_pb_terms(D, a, b, max_diam=max_diam)
-  H = D2_g.multiply(D2_h)
-  #D2_g.data = np.sign(D2.data)*np.abs(D2_g.data*D2_h.data)
-  
-  ## Normalize by Frobenius norm 
-  # D0.data = D0.data / (1.0 if np.sqrt(np.sum(D0.data**2)) == 0.0 else np.sqrt(np.sum(D0.data**2)))
-  # D1.data = D1.data / (1.0 if np.sqrt(np.sum(D1.data**2)) == 0.0 else np.sqrt(np.sum(D1.data**2)))
-  # D2.data = D2.data / (1.0 if np.sqrt(np.sum(D2.data**2)) == 0.0 else np.sqrt(np.sum(D2.data**2)))
-  # D2_g.data = D2_g.data / (1.0 if np.sqrt(np.sum(D2_g.data**2)) == 0.0 else np.sqrt(np.sum(D2_g.data**2)))
-
-  return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, **kwargs))
-
-def lower_star_pb(V: ArrayLike, T: ArrayLike, W: ArrayLike, a: float, b: float, type: str = ["norm_nuc", "nuc", "fro", "approx", "rank"], terms: bool = False, beta: float = 0.001):
-  """
-  Computes the lower-star 
-  
-  """
-  from .betti import lower_star_boundary
-  from scipy.sparse.linalg import svds
-  D0, D1, D2, D2_g, D2_h = lower_star_pb_terms(V, T, W, a, b)
-  H = D2_g.multiply(D2_h)
-  return(_pb_relaxations(D0, D1, D2, H, type=type, terms=terms, beta=beta))
 
 def tolerance(m: int, n: int, dtype: type = float):
   _machine_eps, _min_res = np.finfo(dtype).eps, np.finfo(dtype).resolution*100
