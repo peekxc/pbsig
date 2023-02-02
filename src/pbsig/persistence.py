@@ -753,8 +753,12 @@ def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> Ar
     death = np.repeat(np.inf, len(birth))
     death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
   else:
+    creator_dim = np.empty(0)
     birth = np.empty(shape=(0, 1))
     death = np.empty(shape=(0, 1))
+  
+  ## Trivial case
+  if len(creator_dim) == 0: return dict()
 
   ## Match the barcodes with the index set of the filtration
   key_dtype = type(next(K.keys()))
@@ -767,6 +771,9 @@ def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> Ar
   dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
   if collapse: 
     dgm = dgm[~np.isclose(dgm['death'] - dgm['birth'], 0.0)]
+
+  ## Split diagram based on homology dimension
+  dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
   return dgm 
 
 ## TODO: redo with filtration class at some point

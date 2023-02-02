@@ -23,6 +23,50 @@ def test_vineyards():
       assert all([r <= c for r,c in zip(*V.nonzero())]), "V is not upper-triangular"
       assert all(np.ravel(V.diagonal()%2) >= 0), "V is not full rank"
 
+from pbsig.vineyards import *
+from pbsig.vineyards import move_stats, vineyards_stats
+def test_vineyards_api():
+  X, K = random_lower_star(15)
+  D, V = boundary_matrix(K), eye(len(K))
+  R, V = pm.phcol(D, V, range(len(K)))
+  R = R.astype(int).tolil()
+  V = V.astype(int).tolil()
+  vineyards_stats(reset = True)
+  VS = []
+  for theta in np.linspace(0, 2*np.pi, 12)+np.pi:
+    v = np.array([np.cos(theta), np.sin(theta)])
+    fv = X @ v
+    update_lower_star(K, R, V, f=lambda s: max(fv[s]), vines=True)
+    VS.append(vineyards_stats())
+
+def test_vineyards_cost():
+  for seed in range(100):
+    np.random.seed(seed)
+    X, K = random_lower_star(25)
+    pairs = list(combinations(range(len(K)), 2))
+    ind = np.random.choice(range(len(pairs)), size=150)
+    for cc in ind:
+      i,j = pairs[cc]
+      D, V = boundary_matrix(K), eye(len(K))
+      R, V = pm.phcol(D, V, range(len(K)))
+      R = R.astype(int).tolil()
+      V = V.astype(int).tolil()
+      vineyards_stats(reset = True)
+      I = np.arange(i, j)
+      status = list(transpose_rv(R, V, I))
+      # print(vineyards_stats())
+      
+      D, V = boundary_matrix(K), eye(len(K))
+      R, V = pm.phcol(D, V, range(len(K)))
+      R = R.astype(int).tolil()
+      V = V.astype(int).tolil()
+      move_stats(reset=True)
+      move_right(R, V, i, j)
+      # print(move_stats())
+      assert move_stats()['n_cols_right'] <= vineyards_stats()['n_cols']
+      if abs(i - j) > 1: 
+        assert move_stats()['n_cols_right'] <= int(vineyards_stats()['n_cols']/2)
+    print(seed)
 
 def test_discordant_pairs():
   from itertools import combinations

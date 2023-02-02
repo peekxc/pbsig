@@ -114,6 +114,7 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
   assert A.shape[0] == A.shape[1], "A must be square"
   assert symmetric, "Haven't implemented non-symmetric yet"
   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+  assert solver is not None, "Invalid solver"
   if pp == 0.0: return 0.0
   if solver == 'dac':
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
@@ -121,9 +122,9 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     params = kwargs
     solver = np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
-    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return 0.0
+    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
-    if nev == 0: return 0.0
+    if nev == 0: return(lambda A: np.zeros(1))
     if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
@@ -149,7 +150,7 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     return ew
   return _call_solver
 
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, **kwargs) -> float:
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
   """ 
   Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
 
@@ -161,13 +162,17 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90,
     smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
     symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
     sqrt := whether to compute sqrt the singular values
-    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'. See 'parameterize_solver' for more details. 
+    solver := Optional callable or string. If the latter, one of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'. See 'parameterize_solver' for more details. 
     kwargs := keyword arguments to pass to the parameterize_solver.
   """
   assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
-  if pp == 0.0: return 0.0
   eps, p, method = smoothing 
-  solver = parameterize_solver(A, pp=pp, solver=solver)
+  if solver is None: 
+    solver = parameterize_solver(A, pp=1.0)
+  elif isinstance(solver, str):
+    solver = parameterize_solver(A, pp=1.0, solver=solver)
+  else:
+    assert isinstance(solver, Callable), "Solver must callable, if not string or None"
   ew = solver(A)
   ew[np.isclose(ew, 0, atol=1e-6)] = 0.0
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."

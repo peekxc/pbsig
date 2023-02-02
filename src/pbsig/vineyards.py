@@ -10,7 +10,7 @@ from .persistence import *
 from .simplicial import *
 
 _MOVE_STATS = { "n_right" : 0, "n_left" : 0, "n_cols_left" : 0, "n_cols_right" : 0 }
-_VINE_STATS = { "n_col" : 0, "n_tr" : 0 }
+_VINE_STATS = { "n_cols" : 0, "n_tr" : 0 }
 
 def permutation_matrix(p: Sequence[int]):
   """ 
@@ -178,7 +178,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
       if V[i,i+1] != 0:
         # s = cancel_pivot(V, i, i+1, piv=i) 
         add_column(V, i+1, V[:,[i]])
-        _VINE_STATS['n_col'] += 1
+        _VINE_STATS['n_cols'] += 1
       if any(piv == i) and any(piv == i+1):
         k,l = np.flatnonzero(piv == i).item(), np.flatnonzero(piv == (i+1)).item()
         if R[i,l] != 0: # Case 1.1.1 and 1.1.2
@@ -190,7 +190,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
           # V[:,[l]] += s*V[:,[k]] if s != 0 else V[:,[k]]
           add_column(V, l, V[:,[k]])
           add_column(R, l, R[:,[k]])
-          _VINE_STATS['n_col'] += 1
+          _VINE_STATS['n_cols'] += 1
           yield status
         else: # Case 1.2 still! 
           permute_tr(R, i, "both")
@@ -209,7 +209,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
           add_column(R, i+1, R[:,[i]])
           permute_tr(R, i, "both")
           permute_tr(V, i, "both")
-          _VINE_STATS['n_col'] += 1
+          _VINE_STATS['n_cols'] += 1
           yield 4 
         else:
           # s = cancel_pivot(V, i, i+1, piv=i)
@@ -222,7 +222,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
           # V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
           add_column(V, i+1, V[:,[i]])
           add_column(R, i+1, R[:,[i]])
-          _VINE_STATS['n_col'] += 2
+          _VINE_STATS['n_cols'] += 2
           yield 5
       else: # Case 2.2
         permute_tr(R, i, "both")
@@ -241,7 +241,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
         # V[:,[i+1]] += s*V[:,[i]] if s != 0 else V[:,[i]]
         add_column(R, i+1, R[:,[i]])
         add_column(V, i+1, V[:,[i]])
-        _VINE_STATS['n_col'] += 2
+        _VINE_STATS['n_cols'] += 2
         yield 7
       else:
         permute_tr(R, i, "both")
@@ -251,7 +251,7 @@ def transpose_rv(R: lil_array, V: lil_array, I: Iterable):
       if V[i,i+1] != 0:
         # s = cancel_pivot(V, i, i+1, piv=i)
         add_column(V, i+1, V[:,[i]])
-        _VINE_STATS['n_col'] += 1
+        _VINE_STATS['n_cols'] += 1
       permute_tr(R, i, "both")
       permute_tr(V, i, "both")
       yield 9
@@ -698,6 +698,7 @@ def restore_right(R: lil_array, V: lil_array, I: Sequence[int]) -> tuple:
     tL, tR, tV = low_entry(R, k), R[:,[k]], V[:,[k]] # temporary 
     add_column(R, k, dR)
     add_column(V, k, dV)
+    _MOVE_STATS["n_cols_right"] += 1
     if tL < dL: 
       dL, dR, dV = tL, tR, tV
   return dR, dV  
@@ -714,7 +715,7 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   #assert all(J_check == J), "J index check failed"
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J) # this should not affect the number of non-reduced columns
-  _MOVE_STATS["n_cols_right"] += len(I) + len(J)
+  #_MOVE_STATS["n_cols_right"] += max(len(I)-1 + len(J), 0)
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
   permute_cylic(V, i, j, "both")
   R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")

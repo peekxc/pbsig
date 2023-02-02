@@ -5,37 +5,40 @@ from itertools import chain
 from scipy.sparse import diags, eye 
 from scipy.sparse.linalg import LinearOperator, aslinearoperator, eigsh
 from scipy.sparse.csgraph import laplacian
-from pbsig.persistence import pHcol, barcodes
+from pbsig.persistence import *
 from pbsig.betti import boundary_matrix
 from pbsig.simplicial import * 
-
-seed = 259
-G = nx.connected_watts_strogatz_graph(n=15, k=5, p=0.10, seed=seed)
-X = np.array(list(nx.fruchterman_reingold_layout(G, seed=seed).values()))
-W = diags(X @ np.array([1,0]))
-L = W @ laplacian(nx.adjacency_matrix(G)) @ W
+import _persistence as pm
 
 
-fv = W.diagonal()
-K = MutableFiltration(map(Simplex, chain(G.nodes, G.edges)), f=lambda s: fv[s].max())
-DGM = barcodes(K)
+## Test output sensitive algorithm 
+S = SimplicialComplex([[0,1,2], [0,1,3]])
+K = MutableFiltration(S)
+D = boundary_matrix(K)
+R, V = D.copy().tolil(), eye(len(K)).tolil()
+pHcol(R, V)
+assert is_reduced(R)
+dgm = generate_dgm(K, R)
+plot_dgm(dgm[0])
 
 
-filter_values = np.fromiter(iter(K.keys()), float)
-fi,fj,fk,fl = np.quantile(filter_values, [0.2, 0.4, 0.6, 0.8])
-i = np.searchsorted(filter_values, fi, side='left')
-j = np.searchsorted(filter_values, fj, side='right')-1
-k = np.searchsorted(filter_values, fk, side='left')
-l = np.searchsorted(filter_values, fl, side='right')-1
+## Cone complex 
+K = MutableFiltration(S)
+K += ([(-np.inf,[-1])]) ## add dummy vertex
+K += (list(sorted([(np.inf, Simplex(list(s) + [-1])) for s in K.values() if s[0] != -1], key=K._key_dim_lex_poset)))
+# plot_complex(S)
+# plot_complex(SimplicialComplex(K.values()))
 
-from pbsig.betti import mu_query
-from pbsig.linalg import up_laplacian
-L = up_laplacian(K, p=0, weight=lambda s: fv[s].max() + 1.0, form="lo")
-mu_query(L, (i,j,k,l), f=lambda s: fv[s].max() + 1.0)
+R = R.todense()
+rrank = lambda i,j,k,l: 0 if len(R[i:j,k:l]) == 0 else np.linalg.matrix_rank(R[i:j,k:l])
+mu_rank = lambda i,j,k,l: rrank(i,l+1,i,l+1) - rrank(i,k,i,k) - rrank(j+1,l+1,j+1,l+1) + rrank(j+1,k,j+1,k)
+ind = (0, 3, 3, 6)
 
-L.simplices
 
-def bisection_tree_top_down(M,rank_f,ind,mu,splitrows=True):
+def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool = True):
+  """ 
+  
+  """
   i,j,k,l = ind 
   if mu == 1 and (i == j if splitrows else k == l):
     piv = i if splitrows else k
@@ -45,14 +48,24 @@ def bisection_tree_top_down(M,rank_f,ind,mu,splitrows=True):
     p = int(np.floor((i+j)/2)) if splitrows else int(np.floor((k+l)/2)) # pivot
     ind_lc = (i,p,k,l) if splitrows else (i,j,k,p)
     ind_rc = (p+1,j,k,l) if splitrows else (i,j,p+1,l)
-    mu_lc = rank_f(*ind_lc) #np.linalg.matrix_rank(M[i:(piv+1),k:(l+1)].todense())
-    mu_rc = rank_f(*ind_rc) #np.linalg.matrix_rank(M[(piv+1):(j+1),k:(l+1)].todense())
+    mu_lc = mu_q(*ind_lc) #np.linalg.matrix_rank(M[i:(piv+1),k:(l+1)].todense())
+    mu_rc = mu_q(*ind_rc) #np.linalg.matrix_rank(M[(piv+1):(j+1),k:(l+1)].todense())
     print(f"[{mu}]: ({i},{j},{k},{l}), L:{mu_lc}, R:{mu_rc}")
     assert mu == mu_lc + mu_rc
     if mu_lc > 0:
-      yield from bisection_tree_top_down(M,rank_f,ind_lc,mu_lc,splitrows)
+      yield from bisection_tree_top_down(mu_q,ind_lc,mu_lc,splitrows)
     if mu_rc > 0:
-      yield from bisection_tree_top_down(M,rank_f,ind_rc,mu_rc,splitrows)
+      yield from bisection_tree_top_down(mu_q,ind_rc,mu_rc,splitrows)
+
+ind = (0, 3, 3, 6)
+dgm_res = []
+creators = list(bisection_tree_top_down(mu_rank, ind=ind, mu=mu_rank(*ind), splitrows=True))
+for i in creators:
+  d = list(bisection_tree_top_down(mu_rank, ind=(i, i, ind[2], ind[3]), mu=mu_rank(i, i, ind[2], ind[3]), splitrows=False))
+  assert len(d) == 1
+  dgm_res.append([i, d[0]])
+
+
 
 mu = mu_query(i,j,k,l)
 creators = list(bisection_tree_top_down(D,mu_query,(i,j,k,l),mu,splitrows=True))
@@ -66,6 +79,32 @@ bisection_tree(D,i,j,k,l,creators)
 
 destroyers = []
 bisection_tree2(D,2,2,k,l,destroyers)
+
+
+
+
+
+
+
+seed = 259
+G = nx.connected_watts_strogatz_graph(n=15, k=5, p=0.10, seed=seed)
+X = np.array(list(nx.fruchterman_reingold_layout(G, seed=seed).values()))
+fv = X @ np.array([0,1])
+K = MutableFiltration(map(Simplex, chain(G.nodes, G.edges)), f=lambda s: fv[s].max())
+DGM = barcodes(K)
+
+filter_values = np.fromiter(iter(K.keys()), float)
+fi,fj,fk,fl = np.quantile(filter_values, [0.2, 0.4, 0.6, 0.8])
+i = np.searchsorted(filter_values, fi, side='left')
+j = np.searchsorted(filter_values, fj, side='right')-1
+k = np.searchsorted(filter_values, fk, side='left')
+l = np.searchsorted(filter_values, fl, side='right')-1
+
+from pbsig.betti import mu_query
+from pbsig.linalg import up_laplacian
+L = up_laplacian(K, p=0, weight=lambda s: fv[s].max() + 1.0, form="lo")
+mu_query(L, R = (fi,fj,fk,fl), f=lambda s: fv[s].max() + 1.0)
+
 
 # from pbsig.vis import plot_complex
 

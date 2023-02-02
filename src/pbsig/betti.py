@@ -34,7 +34,7 @@ def sample_rect_halfplane(n: int, area: tuple = (0, 0.05), disjoint: bool = Fals
     cc += 1
   return np.array(R)
 
-def Lipshitz(f: ArrayLike, x: ArrayLike):
+def lipshitz_constant(f: ArrayLike, x: ArrayLike):
   """ 
   Estimate Lipshitz constant K such that: 
   
@@ -201,34 +201,38 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
-def mu_query(L: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, smoothing: tuple = (0.5, 1.5, 0), w: float = 0.0):
-  """
-  Given a weighted up laplacian 'UL', computes
-  """
-  assert len(R) == 4, "Must be a rectangle"
-  if isinstance(L, UpLaplacian):
-    i,j,k,l = R
-    assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
-    sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-    sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-    su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-    su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-    
-    ## Get initial set of weights
-    fw = np.array([f(s) for s in L.faces])
-    sw = np.array([f(s) for s in L.simplices])
 
-    ## Multiplicity formula 
-    fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
-    t1 = smooth_rank(L.set_weights(fj, fk, fj))
-    t2 = smooth_rank(L.set_weights(fi, fk, fi))
-    t3 = smooth_rank(L.set_weights(fj, fl, fj))
-    t4 = smooth_rank(L.set_weights(fi, fl, fi))
-    return t1 - t2 - t3 + t4
-  else: 
-    raise ValueError("Invlaid input")
-  return 0 
+def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+  """
+  Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
+  
+  Parameters: 
+    S = Simplicial complex, or its corresponding Laplacian operator 
+    R = box (i,j,k,l,w) to restrict to, where i < j <= k < l, and w > 0 is a smoothing parameter
+    f = filter function on S (or equivalently, scalar product on its Laplacian operator)
+    smoothing = parameters for singular values
+  """
+  assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
+  L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0)
+  assert isinstance(L, UpLaplacian)
+  (i,j,k,l), w = R[:4], 0.0 if len(R) == 4 else R
+  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+  fw = np.array([f(s) for s in L.faces])
+  sw = np.array([f(s) for s in L.simplices])
+  delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
+  fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+  fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+  EW = [None]*4
+  ## Multiplicity formula 
+  for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+    L.set_weights(None, J, None)
+    I_norm = I * L.diagonal() # degrees
+    EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
+  return EW[0] - EW[1] - EW[2] + EW[3]
 
 def mu_sig(S: SimplicialComplex, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
   assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"

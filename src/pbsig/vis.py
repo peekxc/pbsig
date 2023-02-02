@@ -11,13 +11,38 @@ from .linalg import *
 import bokeh 
 from bokeh.plotting import figure, show
 from bokeh.plotting import figure, show, from_networkx
-from bokeh.models import GraphRenderer, Ellipse, Range1d, Circle, ColumnDataSource, MultiLine, Label, LabelSet, Button
+from bokeh.models import GraphRenderer, Ellipse, Range1d, Circle, ColumnDataSource, MultiLine, Label, LabelSet, Button, Span
 from bokeh.palettes import Spectral8, RdGy
 from bokeh.models.graphs import StaticLayoutProvider
 from bokeh.io import output_notebook, show, save
 from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
+
+def plot_dgm(dgm, pt_size: int = 15, show_filter: bool = False):
+  output_notebook(verbose=False, hide_banner=True)
+  max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
+  max_val = (max_val if max_val != np.inf else 1.0)
+  min_val = min(dgm["birth"])
+  min_val = (min_val if min_val != 1.0 else 0.0)
+  delta = abs(min_val-max_val)
+  min_val, max_val = min_val - delta*0.10, max_val + delta*0.10
+  p = figure(width=400, height=400, x_range=(min_val, max_val), y_range=(min_val, max_val), match_aspect=True,aspect_scale=1)
+  p.title = "Persistence diagram"
+  p.xaxis.axis_label = "Birth"
+  p.yaxis.axis_label = "Death"
+  x = dgm["birth"][dgm["death"] != np.inf]
+  y = dgm["death"][dgm["death"] != np.inf]
+  p.scatter(x,y, size=pt_size)
+  x = dgm["birth"][dgm["death"] == np.inf]
+  y = np.repeat(max_val - delta*0.05, sum(dgm["death"] == np.inf))
+  s = Span(dimension="width", location=max_val - delta*0.05, line_width=1.0, line_color="gray", line_dash="dotted")
+  s.level = 'underlay'
+  p.add_layout(s)
+  p.scatter(x,y, size=pt_size, color="red")
+  p.patch([min_val, max_val, max_val], [min_val, min_val, max_val], line_width=0, fill_color="gray", fill_alpha=0.80)
+  show(p)
+  return p
 
 def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   n = inverse_choose(len(d), 2)
