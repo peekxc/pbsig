@@ -743,7 +743,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
 def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
-  sdim = np.array([s.dimension() for s in iter(K.values())])
+  sdim = np.array([s.dim() for s in iter(K.values())])
   
   ## Get the indices of the creators and destroyers
   if any(rlow == -1):
@@ -884,11 +884,11 @@ def sw_parameters(bounds: Tuple, d: int = None, tau: float = None,  w: float = N
 
 def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
   ''' 
-  Slidding Window Embedding of a time series 
+  Slidding Window Embedding of a time series.
   
-  Returns a function which generates a n-point slidding window point cloud of a fixed time-series/function 'f'. 
+  Returns a function which generates a n-point slidding window point cloud of a fixed time-series/function _f_. 
 
-  The function takes any two of: 
+  The returned function has the parameters
     - n := number of point to generate the embedding
     - d := dimension-1 of the resulting embedding 
     - w := (optional) window size each (d+1)-dimensional delay coordinate is derived from
