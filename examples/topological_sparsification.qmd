@@ -31,6 +31,9 @@ from pbsig.simplicial import *
 
 K = rips_filtration(X, radius=0.25)
 dgm = barcodes(K)
+d1 = barcodes(K, engine="cpp")
+d2 = barcodes(K, engine="dionysus")
+# np.allclose(d1[2]['death'], d2[2]['death'])
 
 from pbsig.vis import plot_dgm
 plot_dgm(dgm[0])

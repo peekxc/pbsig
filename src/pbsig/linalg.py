@@ -834,3 +834,32 @@ def is_symmetric(A) -> bool:
   vl = vl[sortl]
   vu = vu[sortu]
   return np.allclose(vl, vu)
+
+# from enum import Enum
+def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps: float = 100*np.finfo(float).resolution):
+  """ 
+  Creates a projector that projects onto the intersection of spaces (A,B), where
+  A and B are linear subspace.
+  
+  method := one of 'neumann', 'anderson', or 'israel' 
+  """
+  assert space in ["RR", "RN", "NR", "NN"], "Invalid space argument"
+  # if A.shape
+  U, E, Vt = np.linalg.svd(A.A, full_matrices=False)
+  X, S, Yt = np.linalg.svd(B.A, full_matrices=False)
+  PA = U @ U.T if space[0] == 'R' else np.eye(A.shape[1]) - Vt.T @ Vt
+  PB = X @ X.T if space[1] == 'R' else np.eye(B.shape[1]) - Yt.T @ Yt
+  if method == "neumann":
+    PI = np.linalg.matrix_power(PA @ PB, 125)# von neumanns identity
+  elif method == "anderson":
+    PI = 2*(PA @ np.linalg.pinv(PA + PB) @ PB)
+  elif method == "israel":
+    L, s, _ = np.linalg.svd(PA @ PB, full_matrices=False)
+    s_ind = np.flatnonzero(abs(s - 1.0) <= eps)
+    PI = np.zeros(shape=PA.shape)
+    for si in s_ind:
+      PI += L[:,[si]] @ L[:,[si]].T
+  else:
+    raise ValueError("Invalid method given.")
+  return(PI)
+  # np.sum(abs(np.linalg.svd(np.c_[PI @ D1.T, PI @ D2])[1]))
