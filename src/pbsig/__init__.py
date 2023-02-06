@@ -13,6 +13,7 @@ from .persistence import *
 from .betti import *
 from .linalg import *
 from .fast_pbn import *
+from splex import *
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 def _package_data(path: str = ""):

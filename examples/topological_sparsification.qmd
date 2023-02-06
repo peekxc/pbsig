@@ -1,0 +1,57 @@
+---
+jupyter: python3
+---
+
+
+```{python}
+import numpy as np
+theta = np.linspace(0, 2*np.pi, 100, endpoint=False)
+circle = np.c_[np.cos(theta), np.sin(theta)]
+noise = np.random.normal(loc=1.0, scale=0.05, size=len(theta))
+circle *= np.repeat(noise, 2).reshape(circle.shape)
+square = np.random.uniform(low=-1.5, high=1.5, size=(50, 2))
+X = np.vstack([circle, square])
+```
+
+
+```{python}
+import bokeh 
+from bokeh.plotting import figure, show
+# from bokeh.models import 
+
+p = figure()
+p.scatter(X[:,0], X[:,1], size=6)
+show(p)
+```
+
+Compute the rips persistence, inspect the diagram 
+```{python}
+from pbsig.persistence import * 
+from pbsig.simplicial import *
+#S = delaunay_complex(X)
+# fv = X @ np.array([1,0])
+
+from scipy.spatial.distance import pdist
+pd = pdist(X)
+from pbsig.simplicial import SimplexTree
+
+pm.phcol
+
+S = delaunay_complex(circle)
+fv = circle @ np.array([1,0])
+K = MutableFiltration(S, f=lambda s: max(fv[s]))
+dgm = barcodes(K)
+
+from pbsig.vis import plot_dgm
+plot_dgm(dgm[0])
+plot_dgm(dgm[1])
+
+```
+
+Select a box, run sparsification on the Laplacian matrix
+
+```{python}
+
+```
+
+

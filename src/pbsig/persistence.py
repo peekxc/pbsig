@@ -769,8 +769,10 @@ def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> Ar
   
   ## Assemble the diagram
   dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
-  if collapse: 
-    dgm = dgm[~np.isclose(dgm['death'] - dgm['birth'], 0.0)]
+  if collapse:
+    nonzero_ind = ~np.isclose(dgm['death'] - dgm['birth'], 0.0) 
+    dgm = dgm[nonzero_ind]
+    creator_dim = creator_dim[nonzero_ind]
 
   ## Split diagram based on homology dimension
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
