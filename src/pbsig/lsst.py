@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.sparse import csc_matrix, coo_matrix
+from scipy.sparse import csc_array, coo_array
 
 # sparsify(nx.adjacency_matrix(G))
 
@@ -17,7 +17,7 @@ def low_stretch_st(A, method: str = "akpw", weighted: bool = True):
   # import networkx as nx
   # assert isinstance(G, nx.Graph)
   jl, Main = import_julia()
-  A = coo_matrix(A).astype(float)
+  A = coo_array(A).astype(float)
   Main.I = np.array(A.row+1).astype(float)
   Main.J = np.array(A.col+1).astype(float)
   Main.V = abs(A.data) if weighted else np.repeat(1, len(A.data))
@@ -32,20 +32,57 @@ def low_stretch_st(A, method: str = "akpw", weighted: bool = True):
     raise ValueError("invalid method")
   return st
 
-def sparsify(A, epsilon: float = 1.0, ensure_connected: bool = False, max_tries = 10):
+from pbsig.simplicial import *
+def is_connected(S: SimplicialComplex):
+  from scipy.cluster.hierarchy import DisjointSet
+  ds = DisjointSet(list(S.faces(0))) 
+  for i,j in faces(S, 1):
+    ds.merge(Simplex(i), Simplex(j))
+  return ds.n_subsets == 1
+
+def connected_components(S: SimplicialComplex):
+  from scipy.cluster.hierarchy import DisjointSet
+  ds = DisjointSet(list(S.faces(0))) 
+  for i,j in faces(S, 1):
+    ds.merge(Simplex(i), Simplex(j))
+  p = np.zeros(S.shape[0], dtype=int)
+  for i, subset in enumerate(ds.subsets()):
+    for representative in subset:
+      p[int(representative[0])] = i
+  return p 
+
+def sparsify(A, epsilon: float = 1.0, ensure_connected: bool = False, max_tries = 10, exclude_singletons: bool = True):
+  """
+  Sparsifies adjacency matrix 'A' 
+  """
   jl, Main = import_julia()
-  A = coo_matrix(A).astype(float)
+  A = coo_array(A).astype(float)
   Main.I = np.array(A.row+1).astype(float)
   Main.J = np.array(A.col+1).astype(float)
   Main.V = A.data # abs(A.data) if weighted else np.repeat(1, len(A.data))
   jl.eval("S = sparse(I,J,V); 0")
+  
+  ## Disable warnings
+  Main.using("Logging")
+  jl.eval("Logging.disable_logging(Logging.Warn);")
+
+  ## Different notions of connectdness 
+  def _is_connected(exclude_singletons: bool = False):
+    if not exclude_singletons:
+      SA = csc_array(jl.eval("SA"))
+      return is_connected(SimplicialComplex(chain(range(A.shape[0]), zip(*SA.nonzero()))))
+    else: 
+      return jl.eval("isConnected(SA)")
+
   jl.eval(f"SA = sparsify(S, ep={epsilon}); 0")
   if ensure_connected:
     n_tries = 1
-    while n_tries < 10 and not jl.eval("isConnected(SA)"):
+    while n_tries < max_tries and not _is_connected(exclude_singletons):
       jl.eval(f"SA = sparsify(S, ep={epsilon}); 0")
       n_tries += 1
     # aq = jl.eval("approxQual(S, SA)")
-  SA = csc_matrix(jl.eval("SA"))
+  if n_tries == max_tries:
+    raise RuntimeError("Unable to ensure the graph stays connected")
+  SA = csc_array(jl.eval("SA"))
   return SA
 

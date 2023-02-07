@@ -101,6 +101,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
 
 
   ## Deduce embedding
+  from scipy.sparse import diags
   pos = "mds" if pos is None else pos
   use_grid_lines = False
   L = up_laplacian(S, p = 0)
@@ -141,48 +142,51 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
 
   ## Create the (p >= 2)-simplex renderer
-  t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
-  t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
-  t_col = bin_color(t_color, **bin_kwargs)
-  t_data = {
-    'xs' : t_x,
-    'ys' : t_y,
-    'color' : t_col, # np.repeat("#808080", len(edge_x)),
-    'value' : t_color
-  }
-  t_source = ColumnDataSource(data=t_data)
-  t_renderer = p.patches('xs', 'ys', color='color', alpha=0.70, line_width=2, source=t_source)
+  if len(S.shape) > 2 and S.shape[2] > 0:
+    t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
+    t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
+    t_col = bin_color(t_color, **bin_kwargs)
+    t_data = {
+      'xs' : t_x,
+      'ys' : t_y,
+      'color' : t_col, # np.repeat("#808080", len(edge_x)),
+      'value' : t_color
+    }
+    t_source = ColumnDataSource(data=t_data)
+    t_renderer = p.patches('xs', 'ys', color='color', alpha=0.70, line_width=2, source=t_source)
 
   ## Create edge renderer
-  e_scale = 0.25
-  e_x = [pos[e,0] for e in S.faces(1)]
-  e_y = [pos[e,1] for e in S.faces(1)]
-  e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
-  e_widths = (e_sizes / np.max(e_sizes))*e_scale
-  e_col = bin_color(e_color,  **bin_kwargs)
-  #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
-  e_data = {
-    'xs' : e_x,
-    'ys' : e_y,
-    'color' : e_col, # np.repeat("#808080", len(edge_x)),
-    'line_width': e_widths, 
-    'value' : e_color
-  }
-  e_source = ColumnDataSource(data=e_data)
-  e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
-  
+  if len(S.shape) > 1 and S.shape[1] > 0:
+    e_scale = 0.25
+    e_x = [pos[e,0] for e in S.faces(1)]
+    e_y = [pos[e,1] for e in S.faces(1)]
+    e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
+    e_widths = (e_sizes / np.max(e_sizes))*e_scale
+    e_col = bin_color(e_color,  **bin_kwargs)
+    #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
+    e_data = {
+      'xs' : e_x,
+      'ys' : e_y,
+      'color' : e_col, # np.repeat("#808080", len(edge_x)),
+      'line_width': e_widths, 
+      'value' : e_color
+    }
+    e_source = ColumnDataSource(data=e_data)
+    e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
+    
   ## Create node renderer
-  v_scale = 35.0
-  v_col = bin_color(v_color,  **bin_kwargs)
-  v_data = {
-    'x' : pos[:,0],
-    'y' : pos[:,1],
-    'size' : np.repeat(v_scale, S.shape[0]), 
-    'color' : v_col,
-    'value' : v_color
-  }
-  v_source = ColumnDataSource(data=v_data)
-  v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
+  if len(S.shape) > 0 and S.shape[0] > 0:
+    v_scale = 35.0
+    v_col = bin_color(v_color,  **bin_kwargs)
+    v_data = {
+      'x' : pos[:,0],
+      'y' : pos[:,1],
+      'size' : np.repeat(v_scale, S.shape[0]), 
+      'color' : v_col,
+      'value' : v_color
+    }
+    v_source = ColumnDataSource(data=v_data)
+    v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
 
   p.toolbar.logo = None
   show(p)

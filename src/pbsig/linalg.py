@@ -643,6 +643,17 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)
 
+from scipy.sparse import coo_array
+def adjacency_matrix(S: SimplicialComplex, p: int = 0, weights: ArrayLike = None):
+  assert len(S.shape) > p, "Empty simplicial complex"
+  if len(S.shape) <= (p+1):
+    return coo_array(S.shape[p], S.shape[p], dtype=int)
+  weights = np.ones(S.shape[p+1]) if weights is None else weights
+  assert len(weights) == S.shape[p+1], "Invalid weight array, must match length of p+1 simplices"
+  IJ = np.array([(i,j) for i,j in S.faces(p+1)], dtype=int)
+  A = coo_array((weights, (IJ[:,0], IJ[:,1])), shape=(S.shape[p], S.shape[p]))
+  A = A + A.T
+  return A
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
 def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):

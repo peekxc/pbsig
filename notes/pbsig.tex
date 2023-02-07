@@ -282,9 +282,11 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent Computationally, the relevance of Propositions~\ref{prop:rank_reduction} and~\ref{prop:mu_reduction} is they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$, which was in fact the core observation used by Chen et al~\cite{chen2011output} in their rank-based persistence algorithm---the first \emph{output sensitive} persistence algorithm.
+\noindent Computationally, the relevance of Propositions~\ref{prop:rank_reduction} and~\ref{prop:mu_reduction} is they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$, which was in fact the core observation used by Chen et al in their rank-based persistence algorithm~\cite{chen2011output}.
 %~\ref{eq:measure}
-The primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have compared to classical methods in~\cite{edelsbrunner2022computational, zomorodian2004computing} is that their computations are performed directly on \emph{unfactored} boundary (sub)matrices. Restricting the field of choice to $\mathbb{F} = \mathbb{R}$, a natural question arises: computationally, how do expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} relate to their measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure}?
+The primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have compared to classical methods in~\cite{edelsbrunner2022computational, zomorodian2004computing} is that their computations are performed directly on \emph{unfactored} boundary (sub)matrices. 
+% TODO: maybe rephrase for better emphasis on a different perspective?
+A natural question arises when we restrict the field $\mathbb{F}$ of to $\mathbb{R}$: computationally, how do expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} relate to their measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure}?
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
 We dedicate the rest of the paper to exploring this question. 
 
@@ -332,8 +334,7 @@ We dedicate the rest of the paper to exploring this question.
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
 %As stated in section~\ref{sec:intro}, we are concerned with the computation of certain topological invariants in \emph{parameterized} settings, i.e. settings where the input data---geometrically realized as simplicial complexes---is thought to be generated from a parameterized family. Such families naturally arise in many applications, e.g. in Rips filtrations parameterized by dynamic metric spaces~\cite{} or in multi-parameter persistence settings~\cite{}.  
-
-By formulating the counting invariants via~\eqref{eq:betti_four} and~\eqref{eq:mu_four}, we may exploit various properties of the rank function---many of which happen to have computational advantages in such settings. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Thus, as long as each constitutive term in~\eqref{eq:mu_four} has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical. 
+The counting invariant formulations via~\eqref{eq:betti_four} and~\eqref{eq:mu_four} allow us to exploit various properties of the rank function---many of which happen to have computational advantages in such settings. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$. Thus, as long as each constitutive term in~\eqref{eq:mu_four} has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical. 
 %Though the boundary matrices in~\eqref{eq:betti_four} are given in filtration order to preserve the inclusion relations between simplices in $K_\bullet$, the permutation invariance of the rank function suggests $\partial$ need not be ordered at all to be evaluated---so long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
 In what follows, we re-define the boundary matrix to exploit this permutation invariance. 
  
@@ -368,9 +369,8 @@ Suppose that instead of being given a [fixed] filtration $(K_\bullet, f)$ where 
 In the typical dynamical settings, the filtration boundary matrix $\partial(K_\bullet)$ needs to be kept in filtration order to preserve the inclusion relations between simplices.
 However, the permutation invariance of the rank function suggests $\partial$ need not be ordered at all to be evaluated. 
 To see the utility in this, consider the following reformulation of the boundary matrix $\partial_p$. 
-\begin{definition}[Parameterized boundary matrix]\label{def:time_boundary_matrix}
-Let $K$ denote an abstract simplicial complex of size $\lvert K \rvert = N$, equipped with parameterized filtering function $f : K \times \mathcal{H} \to \mathbb{R}$. 
-Assume $K$ is ordered along a fixed but arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ to be the $N \times N$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
+\begin{definition}[Parameterized $\hat{\partial}_p^{i,j}$]\label{def:time_boundary_matrix}
+Let $K$ denote a simplicial complex of size $\lvert K \rvert = N$ filtered along a parameterized function $f : K \times \mathcal{H} \to \mathbb{R}$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset. For any $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\hat{\partial}_p^{i, j}(h)$ as the $N \times N$ matrix ordered by $\preceq^\ast$ for all $h \in \mathcal{H}$, and whose entries $(k,l)$ satisfy:
 \begin{equation}\label{eq:param_boundary_matrix}
 	\hat{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\

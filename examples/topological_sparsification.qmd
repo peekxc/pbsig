@@ -1,5 +1,9 @@
 ---
+title: topological sparsification
 jupyter: python3
+format:
+  html:
+    code-fold: true 
 ---
 
 
@@ -13,7 +17,6 @@ square = np.random.uniform(low=-1.5, high=1.5, size=(10, 2))
 X = np.vstack([circle, square])
 ```
 
-
 ```{python}
 import bokeh 
 from bokeh.plotting import figure, show, output_notebook
@@ -24,7 +27,8 @@ p.scatter(X[:,0], X[:,1], size=6)
 show(p)
 ```
 
-Compute the rips persistence, inspect the diagram 
+Compute the rips persistence, inspect the diagram
+
 ```{python}
 from pbsig.persistence import * 
 from pbsig.simplicial import *
@@ -41,10 +45,16 @@ plot_dgm(dgm[1])
 
 ```
 
+Highlight generators by persistence
+
+```{python}
+from itertools import compress
+R,V = ph(K, engine="cpp", output = "rv")
+G = cycle_generators(K, V, R)
+```
+
 Select a box, run sparsification on the Laplacian matrix
 
 ```{python}
 
 ```
-
-

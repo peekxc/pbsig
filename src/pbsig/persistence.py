@@ -169,7 +169,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
     valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
   return(valid)
 
-def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> ArrayLike :
+def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True, generators: bool = False) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
   sdim = np.array([s.dim() for s in iter(K.values())])
@@ -207,8 +207,40 @@ def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True) -> Ar
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
   return dgm 
 
+def cycle_generators(K: MutableFiltration, V: spmatrix, R: spmatrix = None, collapse: bool = True):
+  G = []
+  piv = np.flatnonzero(low_entry(R))
+  # G = dict(zip(np.flatnonzero(piv == -1), repeat([])))
+  # V = V.tocsr()
+  # V.sort_indices()
+  GR = {}
+  for r,c in zip(*V.nonzero()): 
+    if c == r or c in piv:
+      GR.setdefault(r, []).append(c) ## simplex at index 'r' contributes to cycle at index 'c' 
+
+  S = list(faces(K))
+  G = {}
+  for k,v in GR.items():
+    for c in v: 
+      G.setdefault(c, []).append(S[k])
+
+  if collapse: 
+    G = { k : v for k,v in G.items() if len(v) > 1 }
+  return G
+  # sel = np.zeros(len(K))
+  # sel[piv] = 1
+  
+  # G = {}
+  # for (k,v),s in zip(GR.items(), compress(faces(K), sel)):
+  #   for c in v: 
+  #     G.setdefault(c, []).append(s)
+
+  # for i, s in enumerate(faces(K)):
+  #   pass
+  # pass 
+
 ## TODO: redo with filtration class at some point
-def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, engine: str = ["python", "cpp", "dionysus"], **kwargs):
+def ph(K: MutableFiltration, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], **kwargs):
   """
   Given a filtered simplicial complex 'K' and optionally an integer p >= 0, generate p-dimensional barcodes
 
@@ -222,15 +254,14 @@ def barcodes(K: MutableFiltration, p: Optional[int] = None, f: Tuple= None, engi
       R, V = boundary_matrix(K), sps.identity(len(K)).tolil()
       pHcol(R, V)
       assert validate_decomp(boundary_matrix(K), R, V)
-      dgm = generate_dgm(K, R)
-      return dgm
+      return generate_dgm(K, R) if output == "dgm" else R,V
     elif engine == "cpp": 
       D, V = boundary_matrix(K), sps.identity(len(K))
       R, V = pm.phcol(D, V, range(len(K)))  
       assert validate_decomp(D, R, V)
-      dgm = generate_dgm(K, R)
-      return dgm
+      return generate_dgm(K, R) if output == "dgm" else R,V
     elif engine == "dionysus":
+      assert output == "dgm"
       dgm = ph_dionysus(K)
       return dgm
     else: 
