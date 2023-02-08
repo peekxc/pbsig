@@ -6,14 +6,14 @@ format:
     code-fold: true 
 ---
 
-
 ```{python}
 import numpy as np
-theta = np.linspace(0, 2*np.pi, 20, endpoint=False)
+NC, NN = 100, 20 
+theta = np.linspace(0, 2*np.pi, NC, endpoint=False)
 circle = np.c_[np.cos(theta), np.sin(theta)]
 noise = np.random.normal(loc=1.0, scale=0.05, size=len(theta))
 circle *= np.repeat(noise, 2).reshape(circle.shape)
-square = np.random.uniform(low=-1.5, high=1.5, size=(10, 2))
+square = np.random.uniform(low=-1.5, high=1.5, size=(NN, 2))
 X = np.vstack([circle, square])
 ```
 
@@ -27,22 +27,23 @@ p.scatter(X[:,0], X[:,1], size=6)
 show(p)
 ```
 
-Compute the rips persistence, inspect the diagram
+Choose a rips threshold
+
+```{python}
+from pbsig.vis import plot_complex
+K = rips_filtration(X, radius=0.45)
+plot_complex(K)
+```
+
+Inspect the diagram
 
 ```{python}
 from pbsig.persistence import * 
 from pbsig.simplicial import *
-
-K = rips_filtration(X, radius=0.25)
-dgm = barcodes(K)
-d1 = barcodes(K, engine="cpp")
-d2 = barcodes(K, engine="dionysus")
-# np.allclose(d1[2]['death'], d2[2]['death'])
-
 from pbsig.vis import plot_dgm
-plot_dgm(dgm[0])
-plot_dgm(dgm[1])
 
+dgm = ph(K, engine="dionysus")
+plot_dgm(dgm[1])
 ```
 
 Highlight generators by persistence
@@ -56,5 +57,102 @@ G = cycle_generators(K, V, R)
 Select a box, run sparsification on the Laplacian matrix
 
 ```{python}
+from pbsig.lsst import sparsify
+from pbsig.linalg import adjacency_matrix
+A = adjacency_matrix(S, weights=ew)
+i,j,k,l = 0.1, 0.25, 0.50, enclosing_radius(K)*1.05
+enclosing_radius(K)
+```
 
+Try the graph complement idea
+
+```{python}
+from pbsig.utility import cycle_window
+from itertools import combinations
+n = 5
+edges = set(cycle_window(range(n)))
+edges = set([tuple(sorted(e)) for e in edges])
+compl = set(combinations(range(n), 2))-edges
+assert edges.isdisjoint(compl)
+assert (edges | compl) == set(combinations(range(n),2))
+assert len(edges) + len(compl) == comb(n, 2)
+
+LM = up_laplacian(SimplicialComplex(edges)).todense()
+LC = up_laplacian(SimplicialComplex(compl)).todense()
+
+from pbsig.linalg import * 
+assert is_symmetric(LM) and is_symmetric(LC)
+L1 = -np.sort(-np.linalg.eigvalsh(LM))
+L2 = -np.sort(-np.linalg.eigvalsh(LC))
+np.sort(n - L1)
+np.sort(L2)
+print(sum([any(np.isclose(ev, L2)) for ev in (n - L1)]))
+# for i in range(n-1):
+#   print(f"{L2[n-i+1]} vs {n - L1[i]}")
+
+
+import matplotlib.pyplot as plt 
+plt.spy(L + LC)
+```
+
+```{python}
+
+from pbsig.utility import cycle_window
+from itertools import combinations
+n = 3
+edges = set(cycle_window(range(n)))
+edges = set([tuple(sorted(e)) for e in edges][:(-1)])
+compl = set(combinations(range(n), 2)) - edges | set([(i,) for i in np.arange(n)])
+assert edges.isdisjoint(compl)
+# assert (edges | compl) == set(combinations(range(n),2))
+# assert len(edges) + len(compl) == comb(n, 2)
+
+# ew = np.random.uniform(size=comb(n,2), low=0.0, high=2.0)
+ew = np.arange(comb(n,2))+1
+sf = lambda s: ew[rank_lex(s, n=n)] if len(s) == 2 else 1
+LM = up_laplacian(SimplicialComplex(edges), weight=lambda s: sf(s)).todense()
+LC = up_laplacian(SimplicialComplex(compl), weight=lambda s: sf(s)).todense()
+LM = up_laplacian(SimplicialComplex(edges)).todense()
+LC = up_laplacian(SimplicialComplex(compl)).todense()
+# LM + LC
+
+
+
+from pbsig.linalg import * 
+assert is_symmetric(LM) and is_symmetric(LC)
+L1 = -np.sort(-np.linalg.eigvalsh(LM))
+L2 = -np.sort(-np.linalg.eigvalsh(LC))
+np.sort(max(L2) - L2)
+np.sort(L1)
+np.isclose(sum(L1), sum(L2))
+print(sum([any(np.isclose(ev, L2)) for ev in (n - L1)]))
+```
+
+```{python}
+S1 = SimplicialComplex([[0,1],[1,2]])
+S2 = SimplicialComplex([[0],[1],[2],[0,2]])
+D1, D2 = boundary_matrix(S1,p=1), boundary_matrix(S2,p=1)
+W1, W2 = diags([1.0,1.0]), diags([1.0])
+LM = (D1 @ W1 @ D1.T).todense()
+LC = (D2 @ W2 @ D2.T).todense()
+
+np.trace(LM + LC)
+np.trace(LM)
+np.trace(LC)
+L1 = -np.sort(-np.linalg.eigvalsh(LM))
+L2 = -np.sort(-np.linalg.eigvalsh(LC))
+
+# LM = up_laplacian().todense()
+# LC = up_laplacian(SimplicialComplex([[0],[1],[2],[0,2]])).todense()
+# np.linalg.eigh LM + LC
+```
+
+```{python}
+n = 5
+# ew = np.random.uniform(size=comb(n,2), low=0.0, high=2.0)
+ew = np.ones(comb(n,2))+0.1
+# ew = np.arange(comb(n,2))+1
+sf = lambda s: ew[rank_lex(s, n=n)] if len(s) == 2 else 1
+LM = up_laplacian(SimplicialComplex(combinations(range(n), 2)), weight=lambda s: sf(s)).todense()
+np.linalg.eigvalsh(LM)
 ```
