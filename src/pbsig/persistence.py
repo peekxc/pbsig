@@ -254,12 +254,12 @@ def ph(K: MutableFiltration, p: Optional[int] = None, output: str = "dgm", engin
       R, V = boundary_matrix(K), sps.identity(len(K)).tolil()
       pHcol(R, V)
       assert validate_decomp(boundary_matrix(K), R, V)
-      return generate_dgm(K, R) if output == "dgm" else R,V
+      return generate_dgm(K, R) if output == "dgm" else (R,V)
     elif engine == "cpp": 
       D, V = boundary_matrix(K), sps.identity(len(K))
       R, V = pm.phcol(D, V, range(len(K)))  
       assert validate_decomp(D, R, V)
-      return generate_dgm(K, R) if output == "dgm" else R,V
+      return generate_dgm(K, R) if output == "dgm" else (R,V)
     elif engine == "dionysus":
       assert output == "dgm"
       dgm = ph_dionysus(K)

@@ -19,7 +19,7 @@ from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
 
-def plot_dgm(dgm, pt_size: int = 15, show_filter: bool = False):
+def plot_dgm(dgm, pt_size: int = 5, show_filter: bool = False):
   output_notebook(verbose=False, hide_banner=True)
   max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
   max_val = (max_val if max_val != np.inf else 1.0)
@@ -89,10 +89,10 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   #assert isinstance(color, Sequence)
   if len(color) == S.shape[0]:
     v_color = color
-    e_color = [max(color[e]) for e in S.faces(1)]
-    t_color = [max(color[t]) for t in S.faces(2)]
+    e_color = [max(color[e]) for e in faces(S,1)]
+    t_color = [max(color[t]) for t in faces(S,2)]
   elif len(color) == len(S):
-    d = np.array([len(s)-1 for s in S], dtype=np.int8)
+    d = np.array([len(s)-1 for s in faces(S)], dtype=np.int8)
     v_color = color[d==0]
     e_color = color[d==1]
     t_color = color[d==2]
@@ -102,10 +102,10 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
 
   ## Deduce embedding
   from scipy.sparse import diags
+  from pbsig.linalg import adjacency_matrix
   pos = "mds" if pos is None else pos
   use_grid_lines = False
-  L = up_laplacian(S, p = 0)
-  A = L - diags(L.diagonal())
+  A = adjacency_matrix(S)
   if isinstance(pos, str) and pos == "spring":
     import networkx as nx
     G = nx.from_numpy_array(A)

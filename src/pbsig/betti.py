@@ -8,15 +8,6 @@ from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
 
-def rank_C2(i: int, j: int, n: int):
-  i, j = (j, i) if j < i else (i, j)
-  return(int(n*i - i*(i+1)/2 + j - i - 1))
-
-def unrank_C2(x: int, n: int):
-  i = int(n - 2 - np.floor(np.sqrt(-8*x + 4*n*(n-1)-7)/2.0 - 0.5))
-  j = int(x + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2)
-  return(i,j) 
-
 ## Generate a random set of rectangles in the upper half plane 
 def sample_rect_halfplane(n: int, area: tuple = (0, 0.05), disjoint: bool = False):  
   """ 
