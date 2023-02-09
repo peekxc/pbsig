@@ -79,13 +79,18 @@ assert len(edges) + len(compl) == comb(n, 2)
 
 LM = up_laplacian(SimplicialComplex(edges)).todense()
 LC = up_laplacian(SimplicialComplex(compl)).todense()
+LG = up_laplacian(SimplicialComplex(edges | compl)).todense()
 
 from pbsig.linalg import * 
 assert is_symmetric(LM) and is_symmetric(LC)
 L1 = -np.sort(-np.linalg.eigvalsh(LM))
 L2 = -np.sort(-np.linalg.eigvalsh(LC))
+L3 = -np.sort(-np.linalg.eigvalsh(LG))
+D3 = np.ravel(LG.diagonal())
+A3 = np.sort(np.linalg.eigvalsh(-(LG - diags(D3))))
 np.sort(n - L1)
 np.sort(L2)
+np.sort(L3)
 print(sum([any(np.isclose(ev, L2)) for ev in (n - L1)]))
 # for i in range(n-1):
 #   print(f"{L2[n-i+1]} vs {n - L1[i]}")
@@ -155,4 +160,52 @@ ew = np.ones(comb(n,2))+0.1
 sf = lambda s: ew[rank_lex(s, n=n)] if len(s) == 2 else 1
 LM = up_laplacian(SimplicialComplex(combinations(range(n), 2)), weight=lambda s: sf(s)).todense()
 np.linalg.eigvalsh(LM)
+```
+
+Test homotopy between scalar functions equipped to laplacian to see how nuclear norms of various subgraphs behave 
+```{python}
+from pbsig.utility import cycle_window
+from itertools import combinations
+n = 5
+edges = set(cycle_window(range(n)))
+edges = set([tuple(sorted(e)) for e in edges][:(-1)])
+compl = set(combinations(range(n), 2)) - edges | set([(i,) for i in np.arange(n)])
+assert edges.isdisjoint(compl)
+#ew = np.arange(comb(n,2))+1
+
+
+SV = []
+ew0 = np.random.uniform(size=comb(n,2), low=0, high=5)
+for i in range(20):
+  ew1 = np.random.uniform(size=comb(n,2), low=0, high=5)
+  for alpha in np.linspace(0, 1, 100):
+    ew = alpha*ew1 + (1-alpha)*ew0
+    sf = lambda s: ew[rank_lex(s, n=n)] if len(s) == 2 else 1
+    LM = up_laplacian(SimplicialComplex(edges), weight=lambda s: sf(s)).todense()
+    LC = up_laplacian(SimplicialComplex(compl), weight=lambda s: sf(s)).todense()
+    LG = up_laplacian(SimplicialComplex(edges | compl), weight=lambda s: sf(s)).todense()
+    sm = np.sum(np.sqrt(np.maximum(0.0, np.linalg.eigvalsh(LM))))
+    sc = np.sum(np.sqrt(np.maximum(0.0, np.linalg.eigvalsh(LC))))
+    sg = np.sum(np.sqrt(np.maximum(0.0, np.linalg.eigvalsh(LG))))
+    SV.append((sm,sc,sg))
+  ew0 = ew1.copy()
+
+ew,ev = np.linalg.eigh(LG)
+AG = LG - diags(np.ravel(LG.diagonal()))
+(AG @ ev[:,2])/ev[:,2]
+
+from bokeh.plotting import figure, show 
+SV = np.array(SV)
+I = np.arange(SV.shape[0])
+p = figure()
+p.line(I, SV[:,0], color="orange")
+p.line(I, SV[:,1], color="red")
+p.line(I, SV[:,2], color="blue")
+p.line(I, SV[:,2]-SV[:,0], color="green")
+p.line(I, 0.05*(SV[:,2]*SV[:,0]), color="black")
+show(p) 
+# blue should always lie above orange and red; 
+# In theory, green and red should have similar shapes + similar minima/maxima 
+# Moreover, we hope minimizing red is like maximizing orange, possibly up to normalization
+
 ```

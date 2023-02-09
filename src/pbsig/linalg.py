@@ -10,10 +10,53 @@ from scipy.sparse.linalg import *
 from scipy.sparse.csgraph import *
 
 ## Local imports
+from .meta import *
 from .simplicial import * 
 from .combinatorial import * 
 import _lanczos as lanczos
 import _laplacian as laplacian
+
+
+from scipy.sparse.linalg import eigs as truncated_eig
+from scipy.linalg import eigh, eig as dense_eig
+from scipy.spatial import KDTree
+from scipy.sparse import csc_matrix, csr_matrix
+from scipy.sparse.csgraph import minimum_spanning_tree, connected_components, floyd_warshall
+
+def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
+  ''' 
+  Computes classical MDS (cmds) 
+    D := squared distance matrix
+  '''
+  n = D.shape[0]
+  H = np.eye(n) - (1.0/n)*np.ones(shape=(n,n)) # centering matrix
+  evals, evecs = np.linalg.eigh(-0.5 * H @ D @ H)
+  evals, evecs = evals[(n-d):n], evecs[:,(n-d):n]
+
+  # Compute the coordinates using positive-eigenvalued components only     
+  if coords:               
+    w = np.flip(np.maximum(evals, np.repeat(0.0, d)))
+    Y = np.fliplr(evecs) @ np.diag(np.sqrt(w))
+    return(Y)
+  else: 
+    ni = np.setdiff1d(np.arange(d), np.flatnonzero(evals > 0))
+    if pos:
+      evecs[:,ni], evals[ni] = 1.0, 0.0
+    return(np.flip(evals), np.fliplr(evecs))
+
+def pca(x: ArrayLike, d: int = 2, center: bool = False, coords: bool = True) -> ArrayLike:
+	''' PCA embedding '''
+	if is_pairwise_distances(x) or is_distance_matrix(x):
+		return(cmds(x, d))
+	assert is_point_cloud(x), "Input should be a point cloud, not a distance matrix."
+	if center: x -= x.mean(axis = 0)
+	evals, evecs = np.linalg.eigh(np.cov(x, rowvar=False))
+	idx = np.argsort(evals)[::-1] # descending order to pick the largest components first 
+	if coords:
+		return(np.dot(x, evecs[:,idx[range(d)]]))
+	else: 
+		return(np.flip(evals)[range(d)], np.fliplr(evecs)[:,range(d)])
+
 
 # Neumanns majorization doesn't apply? rank_lb = sum(np.sort(diagonal(A)) >= tol)
 ## TODO: replace with new operator norm bounds for the Laplacian?
@@ -268,26 +311,6 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
 # then compute eigenvalues
 # For linear operators: row sums == L @ np.repeat(1, L.shape[0]) 
 
-def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
-  ''' 
-  Computes classical MDS (cmds) 
-    D := squared distance matrix
-  '''
-  n = D.shape[0]
-  H = np.eye(n) - (1.0/n)*np.ones(shape=(n,n)) # centering matrix
-  evals, evecs = np.linalg.eigh(-0.5 * H @ D @ H)
-  evals, evecs = evals[(n-d):n], evecs[:,(n-d):n]
-
-  # Compute the coordinates using positive-eigenvalued components only     
-  if coords:               
-    w = np.flip(np.maximum(evals, np.repeat(0.0, d)))
-    Y = np.fliplr(evecs) @ np.diag(np.sqrt(w))
-    return(Y)
-  else: 
-    ni = np.setdiff1d(np.arange(d), np.flatnonzero(evals > 0))
-    if pos:
-      evecs[:,ni], evals[ni] = 1.0, 0.0
-    return(np.flip(evals), np.fliplr(evecs))
 
 def sparse_pinv(A, method: str = "pinv"):
   if method == "psvd_sqrt":

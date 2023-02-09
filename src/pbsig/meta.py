@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import ArrayLike
 from .combinatorial import * 
 
 def is_distance_matrix(x: ArrayLike) -> bool:

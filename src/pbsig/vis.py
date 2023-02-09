@@ -20,11 +20,11 @@ from bokeh.layouts import column
 
 
 def plot_dgm(dgm, pt_size: int = 5, show_filter: bool = False):
-  output_notebook(verbose=False, hide_banner=True)
+  #output_notebook(verbose=False, hide_banner=True)
   max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
-  max_val = (max_val if max_val != np.inf else 1.0)
+  max_val = (max_val if max_val != np.inf else max(dgm["birth"]))
   min_val = min(dgm["birth"])
-  min_val = (min_val if min_val != 1.0 else 0.0)
+  min_val = (min_val if min_val != max_val else 0.0)
   delta = abs(min_val-max_val)
   min_val, max_val = min_val - delta*0.10, max_val + delta*0.10
   p = figure(width=400, height=400, x_range=(min_val, max_val), y_range=(min_val, max_val), match_aspect=True,aspect_scale=1)
