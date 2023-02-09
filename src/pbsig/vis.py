@@ -85,20 +85,24 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   if (notebook): output_notebook(verbose=False, hide_banner=True)
   TOOLTIPS = [ ("index", "$value") ]
 
-  color = np.ones(len(S)) if color is None else color
-  #assert isinstance(color, Sequence)
-  if len(color) == S.shape[0]:
-    v_color = color
-    e_color = [max(color[e]) for e in faces(S,1)]
-    t_color = [max(color[t]) for t in faces(S,2)]
+  ## Default color values == dimension of the simplex 
+  d = np.array([len(s)-1 for s in faces(S)], dtype=np.int8)
+  if color is None:
+    cv = d.copy()
   elif len(color) == len(S):
-    d = np.array([len(s)-1 for s in faces(S)], dtype=np.int8)
-    v_color = color[d==0]
-    e_color = color[d==1]
-    t_color = color[d==2]
+    cv = np.array(color)
+  elif len(color) == S.shape[0]:
+    cv[d == 0] = color
+    cv[d == 1] = [max(color[e]) for e in faces(S,1)]
+    cv[d == 2] = [max(color[e]) for t in faces(S,2)]
   else: 
     raise ValueError(f"Invalid color argument {type(color)}")
+  assert isinstance(cv, Container)
 
+  ## Replace color with rgba values from color palette 
+  default_bin_kwargs = dict(lb=min(cv), ub=max(cv), color_pal=palette) 
+  bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
+  color = bin_color(cv, **bin_kwargs)
 
   ## Deduce embedding
   from scipy.sparse import diags
@@ -138,38 +142,33 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
 
-  default_bin_kwargs = dict(lb=min(color), ub=max(color), color_pal=palette) 
-  bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
 
-  ## Create the (p >= 2)-simplex renderer
+  ## Create the (p == 2)-simplex renderer
   if len(S.shape) > 2 and S.shape[2] > 0:
     t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
     t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
-    t_col = bin_color(t_color, **bin_kwargs)
     t_data = {
       'xs' : t_x,
       'ys' : t_y,
-      'color' : t_col, # np.repeat("#808080", len(edge_x)),
-      'value' : t_color
+      'color' : color[d == 2] # np.repeat("#808080", len(edge_x)),
+      # 'value' : t_color
     }
     t_source = ColumnDataSource(data=t_data)
-    t_renderer = p.patches('xs', 'ys', color='color', alpha=0.70, line_width=2, source=t_source)
+    t_renderer = p.patches('xs', 'ys', color='color', alpha=0.20, line_width=2, source=t_source)
 
   ## Create edge renderer
   if len(S.shape) > 1 and S.shape[1] > 0:
-    e_scale = 0.25
+    e_scale = 0.75
     e_x = [pos[e,0] for e in S.faces(1)]
     e_y = [pos[e,1] for e in S.faces(1)]
     e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
     e_widths = (e_sizes / np.max(e_sizes))*e_scale
-    e_col = bin_color(e_color,  **bin_kwargs)
     #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
     e_data = {
       'xs' : e_x,
       'ys' : e_y,
-      'color' : e_col, # np.repeat("#808080", len(edge_x)),
-      'line_width': e_widths, 
-      'value' : e_color
+      'color' : color[d == 1], # np.repeat("#808080", len(edge_x)),
+      'line_width': e_widths
     }
     e_source = ColumnDataSource(data=e_data)
     e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
@@ -177,16 +176,14 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   ## Create node renderer
   if len(S.shape) > 0 and S.shape[0] > 0:
     v_scale = 35.0
-    v_col = bin_color(v_color,  **bin_kwargs)
     v_data = {
       'x' : pos[:,0],
       'y' : pos[:,1],
       'size' : np.repeat(v_scale, S.shape[0]), 
-      'color' : v_col,
-      'value' : v_color
+      'color' : color[d == 0]
     }
     v_source = ColumnDataSource(data=v_data)
     v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
-
   p.toolbar.logo = None
   show(p)
+  return p 
