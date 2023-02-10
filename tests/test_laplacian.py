@@ -6,6 +6,7 @@ from pbsig.persistence import boundary_matrix
 from pbsig.simplicial import *
 from pbsig.utility import *
 from pbsig.linalg import *
+from splex.combinatorial import rank_combs
 
 def generate_dataset(n: int = 15, d: int = 2):
   X = np.random.uniform(size=(n,d))
@@ -258,7 +259,7 @@ def test_up_laplacian_native():
   X, K = generate_dataset(15)
   E = np.array(list(K.faces(1)))
   nv = K.dim()[0]
-  er = rank_combs(E, k=2, n=nv)
+  er = rank_combs(E, n=nv, order="lex")
   assert isinstance(er, np.ndarray) and len(er) == K.dim()[1]
 
   L = laplacian.UpLaplacian0_LS(er, nv)
@@ -274,14 +275,14 @@ def test_up_laplacian_native():
 
 
 def test_laplacian0_cpp():
-  from pbsig.combinatorial import rank_combs
+  
   X = np.random.uniform(size=(15,2))
   S = delaunay_complex(X) 
-  r = rank_combs(S.faces(1), k=2, n=S.shape[0])
+  r = rank_combs(S.faces(1), n=S.shape[0], order="lex")
   x = np.random.uniform(size=L.shape[0])
 
   from pbsig.linalg import laplacian, up_laplacian
-  L = laplacian.UpLaplacian0(r, X.shape[0], X.shape[0])
+  L = laplacian.UpLaplacian0D(r, X.shape[0], X.shape[0])
   L.compute_indexes()
   L.precompute_degree()
   LM = up_laplacian(S, p=0)
@@ -290,24 +291,35 @@ def test_laplacian0_cpp():
   LO = up_laplacian(S, p=0, form='lo')
   assert np.allclose((LO @ x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
 
+  from pbsig.linalg import UpLaplacian0D
+  p_simplices = list(S.faces(0))
+  q_simplices = list(S.faces(1))
+  LO2 = UpLaplacian0D(q_simplices, p_simplices)
+  (LO2 @ x)- (LM @ x)
+
   import timeit
   timeit.timeit(lambda: LM @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
   timeit.timeit(lambda: LO @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
+  timeit.timeit(lambda: LO2 @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
 
 def test_laplacian1_cpp():
-  from pbsig.combinatorial import rank_combs
+  from splex.combinatorial import rank_combs
   X = np.random.uniform(size=(15,2))
   S = delaunay_complex(X) 
-  qr = rank_combs(S.faces(2), k=3, n=S.shape[0])
+  qr = rank_combs(S.faces(2), n=S.shape[0], order="lex")
 
   from pbsig.linalg import laplacian, up_laplacian
-  L = laplacian.UpLaplacian1(qr, S.shape[0], S.shape[1])
+  L = laplacian.UpLaplacian1F(qr, S.shape[0], S.shape[1])
   L.compute_indexes()
   L.precompute_degree()
   
+  ## Ensure the remappers work
+  assert all(np.ravel(L.simplices == np.array(list(S.faces(2)))))
+  assert all(np.ravel(L.faces == np.array(list(S.faces(1)))))
+
   ## Ensure index map is valid
-  pr_true = rank_combs(S.faces(1), k=2, n=S.shape[0])
-  pr_test = np.sort(list(L.index_map.keys()))
+  pr_true = rank_combs(S.faces(1), n=S.shape[0], order="lex")
+  pr_test = np.array(L.pr)
   assert len(pr_true) == len(pr_test)
   assert all((pr_true - pr_test) == 0)
 
@@ -316,22 +328,7 @@ def test_laplacian1_cpp():
   LM = up_laplacian(S, p=1)
   assert np.allclose(L._matvec(x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
 
-def test_laplacian0_cpp_matmat():
-  from pbsig.combinatorial import rank_combs
-  X = np.random.uniform(size=(15,2))
-  S = delaunay_complex(X) 
-  r = rank_combs(S.faces(1), k=2, n=S.shape[0])
-
-  from pbsig.linalg import laplacian, up_laplacian
-  L = laplacian.UpLaplacian0(r, X.shape[0], X.shape[0])
-  L.compute_indexes()
-  L.precompute_degree()
-
-  LM = up_laplacian(S, p=0)
-  X = np.random.uniform(size=L.shape)
-  assert np.allclose((LM @ X) - L._matmat(X), 0.0, atol=10*np.finfo(np.float32).eps)
-  
-  #L.fpr = np.random.uniform(size=S.shape[0])
+  from pbsig.linalg import UpLaplacian0D
 
 def test_laplacian_API():
   from pbsig.linalg import laplacian, up_laplacian

@@ -8,6 +8,7 @@ from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
 from scipy.sparse.csgraph import *
+from splex.combinatorial import rank_combs
 
 ## Local imports
 from .meta import *
@@ -744,7 +745,8 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     elif form == 'lo':
       p_faces = list(S.faces(p))        ## need to make a view 
       p_simplices = list(S.faces(p+1))  ## need to make a view 
-      lo = UpLaplacian(p_simplices, p_faces)
+      _lap_cls = eval(f"UpLaplacian{int(p)}D")
+      lo = _lap_cls(p_simplices, p_faces)
       if normed:
         deg = np.zeros(len(p_faces))
         for cc, qs in enumerate(p_simplices):
@@ -763,7 +765,13 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       raise ValueError(f"Unknown form '{form}'.")
 
 
-class UpLaplacian(LinearOperator):
+# for cls_nm in dir(laplacian):
+#   if cls_nm[0] != "_":
+#     #eval(f"laplacian.{cls_nm}")
+#     type(cls_nm, (eval(f"laplacian.{cls_nm}"), LinearOperator), {})
+
+
+class UpLaplacianBase(LinearOperator):
   """ 
   Linear operator for weighted p up-Laplacians of simplicial complexes. 
   
@@ -778,70 +786,57 @@ class UpLaplacian(LinearOperator):
   """
   # __slots__ = ('shape', 'dtype')
   # identity_seq = type("One", (), { '__getitem__' : lambda self, x: 1.0 })()
+  # if p == 0:
+  #   _lap_cls = laplacian.UpLaplacian0D
+  # elif p == 1: 
+  #   _lap_cls = laplacian.UpLaplacian1D
+  # elif p == 2: 
+  #   _lap_cls = laplacian.UpLaplacian2D
+  # else: 
+  #   raise ValueError("Laplacian extension modules has not been compiled for p > 2.")
+  # self.m = _lap_cls(q_ranks, nv, _np)
 
-  ## TODO: Remove 'F'? Add more params?
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None):
+  def __init__(S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None):
     ## Ensure S is repeatable and faces 'F' is indexable
     assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
     assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
     p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
     assert p == 0 or p == 1, "Only p in {0,1} supported for now"
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
-    from splex.combinatorial import rank_combs
-
-    ## Parameterize the internal operator
-    nv, _np = max([max(s) for s in S])+1, len(F)
-    q_ranks = rank_combs(S, k=p+2, n=nv, order="lex")
-    if p == 0:
-      _lap_cls = laplacian.UpLaplacian0D
-    elif p == 1: 
-      _lap_cls = laplacian.UpLaplacian1D
-    elif p == 2: 
-      _lap_cls = laplacian.UpLaplacian2D
-    else: 
-      raise ValueError("Laplacian extension modules has not been compiled for p > 2.")
-    self.m = _lap_cls.__init__(self, q_ranks, nv, _np)
-
-    ## Precompute things necessary for evaluation
-    self.compute_indexes()
-    self.precompute_degree()
+    # super().__init__(*args, **kwargs)
 
   def diagonal(self) -> ArrayLike:
-    return self.m.degrees
+    return self.degrees
 
   @property 
   def face_left_weights(self): 
-    return self.m.fpl
+    return self.fpl
 
   @face_left_weights.setter
   def face_left_weights(self, value: ArrayLike) -> None:
-    assert len(value) == self.m.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.m.fpl = value.astype(self.dtype)
+    self.fpl = value.astype(self.dtype)
 
   @property 
   def face_right_weights(self): 
-    return self.m.fpr
+    return self.fpr
 
   @face_right_weights.setter
   def face_right_weights(self, value: ArrayLike) -> None:
-    assert len(value) == self.m.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.m.fpr = value.astype(self.dtype)
+    self.fpr = value.astype(self.dtype)
 
   @property
   def simplex_weights(self): 
-    return self.m.fq
+    return self.fq
   
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
-    assert len(value) == len(self.m.fq) and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == len(self.fq) and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.m.fq = value.astype(self.dtype)
-
-  def index(self, face: SimplexLike) -> int:
-    face_rank = rank_lex(face, n=self.m.nv, k=len(face))
-    return self.m.index_map[face_rank]
+    self.fq = value.astype(self.dtype)
 
   def set_weights(self, lw = None, cw = None, rw = None):
     self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.np)
@@ -849,6 +844,42 @@ class UpLaplacian(LinearOperator):
     self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.np)
     self.precompute_degree()
     return self 
+
+class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
+    nv, _np = max([max(s) for s in S])+1, len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian0D.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
+
+class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
+    nv, _np = max([max(s) for s in S])+1, len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
+
+class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
+    nv, _np = max([max(s) for s in S])+1, len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
+
+class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
+    nv, _np = max([max(s) for s in S])+1, len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:
