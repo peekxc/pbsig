@@ -22,7 +22,7 @@ from bokeh.layouts import column
 def plot_dgm(dgm, pt_size: int = 5, show_filter: bool = False):
   #output_notebook(verbose=False, hide_banner=True)
   max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
-  max_val = (max_val if max_val != np.inf else max(dgm["birth"]))
+  max_val = (max_val if max_val != np.inf else max(dgm["birth"])*10)
   min_val = min(dgm["birth"])
   min_val = (min_val if min_val != max_val else 0.0)
   delta = abs(min_val-max_val)
@@ -82,7 +82,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
   """
   
   ## Default scales
-  if (notebook): output_notebook(verbose=False, hide_banner=True)
+  #if (notebook): output_notebook(verbose=False, hide_banner=True)
   TOOLTIPS = [ ("index", "$value") ]
 
   ## Default color values == dimension of the simplex 
@@ -185,5 +185,5 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     v_source = ColumnDataSource(data=v_data)
     v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
   p.toolbar.logo = None
-  show(p)
+  #show(p)
   return p 

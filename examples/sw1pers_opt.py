@@ -33,14 +33,17 @@ for t in np.linspace(0.50*tau, 1.50*tau, 10):
   scatters.append(plot_complex(S, pos=pca(X_delay), width=125, height=125))
 show(row(*scatters))
 
-
 ## Choose a box, show its rank over vineyards 
-## Rather than do rips, just fix it 
 from pbsig.persistence import * 
 from pbsig.vis import plot_dgm
-K = rips_filtration(X_delay, radius=2.0)
+from scipy.spatial.distance import pdist
+from splex.constructions import flag_weight
+f = flag_weight(X)
+K = MutableFiltration(S, f=lambda s: f(s))
+K = rips_filtration(X, r)
 dgm = ph(K)
 plot_dgm(dgm[1])
 
-##
-mu_query
+from pbsig.betti import mu_query
+Lf = flag_weight(X, vertex_weights=np.ones(S.shape[0]))
+mu_query()

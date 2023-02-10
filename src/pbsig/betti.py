@@ -88,27 +88,27 @@ def prox_moreau(X: Union[ArrayLike, Tuple], alpha: float = 1.0, mu: Union[float,
   Mb = 0 if mu == 0 else (1/(2*mu))*np.linalg.norm(X - prox_af, 'fro')**2
   return(Ma + Mb, prox_af)
 
-def plot_direction(V: ArrayLike, T: ArrayLike, W: ArrayLike, cmap: str = 'jet'):
-  import matplotlib
-  assert V.shape[0] == len(W)
-  import plotly.graph_objects as go
-  from tallem.color import bin_color
-  cm = matplotlib.cm.get_cmap(cmap)
-  colors = list(np.array([cm(v) for v in np.linspace(0, 1, endpoint=True)]))
-  TW = np.array([np.max(W[t]) for t in T])
-  face_colors = bin_color(TW, colors)
-  axis = dict(showbackground=True,backgroundcolor="rgb(230, 230,230)",gridcolor="rgb(255, 255, 255)",zerolinecolor="rgb(255, 255, 255)")
-  layout = go.Layout(scene=dict(xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis), aspectmode='data', aspectratio=dict(x=1, y=1, z=1)))
-  mesh = go.Mesh3d(x=V[:,0], y=V[:,1], z=V[:,2], i=T[:,0],j=T[:,1],k=T[:,2],facecolor=face_colors) #  intensity=W+np.min(W), colorscale='Jet'
-  tri_points = V[T]
-  Xe, Ye, Ze = [], [], []
-  for T in tri_points:
-    Xe.extend([T[k%3][0] for k in range(4)]+[ None])
-    Ye.extend([T[k%3][1] for k in range(4)]+[ None])
-    Ze.extend([T[k%3][2] for k in range(4)]+[ None])
-  lines = go.Scatter3d(x=Xe, y=Ye, z=Ze, mode='lines', name='', line=dict(color= 'rgb(70,70,70)', width=1))  
-  fig = go.Figure(data=[mesh, lines], layout=layout)
-  fig.show()
+# def plot_direction(V: ArrayLike, T: ArrayLike, W: ArrayLike, cmap: str = 'jet'):
+#   import matplotlib
+#   assert V.shape[0] == len(W)
+#   import plotly.graph_objects as go
+#   from tallem.color import bin_color
+#   cm = matplotlib.cm.get_cmap(cmap)
+#   colors = list(np.array([cm(v) for v in np.linspace(0, 1, endpoint=True)]))
+#   TW = np.array([np.max(W[t]) for t in T])
+#   face_colors = bin_color(TW, colors)
+#   axis = dict(showbackground=True,backgroundcolor="rgb(230, 230,230)",gridcolor="rgb(255, 255, 255)",zerolinecolor="rgb(255, 255, 255)")
+#   layout = go.Layout(scene=dict(xaxis=dict(axis), yaxis=dict(axis), zaxis=dict(axis), aspectmode='data', aspectratio=dict(x=1, y=1, z=1)))
+#   mesh = go.Mesh3d(x=V[:,0], y=V[:,1], z=V[:,2], i=T[:,0],j=T[:,1],k=T[:,2],facecolor=face_colors) #  intensity=W+np.min(W), colorscale='Jet'
+#   tri_points = V[T]
+#   Xe, Ye, Ze = [], [], []
+#   for T in tri_points:
+#     Xe.extend([T[k%3][0] for k in range(4)]+[ None])
+#     Ye.extend([T[k%3][1] for k in range(4)]+[ None])
+#     Ze.extend([T[k%3][2] for k in range(4)]+[ None])
+#   lines = go.Scatter3d(x=Xe, y=Ye, z=Ze, mode='lines', name='', line=dict(color= 'rgb(70,70,70)', width=1))  
+#   fig = go.Figure(data=[mesh, lines], layout=layout)
+#   fig.show()
 
 def lower_star_boundary(weights: ArrayLike, threshold: Optional[float] = np.inf, simplices: Optional[ArrayLike] = None, dim: Optional[int] = 1):
   """
@@ -192,8 +192,31 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
+def betti_query(S: Union[LinearOperator, SimplicialComplex], i: float, j: float, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+  pass 
+  # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0, form='lo')
+  # assert isinstance(L, UpLaplacian)
+  # assert i <= j, f"Invalid point ({i:.2f}, {j:.2f}): must be in the upper half-plane"
+  # fw = np.array([f(s) for s in L.faces])
+  # sw = np.array([f(s) for s in L.simplices])
+  # delta = np.finfo(float).eps                      
+  # fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  # fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  # fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+  # fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  # atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+  # EW = [None]*4
+  # ## Multiplicity formula 
+  # for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+  #   L.set_weights(None, J, None)
+  #   I_norm = I * L.diagonal() # degrees
+  #   EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
+  # return EW[0] - EW[1] - EW[2] + EW[3]
 
-def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+
+
+def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -204,9 +227,9 @@ def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     smoothing = parameters for singular values
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
-  L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0)
+  L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
   assert isinstance(L, UpLaplacian)
-  (i,j,k,l), w = R[:4], 0.0 if len(R) == 4 else R
+  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
   fw = np.array([f(s) for s in L.faces])
   sw = np.array([f(s) for s in L.simplices])

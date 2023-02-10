@@ -257,78 +257,47 @@ auto _faces_from_ranks(const Laplacian& L) -> py::array_t< int > {
 }
 
 
-using array_t_FF = py::array_t< double, py::array::f_style | py::array::forcecast >;
+template< int p, typename F >
+void declare_laplacian(py::module &m, std::string typestr) {
+  using Class = UpLaplacian< p, F, true >;
+  std::string pyclass_name = std::string("UpLaplacian") + typestr;
+  using array_t_FF = py::array_t< F, py::array::f_style | py::array::forcecast >;
+  py::class_< Class >(m, pyclass_name.c_str())
+    .def(py::init< const vector< uint64_t >, size_t, size_t >())
+    .def_readonly("shape", &Class::shape)
+    .def_readonly("nv", &Class::nv)
+    .def_readonly("np", &Class::np)
+    .def_readonly("nq", &Class::nq)
+    .def_readonly("qr", &Class::qr)
+    .def_readonly("pr", &Class::pr)
+    .def_readwrite("fpl", &Class::fpl)
+    .def_readwrite("fpr", &Class::fpr)
+    .def_readwrite("fq", &Class::fq)
+    .def_readonly("degrees", &Class::degrees)
+    .def_property_readonly("dtype", [](const Class& L){
+      auto dtype = pybind11::dtype(pybind11::format_descriptor<F>::format());
+      return dtype; 
+    })
+    .def_property_readonly("simplices", [](const Class& L){
+      return _simplices_from_ranks(L);
+    })
+    .def_property_readonly("faces", [](const Class& L){
+      return _faces_from_ranks(L);
+    })
+    .def("precompute_degree", &Class::precompute_degree)
+    .def("compute_indexes", &Class::compute_indexes)
+    .def("_matvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
+    .def("_matmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
+    ;
+}
+
 
 // Package: pip install --no-deps --no-build-isolation --editable .
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
-  
-  py::class_< UpLaplacian< 0, double, true > >(m, "UpLaplacian0")
-    .def(py::init< const vector< uint64_t >, size_t, size_t >())
-    .def_readonly("shape", &UpLaplacian< 0, double, true >::shape)
-    .def_readonly("nv", &UpLaplacian< 0, double, true >::nv)
-    .def_readonly("np", &UpLaplacian< 0, double, true >::np)
-    .def_readonly("nq", &UpLaplacian< 0, double, true >::nq)
-    .def_readonly("qr", &UpLaplacian< 0, double, true >::qr)
-    .def_readonly("pr", &UpLaplacian< 0, double, true >::pr)
-    .def_readwrite("fpl", &UpLaplacian< 0, double, true >::fpl)
-    .def_readwrite("fpr", &UpLaplacian< 0, double, true >::fpr)
-    .def_readwrite("fq", &UpLaplacian< 0, double, true >::fq)
-    .def_readonly("degrees", &UpLaplacian< 0, double, true >::degrees)
-    .def_property_readonly("dtype", [](const UpLaplacian< 0, double, true >& L){
-      auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
-      return dtype; 
-    })
-    .def_property_readonly("simplices", [](const UpLaplacian< 0, double, true >& L){
-      return _simplices_from_ranks(L);
-    })
-    .def_property_readonly("faces", [](const UpLaplacian< 0, double, true >& L){
-      return _faces_from_ranks(L);
-    })
-    .def("precompute_degree", &UpLaplacian< 0, double, true >::precompute_degree)
-    .def("compute_indexes", &UpLaplacian< 0, double, true >::compute_indexes)
-    .def("_matvec", [](const UpLaplacian< 0, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 0, double, true >& L, const array_t_FF& X){ return _matmat(L, X); })
-    ;
-  py::class_< UpLaplacian< 1, double, true > >(m, "UpLaplacian1")
-    .def(py::init< const vector< uint64_t >, size_t, size_t >())
-    .def_readonly("shape", &UpLaplacian< 1, double, true >::shape)
-    .def_readonly("nv", &UpLaplacian< 1, double, true >::nv)
-    .def_readonly("np", &UpLaplacian< 1, double, true >::np)
-    .def_readonly("nq", &UpLaplacian< 1, double, true >::nq)
-    .def_readonly("qr", &UpLaplacian< 1, double, true >::qr)
-    .def_readonly("pr", &UpLaplacian< 1, double, true >::pr)
-    .def_readwrite("fpl", &UpLaplacian< 1, double, true >::fpl)
-    .def_readwrite("fpr", &UpLaplacian< 1, double, true >::fpr)
-    .def_readwrite("fq", &UpLaplacian< 1, double, true >::fq)
-    .def_readonly("degrees", &UpLaplacian< 1, double, true >::degrees)
-    .def_property_readonly("dtype", [](const UpLaplacian< 1, double, true >& L){
-      auto dtype = pybind11::dtype(pybind11::format_descriptor<double>::format());
-      return dtype; 
-    })
-    .def_property_readonly("simplices", [](const UpLaplacian< 0, double, true >& L){
-      return _simplices_from_ranks(L);
-    })
-    .def_property_readonly("faces", [](const UpLaplacian< 0, double, true >& L){
-      return _faces_from_ranks(L);
-    })
-    .def("precompute_degree", &UpLaplacian< 1, double, true >::precompute_degree)
-    .def("compute_indexes", &UpLaplacian< 1, double, true >::compute_indexes)
-    .def("_matvec", [](const UpLaplacian< 1, double, true >& L, const py::array_t< double >& x) { return _matvec(L, x); })
-    .def("_matmat", [](const UpLaplacian< 1, double, true >& L, const array_t_FF& X){ return _matmat(L, X); })
-    ;
+  declare_laplacian< 0, double >(m, "0D");
+  declare_laplacian< 0, float >(m, "0F");
+  declare_laplacian< 1, double >(m, "1D");
+  declare_laplacian< 1, float >(m, "1F");
 }
-
-
-  // const size_t nv;
-  // const size_t np;
-  // const size_t nq; 
-  // array< size_t, 2 > shape;  // TODO: figure out how to initialize in constructor
-  // const vector< uint64_t > qr;            // p+1 ranks
-  // const function< uint_32 (uint64_t) > h; // indexing function 
-  // mutable vector< F > y;                  // workspace
-  // vector< F > fpl;                        // p-simplex left weights 
-  // vector< F > fpr;                        // p-simplex right weights 
-  // vector< F > fq;                         // (p+1)-simplex weights
-  // vector< F > Df;       
