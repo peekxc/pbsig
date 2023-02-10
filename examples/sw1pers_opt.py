@@ -22,9 +22,11 @@ d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6)
 X = F(n=N, d=M, tau=tau)
 r = enclosing_radius(X)*0.60
 S = rips_complex(X, r)
+show(plot_complex(S, X[:,:2]))
+
 print(S)
 L = UpLaplacian1D(list(S.faces(2)), list(S.faces(1)))
-print(len(L.pr), len(L.qr))
+print(len(L.pr), len(L.qr)) ## Cannot just decompress q-simplices... what if p-simplices don't partipciate in any faces? 
 
 
 # plot_complex(S, pos=pca(F(n=N, d=M, tau=tau)))

@@ -83,15 +83,16 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
 // mutable unordered_map< I, I > index_map; 
 
 // Given codimension-1 ranks, determines the ranks of the corresponding faces
-auto decompress_faces(vector< uint_64 >& cr, const size_t n, const size_t p) -> vector< uint_64 > {
+auto decompress_faces(const vector< uint_64 >& cr, const size_t n, const size_t p, bool unique) -> vector< uint_64 > {
   vector< uint_64 > fr; 
   fr.reserve(cr.size()); 
   for (auto ci : cr){
     combinatorial::apply_boundary(ci, n, p+1, [&](auto face_rank){ fr.push_back(face_rank); });
   }
-  return fr;
-  // std::sort(fr.begin(), fr.end());
-  // fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
+  if (unique) {
+    std::sort(fr.begin(), fr.end());
+    fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
+  }
   return fr;
 };
 
@@ -125,6 +126,7 @@ struct UpLaplacian {
     fpr = vector< F >(np, 1.0);
     fq = vector< F >(nq, 1.0); 
     degrees = vector< F >(np, 0.0);
+    pr = decompress_faces(qr, nv, dim+1, true);
   }
 
   
@@ -250,11 +252,11 @@ auto _simplices_from_ranks(const Laplacian& L) -> py::array_t< int > {
 template< class Laplacian > 
 auto _faces_from_ranks(const Laplacian& L) -> py::array_t< int > {
   vector< int > faces; 
-  faces.reserve(static_cast< int >(L.np*(L.dim+1)));
+  const size_t np_actual = L.pr.size();
+  faces.reserve(static_cast< int >(np_actual*(L.dim+1)));
   auto out = std::back_inserter(faces);
   combinatorial::lex_unrank(L.pr.begin(), L.pr.end(), size_t(L.nv), size_t(L.dim+1), out);
-   
-  array< ssize_t, 2 > _shape = { static_cast< ssize_t >(L.np), L.dim+1 };
+  array< ssize_t, 2 > _shape = { static_cast< ssize_t >(np_actual), L.dim+1 };
   return py::array_t< int , py::array::c_style | py::array::forcecast >(_shape, faces.data());
 }
 

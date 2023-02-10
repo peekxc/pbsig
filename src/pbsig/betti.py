@@ -192,6 +192,7 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
+## TODO: This actually does need to be done
 def betti_query(S: Union[LinearOperator, SimplicialComplex], i: float, j: float, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
   pass 
   # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0, form='lo')
