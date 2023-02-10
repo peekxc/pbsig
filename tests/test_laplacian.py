@@ -382,11 +382,31 @@ def test_laplacian_API():
   # (p+2)*np.dot(LM.diagonal(), x**2), 
   # x = np.random.uniform(size=LM.shape[0])
   # max(np.linalg.eigvalsh(LM.todense())) <= 3*np.dot(x**2, LM.diagonal()) / np.dot(x**2, np.repeat(1.0, S.shape[1]))
-  import timeit
-  timeit.timeit(lambda: LM @ x, number=1000)
-  timeit.timeit(lambda: LO @ x, number=1000)
-  timeit.timeit(lambda: LO.L_up._matvec(x), number=1000)
+
   # LO.L._matvec(x)
+
+
+def test_performance():
+  from pbsig.linalg import laplacian, up_laplacian
+  X = np.random.uniform(size=(500,2))
+  S = delaunay_complex(X) 
+  
+  ## Test they are the same 
+  LM = up_laplacian(S, p=0, form='array')
+  LO = up_laplacian(S, p=0, form='lo')
+  x = np.random.uniform(size=S.shape[0])
+  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+  
+  import timeit
+  timeit.timeit(lambda: LM @ x, number=10000)
+  timeit.timeit(lambda: LO @ x, number=10000)
+
+  M = np.random.uniform(size=(S.shape[0], S.shape[0]))
+  assert np.allclose(LM @ M, LO @ M, atol=10*np.finfo(np.float32).eps)
+  
+  import timeit
+  timeit.timeit(lambda: LM @ M, number=1000)
+  timeit.timeit(lambda: LO @ M, number=100) # about an order of magnitude slower
 
 ## TODO: Verify normalized symmetric laplacian w/ weight function is psd 
 ## and similar per the formula 
