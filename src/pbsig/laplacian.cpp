@@ -300,4 +300,6 @@ PYBIND11_MODULE(_laplacian, m) {
   declare_laplacian< 0, float >(m, "0F");
   declare_laplacian< 1, double >(m, "1D");
   declare_laplacian< 1, float >(m, "1F");
+  declare_laplacian< 2, double >(m, "2D");
+  declare_laplacian< 2, float >(m, "2F");
 }

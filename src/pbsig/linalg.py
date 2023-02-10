@@ -763,7 +763,7 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
       raise ValueError(f"Unknown form '{form}'.")
 
 
-class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
+class UpLaplacian(LinearOperator):
   """ 
   Linear operator for weighted p up-Laplacians of simplicial complexes. 
   
@@ -787,53 +787,61 @@ class UpLaplacian(laplacian.UpLaplacian0, LinearOperator):
     p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
     assert p == 0 or p == 1, "Only p in {0,1} supported for now"
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
-    from pbsig.combinatorial import rank_combs
+    from splex.combinatorial import rank_combs
 
     ## Parameterize the internal operator
     nv, _np = max([max(s) for s in S])+1, len(F)
-    q_ranks = rank_combs(S, k=p+2, n=nv)
-    laplacian.UpLaplacian0.__init__(self, q_ranks, nv, _np)
+    q_ranks = rank_combs(S, k=p+2, n=nv, order="lex")
+    if p == 0:
+      _lap_cls = laplacian.UpLaplacian0D
+    elif p == 1: 
+      _lap_cls = laplacian.UpLaplacian1D
+    elif p == 2: 
+      _lap_cls = laplacian.UpLaplacian2D
+    else: 
+      raise ValueError("Laplacian extension modules has not been compiled for p > 2.")
+    self.m = _lap_cls.__init__(self, q_ranks, nv, _np)
 
     ## Precompute things necessary for evaluation
     self.compute_indexes()
     self.precompute_degree()
 
   def diagonal(self) -> ArrayLike:
-    return self.degrees
+    return self.m.degrees
 
   @property 
   def face_left_weights(self): 
-    return self.fpl
+    return self.m.fpl
 
   @face_left_weights.setter
   def face_left_weights(self, value: ArrayLike) -> None:
-    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == self.m.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.fpl = value.astype(self.dtype)
+    self.m.fpl = value.astype(self.dtype)
 
   @property 
   def face_right_weights(self): 
-    return self.fpr
+    return self.m.fpr
 
   @face_right_weights.setter
   def face_right_weights(self, value: ArrayLike) -> None:
-    assert len(value) == self.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == self.m.shape[0] and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.fpr = value.astype(self.dtype)
+    self.m.fpr = value.astype(self.dtype)
 
   @property
   def simplex_weights(self): 
-    return self.fq
+    return self.m.fq
   
   @simplex_weights.setter
   def simplex_weights(self, value: ArrayLike):
-    assert len(value) == len(self.fq) and value.ndim == 1, "Invalid value given. Must match shape."
+    assert len(value) == len(self.m.fq) and value.ndim == 1, "Invalid value given. Must match shape."
     assert isinstance(value, np.ndarray)
-    self.fq = value.astype(self.dtype)
+    self.m.fq = value.astype(self.dtype)
 
   def index(self, face: SimplexLike) -> int:
-    face_rank = rank_comb(face, n=self.nv, k=len(face))
-    return self.index_map[face_rank]
+    face_rank = rank_lex(face, n=self.m.nv, k=len(face))
+    return self.m.index_map[face_rank]
 
   def set_weights(self, lw = None, cw = None, rw = None):
     self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.np)
