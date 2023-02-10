@@ -82,6 +82,20 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
 
 // mutable unordered_map< I, I > index_map; 
 
+// Given codimension-1 ranks, determines the ranks of the corresponding faces
+auto decompress_faces(vector< uint_64 >& cr, const size_t n, const size_t p) -> vector< uint_64 > {
+  vector< uint_64 > fr; 
+  fr.reserve(cr.size()); 
+  for (auto ci : cr){
+    combinatorial::apply_boundary(ci, n, p+1, [&](auto face_rank){ fr.push_back(face_rank); });
+  }
+  return fr;
+  // std::sort(fr.begin(), fr.end());
+  // fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
+  return fr;
+};
+
+
 // TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
@@ -116,18 +130,6 @@ struct UpLaplacian {
   
   // Prepares indexing hash function 
   void compute_indexes(){
-    //auto index_map = std::unordered_map< uint64_t, uint64_t >; // Maps face ranks to sequential indices 
-    pr.reserve(qr.size()); 
-
-    // Collect the faces 
-    for (auto qi : qr){
-      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ pr.push_back(face_rank); });
-    }
-
-    // Only consider unique faces; sort by lexicographical ordering
-    std::sort(pr.begin(), pr.end());
-    pr.erase(std::unique(pr.begin(), pr.end()), pr.end());
-
     // Build the index map
     // index_map.build(fr.begin(), fr.end());
     for (uint64_t i = 0; i < pr.size(); ++i){
@@ -237,7 +239,7 @@ auto _matmat(const Laplacian& L, const py::array_t< F, py::array::f_style | py::
 template< class Laplacian > 
 auto _simplices_from_ranks(const Laplacian& L) -> py::array_t< int > {
   vector< int > simplices; 
-  simplices.reserve(static_cast< int >(L.nq*(L.dim+1)));
+  simplices.reserve(static_cast< int >(L.nq*(L.dim+2)));
   auto out = std::back_inserter(simplices);
   combinatorial::lex_unrank(L.qr.begin(), L.qr.end(), size_t(L.nv), size_t(L.dim+2), out);
   array< ssize_t, 2 > _shape = { static_cast< ssize_t >(L.nq), L.dim+2 };
@@ -248,7 +250,7 @@ auto _simplices_from_ranks(const Laplacian& L) -> py::array_t< int > {
 template< class Laplacian > 
 auto _faces_from_ranks(const Laplacian& L) -> py::array_t< int > {
   vector< int > faces; 
-  faces.reserve(static_cast< int >(L.np*(L.dim)));
+  faces.reserve(static_cast< int >(L.np*(L.dim+1)));
   auto out = std::back_inserter(faces);
   combinatorial::lex_unrank(L.pr.begin(), L.pr.end(), size_t(L.nv), size_t(L.dim+1), out);
    
@@ -302,4 +304,5 @@ PYBIND11_MODULE(_laplacian, m) {
   declare_laplacian< 1, float >(m, "1F");
   declare_laplacian< 2, double >(m, "2D");
   declare_laplacian< 2, float >(m, "2F");
+  m.def("decompress_faces", &decompress_faces, "Decompresses ranks");
 }

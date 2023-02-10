@@ -374,21 +374,21 @@ namespace combinatorial {
 	
 
 	template< typename Lambda >
-	void apply_boundary(const size_t p_rank, const size_t n, const size_t k, Lambda f){
-		// Given a p-simplex's rank , enumerates the ranks of its (p-1)-faces, calling Lambda(*) on its rank
+	void apply_boundary(const size_t r, const size_t n, const size_t k, Lambda f){
+		// Given a p-simplex's rank representing a tuple of size p+1, enumerates the ranks of its (p-1)-faces, calling Lambda(*) on its rank
 		using combinatorial::I; 
 		switch(k){
 			case 0: case 1: { return; }
 			case 2: {
 				auto p_vertices = std::array< I, 2 >();
-				lex_unrank_2(static_cast< I >(p_rank), static_cast< I >(n), begin(p_vertices));
+				lex_unrank_2(static_cast< I >(r), static_cast< I >(n), begin(p_vertices));
 				f(p_vertices[0]);
 				f(p_vertices[1]);
 				return;
 			}
 			case 3: {
 				auto p_vertices = std::array< I, 3 >();
-				lex_unrank_k(p_rank, n, k, begin(p_vertices));
+				lex_unrank_k(r, n, k, begin(p_vertices));
 				f(lex_rank_2(p_vertices[0], p_vertices[1], n));
 				f(lex_rank_2(p_vertices[0], p_vertices[2], n));
 				f(lex_rank_2(p_vertices[1], p_vertices[2], n));
@@ -396,7 +396,7 @@ namespace combinatorial {
 			} 
 			default: {
 				auto p_vertices = std::vector< I >(0, k);
-				lex_unrank_k(p_rank, n, k, p_vertices.begin());
+				lex_unrank_k(r, n, k, p_vertices.begin());
 				const I N = BinomialCoefficient(n, k); 
 				combinatorial::for_each_combination(begin(p_vertices), begin(p_vertices)+2, end(p_vertices), [&](auto a, auto b){
 					f(lex_rank_k(a, n, k, N));

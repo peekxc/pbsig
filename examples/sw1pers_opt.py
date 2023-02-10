@@ -15,13 +15,17 @@ p.line(dom, f(dom))
 show(p)
 
 
-N, M = 50, 24
+N, M = 20, 24
 F = sliding_window(f, bounds=(0, 12*np.pi))
 d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6)
 #S = delaunay_complex(F(n=N, d=M, tau=tau))
 X = F(n=N, d=M, tau=tau)
-r = enclosing_radius(X)*0.30
+r = enclosing_radius(X)*0.60
 S = rips_complex(X, r)
+print(S)
+L = UpLaplacian1D(list(S.faces(2)), list(S.faces(1)))
+print(len(L.pr), len(L.qr))
+
 
 # plot_complex(S, pos=pca(F(n=N, d=M, tau=tau)))
 
@@ -40,10 +44,15 @@ from scipy.spatial.distance import pdist
 from splex.constructions import flag_weight
 f = flag_weight(X)
 K = MutableFiltration(S, f=lambda s: f(s))
-K = rips_filtration(X, r)
+# K = rips_filtration(X, r)
 dgm = ph(K)
 plot_dgm(dgm[1])
 
 from pbsig.betti import mu_query
 Lf = flag_weight(X, vertex_weights=np.ones(S.shape[0]))
+R = np.array([-np.inf, 5, 15, np.inf])
 mu_query()
+
+all(np.ravel(L.simplices == np.array(list(K.faces(2)))))
+all(np.ravel(L.faces == np.array(list(K.faces(1)))))
+all(L.simplices == np.array(list(K.faces(2))))

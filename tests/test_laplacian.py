@@ -330,11 +330,44 @@ def test_laplacian1_cpp():
 
   from pbsig.linalg import UpLaplacian0D
 
+
+def test_boundary_faces():
+  from pbsig.linalg import laplacian 
+  T = unrank_combs([0,1,2,3,4], n=10, k=3, order="lex")
+  fr_truth = np.array([rank_combs(boundary(t), n=10, order="lex") for t in T])
+  fr_test = laplacian.decompress_faces([0,1,2,3,4], 10, 2)
+  # rank_combs(, n=10, order="lex")
+
+def test_pmh():
+  pass
+  # import perfection
+  # import perfection.czech
+  # X = np.random.uniform(size=(150,2))
+  # S = delaunay_complex(X) 
+  # ranks = rank_combs(S.faces(1))
+  # import cmph
+  # cmph.generate_hash(ranks)
+  # params = perfection.hash_parameters(r)
+
+  # h = perfection.make_hash(r)
+  # np.sort([h(r) for r in ranks])
+
+  # f1, f2, G = perfect_hash.generate_hash([str(r) for r in ranks])
+
+  # perfection.czech.hash_parameters(r)
+
+
 def test_laplacian_API():
   from pbsig.linalg import laplacian, up_laplacian
-  X = np.random.uniform(size=(15,2))
+  X = np.random.uniform(size=(150,2))
   S = delaunay_complex(X) 
   
+  ## Test the ranks are stored correctly
+  for p in [0,1]:
+    LO = up_laplacian(S, p=p, form='lo')
+    assert all(np.ravel(LO.simplices == np.array(list(S.faces(p+1)))))
+    assert all(np.ravel(LO.faces == np.array(list(S.faces(p)))))
+
   ## Test they are the same 
   LM = up_laplacian(S, p=0, form='array')
   LO = up_laplacian(S, p=0, form='lo')
@@ -398,6 +431,7 @@ def test_performance():
   assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
   
   import timeit
+  LM = LM.tocsc()
   timeit.timeit(lambda: LM @ x, number=10000)
   timeit.timeit(lambda: LO @ x, number=10000)
 
@@ -407,6 +441,10 @@ def test_performance():
   import timeit
   timeit.timeit(lambda: LM @ M, number=1000)
   timeit.timeit(lambda: LO @ M, number=100) # about an order of magnitude slower
+
+  size_LM = LM.data.size * LM.data.itemsize +  LM.indices.size * LM.indices.itemsize +  LM.indptr.size * LM.indptr.itemsize
+  size_LO = len(LO.fq) * 8
+  print(f"size (bytes) of LM: {size_LM} and LO: {size_LO}")
 
 ## TODO: Verify normalized symmetric laplacian w/ weight function is psd 
 ## and similar per the formula 
