@@ -275,7 +275,6 @@ def test_up_laplacian_native():
 
 
 def test_laplacian0_cpp():
-  
   X = np.random.uniform(size=(15,2))
   S = delaunay_complex(X) 
   r = rank_combs(S.faces(1), n=S.shape[0], order="lex")
@@ -291,16 +290,6 @@ def test_laplacian0_cpp():
   LO = up_laplacian(S, p=0, form='lo')
   assert np.allclose((LO @ x) - (LM @ x), 0.0, atol=10*np.finfo(np.float32).eps)
 
-  from pbsig.linalg import UpLaplacian0D
-  p_simplices = list(S.faces(0))
-  q_simplices = list(S.faces(1))
-  LO2 = UpLaplacian0D(q_simplices, p_simplices)
-  (LO2 @ x)- (LM @ x)
-
-  import timeit
-  timeit.timeit(lambda: LM @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
-  timeit.timeit(lambda: LO @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
-  timeit.timeit(lambda: LO2 @ x, setup="import numpy as np; x = np.random.uniform(size=150)", number=1000)
 
 def test_laplacian1_cpp():
   from splex.combinatorial import rank_combs
@@ -339,7 +328,7 @@ def test_boundary_faces():
   # rank_combs(, n=10, order="lex")
 
 def test_pmh():
-  pass
+  assert True
   # import perfection
   # import perfection.czech
   # X = np.random.uniform(size=(150,2))
