@@ -519,7 +519,7 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collectio
   R = np.array(R)
 
   if method == "exact":
-    E = np.array(list(S.faces(p=1)))
+    E = np.array(list(faces(S, p=1)))
     for i, f in enumerate(F):
       dgm = ph0_lower_star(f, E, max_death="max") # O(m*a(n) + mlogm) since E is unsorted
       if len(dgm) > 0:

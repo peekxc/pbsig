@@ -145,8 +145,8 @@ def plot_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLik
 
   ## Create the (p == 2)-simplex renderer
   if card(S, 2) > 0:
-    t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
-    t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
+    t_x = [pos[[i,j,k],0] for (i,j,k) in faces(S, 2)]
+    t_y = [pos[[i,j,k],1] for (i,j,k) in faces(S, 2)]
     t_data = {
       'xs' : t_x,
       'ys' : t_y,

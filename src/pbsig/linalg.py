@@ -16,7 +16,7 @@ from .simplicial import *
 from .combinatorial import * 
 import _lanczos as lanczos
 import _laplacian as laplacian
-
+from splex import *
 
 from scipy.sparse.linalg import eigs as truncated_eig
 from scipy.linalg import eigh, eig as dense_eig
@@ -674,7 +674,7 @@ def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
     return coo_array(card(S,p), card(S,p), dtype=int)
   weights = np.ones(card(S,p+1)) if weights is None else weights
   assert len(weights) == card(S,p+1), "Invalid weight array, must match length of p+1 simplices"
-  IJ = np.array([(i,j) for i,j in S.faces(p+1)], dtype=int)
+  IJ = np.array([(i,j) for i,j in faces(S, p+1)], dtype=int)
   A = coo_array((weights, (IJ[:,0], IJ[:,1])), shape=(card(S,p), card(S,p)))
   A = A + A.T
   return A

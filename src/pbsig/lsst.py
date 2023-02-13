@@ -35,14 +35,14 @@ def low_stretch_st(A, method: str = "akpw", weighted: bool = True):
 from pbsig.simplicial import *
 def is_connected(S: ComplexLike):
   from scipy.cluster.hierarchy import DisjointSet
-  ds = DisjointSet(list(S.faces(0))) 
+  ds = DisjointSet(list(faces(S, 0))) 
   for i,j in faces(S, 1):
     ds.merge(Simplex(i), Simplex(j))
   return ds.n_subsets == 1
 
 def connected_components(S: ComplexLike):
   from scipy.cluster.hierarchy import DisjointSet
-  ds = DisjointSet(list(S.faces(0))) 
+  ds = DisjointSet(list(faces(S, 0))) 
   for i,j in faces(S, 1):
     ds.merge(Simplex(i), Simplex(j))
   p = np.zeros(card(S,0), dtype=int)
