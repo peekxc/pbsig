@@ -21,11 +21,11 @@ d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6)
 #S = delaunay_complex(F(n=N, d=M, tau=tau))
 X = F(n=N, d=M, tau=tau)
 r = enclosing_radius(X)*0.60
-S = rips_complex(X, r)
+S = rips_complex(X, r, 2)
 show(plot_complex(S, X[:,:2]))
 
 print(S)
-L = UpLaplacian1D(list(S.faces(2)), list(S.faces(1)))
+L = UpLaplacian1D(list(faces(S, 2)), list(faces(S, 1)))
 print(len(L.pr), len(L.qr)) ## Cannot just decompress q-simplices... what if p-simplices don't partipciate in any faces? 
 
 
@@ -39,22 +39,38 @@ for t in np.linspace(0.50*tau, 1.50*tau, 10):
   scatters.append(plot_complex(S, pos=pca(X_delay), width=125, height=125))
 show(row(*scatters))
 
+## Cone the complex
+S = rips_complex(X, r, 2)
+S = SetComplex(S)
+sv = X.shape[0] # special vertex
+S.add([sv])
+S.update([s + [sv] for s in faces(S, 1)])
+
 ## Choose a box, show its rank over vineyards 
 from pbsig.persistence import * 
 from pbsig.vis import plot_dgm
 from scipy.spatial.distance import pdist
-from splex.constructions import flag_weight
+from splex.geometry import flag_weight
 f = flag_weight(X)
-K = MutableFiltration(S, f=lambda s: f(s))
-# K = rips_filtration(X, r)
+def cone_weight(s):
+  s = Simplex(s)
+  if s == Simplex([sv]):
+    return -np.inf
+  elif sv in s:
+    return np.inf
+  else: 
+    return f(s)
+K = filtration(S, f=cone_weight)
+from pbsig.persistence import ph 
 dgm = ph(K)
 plot_dgm(dgm[1])
 
+## Test the multiplicity queries with the coned complex
 from pbsig.betti import mu_query
-Lf = flag_weight(X, vertex_weights=np.ones(S.shape[0]))
 R = np.array([-np.inf, 5, 15, np.inf])
-mu_query()
+mu_query(K, R=R, f=cone_weight, p=1, smoothing=(0.000000001, 1.0, 0))
 
-all(np.ravel(L.simplices == np.array(list(K.faces(2)))))
-all(np.ravel(L.faces == np.array(list(K.faces(1)))))
-all(L.simplices == np.array(list(K.faces(2))))
+R = np.array([-np.inf, 4, 15, np.inf])
+mu_query(K, R=R, f=cone_weight, p=1, smoothing=(0.000000001, 1.0, 0))
+
+## 

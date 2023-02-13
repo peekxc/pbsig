@@ -228,8 +228,8 @@ def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: in
     smoothing = parameters for singular values
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
-  L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
-  assert isinstance(L, UpLaplacian)
+  L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form='lo')
+  assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
   (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
   fw = np.array([f(s) for s in L.faces])

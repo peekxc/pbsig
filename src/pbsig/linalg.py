@@ -674,7 +674,13 @@ def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
     return coo_array(card(S,p), card(S,p), dtype=int)
   weights = np.ones(card(S,p+1)) if weights is None else weights
   assert len(weights) == card(S,p+1), "Invalid weight array, must match length of p+1 simplices"
-  IJ = np.array([(i,j) for i,j in faces(S, p+1)], dtype=int)
+  V = list(faces(S, p))
+  ind = []
+  for s in faces(S, p+1):
+    VI = [V.index(f) for f in faces(s, p)]
+    for i,j in combinations(VI, 2):
+      ind.append((i,j))
+  IJ = np.array(ind)
   A = coo_array((weights, (IJ[:,0], IJ[:,1])), shape=(card(S,p), card(S,p)))
   A = A + A.T
   return A
@@ -735,7 +741,7 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
       wpl = np.array([float(weight(s)) for s in faces(S, p)])
       wpr = wpl
     wq = np.array([float(weight(s)) for s in faces(S, p+1)])
-    assert len(wpl) == ns[p] and len(wq) == ns[p+1], "Invalid weight arrays given."
+    assert len(wpl) == card(S,p) and len(wq) == card(S,p+1), "Invalid weight arrays given."
     assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
       B = boundary_matrix(S, p = p+1)
@@ -745,7 +751,7 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
       p_faces = list(faces(S, p))        ## need to make a view 
       p_simplices = list(faces(S, p+1))  ## need to make a view 
       _lap_cls = eval(f"UpLaplacian{int(p)}D")
-      lo = _lap_cls(p_simplices, p_faces)
+      lo = _lap_cls(p_simplices, p_faces, card(S, 0))
       if normed:
         deg = np.zeros(len(p_faces))
         for cc, qs in enumerate(p_simplices):
@@ -845,8 +851,8 @@ class UpLaplacianBase(LinearOperator):
     return self 
 
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
-    nv, _np = max([max(s) for s in S])+1, len(F)
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian0D.__init__(self, q_ranks, nv, _np)
@@ -854,8 +860,8 @@ class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
     self.precompute_degree()
 
 class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
-    nv, _np = max([max(s) for s in S])+1, len(F)
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
@@ -863,8 +869,8 @@ class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
     self.precompute_degree()
 
 class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
-    nv, _np = max([max(s) for s in S])+1, len(F)
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
@@ -872,8 +878,8 @@ class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
     self.precompute_degree()
 
 class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike']):
-    nv, _np = max([max(s) for s in S])+1, len(F)
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)

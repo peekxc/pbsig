@@ -178,8 +178,11 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
   if any(rlow == -1):
     creator_mask = rlow == -1
     creator_dim = sdim[creator_mask]
-    birth = np.flatnonzero(creator_mask)
+    birth = np.flatnonzero(creator_mask) ## indices of zero columns 
     death = np.repeat(np.inf, len(birth))
+    b = list(birth)
+    # for z in rlow[~creator_mask]:
+    #   death[]
     death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
   else:
     creator_dim = np.empty(0)
@@ -192,14 +195,14 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
   ## Match the barcodes with the index set of the filtration
   key_dtype = type(next(K.keys()))
   filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
-  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf}
+  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf} | { -np.inf : -np.inf}
   birth = np.array([index2f[i] for i in birth])
   death = np.array([index2f[i] for i in death])
   
   ## Assemble the diagram
   dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
   if collapse:
-    nonzero_ind = ~np.isclose(dgm['death'] - dgm['birth'], 0.0) 
+    nonzero_ind = ~np.isclose(dgm['death'], dgm['birth'], equal_nan=True) 
     dgm = dgm[nonzero_ind]
     creator_dim = creator_dim[nonzero_ind]
 
