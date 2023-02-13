@@ -10,6 +10,7 @@ js/node_modules
 trash
 .vscode
 .textpadtmp
+extern/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

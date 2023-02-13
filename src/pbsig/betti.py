@@ -193,7 +193,7 @@ def tolerance(m: int, n: int, dtype: type = float):
   return _tol
 
 ## TODO: This actually does need to be done
-def betti_query(S: Union[LinearOperator, SimplicialComplex], i: float, j: float, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+def betti_query(S: Union[LinearOperator, ComplexLike], i: float, j: float, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
   pass 
   # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0, form='lo')
   # assert isinstance(L, UpLaplacian)
@@ -217,7 +217,7 @@ def betti_query(S: Union[LinearOperator, SimplicialComplex], i: float, j: float,
 
 
 
-def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable, p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -249,7 +249,7 @@ def mu_query(S: Union[LinearOperator, SimplicialComplex], R: tuple, f: Callable,
     EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
   return EW[0] - EW[1] - EW[2] + EW[3]
 
-def mu_sig(S: SimplicialComplex, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
+def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
   assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
   assert len(R) == 4, "Must be a rectangle"
   i,j,k,l = R
@@ -307,9 +307,9 @@ class MuSignature:
   Methods: 
     precompute := precomputes the signature
   """
-  def __init__(self, S: SimplicialComplex, family: Iterable[Callable], R: ArrayLike, p: int = 0, **kwargs):
+  def __init__(self, S: ComplexLike, family: Iterable[Callable], R: ArrayLike, p: int = 0, **kwargs):
     assert len(R) == 4 and is_sorted(R)
-    # assert isinstance(S, SimplicialComplex)
+    # assert isinstance(S, ComplexLike)
     assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
     self.L = up_laplacian(S, p, form='lo', **kwargs)
     self.R = R
@@ -466,7 +466,7 @@ class MuSignature:
 
 #   pass
 
-# def mu_query(S: SimplicialComplex, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
+# def mu_query(S: ComplexLike, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
 #   """
 #   Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
 
@@ -496,7 +496,7 @@ class MuSignature:
 #   return numerical_rank(LS)
 
 # E: Union[ArrayLike, Iterable],
-def lower_star_multiplicity(F: Iterable[ArrayLike], S: SimplicialComplex, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
+def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 
   diagram of a sequence of vertex functions F = [f1, f2, ..., f_n]

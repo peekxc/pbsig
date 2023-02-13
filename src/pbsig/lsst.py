@@ -33,14 +33,14 @@ def low_stretch_st(A, method: str = "akpw", weighted: bool = True):
   return st
 
 from pbsig.simplicial import *
-def is_connected(S: SimplicialComplex):
+def is_connected(S: ComplexLike):
   from scipy.cluster.hierarchy import DisjointSet
   ds = DisjointSet(list(S.faces(0))) 
   for i,j in faces(S, 1):
     ds.merge(Simplex(i), Simplex(j))
   return ds.n_subsets == 1
 
-def connected_components(S: SimplicialComplex):
+def connected_components(S: ComplexLike):
   from scipy.cluster.hierarchy import DisjointSet
   ds = DisjointSet(list(S.faces(0))) 
   for i,j in faces(S, 1):
@@ -70,7 +70,7 @@ def sparsify(A, epsilon: float = 1.0, ensure_connected: bool = False, max_tries 
   def _is_connected(exclude_singletons: bool = False):
     if not exclude_singletons:
       SA = csc_array(jl.eval("SA"))
-      return is_connected(SimplicialComplex(chain(range(A.shape[0]), zip(*SA.nonzero()))))
+      return is_connected(simplicial_complex(chain(range(A.shape[0]), zip(*SA.nonzero()))))
     else: 
       return jl.eval("isConnected(SA)")
 

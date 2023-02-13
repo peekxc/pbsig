@@ -169,7 +169,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
     valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
   return(valid)
 
-def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True, generators: bool = False) -> ArrayLike :
+def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
   sdim = np.array([s.dim() for s in iter(K.values())])
@@ -207,7 +207,7 @@ def generate_dgm(K: MutableFiltration, R: spmatrix, collapse: bool = True, gener
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
   return dgm 
 
-def cycle_generators(K: MutableFiltration, V: spmatrix, R: spmatrix = None, collapse: bool = True):
+def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collapse: bool = True):
   G = []
   piv = np.flatnonzero(low_entry(R))
   # G = dict(zip(np.flatnonzero(piv == -1), repeat([])))
@@ -240,13 +240,13 @@ def cycle_generators(K: MutableFiltration, V: spmatrix, R: spmatrix = None, coll
   # pass 
 
 ## TODO: redo with filtration class at some point
-def ph(K: MutableFiltration, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], **kwargs):
+def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], **kwargs):
   """
   Given a filtered simplicial complex 'K' and optionally an integer p >= 0, generate p-dimensional barcodes
 
   If p is not specified, all p-dimensional barcodes are generated up to the dimension of the filtration.
   """
-  assert isinstance(K, MutableFiltration), "Only accepts filtration objects for now"
+  assert isinstance(K, FiltrationLike), "Only accepts filtration objects for now"
   engine = "cpp" if isinstance(engine, list) and engine == ["python", "cpp", "dionysus"] else engine
   assert isinstance(engine, str), f"Supplied engine '{engine}' must be string argument"
   if p is None:
@@ -462,7 +462,7 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
   DGM1 = np.array([[pt.birth, pt.death] for pt in dgms[1]])
   return([DGM0, DGM1])
 
-def ph_dionysus(K: MutableFiltration):
+def ph_dionysus(K: FiltrationLike):
   import dionysus as d
   F = d.Filtration([d.Simplex(s, f) for f,s in K.items()])
   m = d.homology_persistence(F)

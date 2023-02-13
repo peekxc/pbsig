@@ -523,7 +523,7 @@ def linear_homotopy(f: Union[ArrayLike, Dict], g: Union[ArrayLike, Dict], interv
     g = { c : f for c, f in enumerate(g) }
   elif isinstance(f, Dict) and isinstance(g, Dict):
     assert f.keys() == g.keys(), "f and g should have the same key-sets"
-  elif isinstance(f, MutableFiltration) and isinstance(g, MutableFiltration):
+  elif isinstance(f, FiltrationLike) and isinstance(g, FiltrationLike):
     f = { v:k for k,v in f.items() }
     g = { v:k for k,v in g.items() }
     assert f.keys() == g.keys(), "f and g should have the same key-sets"
@@ -917,7 +917,7 @@ def vineyards_stats(reset: bool = False) -> None:
 
 from scipy.sparse import spmatrix
 from pbsig.utility import progressbar
-def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callable, vines: bool = False, progress: bool = False, **kwargs):
+def update_lower_star(K: FiltrationLike, R: spmatrix, V: spmatrix, f: Callable, vines: bool = False, progress: bool = False, **kwargs):
   """ 
   Updates the (R,V) factors of the persistence decomposition of given filtration 'K' to reflect the filter 'f' 
 
@@ -926,8 +926,8 @@ def update_lower_star(K: MutableFiltration, R: spmatrix, V: spmatrix, f: Callabl
   """
   assert isinstance(V.dtype, numbers.Integral) or np.issubdtype(V.dtype, np.integer), "Only works mod2"
   assert isinstance(R.dtype, numbers.Integral) or np.issubdtype(R.dtype, np.integer), "Only works mod2"
-  assert isinstance(K, MutableFiltration), "Invald filtration given"
-  L = MutableFiltration(K.values(), f = f)
+  assert isinstance(K, FiltrationLike), "Invald filtration given"
+  L = filtration(K.values(), f = f)
   if vines:
     schedule, _ = linear_homotopy(K, L)
     if len(schedule) > 0:

@@ -668,7 +668,7 @@ def is_symmetric(A) -> bool:
   return np.allclose(vl, vu)
 
 from scipy.sparse import coo_array
-def adjacency_matrix(S: SimplicialComplex, p: int = 0, weights: ArrayLike = None):
+def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
   assert len(S.shape) > p, "Empty simplicial complex"
   if len(S.shape) <= (p+1):
     return coo_array(S.shape[p], S.shape[p], dtype=int)
@@ -680,7 +680,7 @@ def adjacency_matrix(S: SimplicialComplex, p: int = 0, weights: ArrayLike = None
   return A
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
-def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
+def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
     """
     Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex S. 
 
@@ -722,7 +722,7 @@ def up_laplacian(S: SimplicialComplex, p: int = 0, weight: Optional[Callable] = 
     However, note that the LinearOperator returned by csgraph.laplacian is actually not matrix-free, see: 
     https://github.com/scipy/scipy/blob/main/scipy/sparse/csgraph/_laplacian.py
     """
-    # assert isinstance(K, SimplicialComplex), "K must be a Simplicial Complex for now"
+    # assert isinstance(K, ComplexLike), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
     ns = S.shape
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
