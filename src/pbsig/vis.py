@@ -70,7 +70,7 @@ def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   show(p)
 
 
-def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
+def plot_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
   """
   Plots a simplicial complex in 2D with Bokeh 
   
@@ -91,7 +91,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     cv = d.copy()
   elif len(color) == len(S):
     cv = np.array(color)
-  elif len(color) == S.shape[0]:
+  elif len(color) == card(S, 0):
     cv[d == 0] = color
     cv[d == 1] = [max(color[e]) for e in faces(S,1)]
     cv[d == 2] = [max(color[e]) for t in faces(S,2)]
@@ -119,7 +119,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     pos = cmds(floyd_warshall(A, directed=False, unweighted=True)**2)
     use_grid_lines = True
   elif isinstance(pos, np.ndarray) and pos.shape[1] == 2:
-    assert pos.shape[0] == S.shape[0], "Layout must match number of vertices"
+    assert pos.shape[0] == card(S, 0), "Layout must match number of vertices"
     use_grid_lines = True
   else:
     raise ValueError("Unimplemented layout")
@@ -144,7 +144,7 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
 
 
   ## Create the (p == 2)-simplex renderer
-  if len(S.shape) > 2 and S.shape[2] > 0:
+  if card(S, 2) > 0:
     t_x = [pos[[i,j,k],0] for (i,j,k) in S.faces(2)]
     t_y = [pos[[i,j,k],1] for (i,j,k) in S.faces(2)]
     t_data = {
@@ -157,11 +157,11 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     t_renderer = p.patches('xs', 'ys', color='color', alpha=0.20, line_width=2, source=t_source)
 
   ## Create edge renderer
-  if len(S.shape) > 1 and S.shape[1] > 0:
+  if card(S, 1) > 0:
     e_scale = 0.75
-    e_x = [pos[e,0] for e in S.faces(1)]
-    e_y = [pos[e,1] for e in S.faces(1)]
-    e_sizes = np.ones(S.shape[1]) #np.array(e_sizes)
+    e_x = [pos[e,0] for e in faces(S, 1)]
+    e_y = [pos[e,1] for e in faces(S, 1)]
+    e_sizes = np.ones(card(S, 1)) #np.array(e_sizes)
     e_widths = (e_sizes / np.max(e_sizes))*e_scale
     #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
     e_data = {
@@ -174,12 +174,12 @@ def plot_complex(S: SimplicialComplex, pos: ArrayLike = None, color: Optional[Ar
     e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
     
   ## Create node renderer
-  if len(S.shape) > 0 and S.shape[0] > 0:
+  if card(S, 0) > 0:
     v_scale = 35.0
     v_data = {
       'x' : pos[:,0],
       'y' : pos[:,1],
-      'size' : np.repeat(v_scale, S.shape[0]), 
+      'size' : np.repeat(v_scale, card(S, 0)), 
       'color' : color[d == 0]
     }
     v_source = ColumnDataSource(data=v_data)

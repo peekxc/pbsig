@@ -669,13 +669,13 @@ def is_symmetric(A) -> bool:
 
 from scipy.sparse import coo_array
 def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
-  assert len(S.shape) > p, "Empty simplicial complex"
-  if len(S.shape) <= (p+1):
-    return coo_array(S.shape[p], S.shape[p], dtype=int)
-  weights = np.ones(S.shape[p+1]) if weights is None else weights
-  assert len(weights) == S.shape[p+1], "Invalid weight array, must match length of p+1 simplices"
+  assert len(S) > p, "Empty simplicial complex"
+  if dim(S) <= (p+1):
+    return coo_array(card(S,p), card(S,p), dtype=int)
+  weights = np.ones(card(S,p+1)) if weights is None else weights
+  assert len(weights) == card(S,p+1), "Invalid weight array, must match length of p+1 simplices"
   IJ = np.array([(i,j) for i,j in S.faces(p+1)], dtype=int)
-  A = coo_array((weights, (IJ[:,0], IJ[:,1])), shape=(S.shape[p], S.shape[p]))
+  A = coo_array((weights, (IJ[:,0], IJ[:,1])), shape=(card(S,p), card(S,p)))
   A = A + A.T
   return A
 
@@ -724,18 +724,17 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
     """
     # assert isinstance(K, ComplexLike), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
-    ns = S.shape
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     weight = (lambda s: 1.0) if weight is None else weight
-    _ = weight(next(S.faces(p)))
+    _ = weight(next(faces(S, p)))
     if not isinstance(_, Number) and len(_) == 2:
-      W_LR = np.array([weight(s) for s in S.faces(p)]).astype(float)
+      W_LR = np.array([weight(s) for s in faces(S, p)]).astype(float)
       wpl = W_LR[:,0]
       wpr = W_LR[:,1]
     else: 
-      wpl = np.array([float(weight(s)) for s in S.faces(p)])
+      wpl = np.array([float(weight(s)) for s in faces(S, p)])
       wpr = wpl
-    wq = np.array([float(weight(s)) for s in S.faces(p+1)])
+    wq = np.array([float(weight(s)) for s in faces(S, p+1)])
     assert len(wpl) == ns[p] and len(wq) == ns[p+1], "Invalid weight arrays given."
     assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
@@ -743,8 +742,8 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
       L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
       return (L, L.diagonal()) if return_diag else L
     elif form == 'lo':
-      p_faces = list(S.faces(p))        ## need to make a view 
-      p_simplices = list(S.faces(p+1))  ## need to make a view 
+      p_faces = list(faces(S, p))        ## need to make a view 
+      p_simplices = list(faces(S, p+1))  ## need to make a view 
       _lap_cls = eval(f"UpLaplacian{int(p)}D")
       lo = _lap_cls(p_simplices, p_faces)
       if normed:

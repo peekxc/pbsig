@@ -28,8 +28,8 @@ def test_fast_rank():
     assert all((k_combs_test - k_combs_test) == 0)
 
   ## Test boundaries
-  from pbsig.simplicial import SimplicialComplex
-  S = SimplicialComplex([[0,1,2,3,4,5]])
+  from pbsig.simplicial import simplicial_complex
+  S = simplicial_complex([[0,1,2,3,4,5]])
   n, k = S.shape[0], 3
   arr = lambda g: np.array(list(g)).astype(np.int32)
   Q = arr(S.faces(k-1))

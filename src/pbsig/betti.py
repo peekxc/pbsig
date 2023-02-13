@@ -314,8 +314,8 @@ class MuSignature:
     self.L = up_laplacian(S, p, form='lo', **kwargs)
     self.R = R
     self.family = family
-    self.np = S.shape[p]
-    self.nq = S.shape[p+1]
+    self.np = card(S, p)
+    self.nq = card(S, p+1)
   
   ## Does not change eigenvalues!
   def precompute(self, w: float = 0.0, normed: bool = False, **kwargs) -> None:

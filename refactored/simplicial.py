@@ -57,21 +57,21 @@ def freudenthal(X: ArrayLike):
     E.extend([(v_map[(i,j)], v_map[e]) for e in K13 if e[0] in range(n) and e[1] in range(m)])
   E = np.unique(np.array(E), axis=0)
   T = expand_triangles(nv, E)
-  S = SimplicialComplex(chain(V, E, T))
+  S = simplicial_complex(chain(V, E, T))
   return S
 
 def delaunay_complex(X: ArrayLike):
   dt = Delaunay(X)
   T = dt.simplices
   V = np.fromiter(range(X.shape[0]), dtype=np.int32)
-  S = SimplicialComplex(chain(V, T))
+  S = simplicial_complex(chain(V, T))
   return(S)
 
 def cycle_graph(X: ArrayLike):
   "Creates a cycle graph from a set of ordered points" 
   E = np.array(list(cycle_window(range(X.shape[0]))))
   V = np.fromiter(range(X.shape[0]), dtype=np.int32)
-  S = SimplicialComplex(chain(iter(V), iter(lexsort_rows(E))))
+  S = simplicial_complex(chain(iter(V), iter(lexsort_rows(E))))
   return S
 
 def complete_graph(n: int):
@@ -79,7 +79,7 @@ def complete_graph(n: int):
   from itertools import combinations
   V = np.fromiter(range(n), dtype=np.int32)
   E = np.array(list(combinations(range(n), 2)), dtype=np.int32)
-  S = SimplicialComplex(chain(iter(V), iter(lexsort_rows(E))))
+  S = simplicial_complex(chain(iter(V), iter(lexsort_rows(E))))
   return(S)
 
 
@@ -428,10 +428,10 @@ class MutableFiltration(MutableMapping):
   # (index_iterable, simplices_iterable)
   # SimplicialComplex, f = None 
   # SimplicialComplex, f = Callable 
-  def __init__(self, simplices: Union[SimplicialComplex, Iterable] = None, f: Optional[Callable] = None) -> None:
+  def __init__(self, simplices: Union[ComplexLike, Iterable] = None, f: Optional[Callable] = None) -> None:
     self.data = SortedDict()
     self.shape = tuple()
-    if isinstance(simplices, SimplicialComplex):
+    if isinstance(simplices, ComplexLike):
       if isinstance(f, Callable):
         self += ((f(s), s) for s in simplices)
       elif f is None:
@@ -703,29 +703,29 @@ def _boundary(S: Iterable[SimplexLike], F: Optional[Sequence[SimplexLike]] = Non
   D = coo_array((X, (I,J)), shape=(len(F), m)).tolil(copy=False)
   return D 
 
-def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tuple]], p: Optional[Union[int, tuple]] = None):
-  """
-  Returns the ordered p-th boundary matrix of a simplicial complex 'K'
+# def boundary_matrix(K: Union[SimplicialComplex, MutableFiltration, Iterable[tuple]], p: Optional[Union[int, tuple]] = None):
+#   """
+#   Returns the ordered p-th boundary matrix of a simplicial complex 'K'
 
-  Return: 
-    D := sparse matrix representing either the full or p-th boundary matrix (as List-of-Lists format)
-  """
-  from collections.abc import Sized
-  if isinstance(p, tuple):
-    return (boundary_matrix(K, pi) for pi in p)
-  else: 
-    assert p is None or isinstance(p, Integral), "p must be integer, or None"
-    if isinstance(K, SimplicialComplex) or isinstance(K, MutableFiltration):
-      if p is None:
-        simplices = list(K.faces())
-        D = _boundary(simplices, simplices)
-      else:
-        p_simplices = K.faces(p=p)
-        p_faces = list(K.faces(p=p-1))
-        D = _boundary(p_simplices, p_faces)
-    else: 
-      raise ValueError("Invalid input")
-    return D
+#   Return: 
+#     D := sparse matrix representing either the full or p-th boundary matrix (as List-of-Lists format)
+#   """
+#   from collections.abc import Sized
+#   if isinstance(p, tuple):
+#     return (boundary_matrix(K, pi) for pi in p)
+#   else: 
+#     assert p is None or isinstance(p, Integral), "p must be integer, or None"
+#     if isinstance(K, SimplicialComplex) or isinstance(K, MutableFiltration):
+#       if p is None:
+#         simplices = list(K.faces())
+#         D = _boundary(simplices, simplices)
+#       else:
+#         p_simplices = K.faces(p=p)
+#         p_faces = list(K.faces(p=p-1))
+#         D = _boundary(p_simplices, p_faces)
+#     else: 
+#       raise ValueError("Invalid input")
+#     return D
 
 
 ## TODO: make Filtration class that uses combinatorial number system for speed 

@@ -5,7 +5,7 @@ from pbsig.apparent_pairs import *
 from pbsig.datasets import mpeg7
 from pbsig.pht import pht_transformer, shape_center
 from pbsig.utility import cycle_window
-from pbsig.simplicial import SimplicialComplex, MutableFiltration
+from pbsig.simplicial import *
 from pbsig.linalg import up_laplacian
 from pbsig.linalg import numerical_rank
 from scipy.spatial.distance import pdist

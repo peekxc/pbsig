@@ -5,7 +5,7 @@ from scipy.sparse import *
 from pbsig.persistence import *
 from pbsig.vineyards import move_right
 from pbsig.datasets import random_lower_star
-from pbsig.simplicial import SimplicialComplex
+from pbsig.simplicial import *
 
 def test_matrix_addition():
   A = scipy.sparse.random(n=10, m=10, density=0.05).tocsc()

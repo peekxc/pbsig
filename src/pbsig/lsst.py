@@ -45,7 +45,7 @@ def connected_components(S: ComplexLike):
   ds = DisjointSet(list(S.faces(0))) 
   for i,j in faces(S, 1):
     ds.merge(Simplex(i), Simplex(j))
-  p = np.zeros(S.shape[0], dtype=int)
+  p = np.zeros(card(S,0), dtype=int)
   for i, subset in enumerate(ds.subsets()):
     for representative in subset:
       p[int(representative[0])] = i

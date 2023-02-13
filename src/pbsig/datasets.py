@@ -109,7 +109,7 @@ def freudenthal_image(image: ArrayLike, threshold: int = 200):
     np.min(v_pos[:,1]) + (np.max(v_pos[:,1])-np.min(v_pos[:,1]))/2
   ])
   X = scale_diameter(v_pos - center) 
-  return(X, SimplicialComplex(T))
+  return(X, simplicial_complex(T))
 
 def open_tar(fn: str, mode: str = "r:gz"):
   import tarfile
