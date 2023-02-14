@@ -169,7 +169,7 @@ def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float 
     valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
   return(valid)
 
-def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False) -> ArrayLike :
+def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
   sdim = np.array([s.dim() for s in iter(K.values())])
@@ -179,8 +179,8 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
     creator_mask = rlow == -1
     creator_dim = sdim[creator_mask]
     birth = np.flatnonzero(creator_mask) ## indices of zero columns 
-    death = np.repeat(np.inf, len(birth))
-    b = list(birth)
+    death = np.repeat(essential, len(birth))
+    #b = list(birth)
     # for z in rlow[~creator_mask]:
     #   death[]
     death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
@@ -195,7 +195,7 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
   ## Match the barcodes with the index set of the filtration
   key_dtype = type(next(K.keys()))
   filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
-  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { np.inf : np.inf} | { -np.inf : -np.inf}
+  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { essential : essential} | { -essential : -essential}
   birth = np.array([index2f[i] for i in birth])
   death = np.array([index2f[i] for i in death])
   
@@ -208,6 +208,7 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
 
   ## Split diagram based on homology dimension
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
+
   return dgm 
 
 def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collapse: bool = True):
@@ -257,12 +258,12 @@ def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: 
       R, V = boundary_matrix(K), sps.identity(len(K)).tolil()
       pHcol(R, V)
       assert validate_decomp(boundary_matrix(K), R, V)
-      return generate_dgm(K, R) if output == "dgm" else (R,V)
+      return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "cpp": 
       D, V = boundary_matrix(K), sps.identity(len(K))
       R, V = pm.phcol(D, V, range(len(K)))  
       assert validate_decomp(D, R, V)
-      return generate_dgm(K, R) if output == "dgm" else (R,V)
+      return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "dionysus":
       assert output == "dgm"
       dgm = ph_dionysus(K)

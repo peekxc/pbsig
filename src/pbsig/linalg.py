@@ -164,7 +164,10 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     params = kwargs
-    solver = np.linalg.eigvalsh
+    # if 'return_eigenvectors' in kwargs.keys():
+    solver = np.linalg.eigh
+    # else: 
+    # solver = np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
@@ -209,8 +212,6 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
     solver := Optional callable or string. If the latter, one of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'. See 'parameterize_solver' for more details. 
     kwargs := keyword arguments to pass to the parameterize_solver.
   """
-  assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
-  eps, p, method = smoothing 
   if solver is None: 
     solver = parameterize_solver(A, pp=1.0)
   elif isinstance(solver, str):
@@ -221,8 +222,21 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
   ew[np.isclose(ew, 0, atol=1e-6)] = 0.0
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
   ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
-  return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
+  if smoothing is not None:
+    assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
+    eps, p, method = smoothing 
+    return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
+  else: 
+    return sum(np.sqrt(ew))
 
+def prox(x: ArrayLike, t: float = 1.0):
+  """Prox operator on the nuclear norm"""
+  solver = parameterize_solver(x)
+  ew,ev = solver(x)
+  sv = np.sqrt(np.maximum(ew, 0.0))
+  A = ev @ diags(np.maximum(sv - t, 0.0)) @ ev.T
+  me = 0.5*np.linalg.norm(x - A, 'fro')**2 + (1/2*t)*sum(np.maximum(sv - t, 0.0))
+  return A, me, ew
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:
   """ 

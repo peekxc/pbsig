@@ -7,6 +7,7 @@ from .persistence import *
 from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
+from splex.geometry import flag_weight
 
 ## Generate a random set of rectangles in the upper half plane 
 def sample_rect_halfplane(n: int, area: tuple = (0, 0.05), disjoint: bool = False):  
@@ -216,8 +217,21 @@ def betti_query(S: Union[LinearOperator, ComplexLike], i: float, j: float, smoot
   # return EW[0] - EW[1] - EW[2] + EW[3]
 
 
+## Cone the complex
+def cone_weight(x: ArrayLike, vid: int = -1):
+  from scipy.spatial.distance import pdist
+  flag_w = flag_weight(x)
+  def _cone_weight(s):
+    s = Simplex(s)
+    if s == Simplex([vid]):
+      return -np.inf
+    elif vid in s:
+      return np.inf
+    else: 
+      return flag_w(s)
+  return _cone_weight
 
-def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
+def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -247,9 +261,42 @@ def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: in
     L.set_weights(None, J, None)
     I_norm = I * L.diagonal() # degrees
     EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
-  return EW[0] - EW[1] - EW[2] + EW[3]
+  return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
+
+def mu_query_mat(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, solver=None, **kwargs):
+  """
+  Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
+  
+  Parameters: 
+    S = Simplicial complex, or its corresponding Laplacian operator 
+    R = box (i,j,k,l,w) to restrict to, where i < j <= k < l, and w > 0 is a smoothing parameter
+    f = filter function on S (or equivalently, scalar product on its Laplacian operator)
+    smoothing = parameters for singular values
+  """
+  assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
+  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
+  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+  D = boundary_matrix(S, p=p+1)
+  fw = np.array([f(s) for s in faces(S, p)])
+  sw = np.array([f(s) for s in faces(S, p+1)])
+  delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
+  fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+  fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+  L = [None]*4
+  for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+    di = (D @ diags(J) @ D.T).diagonal()
+    fw_norm = pseudo(np.sqrt(I * di)) # normalized degree weights
+    L[cc] = diags(fw_norm) @ D @ diags(J) @ D.T @ diags(fw_norm)
+  return L
+
 
 def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
+  """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 
+  """
   assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
   assert len(R) == 4, "Must be a rectangle"
   i,j,k,l = R
