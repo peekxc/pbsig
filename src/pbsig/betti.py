@@ -243,7 +243,7 @@ def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: in
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
   L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form='lo')
-  assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
+  #assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
   (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
   fw = np.array([f(s) for s in L.faces])
@@ -260,7 +260,12 @@ def mu_query(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: in
   for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
     L.set_weights(None, J, None)
     I_norm = I * L.diagonal() # degrees
-    EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
+    L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
+    #if cc == 2:
+    solver = parameterize_solver(L, pp=1.0)
+    assert len(solver(L))
+    # return L
+    EW[cc] = smooth_rank(L, smoothing=smoothing, **kwargs)
   return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
 def mu_query_mat(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, solver=None, **kwargs):

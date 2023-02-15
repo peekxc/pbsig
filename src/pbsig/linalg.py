@@ -165,9 +165,9 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     params = kwargs
     # if 'return_eigenvectors' in kwargs.keys():
-    solver = np.linalg.eigh
+    # solver = np.linalg.eigh
     # else: 
-    # solver = np.linalg.eigvalsh
+    solver = np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
@@ -197,7 +197,7 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     return ew
   return _call_solver
 
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
+def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, raw: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
   """ 
   Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
 
@@ -219,15 +219,16 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
   else:
     assert isinstance(solver, Callable), "Solver must callable, if not string or None"
   ew = solver(A)
-  ew[np.isclose(ew, 0, atol=1e-6)] = 0.0
+  ew = np.maximum(ew, 0.0)
   assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
   ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
   if smoothing is not None:
     assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
     eps, p, method = smoothing 
-    return sum(sgn_approx(np.sqrt(ew), eps, p, method)) if sqrt else sum(sgn_approx(ew, eps, p, method))
+    ew = sgn_approx(np.sqrt(ew), eps, p, method) if sqrt else sgn_approx(ew, eps, p, method)
   else: 
-    return sum(np.sqrt(ew))
+    ew = np.sqrt(ew) if sqrt else ew
+  return ew if raw else sum(ew)
 
 def prox(x: ArrayLike, t: float = 1.0):
   """Prox operator on the nuclear norm"""
@@ -858,6 +859,7 @@ class UpLaplacianBase(LinearOperator):
     self.fq = value.astype(self.dtype)
 
   def set_weights(self, lw = None, cw = None, rw = None):
+    #print(len(cw), self.nq, len(self.fq))
     self.face_left_weights = lw if lw is not None else np.repeat(1.0, self.np)
     self.simplex_weights = cw if cw is not None else np.repeat(1.0, self.nq)
     self.face_right_weights = rw if rw is not None else np.repeat(1.0, self.np)

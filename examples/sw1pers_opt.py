@@ -55,7 +55,20 @@ from pbsig.betti import mu_query
 R = np.array([-np.inf, 5, 15, np.inf])
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.00000000, 1.0, 0)))
 R = np.array([-np.inf, 4, 15, np.inf])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0)))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-12, 1.0, 0), terms=True))
+R = np.array([-np.inf, 5, 15, np.inf])
+
+## WHYYYYY 
+eigh2rank(mat2eigh(mat2dense(time2mat(t))))
+# mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0), terms=True)
+mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False)
+MM = mat2eigh(mat2dense(time2mat(tau)))
+sum(np.sqrt(np.maximum(MM[2], 0.0)))
+
+mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False, raw=True)[2]
+MM[2]
+# sum(np.sqrt(np.maximum(MM[2], 0.0)))
+
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
 from pbsig.betti import *
