@@ -36,6 +36,7 @@ show(row(*scatters))
 
 ## Cone the complex
 from pbsig.betti import cone_weight
+X = SW(n=N, d=M, tau=tau)
 S = rips_complex(X, r, 2)
 S = SetComplex(S)
 sv = X.shape[0] # special vertex
@@ -51,23 +52,10 @@ plot_dgm(dgm[1])
 
 ## Test the multiplicity queries with the coned complex
 from pbsig.betti import mu_query
-X = SW(n=N, d=M, tau=tau)
 R = np.array([-np.inf, 5, 15, np.inf])
-mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.00000000, 1.0, 0))
-L = mu_query_mat(K, f=cone_weight(X, sv), R=R, p=1)
-# eigh2rank(mat2eigh(mat2dense(L)))
-terms2mu(eigh2nucl(mat2eigh(mat2dense(L))))
-terms2mu(eigh2rank(mat2eigh(mat2dense(L))))
-
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.00000000, 1.0, 0)))
 R = np.array([-np.inf, 4, 15, np.inf])
-mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0))
-
-# from pbsig.betti import MuSignature
-# T_dom = np.linspace(0.50*tau, 1.50*tau, 100)
-# family = [cone_weight(SW(n=N, d=M, tau=t)) for t in T_dom]
-# sig = MuSignature(K, family=family, R=R, p=1)
-# sig.precompute()
-# q = sig(tau, smoothing=(1e-14, 1.0, 0))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0)))
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
 from pbsig.betti import *
@@ -75,11 +63,10 @@ time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R
 mat2dense = lambda L: [l.todense() for l in L]
 mat2eigh = lambda L: [np.linalg.eigvalsh(l) for l in L]
 eigh2nucl = lambda E: [sum(np.sqrt(np.maximum(0.0, e))) for e in E]
-eigh2rank = lambda E: [sum(np.isclose(e, 0.0, atol=1e-3)) for e in E]
+eigh2rank = lambda E: [sum(~np.isclose(e, 0.0)) for e in E]
 terms2mu = lambda T: sum([s*term for term, s in zip(T, [1,-1,-1,1])])
 rank_obj = lambda t: terms2mu(eigh2rank(mat2eigh(mat2dense(time2mat(t)))))
 nucl_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
-#mat2eigh = lambda L: sum([s*ew_reduce(np.linalg.eigvalsh(l)) for l,s in zip(L,[1,-1,-1,1])])
 
 ## show the objective 
 from bokeh.io import output_notebook
@@ -104,6 +91,14 @@ df_dt(OBJ)
 
 
 
+# from pbsig.betti import MuSignature
+# T_dom = np.linspace(0.50*tau, 1.50*tau, 100)
+# family = [cone_weight(SW(n=N, d=M, tau=t)) for t in T_dom]
+# sig = MuSignature(K, family=family, R=R, p=1)
+# sig.precompute()
+# q = sig(tau, smoothing=(1e-14, 1.0, 0))
+
+
 prox(LM[0])
 
 alpha, tau0, t1, T = 0.1, 0.50*tau, 1.0, 1.50*tau
@@ -119,3 +114,8 @@ ew, ev = np.linalg.eigh(LM[0].todense())
 #   print(sum(np.logical_and(valid_birth, valid_death)))
 
 ## Choose a box, show its rank over vineyards 
+# LM = mu_query_mat(K, f=cone_weight(X, sv), R=R, p=1, terms=False)
+
+# # eigh2rank(mat2eigh(mat2dense(L)))
+# terms2mu(eigh2nucl(mat2eigh(mat2dense(LM))))
+# terms2mu(eigh2rank(mat2eigh(mat2dense(LM))))

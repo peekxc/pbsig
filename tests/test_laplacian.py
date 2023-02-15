@@ -358,17 +358,20 @@ def test_laplacian_API():
     assert all(np.ravel(LO.faces == np.array(list(S.faces(p)))))
 
   ## Test they are the same 
-  LM = up_laplacian(S, p=0, form='array')
-  LO = up_laplacian(S, p=0, form='lo')
-  x = np.random.uniform(size=S.shape[0])
-  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
-   # (LM @ x) - (LO @ x)???
+  for p in [0,1]:
+    LM = up_laplacian(S, p=p, form='array')
+    LO = up_laplacian(S, p=p, form='lo')
+    x = np.random.uniform(size=S.shape[0])
+    assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
-  ## Test they are the same 
-  LM = up_laplacian(S, p=1, form='array')
-  LO = up_laplacian(S, p=1, form='lo')
-  x = np.random.uniform(size=S.shape[1])
-  assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+  ## Test they match the boundary operator 
+  for p in [0,1]:
+    LO = up_laplacian(S, p=p, form='lo')
+    D1 = boundary_matrix(S, p=p+1)
+    LU = D1 @ D1.T
+    x = np.random.uniform(size=card(S, p))
+    assert np.allclose(LU @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
+
 
   ## Test normalized operators
   from scipy.sparse.linalg import eigsh
