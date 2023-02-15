@@ -83,6 +83,7 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
 // mutable unordered_map< I, I > index_map; 
 
 // Given codimension-1 ranks, determines the ranks of the corresponding faces
+// p := simplex dimension of given ranks 
 auto decompress_faces(const vector< uint_64 >& cr, const size_t n, const size_t p, bool unique) -> vector< uint_64 > {
   vector< uint_64 > fr; 
   fr.reserve(cr.size()); 
@@ -127,17 +128,20 @@ struct UpLaplacian {
     fq = vector< F >(nq, 1.0); 
     degrees = vector< F >(np, 0.0);
     pr = decompress_faces(qr, nv, dim+1, true);
-  }
-
-  
-  // Prepares indexing hash function 
-  void compute_indexes(){
-    // Build the index map
-    // index_map.build(fr.begin(), fr.end());
     for (uint64_t i = 0; i < pr.size(); ++i){
       index_map.emplace(pr[i], i);
     }
   }
+
+  
+  // // Prepares indexing hash function 
+  // void compute_indexes(){
+  //   // Build the index map
+  //   // index_map.build(fr.begin(), fr.end());
+  //   for (uint64_t i = 0; i < pr.size(); ++i){
+  //     index_map.emplace(pr[i], i);
+  //   }
+  // }
 
   // Precomputes the degree term
   void precompute_degree(){
@@ -289,7 +293,7 @@ void declare_laplacian(py::module &m, std::string typestr) {
       return _faces_from_ranks(L);
     })
     .def("precompute_degree", &Class::precompute_degree)
-    .def("compute_indexes", &Class::compute_indexes)
+    // .def("compute_indexes", &Class::compute_indexes)
     .def("_matvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
     .def("_matmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
     ;

@@ -128,7 +128,7 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
 
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
-def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True, **kwargs) -> Callable:
+def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True, laplacian: bool = True, **kwargs) -> Callable:
   """
   symmetric positive semi-definite 'A'
 
@@ -159,6 +159,7 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
   assert symmetric, "Haven't implemented non-symmetric yet"
   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
   assert solver is not None, "Invalid solver"
+  tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
   if pp == 0.0: return 0.0
   if solver == 'dac':
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
@@ -170,8 +171,10 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     solver = np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
-    nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+    #nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+    nev = trace_threshold(A, pp)
     if nev == 0: return(lambda A: np.zeros(1))
+    nev = A.shape[0] - 1 if laplacian and nev == A.shape[0] else nev
     if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
@@ -179,14 +182,14 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     solver = 'irl' if solver == 'default' else solver
     assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
     if solver == 'irl':
-      params = dict(k=nev, which='LM', tol=1e-6, return_eigenvectors=False) | kwargs
+      params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=False) | kwargs
       solver = eigsh
     else:
       import primme
       n = A.shape[0]
       ncv = min(2*nev + 1, 20) # use modification of scipy rule
       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      params = dict(ncv=ncv, maxiter=pp*n*100, tol=1e-6, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
+      params = dict(ncv=ncv, maxiter=pp*n*100, tol=tol, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
       solver = primme.eigsh
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
@@ -821,7 +824,7 @@ class UpLaplacianBase(LinearOperator):
     assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
     assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
     p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
-    assert p == 0 or p == 1, "Only p in {0,1} supported for now"
+    assert p == 0 or p == 1 or p == 2, "Only p in {0,1} supported for now"
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
     # super().__init__(*args, **kwargs)
 
@@ -894,6 +897,24 @@ class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
     self.precompute_degree()
 
 class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
+    
+class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+    _np = len(F)
+    q_ranks = rank_combs(S, n=nv, order="lex")
+    UpLaplacianBase.__init__(S, F)
+    laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
+    self.compute_indexes()
+    self.precompute_degree()
+
+class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
     _np = len(F)
     q_ranks = rank_combs(S, n=nv, order="lex")

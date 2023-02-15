@@ -361,7 +361,7 @@ def test_laplacian_API():
   for p in [0,1]:
     LM = up_laplacian(S, p=p, form='array')
     LO = up_laplacian(S, p=p, form='lo')
-    x = np.random.uniform(size=S.shape[0])
+    x = np.random.uniform(size=card(S, p))
     assert np.allclose(LM @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
   ## Test they match the boundary operator 
@@ -372,6 +372,7 @@ def test_laplacian_API():
     x = np.random.uniform(size=card(S, p))
     assert np.allclose(LU @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
+  ## Test diagonal dominance, degree and index computations
 
   ## Test normalized operators
   from scipy.sparse.linalg import eigsh

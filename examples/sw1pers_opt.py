@@ -53,9 +53,18 @@ plot_dgm(dgm[1])
 ## Test the multiplicity queries with the coned complex
 from pbsig.betti import mu_query
 R = np.array([-np.inf, 5, 15, np.inf])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.00000000, 1.0, 0)))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo', raw=True)[2])
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='lo', raw=True))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='array'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='lo'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='array'))
+
 R = np.array([-np.inf, 4, 15, np.inf])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-12, 1.0, 0), terms=True))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True))
 R = np.array([-np.inf, 5, 15, np.inf])
 
 ## WHYYYYY 
