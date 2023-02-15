@@ -18,5 +18,5 @@ ax.set_xlim(c[0] - 0.5*rng, c[0] + 0.5*rng)
 ax.set_ylim(c[1] - 0.5*rng, c[1] + 0.5*rng)
 ax.set_zlim(c[2] - 0.5*rng, c[2] + 0.5*rng)
 
-# from pbsig.
+
 
