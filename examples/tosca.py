@@ -133,7 +133,7 @@ plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
 
 # %% 
-def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Sequence[float]] = 20, method: str = ["simple", "top_down"]) -> ArrayLike:
+def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Sequence[float]] = 20, method: str = ["simple", "top_down", "top_down_vec"]) -> ArrayLike:
   """Calculates the euler characteristic curve.
 
   Parameters:
@@ -146,7 +146,7 @@ def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Seque
   Returns: 
     array of euler values of the mesh along _bins_ 
   """
-  assert isinstance(X, np.ndarray) and X.ndim == 2 and X.shape[1] == 3, "Invalid point cloud given."
+  assert isinstance(X, np.ndarray) and X.ndim == 2, "Invalid point cloud given."
   assert isinstance(T, np.ndarray) and T.ndim == 2 and T.shape[1] == 3, "Invalid triangles given."
   f = np.array(f)
   assert isinstance(f, np.ndarray) and len(f) == X.shape[0], "Invalid vertex function array given."
@@ -160,7 +160,7 @@ def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Seque
     fe = f[E].max(axis=1)
     ft = f[T].max(axis=1)
     ecc = np.array([sum(f < t) - sum(fe < t) + sum(ft < t) for t in bins])
-  else: 
+  elif method == "top_down": 
     ## O(n + k) approach from "Efficient classification using the Euler characteristic"
     from itertools import combinations
     vw, ew = {}, {}
@@ -174,7 +174,67 @@ def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Seque
     e_counts = np.cumsum(np.histogram(list(ew.values()), bins=bins)[0])
     t_counts = np.cumsum(np.histogram(ft, bins=bins)[0])
     ecc = np.append(0, (v_counts - e_counts + t_counts))
-  return ecc
+  elif method == "top_down_vec":
+    ## Vectorized O(n + k) approach from "Efficient classification using the Euler characteristic"
+    from itertools import combinations
+    from hirola import HashTable
+    ft = f[T].max(axis=1)
+    vw = np.ones(len(f))*(-np.inf)
+    np.maximum.at(vw, T[:,0], ft)
+    np.maximum.at(vw, T[:,1], ft)
+    np.maximum.at(vw, T[:,2], ft)
+    h = HashTable((3*T.shape[0])*1.25, dtype=(T.dtype, 2))
+    h.add(T[:,[0,1]])
+    h.add(T[:,[0,2]])
+    h.add(T[:,[1,2]])
+    ew = np.ones(h.length)*(-np.inf)
+    np.maximum.at(ew, h[T[:,[0,1]]], ft)
+    np.maximum.at(ew, h[T[:,[0,2]]], ft)
+    np.maximum.at(ew, h[T[:,[1,2]]], ft)
+    v_counts = np.cumsum(np.histogram(vw, bins=bins)[0])
+    e_counts = np.cumsum(np.histogram(ew, bins=bins)[0])
+    t_counts = np.cumsum(np.histogram(ft, bins=bins)[0])
+    ecc = np.append(0, (v_counts - e_counts + t_counts))
+  return ecc 
+
+# %% 
+import timeit 
+timeit.timeit(lambda: euler_curve(X, T, f, method="simple"), number=10)
+timeit.timeit(lambda: euler_curve(X, T, f, method="top_down"), number=10)
+timeit.timeit(lambda: euler_curve(X, T, f, method="top_down_vec"), number=10)
+
+from splex.geometry import delaunay_complex
+X = np.random.uniform(size=(8,2))
+S = delaunay_complex(X)
+T = np.array(list(S.faces(2)))
+f = X @ np.array([0,1])
+euler_curve(X, T, f, method="simple")
+euler_curve(X, T, f, method="top_down")
+euler_curve(X, T, f, method="top_down_vec")
+
+
+# hirola experimentation 
+# from hirola import HashTable
+# # TV = np.array(T, dtype=[('i', "u4"), ('j', "u4"), ('k', "u4")])
+
+# vw = np.ones(len(f))*(-np.inf)
+# vw[T[:,0]] = np.maximum(vw[T[:,0]], ft)
+# vw[T[:,1]] = np.maximum(vw[T[:,1]], ft)
+# vw[T[:,2]] = np.maximum(vw[T[:,2]], ft)
+
+# h = HashTable((3*T.shape[0])*1.25, dtype=(T.dtype, 2))
+# h.add(T[:,[0,1]])
+# h.add(T[:,[0,2]])
+# h.add(T[:,[1,2]])
+# ew = np.ones(h.length)*(-np.inf)
+# for ij in combinations(range(3), 2):
+#   e_ind = h[T[:,ij]]
+#   ew[e_ind] = np.maximum(ew[e_ind], ft)
+
+
+
+# h.add(T[:,[0,2]])
+# h.add(T[:,[1,2]])
 
 
 # %% 
