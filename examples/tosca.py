@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.typing import ArrayLike 
 from typing import *
+import numpy as np
 import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,84 +16,123 @@ import requests
 
 # lzma.open(z)
 
+# %% 
 import requests
-import tarfile
-url = "https://raw.githubusercontent.com/peekxc/tosca_signatures/main/tosca.tar.xz"
-response = requests.get(url, stream=False)
-tosca_file = tarfile.open(fileobj=response.raw, mode="r:xz")
-with tarfile.open(fileobj=response.raw, mode="r:xz") as tosca_file:
-  tosca_file.extractall(path=".") 
-  for member in tosca_file.getmembers():
-    if member.name[0] != "." and member.size > 0:
-      print(member.name)
-      scipy.io.loadmat(tosca_file.extractfile(member))
+
+def tosca():
+  import tarfile
+  from urllib.request import urlopen
+  from io import BytesIO
+  url = "https://raw.githubusercontent.com/peekxc/tosca_signatures/main/tosca.tar.xz"
+  tosca_file = tarfile.open(fileobj=BytesIO(urlopen(url).read()) , mode="r:xz")
+  tosca_files = [name[:-4] for name in tosca_file.getnames() if name[0] != "."]
+  def _extract_model(model_name: str, obj_id: str = None, normalize: bool = True):
+    fn = (model_name + str(obj_id) + ".mat") if obj_id is not None else (model_name + ".mat")
+    m = tosca_file.extractfile(fn)
+    mat = scipy.io.loadmat(BytesIO(m.read()))
+    x = np.ravel(mat['surface']['X'][0][0]).astype(float)
+    y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
+    z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
+    S = np.c_[x,y,z]
+    T = mat['surface']['TRIV'][0][0] - 1 # TOSCA is 1-based 
+    if normalize:
+      S -= S.mean(axis=0)
+      c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
+      S *= (1/c)
+    return S, T
+  return _extract_model, tosca_files
+
+## Usage 
+get_model, tosca_model_names = tosca()
+# get_model("wolf1") <=> 
+# get_model("wolf", 1)
+# get_model(model_names[0])
+
+# for member in tosca_file.getmembers():
+#   if member.name[0] != ".":
+#     w = tosca_file.extractfile(member)
+#     S = scipy.io.loadmat(BytesIO(w.read()))
+#   print(S)
+
+# with tarfile.open(fileobj=response.raw, mode="r:xz") as tosca_file:
+#   tosca_file.extractall(path=".") 
+#   for member in tosca_file.getmembers():
+#     if member.name[0] != "." and member.size > 0:
+#       print(member.name)
+#       scipy.io.loadmat(tosca_file.extractfile(member))
 
 
-import urllib.request
-import tarfile
-filename = url.split("/")[-1]
-urllib.request.urlretrieve(url, filename)
-tosca_file = tarfile.open(filename, "r:xz")
-wut = []
-for member in tosca_file.getmembers():
-  f = tosca_file.extractfile(member)
-  print(f.name)
-  wut.append(f)
-  if f.name is not None:
-    S = scipy.io.loadmat(f.read())
-    print(type(S))
+# url = "https://raw.githubusercontent.com/peekxc/pbsig/main/src/pbsig/data/tosca/tosca.zip"
+# from urllib.request import urlopen
+# from io import BytesIO
+# from zipfile import ZipFile
+# http_response = urlopen(url)
+# zipfile = ZipFile(BytesIO(http_response.read()))
+# for name in zipfile.namelist():
+#   data = zipfile.read(name)
+#   S = scipy.io.loadmat(BytesIO(data))
+#   print(S)
 
-for tf in tosca_file:
-  if tf.name[0] != ".":
-    scipy.io.loadmat(tosca_file.extractfile(tf).read())
-
-with open("filename", 'wb') as f:
-  f.write(r.content)
+# import urllib.request
+# import tarfile
+# filename = url.split("/")[-1]
+# urllib.request.urlretrieve(url, filename)
+# tosca_file = tarfile.open(filename, "r:xz")
+# wut = []
+# for member in tosca_file.getmembers():
+#   f = tosca_file.extractfile(member)
+#   print(f.name)
+#   wut.append(f)
+#   if f.name is not None:
+#     S = scipy.io.loadmat(f.read())
+#     print(type(S))
 
 # %% Tosca preprocessing 
-tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
-mat_rgx, cls_rgx = re.compile(r".*[.]mat"), re.compile(r"^([a-zA-Z]+)(\d+)[.]mat")
-tosca_files = [fn for fn in os.listdir(tosca_dir) if mat_rgx.match(fn) is not None]
-
+# tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
+# mat_rgx, cls_rgx = re.compile(r".*[.]mat"), re.compile(r"^([a-zA-Z]+)(\d+)[.]mat")
+# tosca_files = [fn for fn in os.listdir(tosca_dir) if mat_rgx.match(fn) is not None]
+# def tosca_model(file_path: str, normalize: bool = True):
+#   mat = scipy.io.loadmat(file_path)
+#   x = np.ravel(mat['surface']['X'][0][0]).astype(float)
+#   y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
+#   z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
+#   S = np.c_[x,y,z]
+#   T = mat['surface']['TRIV'][0][0] - 1 # TOSCA is 1-based 
+#   if normalize:
+#     S -= S.mean(axis=0)
+#     c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
+#     S *= (1/c)
+#   return S, T
+import re 
+cls_rgx = re.compile(r"^([a-zA-Z]+)(\d+)")
 tosca_classes = ['dog', 'cat', 'michael', 'centaur', 'victoria', 'horse', 'david', 'gorilla', 'wolf'] 
 tosca_colors = ['red', 'blue', 'black', 'orange', 'yellow', 'green', 'purple', 'pink', 'cyan']
-tosca = { cls_nm : [] for cls_nm in  tosca_classes}
-for fn in tosca_files:
-  cls_nm, obj_id = cls_rgx.split(fn)[1:3] 
-  tosca[cls_nm].append(int(obj_id))
-
-def tosca_model(file_path: str, normalize: bool = True):
-  mat = scipy.io.loadmat(file_path)
-  x = np.ravel(mat['surface']['X'][0][0]).astype(float)
-  y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
-  z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
-  S = np.c_[x,y,z]
-  T = mat['surface']['TRIV'][0][0] - 1 # TOSCA is 1-based 
-  if normalize:
-    S -= S.mean(axis=0)
-    c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
-    S *= (1/c)
-  return S, T
+tosca_class_ids = { cls_nm : [] for cls_nm in  tosca_classes}
+for fn in tosca_model_names:
+  cls_nm, model_id = cls_rgx.split(fn)[1:3] 
+  tosca_class_ids[cls_nm].append(int(model_id))
 
 
 # %% Plot random samples
 from itertools import product
 nrow, ncol = 4, 5
 zoom = 0.33
-tosca_models = np.random.choice(tosca_files, size=nrow*ncol, replace=False)
+tosca_models = np.random.choice(tosca_model_names, size=nrow*ncol, replace=False)
 
 fig, axs = plt.subplots(nrow, ncol, figsize=(150, 150), subplot_kw={'projection': '3d'})
 idx_iter = product(range(nrow), range(ncol))
 for model_name, (i,j) in zip(tosca_models, idx_iter):
-  S, T = tosca_model(tosca_dir + model_name)
+  S, T = get_model(model_name)
   c, rng = S.mean(axis=0), max(abs(S.max(axis=0)-S.min(axis=0)))
   axs[i,j].scatter(*S.T, s=15.48, c=S[:,2])
   axs[i,j].set_xlim(c[0] - zoom*rng, c[0] + zoom*rng)
   axs[i,j].set_ylim(c[1] - zoom*rng, c[1] + zoom*rng)
   axs[i,j].set_zlim(c[2] - zoom*rng, c[2] + zoom*rng)
   axs[i,j].axis('off')
+plt.subplots_adjust(left=0, bottom=0, right=1, top=1, wspace=0, hspace=0)
 
 
+# %% 
 def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Sequence[float]] = 20, method: str = ["simple", "top_down"]) -> ArrayLike:
   """Calculates the euler characteristic curve.
 
@@ -148,10 +188,10 @@ INDEX = np.arange(bins)
 
 p = figure(width=450, height=250, x_axis_label="Height index", y_axis_label="Euler Characteristic")
 for tc in tosca_subset:
-  for obj_id in tosca[tc]:
-    X, T = tosca_model(tosca_dir + tc + str(obj_id) + ".mat")
+  for model_id in tosca_class_ids[tc]:
+    X, T = get_model(tc, model_id) 
     f = X @ np.array([0,0,1])
-    ecc = euler_curve(X, T, f, method="simple")
+    ecc = euler_curve(X, T, f, method="top_down")
     p.line(INDEX, ecc, color=tosca_colors[tosca_classes.index(tc)], legend_label=tc)
 p.legend.location = "bottom_left"
 show(p)
@@ -194,10 +234,10 @@ def curvature(
 # %% Euler characteristic with varying curvature
 p = figure(width=450, height=250, x_axis_label="Sublevel sets of Shape Index", y_axis_label="Euler Characteristic")
 for tc in tosca_subset:
-  for obj_id in tosca[tc]:
-    X, T = tosca_model(tosca_dir + tc + str(obj_id) + ".mat")
+  for model_id in tosca_class_ids[tc]:
+    X, T = get_model(tc, model_id)
     f = curvature(X, T)
-    ecc = euler_curve(X, T, f, method="simple")
+    ecc = euler_curve(X, T, f, method="top_down")
     p.line(INDEX, ecc, color=tosca_colors[tosca_classes.index(tc)], legend_label=tc)
 p.legend.location = "bottom_left"
 show(p)
@@ -275,3 +315,5 @@ show(p)
 # np.histogram(ft, bins=k)
 # np.add.at(buckets, indices, 1)  #scale=pymeshlab.Percentage(0.5)
 
+
+# %%
