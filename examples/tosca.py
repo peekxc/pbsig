@@ -5,7 +5,49 @@ import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
 import re
+import requests
 
+# import lzma
+# import requests
+# url = "https://raw.githubusercontent.com/peekxc/pbsig/main/src/pbsig/data/tosca/tosca.tar.xz"
+# r = requests.get(url, stream=True)
+# z = lzma.decompress(r.content)
+
+# lzma.open(z)
+
+import requests
+import tarfile
+url = "https://raw.githubusercontent.com/peekxc/tosca_signatures/main/tosca.tar.xz"
+response = requests.get(url, stream=False)
+tosca_file = tarfile.open(fileobj=response.raw, mode="r:xz")
+with tarfile.open(fileobj=response.raw, mode="r:xz") as tosca_file:
+  tosca_file.extractall(path=".") 
+  for member in tosca_file.getmembers():
+    if member.name[0] != "." and member.size > 0:
+      print(member.name)
+      scipy.io.loadmat(tosca_file.extractfile(member))
+
+
+import urllib.request
+import tarfile
+filename = url.split("/")[-1]
+urllib.request.urlretrieve(url, filename)
+tosca_file = tarfile.open(filename, "r:xz")
+wut = []
+for member in tosca_file.getmembers():
+  f = tosca_file.extractfile(member)
+  print(f.name)
+  wut.append(f)
+  if f.name is not None:
+    S = scipy.io.loadmat(f.read())
+    print(type(S))
+
+for tf in tosca_file:
+  if tf.name[0] != ".":
+    scipy.io.loadmat(tosca_file.extractfile(tf).read())
+
+with open("filename", 'wb') as f:
+  f.write(r.content)
 
 # %% Tosca preprocessing 
 tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
