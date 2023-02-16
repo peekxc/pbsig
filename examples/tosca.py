@@ -1,111 +1,163 @@
 import numpy as np
+from numpy.typing import ArrayLike 
+from typing import *
 import scipy.io
 import matplotlib.pyplot as plt
 import numpy as np
-from bokeh.io import output_notebook
+import re
 
+
+# %% Tosca preprocessing 
 tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
-tosca_files = os.listdir(tosca_dir)
+mat_rgx, cls_rgx = re.compile(r".*[.]mat"), re.compile(r"^([a-zA-Z]+)(\d+)[.]mat")
+tosca_files = [fn for fn in os.listdir(tosca_dir) if mat_rgx.match(fn) is not None]
 
-mat = scipy.io.loadmat('/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/dog3.mat')
-x = np.ravel(mat['surface']['X'][0][0]).astype(float)
-y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
-z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
-S = np.c_[x,y,z]
+tosca_classes = ['dog', 'cat', 'michael', 'centaur', 'victoria', 'horse', 'david', 'gorilla', 'wolf'] 
+tosca_colors = ['red', 'blue', 'black', 'orange', 'yellow', 'green', 'purple', 'pink', 'cyan']
+tosca = { cls_nm : [] for cls_nm in  tosca_classes}
+for fn in tosca_files:
+  cls_nm, obj_id = cls_rgx.split(fn)[1:3] 
+  tosca[cls_nm].append(int(obj_id))
 
-fig = plt.figure()
-ax = plt.axes(projection='3d')
-ax.scatter(*S.T, s=0.18, c=S[:,2])
-c = S.mean(axis=0)
-rng = max(abs(S.max(axis=0)-S.min(axis=0)))
-zoom = 0.33
-ax.set_xlim(c[0] - zoom*rng, c[0] + zoom*rng)
-ax.set_ylim(c[1] - zoom*rng, c[1] + zoom*rng)
-ax.set_zlim(c[2] - zoom*rng, c[2] + zoom*rng)
-
-T = mat['surface']['TRIV'][0][0]
-E = np.array(list(set([tuple(e) for e in T[:,[0,1]]]) | set([tuple(e) for e in T[:,[0,2]]]) | set([tuple(e) for e in T[:,[1,2]]])))
-fv = f(S, T)
-fe = fv[E-1].max(axis=1)
-ft = fv[T-1].max(axis=1)
-
-
-## Euler characteristic curve
-def ecc_tosca(file_path, f: Callable, k: int = 10, p: float = 1.0):
-  """Calculates euler characteristic curve on TOSCA data set.
-  
-  k := number of buckets
-  p := percentage of maximum 
-  Requires scalar-valued function f(X) to filter the sublevel sets of a mesh whose vertices are embedded in 'X'
-  """
+def tosca_model(file_path: str, normalize: bool = True):
   mat = scipy.io.loadmat(file_path)
   x = np.ravel(mat['surface']['X'][0][0]).astype(float)
   y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
   z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
   S = np.c_[x,y,z]
-  S -= S.mean(axis=0)
-  # norms = np.linalg.norm(S, axis=1)
-  c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
-  # S = np.array([c*(s/n) for s,n in zip(S,   (1/c)*norms)])
-  S *= (1/c)
-  T = mat['surface']['TRIV'][0][0]
-  E = np.array(list(set([tuple(e) for e in T[:,[0,1]]]) | set([tuple(e) for e in T[:,[0,2]]]) | set([tuple(e) for e in T[:,[1,2]]])))
-  
-  fv = f(S, T)
-  fe = fv[E-1].max(axis=1)
-  ft = fv[T-1].max(axis=1)
-  time_pts = np.linspace(min(fv), p*max(fv), k)
-  time_pts[-1]
-  offset = (max(ft) - min(ft))
-  buckets = np.zeros(k, dtype=int)
-  # indices = np.minimum(np.floor((k * ft) / time_pts[-1]).astype(np.int16), k-1)
-  indices = np.minimum(np.floor((ft + offset)*k / (max(ft) + offset)).astype(np.int16), k-1)
-  np.histogram(ft, bins=k)
-  np.add.at(buckets, indices, 1)
+  T = mat['surface']['TRIV'][0][0] - 1 # TOSCA is 1-based 
+  if normalize:
+    S -= S.mean(axis=0)
+    c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
+    S *= (1/c)
+  return S, T
 
-  fe_max = np.zeros(E.shape[0])
-  ecc = [sum(fv < t) - sum(fe < t) + sum(ft < t) for t in np.linspace(min(fv), p*max(fv), N)]
+
+# %% Plot random samples
+from itertools import product
+nrow, ncol = 4, 5
+zoom = 0.33
+tosca_models = np.random.choice(tosca_files, size=nrow*ncol, replace=False)
+
+fig, axs = plt.subplots(nrow, ncol, figsize=(150, 150), subplot_kw={'projection': '3d'})
+idx_iter = product(range(nrow), range(ncol))
+for model_name, (i,j) in zip(tosca_models, idx_iter):
+  S, T = tosca_model(tosca_dir + model_name)
+  c, rng = S.mean(axis=0), max(abs(S.max(axis=0)-S.min(axis=0)))
+  axs[i,j].scatter(*S.T, s=15.48, c=S[:,2])
+  axs[i,j].set_xlim(c[0] - zoom*rng, c[0] + zoom*rng)
+  axs[i,j].set_ylim(c[1] - zoom*rng, c[1] + zoom*rng)
+  axs[i,j].set_zlim(c[2] - zoom*rng, c[2] + zoom*rng)
+  axs[i,j].axis('off')
+
+
+def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Sequence[float]] = 20, method: str = ["simple", "top_down"]) -> ArrayLike:
+  """Calculates the euler characteristic curve.
+
+  Parameters:
+    X = (n x 3) array of vertex coordinates 
+    T = (m x 3) array of triangle indices 
+    f = array of vertex values to filter by 
+    bins = number of bins, or a sequence of threshold values 
+    method = strng indicating which method to use to compute the curve. Defaults to "simple". 
+
+  Returns: 
+    array of euler values of the mesh along _bins_ 
+  """
+  assert isinstance(X, np.ndarray) and X.ndim == 2 and X.shape[1] == 3, "Invalid point cloud given."
+  assert isinstance(T, np.ndarray) and T.ndim == 2 and T.shape[1] == 3, "Invalid triangles given."
+  f = np.array(f)
+  assert isinstance(f, np.ndarray) and len(f) == X.shape[0], "Invalid vertex function array given."
+  bins = np.linspace(min(f), max(f)+10*np.finfo(float).eps, bins) if isinstance(bins, int) else bins
+  assert isinstance(bins, Collection), f"Invalid argument bins={bins}"
+  
+  ## Choose the euler invariant 
+  if isinstance(method, list) or method == "simple" or method is None:
+    ## Vectorized O(nk) approach
+    E = np.array(list(set([tuple(e) for e in T[:,[0,1]]]) | set([tuple(e) for e in T[:,[0,2]]]) | set([tuple(e) for e in T[:,[1,2]]])))
+    fe = f[E].max(axis=1)
+    ft = f[T].max(axis=1)
+    ecc = np.array([sum(f < t) - sum(fe < t) + sum(ft < t) for t in bins])
+  else: 
+    ## O(n + k) approach from "Efficient classification using the Euler characteristic"
+    from itertools import combinations
+    vw, ew = {}, {}
+    ft = f[T].max(axis=1)
+    for t, coface_value in zip(T, ft):
+      for e in combinations(t,2):
+        ew[e] = max(ew[e], coface_value) if e in ew else coface_value
+      for v in combinations(t,1):
+        vw[v] = max(vw[v], coface_value) if v in vw else coface_value
+    v_counts = np.cumsum(np.histogram(list(vw.values()), bins=bins)[0])
+    e_counts = np.cumsum(np.histogram(list(ew.values()), bins=bins)[0])
+    t_counts = np.cumsum(np.histogram(ft, bins=bins)[0])
+    ecc = np.append(0, (v_counts - e_counts + t_counts))
   return ecc
 
-## Choose a class to render 
-dogs = [fn for fn in tosca_files if fn[:3] == "dog" and fn[-3:] == "mat"]
-cats = [fn for fn in tosca_files if fn[:3] == "cat" and fn[-3:] == "mat"]
-horses = [fn for fn in tosca_files if fn[:5] == "horse" and fn[-3:] == "mat"]
 
-## Filter sublevel sets via simple height function / the z-coordinate
-f = lambda X, T: X @ np.array([0,0,1])
-
+# %% 
 from bokeh.plotting import figure, show
-N = 20
-INDEX = np.arange(20)
-p = figure(width=450, height=250)
-dog_r = [p.line(INDEX, ecc_tosca(tosca_dir + dog, f, N), color='blue') for dog in dogs]
-cat_r = [p.line(INDEX, ecc_tosca(tosca_dir + cat, f, N), color='black') for cat in cats]
-horses_r = [p.line(INDEX, ecc_tosca(tosca_dir + horse, f, N), color='green') for horse in horses]
+from bokeh.io import output_notebook
+output_notebook()
+# tosca_subset = np.random.choice(tosca_classes, size = 4, replace=False)
+tosca_subset = ["dog", "cat", "horse", "centaur", "victoria"]
+bins = 20
+INDEX = np.arange(bins)
+
+p = figure(width=450, height=250, x_axis_label="Height index", y_axis_label="Euler Characteristic")
+for tc in tosca_subset:
+  for obj_id in tosca[tc]:
+    X, T = tosca_model(tosca_dir + tc + str(obj_id) + ".mat")
+    f = X @ np.array([0,0,1])
+    ecc = euler_curve(X, T, f, method="simple")
+    p.line(INDEX, ecc, color=tosca_colors[tosca_classes.index(tc)], legend_label=tc)
+p.legend.location = "bottom_left"
 show(p)
 
-
+# %% Curvature 
 import pymeshlab
+def curvature(
+  X: ArrayLike, 
+  T: ArrayLike, 
+  value=["mean", "gaussian", "min", "max", "shape_index", "curvedness"], 
+  fit=['Quadric Fitting', 'Normal Cycles', 'Taubin approximation']
+) -> ArrayLike:
+  """uses pymeshlab to compute the principal directions of curvature with different algorithms. 
+  
+  Parameters: 
+    X = (n x 3) array of vertex coordinates 
+    T = (m x 3) array of triangle indices 
+    value = type of curvature to compute. 
+    fit = algorithm to fit the curvature by. 
 
-def curvature(X, T, ):
+  Returns: 
+    array of curvature values at the mesh vertices.
+
+  Note: This function can fail if the mesh has non-unique vertices
+
+  See: https://pymeshlab.readthedocs.io/en/2021.10/filter_list.html#compute_curvature_principal_directions for more details. 
+  """ 
+  fit_method = {'quadric fitting' : 3, 'normal cycles' : 2, 'taubin approximation' : 0 }
+  value_type = {'mean': 0, 'gauss': 1, 'min': 2, 'max': 3, 'shape_index': 4, 'curvedness': 5 }
+  value = 'shape_index' if isinstance(value, list) else str(value).tolower()
+  fit = 'quadric fitting' if isinstance(fit, list) else str(fit).tolower()
+  assert isinstance(fit, str) and fit in fit_method.keys(), f"Invalid fit method '{fit}' given."
+  assert isinstance(value, str) and value in value_type.keys(), f"Invalid curvature type '{value}' given."
   ms = pymeshlab.MeshSet()
   ms.add_mesh(pymeshlab.Mesh(X, T))
-  # assert mesh.is_compact()
-  ## Uses the normal cycles (2) to compute shape index (4)
   ms.compute_curvature_principal_directions_per_vertex(method=3, curvcolormethod=4)
-  #scale=pymeshlab.Percentage(0.5)
   mesh = ms.mesh(0)
   return mesh.vertex_scalar_array()
 
-f = lambda X,T: curvature(X, T-1)
-
-from bokeh.plotting import figure, show
-N = 20
-INDEX = np.arange(20)
-p = figure(width=450, height=250)
-dog_r = [p.line(INDEX, ecc_tosca(tosca_dir + dog, f, N, 0.10), color='blue') for dog in dogs]
-cat_r = [p.line(INDEX, ecc_tosca(tosca_dir + cat, f, N,  0.10), color='black') for cat in cats]
-horses_r = [p.line(INDEX, ecc_tosca(tosca_dir + horse, f, N,  0.10), color='green') for horse in horses]
+# %% Euler characteristic with varying curvature
+p = figure(width=450, height=250, x_axis_label="Sublevel sets of Shape Index", y_axis_label="Euler Characteristic")
+for tc in tosca_subset:
+  for obj_id in tosca[tc]:
+    X, T = tosca_model(tosca_dir + tc + str(obj_id) + ".mat")
+    f = curvature(X, T)
+    ecc = euler_curve(X, T, f, method="simple")
+    p.line(INDEX, ecc, color=tosca_colors[tosca_classes.index(tc)], legend_label=tc)
+p.legend.location = "bottom_left"
 show(p)
 
 
@@ -171,3 +223,13 @@ show(p)
 #   gcurv = curvature.discrete_gaussian_curvature_measure(mesh, points=mesh.vertices, radius=r)
 #   return gcurv
 # f = lambda X,T: gauss_curv(X, T-1, 0.0001)
+
+# time_pts = np.linspace(min(fv), p*max(fv), k)
+# time_pts[-1]
+# offset = (max(ft) - min(ft))
+# buckets = np.zeros(k, dtype=int)
+# # indices = np.minimum(np.floor((k * ft) / time_pts[-1]).astype(np.int16), k-1)
+# indices = np.minimum(np.floor((ft + offset)*k / (max(ft) + offset)).astype(np.int16), k-1)
+# np.histogram(ft, bins=k)
+# np.add.at(buckets, indices, 1)  #scale=pymeshlab.Percentage(0.5)
+
