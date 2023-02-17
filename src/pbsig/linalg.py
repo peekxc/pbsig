@@ -69,14 +69,14 @@ def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True
   else:
     ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
     n, m = A.shape
+    # np.eye(5,1,k=0)
     col_sum = lambda j: sum((A @ np.array([1 if i == j else 0 for i in range(m)]))**2)
     fn2 = sum([col_sum(j) for j in range(m)])
     bound = min([A.shape[0], A.shape[1], np.ceil(sum(diagonal(A))**2 / fn2)])
   return int(bound)
   
 def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: int = 0, normalize: bool = False) -> ArrayLike:
-  """ 
-  Applies a function phi(x) to 'x' where phi smoothly approximates the positive sgn+ function.
+  """Applies a function phi(x) to 'x' where phi smoothly approximates the positive sgn+ function.
 
   If x = (x1, x2, ..., xn), where each x >= 0, then this function returns a vector (y1, y2, ..., yn) satisfying
 
@@ -86,9 +86,11 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
   4. phi(xi, eps) <= phi(xi, eps') for all eps >= eps'
 
   Parameters:
-    sigma := array of non-negative values
-    eps := smoothing parameter. Values close to 0 mimick the sgn function more closely. Larger values smooth out the relaxation. 
-    p := float 
+    sigma = array of non-negative values
+    eps = smoothing parameter. Values close to 0 mimick the sgn function more closely. Larger values smooth out the relaxation. 
+    p = float 
+    method = the type of smoothing to apply. Should be integer in [0,3]. Defaults to 0. 
+    normalize = whether to normalize the output such that eps in [0,1] interpolates the integrated area of phi() in the unit interval
   """
   assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
   assert eps >= 0.0, "Epsilon must be non-negative"
@@ -125,18 +127,15 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
     phi = lambda x, eps=eps, p=p, f=_f: 1.0 - np.exp(-x/f(eps))
   return phi if x is None else phi(x)
   
+## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
+def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True,  return_eigenvectors: bool = False, **kwargs):
+  """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_.
 
+  _A_ can be a dense np.array, any of the sparse arrays from SciPy, or a _LinearOperator_. The default solver 'default' chooses 
+  the solver dynamically based on the size, structure, and estimated rank of _A_. In particular, if 'A' is dense, then the divide-and-conquer 
+  approach is chosen. 
 
-## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d
-def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 0.90, solver: str = 'default', symmetric: bool = True, laplacian: bool = True, **kwargs) -> Callable:
-  """
-  symmetric positive semi-definite 'A'
-
-  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
-  
-  The default solver 'default' chooses the solver dynamically based on the size, structure, and estimated rank of 'A'.
-
-  Otherwise, the solver can be specified explicitly as one of:
+  The solver can also be specified explicitly as one of:
     'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
     'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
     'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
@@ -144,19 +143,19 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
     'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
 
-  If 'A' is dense, divide-and-conquer should be used. Otherwise, the choice will depend on the structure of 'A'.
-
-  The default proportion constant represents the fractional empirically 
-
   Parameters: 
-    A := array, sparse matrix, or linear operator to compute the rank of
-    pp := proportional part of the spectrum to compute. 
-    solver := One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
-  
-  Returns a Callable f(A, ...) which takes as its first argument a matrix/array/lo or the same type as 'A'
+    A = array, sparse matrix, or linear operator to compute the rank of
+    pp = proportional part of the spectrum to compute. 
+    solver = One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
+    laplacian = whether to assume _A_ comes from a Laplacian. Defaults to True. 
+    return_eigenvector = whether to return both eigen values and eigenvector pairs, or just eigenvalues. Defaults to False. 
+  Returns:
+    a callable f(A, ...) accepting operators of the same type as _A_ and returns spectral information
+
+  Notes:
+    For fast parameterization, _A_ should support efficient access to its diagonal via a method A.diagonal()
   """
   assert A.shape[0] == A.shape[1], "A must be square"
-  assert symmetric, "Haven't implemented non-symmetric yet"
   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
   assert solver is not None, "Invalid solver"
   tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
@@ -165,16 +164,14 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     params = kwargs
-    # if 'return_eigenvectors' in kwargs.keys():
-    # solver = np.linalg.eigh
-    # else: 
-    solver = np.linalg.eigvalsh
+    solver = np.linalg.eigsh if return_eigenvectors else np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
-    #nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
-    nev = trace_threshold(A, pp)
+    nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+    #nev = trace_threshold(A, pp)
+    nev = max(A.shape[0] - 1, 0) if laplacian and nev == A.shape[0] else nev
     if nev == 0: return(lambda A: np.zeros(1))
-    nev = A.shape[0] - 1 if laplacian and nev == A.shape[0] else nev
+
     if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
@@ -182,14 +179,14 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
     solver = 'irl' if solver == 'default' else solver
     assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
     if solver == 'irl':
-      params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=False) | kwargs
+      params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=return_eigenvectors) | kwargs
       solver = eigsh
     else:
       import primme
       n = A.shape[0]
       ncv = min(2*nev + 1, 20) # use modification of scipy rule
       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      params = dict(ncv=ncv, maxiter=pp*n*100, tol=tol, k=nev, which='LM', return_eigenvectors=False, method=methods[solver]) | kwargs
+      params = dict(ncv=ncv, maxiter=pp*n*100, tol=tol, k=nev, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
       solver = primme.eigsh
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
@@ -199,6 +196,41 @@ def parameterize_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float
       raise RuntimeError("Solver did not return any eigenvalues!")
     return ew
   return _call_solver
+
+def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
+  return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
+
+def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, **kwargs) -> Callable:
+  return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
+
+def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, prec: float = None, **kwargs):
+  """Computes the rank of an operator _A_ using by counting non-zero eigenvalues.
+  
+  This method attempts to use various means with which to estimate the rank of _A_ in a stable fashion. 
+  """
+  solver = eigvalsh_solver(A)
+  ew = solver(A)
+  prec = np.finfo(A.dtype).eps
+  if method == 0:
+    ## Default: identifies only those as positive cannot have been introduced by numerical errors 
+    tol = ew.max() * max(A.shape) * prec
+    return sum(ew > tol)
+  elif method == 1: 
+    ## Minimizes expected roundoff error
+    m,n = A.shape
+    tol = ew.max() * prec / 2. * np.sqrt(m + n + 1.)
+    return sum(ew > tol)
+  elif method == 2:
+    ## Dynamic method: tests multiple thresholds for detecting rank deficiency up to the prescribed precision, 
+    ## choosing the one that appears the most frequently 
+    C = 1.0/np.exp(np.linspace(1,36,100))
+    i = len(C)-np.searchsorted(np.flip(C), prec)
+    C = C[:i]
+    nr = [sum(ew/(ew + c)) for c in C]
+    values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
+    return values[np.argmax(counts)]
+  else:
+    raise ValueError("Invalid method chosen")
 
 def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, raw: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
   """ 
@@ -427,7 +459,8 @@ def trace_threshold(A, pp=0.80) -> int:
   ev_cs = np.cumsum(d)
   if ev_cs[-1] == 0.0: return 0
   thresh_ind = np.flatnonzero(ev_cs/ev_cs[-1] >= pp)[0] # index needed to obtain 80% of the spectrum
-  return thresh_ind+1 # 0-based conversion
+  num_pos = len(ev_cs) - sum(np.isclose(ev_cs, 0.0))
+  return min(num_pos, thresh_ind+1)# 0-based conversion
 
 def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[ArrayLike, float] = None, **kwargs):
   """

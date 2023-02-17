@@ -218,20 +218,20 @@ def betti_query(S: Union[LinearOperator, ComplexLike], i: float, j: float, smoot
 
 
 ## Cone the complex
-def cone_weight(x: ArrayLike, vid: int = -1):
+def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
   from scipy.spatial.distance import pdist
   flag_w = flag_weight(x)
   def _cone_weight(s):
     s = Simplex(s)
     if s == Simplex([vid]):
-      return -np.inf
+      return v_birth
     elif vid in s:
-      return np.inf
+      return collapse_weight
     else: 
       return flag_w(s)
   return _cone_weight
 
-def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, form = 'lo', **kwargs):
+def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smooth: bool = False, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, form = 'lo', **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -259,7 +259,6 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   
   ## Compute the multiplicities 
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-15
   kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   EW = [None]*4
@@ -270,21 +269,19 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
       L.set_weights(None, J, None)
       I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
       L.set_weights(I_norm, J, I_norm)
-      # if cc == 2:
-      #   return L
-      EW[cc] = smooth_rank(L, pp=1.0, smoothing=smoothing, **kwargs)
+      EW[cc] = stable_rank(L, method=2) if not smooth else smooth_rank(L, pp=1.0, smoothing=smoothing, **kwargs)
   elif form == "array":
     D = boundary_matrix(S, p=p+1)
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       di = (D @ diags(J) @ D.T).diagonal()
       I_norm = pseudo(np.sqrt(I * di))
       L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
-      EW[cc] = smooth_rank(L, smoothing=smoothing, **kwargs)
+      EW[cc] = stable_rank(L, method=2) if not smooth else smooth_rank(L, pp=1.0, smoothing=smoothing, **kwargs)
   else: 
     raise ValueError(f"Invalid form '{form}'.")
   return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
-def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, form = 'lo', **kwargs):
+def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, terms: bool = False, form = 'lo', **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -296,13 +293,9 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
     smoothing = parameters for singular values
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
-  # L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form=form)
   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
-  #assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
   (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  # fw = np.array([f(s) for s in L.faces])
-  # sw = np.array([f(s) for s in L.simplices]) ## TODO: replace 
   pw = np.array([f(s) for s in faces(S, p)])
   qw = np.array([f(s) for s in faces(S, p+1)])
   delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
@@ -310,10 +303,6 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
   fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
   fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
   fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-  
-  ## Compute the multiplicities 
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-15
-  kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   L = [None]*4
   if form == "lo":

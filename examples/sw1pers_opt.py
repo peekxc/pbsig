@@ -33,28 +33,65 @@ for t in np.linspace(0.50*tau, 1.50*tau, 10):
   scatters.append(plot_complex(S, pos=pca(X_delay), width=125, height=125))
 show(row(*scatters))
 
+K = filtration(S, f=flag_weight(X))
+dgm = ph(K, engine="cpp")
+plot_dgm(dgm[1])
 
 ## Cone the complex
+from scipy.spatial.distance import pdist 
 from pbsig.betti import cone_weight
 X = SW(n=N, d=M, tau=tau)
+diam = max(pdist(X))
+r = enclosing_radius(X)*0.60
 S = rips_complex(X, r, 2)
 S = SetComplex(S)
 sv = X.shape[0] # special vertex
 S.add([sv])
 S.update([s + [sv] for s in faces(S, 1)])
-K = filtration(S, f=cone_weight(X, sv))
+K = filtration(S, f=cone_weight(X, sv, 0.0, diam/2))
 
 ## Measure the persistence
 from pbsig.persistence import ph
 from pbsig.vis import plot_dgm
-dgm = ph(K)
+dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
+
+
+R = np.array([4, 4.2, 4.8, 5.2])
+L = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), R=R, p=1, form='array')
+np.linalg.matrix_rank(L[0].todense())
+np.linalg.matrix_rank(L[1].todense())
+np.linalg.matrix_rank(L[2].todense())
+np.linalg.matrix_rank(L[3].todense())
+# 0-2-28+31 == 1
+from pbsig.betti import mu_query
+print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+
+w = mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, raw=True, form='array')
+C = 1.0/np.exp(np.linspace(1,32, 100))
+
+nr = [sum(w[3]/(w[3] + c)) for c in C]
+values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
+values[np.argmax(counts)]
+p = figure(width=400, height=200)
+p.line(np.arange(len(nr)), nr)
+show(p)
+
+# kneedle = KneeLocator(np.arange(len(nr)), nr, S=100, curve="concave", direction="increasing")
+
+# vline = Span(location=kneedle.knee, dimension='height', line_color='red', line_width=1)
+# p.add_layout(vline)
+show(p)
+
 
 #%%  Test the multiplicity queries with the coned complex
 from pbsig.betti import mu_query
 R = np.array([-np.inf, 5, 15, np.inf])
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+
+
 
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array'))
@@ -97,23 +134,26 @@ show(p)
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
 # print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, terms=False, form='array'))
-mu_query_mat
 from pbsig.betti import *
-R = np.array([-np.inf, 5, 15, np.inf])
-time2mat = lambda t: mu_query(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, form='lo')
+R = np.array([-np.inf, 4, 15, np.inf])
+LM = mu_query_mat(K, R=R, f=cone_weight(X,sv), p=1, form='array')
+
+#time2mat = lambda t: mu_query(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, form='lo')
+time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, form='array')
 mat2dense = lambda L: [l.todense() for l in L]
 mat2eigh = lambda L: [np.linalg.eigvalsh(l) for l in L]
+mat2rank = lambda L: [np.linalg.matrix_rank(l) for l in L]
 eigh2nucl = lambda E: [sum(np.sqrt(np.maximum(0.0, e))) for e in E]
 eigh2rank = lambda E: [sum(~np.isclose(e, 0.0)) for e in E]
 terms2mu = lambda T: sum([s*term for term, s in zip(T, [1,-1,-1,1])])
-rank_obj = lambda t: terms2mu(eigh2rank(mat2eigh(mat2dense(time2mat(t)))))
+rank_obj = lambda t: terms2mu(mat2rank(mat2dense(time2mat(t))))
 nucl_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 
 ## show the objective 
 from bokeh.io import output_notebook
 from bokeh.plotting import show, figure
 from bokeh.models import Span 
-T_dom = np.linspace(0.50*tau, 1.50*tau, 1000)
+T_dom = np.linspace(0.50*tau, 1.50*tau, 100)
 p = figure(width=400, height=200)
 p.scatter(T_dom, [nucl_obj(t) for t in T_dom], color='blue')
 p.scatter(T_dom, [rank_obj(t) for t in T_dom], color='red')
