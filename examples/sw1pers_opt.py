@@ -57,12 +57,9 @@ dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
 
 
-R = np.array([4, 4.2, 4.8, 5.2])
+# R = np.array([4, 4.2, 4.8, 5.2])
 L = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), R=R, p=1, form='array')
-np.linalg.matrix_rank(L[0].todense())
-np.linalg.matrix_rank(L[1].todense())
-np.linalg.matrix_rank(L[2].todense())
-np.linalg.matrix_rank(L[3].todense())
+
 # 0-2-28+31 == 1
 from pbsig.betti import mu_query
 print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))

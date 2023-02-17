@@ -265,7 +265,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   if form == "lo":
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      print(L.shape)
+      # print(L.shape)
       L.set_weights(None, J, None)
       I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
       L.set_weights(I_norm, J, I_norm)

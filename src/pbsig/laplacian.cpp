@@ -98,7 +98,6 @@ auto decompress_faces(const vector< uint_64 >& cr, const size_t n, const size_t 
 };
 
 
-// TODO: remove type-erased std::function binding via templates for added performance
 template< int p = 0, typename F = double, bool lex_order = true >
 struct UpLaplacian {
   static constexpr int dim = p;
@@ -149,7 +148,7 @@ struct UpLaplacian {
     std::fill_n(degrees.begin(), degrees.size(), 0);
     size_t q_ind = 0; 
     for (auto qi : qr){
-      combinatorial::apply_boundary(qi, nv, p+2, [&](auto face_rank){ 
+      combinatorial::apply_boundary(qi, nv, dim+2, [&](auto face_rank){ 
         const auto ii = index_map[face_rank];
         degrees.at(ii) += fpl.at(ii) * fq.at(q_ind) * fpr.at(ii);
       });
@@ -164,7 +163,7 @@ struct UpLaplacian {
 
     // The matvec
     size_t q_ind = 0;
-    auto p_ranks = array< uint64_t, p+2 >();
+    auto p_ranks = array< uint64_t, dim+2 >();
 
     // #pragma omp simd
     for (auto qi: qr){
@@ -186,7 +185,6 @@ struct UpLaplacian {
         y[jj] -= x[kk] * fpl[jj] * fq[q_ind] * fpr[kk]; 
         y[kk] -= x[jj] * fpl[kk] * fq[q_ind] * fpr[jj]; 
       } else {
-        auto p_ranks = array< uint64_t, p+2 >();
         boundary(qi, nv, p+2, begin(p_ranks));
         size_t cc = 0;
         const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
@@ -298,7 +296,11 @@ void declare_laplacian(py::module &m, std::string typestr) {
     .def("_matmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
     ;
 }
-
+auto boundary_ranks(const size_t p_rank, const size_t n, const size_t k) -> py::array_t< int > {
+  std::vector< I > br(k,0);
+  boundary(p_rank, n, k, br.begin())
+  return py::cast(br);
+}
 
 // Package: pip install --no-deps --no-build-isolation --editable .
 // Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++17 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
@@ -311,4 +313,5 @@ PYBIND11_MODULE(_laplacian, m) {
   declare_laplacian< 2, double >(m, "2D");
   declare_laplacian< 2, float >(m, "2F");
   m.def("decompress_faces", &decompress_faces, "Decompresses ranks");
+  m.def("boundary_ranks", &boundary_ranks, "Gets boundary ranks from a given rank");
 }

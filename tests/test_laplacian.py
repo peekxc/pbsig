@@ -346,19 +346,65 @@ def test_pmh():
   # perfection.czech.hash_parameters(r)
 
 
-def test_laplacian_API():
+def test_diagonal():
   from pbsig.linalg import laplacian, up_laplacian
   X = np.random.uniform(size=(150,2))
   S = delaunay_complex(X) 
   
   ## Test diagonal dominance, degree and index computations
-  p = 1
-  LO = up_laplacian(S, p=p, form='lo')
-  D1 = boundary_matrix(S, p=p+1)
-  LU = D1 @ D1.T
-  LO.set_weights(None, fq, None)
-  # np.allclose(LO.diagonal(), (D @ diags(fq) @ D.T).diagonal())
+  for p in [0,1]:
+    x = np.random.uniform(size=card(S, p))
+    fp = np.random.uniform(size=card(S, p), low=0, high=1)
+    fq = np.array([max(fp[s])*1.05 for s in faces(S, p+1)])
+    
+    for i in range(10):
+      ind1 = np.random.choice(range(len(fp)), size=10)
+      ind2 = np.random.choice(range(len(fq)), size=10)
+      fp[ind1] = 0
+      fq[ind2] = 0
+      LO = up_laplacian(S, p=p, form='lo')
+      D1 = boundary_matrix(S, p=p+1)
+      LU = D1 @ diags(fq) @ D1.T
+      LO.set_weights(None, fq, None)
+      np.allclose(LO.diagonal(), LU.diagonal())
+      LO.set_weights(fp, fq, fp)
+      LU = diags(fp) @ D1 @ diags(fq) @ D1.T @ diags(fp)
+      np.allclose(LO @ x, LU @ x)
 
+def test_rips_laplacian():
+  X = np.random.uniform(size=(8,2))
+  S = rips_complex(X, 2)
+  
+  K = rips_filtration(X, p=2)
+  fv = np.random.uniform(size=X.shape[0], low=0.0)
+  f = lambda s: max(fv[s])
+  D = boundary_matrix(K, p=1)
+  fq = np.array([max(fv[e]) for e in faces(K,1)])
+  LU = (diags(fv) @ D @ diags(fq) @ D.T @ diags(fv)).tocoo()
+  LM = up_laplacian(K, p=0, form="array", weight=f)
+  assert all(LM.nonzero()[1] == LU.nonzero()[1])
+
+  ## 
+  x = np.random.uniform(size=card(S,0), low=0)
+  D = boundary_matrix(K, p=1)
+  LM = up_laplacian(K, p=0, form="array")
+  LO = up_laplacian(K, p=0, form="lo")
+  LU = D @ D.T
+  assert np.allclose(LU @ x, LO @ x)
+  assert np.allclose(LO @ x, LM @ x)
+
+  LP = UpLaplacianPy(list(S.faces(p+1)), list(S.faces(p)))  
+  LP.set_weights()
+
+
+
+
+
+
+def test_laplacian_API():
+  from pbsig.linalg import laplacian, up_laplacian
+  X = np.random.uniform(size=(150,2))
+  S = delaunay_complex(X) 
 
   ## Test the ranks are stored correctly
   for p in [0,1]:

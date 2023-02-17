@@ -378,7 +378,11 @@ namespace combinatorial {
 		// Given a p-simplex's rank representing a tuple of size p+1, enumerates the ranks of its (p-1)-faces, calling Lambda(*) on its rank
 		using combinatorial::I; 
 		switch(k){
-			case 0: case 1: { return; }
+			case 0: { return; }
+			case 1: {
+				f(r);
+				return;
+			}
 			case 2: {
 				auto p_vertices = std::array< I, 2 >();
 				lex_unrank_2(static_cast< I >(r), static_cast< I >(n), begin(p_vertices));
@@ -410,7 +414,8 @@ namespace combinatorial {
 	template< typename OutputIt >
 	void boundary(const size_t p_rank, const size_t n, const size_t k, OutputIt out){
 		apply_boundary(p_rank, n, k, [&out](auto face_rank){
-			*out++ = face_rank;
+			*out = face_rank;
+			out++;
 		});
 	}
 } // namespace combinatorial

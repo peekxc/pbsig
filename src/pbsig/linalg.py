@@ -167,11 +167,10 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
     solver = np.linalg.eigsh if return_eigenvectors else np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
+    if A.shape[0] == 0 or A.shape[1] == 0: return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
-    #nev = trace_threshold(A, pp)
-    nev = max(A.shape[0] - 1, 0) if laplacian and nev == A.shape[0] else nev
+    nev = min(nev, A.shape[0] - 1) if laplacian else nev
     if nev == 0: return(lambda A: np.zeros(1))
-
     if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       import warnings
       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
@@ -563,7 +562,7 @@ class UpLaplacianPy(LinearOperator):
     self.faces = F
     self.shape = (len(F), len(F))
     self.dtype = np.dtype(float) if dtype is None else dtype
-    self._wfl = self._wfr = self._ws = UpLaplacian.identity_seq
+    self._wfl = self._wfr = self._ws = UpLaplacianPy.identity_seq
     self.prepare()
     self._precompute_degree()
     self.precompute()
@@ -621,6 +620,7 @@ class UpLaplacianPy(LinearOperator):
     self.face_left_weights = lw
     self.simplex_weights = cw
     self.face_right_weights = rw
+    self._precompute_degree()
     return self 
 
   def _precompute_degree(self):
