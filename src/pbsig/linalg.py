@@ -164,7 +164,7 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     params = kwargs
-    solver = np.linalg.eigsh if return_eigenvectors else np.linalg.eigvalsh
+    solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
     if A.shape[0] == 0 or A.shape[1] == 0: return(lambda A: np.zeros(1))
@@ -264,13 +264,26 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
     ew = np.sqrt(ew) if sqrt else ew
   return ew if raw else sum(ew)
 
-def prox(x: ArrayLike, t: float = 1.0):
-  """Prox operator on the nuclear norm"""
-  solver = parameterize_solver(x)
-  ew,ev = solver(x)
-  sv = np.sqrt(np.maximum(ew, 0.0))
-  A = ev @ diags(np.maximum(sv - t, 0.0)) @ ev.T
-  me = 0.5*np.linalg.norm(x - A, 'fro')**2 + (1/2*t)*sum(np.maximum(sv - t, 0.0))
+def prox_nuclear(x: ArrayLike, t: float = 1.0):
+  """Prox operator on the nuclear norm.
+  
+  prox_f returns the (unique) point that achieves the infimum defining the _Moreau envelope_ _M_f_.
+
+  prox_{t*f}(x) = argmin_z { f(z) + (1/2t) || x - z ||^2 }
+                = argmin_z { ||z||_* + (1/2t) || x - z ||_F^2 }
+                = \sum\limits_{i=1}^r max(si - t, 0) + ui vi^T
+
+  where X = U S V^T
+
+  Smaller values of _t_ will yield operators closer to the original nuclear norm.
+  """
+  solver = eigh_solver(x)
+  ew, ev = solver(x)
+  sv = np.sqrt(np.maximum(ew, 0.0))                     ## singular values 
+  ew_prox = np.maximum(sv - t, 0.0)                     ## soft-thresholded singular values
+  A = ev @ diags(ew_prox) @ ev.T                        ## prox operator 
+  proj_d = (1/2*t)*np.linalg.norm(A - x, 'fro')**2      ## projection distance (rhs)
+  me = sum(ew_prox) + proj_d                            ## Moreau envelope value
   return A, me, ew
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:

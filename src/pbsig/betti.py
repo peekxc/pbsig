@@ -246,7 +246,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   # L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form=form)
   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
   #assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
-  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
+  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
   # fw = np.array([f(s) for s in L.faces])
   # sw = np.array([f(s) for s in L.simplices]) ## TODO: replace 
@@ -294,7 +294,7 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
-  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
+  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
   pw = np.array([f(s) for s in faces(S, p)])
   qw = np.array([f(s) for s in faces(S, p+1)])
@@ -312,11 +312,17 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
       I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
       L[cc].set_weights(I_norm, J, I_norm)
   elif form == "array":
-    D = boundary_matrix(S, p=p+1)
-    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      di = (D @ diags(J) @ D.T).diagonal()
-      I_norm = pseudo(np.sqrt(I * di))
-      L[cc] = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+    # D = boundary_matrix(S, p=p+1)
+    #for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+      # LM = D @ diags(J) @ D.T
+      # di = LM.diagonal()
+      # I_norm = pseudo(np.sqrt(I * di))
+      # L[cc] = diags(I_norm) @ LM @ diags(I_norm)
+    for cc, (I,J) in enumerate([(j, k), (i, k), (j, l), (i, l)]):
+      face_f = smooth_upstep(lb = I, ub = I+w)
+      coface_f = smooth_dnstep(lb = J-w, ub = J+delta)
+      weight_f = lambda s: face_f(f(s)) if dim(s) == p else coface_f(f(s))
+      L[cc] = up_laplacian(S, p=p, form="array", normed=True, weight=weight_f)
   else: 
     raise ValueError(f"Invalid form '{form}'.")
   return L

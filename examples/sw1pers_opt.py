@@ -7,7 +7,7 @@ from bokeh.layouts import row
 output_notebook(verbose=False)
 from pbsig.vis import plot_complex
 
-f = lambda t: np.cos(t) + np.cos(3*t)
+sw_f = lambda t: np.cos(t) + np.cos(3*t)
 dom = np.linspace(0, 12*np.pi, 1200)
 
 p = figure(width=400, height=200)
@@ -16,7 +16,7 @@ show(p)
 
 
 N, M = 20, 24
-SW = sliding_window(f, bounds=(0, 12*np.pi))
+SW = sliding_window(sw_f, bounds=(0, 12*np.pi))
 d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6)
 #S = delaunay_complex(F(n=N, d=M, tau=tau))
 X = SW(n=N, d=M, tau=tau)
@@ -56,61 +56,51 @@ from pbsig.vis import plot_dgm
 dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
 
+## Verify mu queries 
+R = np.array([4, 4.2, 4.8, 5.2])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+R = np.array([3.8, 4.0, 4.8, 5.2])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+R = np.array([4.2, 4.4, 4.8, 5.2])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+R = np.array([4, 4.2, 5.1, 5.2])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+R = np.array([4, 4.2, 4.8, 4.85])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+R = np.array([4, 4.2, 4.8, 5.2])
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
 
-# R = np.array([4, 4.2, 4.8, 5.2])
-L = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), R=R, p=1, form='array')
-
-# 0-2-28+31 == 1
-from pbsig.betti import mu_query
-print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
-
-w = mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, raw=True, form='array')
-C = 1.0/np.exp(np.linspace(1,32, 100))
-
-nr = [sum(w[3]/(w[3] + c)) for c in C]
-values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
-values[np.argmax(counts)]
-p = figure(width=400, height=200)
-p.line(np.arange(len(nr)), nr)
-show(p)
-
-# kneedle = KneeLocator(np.arange(len(nr)), nr, S=100, curve="concave", direction="increasing")
-
-# vline = Span(location=kneedle.knee, dimension='height', line_color='red', line_width=1)
-# p.add_layout(vline)
-show(p)
 
 
 #%%  Test the multiplicity queries with the coned complex
-from pbsig.betti import mu_query
-R = np.array([-np.inf, 5, 15, np.inf])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+# from pbsig.betti import mu_query
+# R = np.array([-np.inf, 5, 15, np.inf])
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
 
 
 
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array'))
 
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo', raw=True)[2])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array', raw=True)[2])
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo', raw=True)[2])
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array', raw=True)[2])
 
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
 
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='array'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='array'))
 
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='lo'))
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='array'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='array'))
 
-import bokeh 
-from bokeh.plotting import figure, show 
-rr = [sum(wut/(wut + t)) for t in np.linspace(1, 1e-50, 1000, endpoint=True)]
-p = figure(width=300, height=300)
-p.line(np.arange(len(rr)), rr)
-show(p)
+# import bokeh 
+# from bokeh.plotting import figure, show 
+# rr = [sum(wut/(wut + t)) for t in np.linspace(1, 1e-50, 1000, endpoint=True)]
+# p = figure(width=300, height=300)
+# p.line(np.arange(len(rr)), rr)
+# show(p)
 
 
 # R = np.array([-np.inf, 4, 15, np.inf])
@@ -128,44 +118,76 @@ show(p)
 # MM[2]
 # sum(np.sqrt(np.maximum(MM[2], 0.0)))
 
+# R = np.array([-np.inf, 4, 15, np.inf])
+# LM = mu_query_mat(K, R=R, f=cone_weight(X,sv), p=1, form='array')
+#time2mat = lambda t: mu_query(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, form='lo')
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
 # print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, terms=False, form='array'))
 from pbsig.betti import *
-R = np.array([-np.inf, 4, 15, np.inf])
-LM = mu_query_mat(K, R=R, f=cone_weight(X,sv), p=1, form='array')
+assert np.allclose(X - SW(n=N, d=M, tau=tau), 0.0)
+R = np.array([4, 4.2, 4.8, 5.2])
+print(mu_query(K, R=R, f=cone_weight(X,sv, 0.0, diam/2), p=1, smooth=False, sqrt=True, terms=True, form='array'))
+DL = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0, diam/2), R=R, p=1, form='array')
+# np.linalg.matrix_rank(DL[0].todense()) - np.linalg.matrix_rank(DL[1].todense()) - np.linalg.matrix_rank(DL[2].todense()) + np.linalg.matrix_rank(DL[3].todense())
 
-#time2mat = lambda t: mu_query(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, form='lo')
-time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, form='array')
+## 
+from pbsig.linalg import prox_nuclear
+moreau_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
+
+
+R = np.array([4, 4.2, 4.8, 5.2, 0.05]) # TODO: <--- add w term here 
+time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0, diam/2), R=R, p=1, form='array')
 mat2dense = lambda L: [l.todense() for l in L]
 mat2eigh = lambda L: [np.linalg.eigvalsh(l) for l in L]
 mat2rank = lambda L: [np.linalg.matrix_rank(l) for l in L]
+mat2mora = lambda L, t: [prox_nuclear(l, t)[1] for l in L]
 eigh2nucl = lambda E: [sum(np.sqrt(np.maximum(0.0, e))) for e in E]
 eigh2rank = lambda E: [sum(~np.isclose(e, 0.0)) for e in E]
 terms2mu = lambda T: sum([s*term for term, s in zip(T, [1,-1,-1,1])])
 rank_obj = lambda t: terms2mu(mat2rank(mat2dense(time2mat(t))))
 nucl_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
+# prox_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
+mora_obj = lambda t,s: terms2mu(mat2mora(mat2dense(time2mat(t)), s))
+
+i = np.argmin(moreau3_query)
+L = time2mat(T_dom[i])
+L = up_laplacian(K, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0, diam/2), p=1, normed=True, form='array')
+np.linalg.eigvalsh(L.todense())
+
+## Compute the various objectives
+T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
+nuclear_query = np.array([nucl_obj(t) for t in T_dom])
+rank_query = np.array([rank_obj(t) for t in T_dom])
+moreau1_query = np.array([mora_obj(t, 0.01) for t in T_dom])
+moreau2_query = np.array([mora_obj(t, 0.10) for t in T_dom])
+moreau3_query = np.array([mora_obj(t, 1.00) for t in T_dom])
 
 ## show the objective 
 from bokeh.io import output_notebook
 from bokeh.plotting import show, figure
 from bokeh.models import Span 
-T_dom = np.linspace(0.50*tau, 1.50*tau, 100)
 p = figure(width=400, height=200)
-p.scatter(T_dom, [nucl_obj(t) for t in T_dom], color='blue')
-p.scatter(T_dom, [rank_obj(t) for t in T_dom], color='red')
+p.line(T_dom, nuclear_query, color='blue', line_width=2.15)
+p.scatter(T_dom, nuclear_query, color='purple', size=3.15)
+p.scatter(T_dom, rank_query, color='red', size=1.75)
+p.scatter(T_dom, moreau1_query, color='orange', size=3.15)
+p.scatter(T_dom, moreau2_query, color='pink', size=3.15)
+p.scatter(T_dom, moreau3_query, color='green', size=3.15)
 vline = Span(location=tau, dimension='height', line_color='red', line_width=1)
 p.add_layout(vline)
 show(p)
 
-from pbsig.linalg import prox
-from findiff import FinDiff, coefficients, Coefficient
-T0 = time2mat(tau)
-T1 = time2mat(0.90*tau)
-T1[0].todense() - T0[0].todense()
-dt = tau-0.90*tau
-df_dt = FinDiff(0, tau-0.90*tau, 1, acc=4)
-df_dt(OBJ)
+
+
+# from pbsig.linalg import prox
+# from findiff import FinDiff, coefficients, Coefficient
+# T0 = time2mat(tau)
+# T1 = time2mat(0.90*tau)
+# T1[0].todense() - T0[0].todense()
+# dt = tau-0.90*tau
+# df_dt = FinDiff(0, tau-0.90*tau, 1, acc=4)
+# df_dt(OBJ)
 
 
 
@@ -197,3 +219,25 @@ ew, ev = np.linalg.eigh(LM[0].todense())
 # # eigh2rank(mat2eigh(mat2dense(L)))
 # terms2mu(eigh2nucl(mat2eigh(mat2dense(LM))))
 # terms2mu(eigh2rank(mat2eigh(mat2dense(LM))))
+#L = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), R=R, p=1, form='array')
+
+# 0-2-28+31 == 1
+# from pbsig.betti import mu_query
+# print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+# print(mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+
+# w = mu_query(K, R=R, f=cone_weight(X,sv,0.0,diam/2), p=1, smoothing=None, sqrt=False, terms=True, raw=True, form='array')
+# C = 1.0/np.exp(np.linspace(1,32, 100))
+
+# nr = [sum(w[3]/(w[3] + c)) for c in C]
+# values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
+# values[np.argmax(counts)]
+# p = figure(width=400, height=200)
+# p.line(np.arange(len(nr)), nr)
+# show(p)
+
+# kneedle = KneeLocator(np.arange(len(nr)), nr, S=100, curve="concave", direction="increasing")
+
+# vline = Span(location=kneedle.knee, dimension='height', line_color='red', line_width=1)
+# p.add_layout(vline)
+# show(p)
