@@ -55,13 +55,30 @@ from pbsig.betti import mu_query
 R = np.array([-np.inf, 5, 15, np.inf])
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array'))
+
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='lo', raw=True)[2])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='lo', raw=True))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=False, terms=True, form='array', raw=True)[2])
+
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='array'))
+
+print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=True, terms=True, form='array'))
+
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='lo'))
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True, terms=True, form='array'))
+
+import bokeh 
+from bokeh.plotting import figure, show 
+rr = [sum(wut/(wut + t)) for t in np.linspace(1, 1e-50, 1000, endpoint=True)]
+p = figure(width=300, height=300)
+p.line(np.arange(len(rr)), rr)
+show(p)
+
+
 
 R = np.array([-np.inf, 4, 15, np.inf])
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True))

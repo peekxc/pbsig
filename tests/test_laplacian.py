@@ -351,6 +351,15 @@ def test_laplacian_API():
   X = np.random.uniform(size=(150,2))
   S = delaunay_complex(X) 
   
+  ## Test diagonal dominance, degree and index computations
+  p = 1
+  LO = up_laplacian(S, p=p, form='lo')
+  D1 = boundary_matrix(S, p=p+1)
+  LU = D1 @ D1.T
+  LO.set_weights(None, fq, None)
+  # np.allclose(LO.diagonal(), (D @ diags(fq) @ D.T).diagonal())
+
+
   ## Test the ranks are stored correctly
   for p in [0,1]:
     LO = up_laplacian(S, p=p, form='lo')
@@ -372,7 +381,26 @@ def test_laplacian_API():
     x = np.random.uniform(size=card(S, p))
     assert np.allclose(LU @ x, LO @ x, atol=10*np.finfo(np.float32).eps)
 
-  ## Test diagonal dominance, degree and index computations
+  ## Test weighted variants 
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  for p in [0,1]:
+    x = np.random.uniform(size=card(S, p))
+    fp = np.random.uniform(size=card(S, p), low=0, high=1)
+    fq = np.array([max(fp[s])*1.05 for s in faces(S, p+1)])
+    LM = up_laplacian(S, p=p, form='array', weight=lambda s: max(fp[s])*1.05)
+    LO = up_laplacian(S, p=p, form='lo', weight=lambda s: max(fp[s])*1.05)
+    D = boundary_matrix(S, p+1)
+    LO.set_weights(None, fq, None)
+    LE = D @ diags(fq) @ D.T
+    assert np.allclose(LO.diagonal(), LE.diagonal())
+    assert np.allclose(LO @ x, LE @ x)
+    LO.set_weights(fp, fq, fp)
+    LE = diags(fp) @ D @ diags(fq) @ D.T @ diags(fp)
+    assert np.allclose(LO.diagonal(), LE.diagonal())
+    assert np.allclose(LO @ x, LE @ x)
+    LU = diags(pseudo(np.sqrt(fp))) @ D @ diags(fq) @ D.T @ diags(pseudo(np.sqrt(fp)))
+    LO.set_weights(pseudo(np.sqrt(fp)), fq, pseudo(np.sqrt(fp)))
+    assert np.allclose(LO @ x, LU @ x, atol=10*np.finfo(np.float32).eps)
 
   ## Test normalized operators
   from scipy.sparse.linalg import eigsh

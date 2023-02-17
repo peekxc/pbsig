@@ -704,47 +704,54 @@ def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
   return A
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
-def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', dtype=None, **kwargs):
-    """
-    Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex S. 
+def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', symmetric: bool = True, dtype=None, **kwargs):
+    """Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex S. 
 
-    TODO: use the real up-Laplacian, defer weights to user
+    Given D = boundary_matrix(S, p+1), this function parameterizes any (generic) weighted p-th up-laplacian L of the form: 
 
-    Given B_p = boundary_matrix(S, p), this function defines the (generic) weighted p-th up-laplacian L as: 
-
-    Lp := W_p^l @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ W_p^r
+    L := Wl(fp) @ D @ W(fq) @ D^T @ Wr(fp)
     
-    Where W_p^l, W_p^r, W_{p+1} are diagonal matrices weighting the p and p+1 simplices, respectively. 
+    Where  W(fp)^{l,r}, W(fq) are diagonal matrices weighting the p and q=p+1 simplices, respectively. If the weights supplied via 
+    a weight callable w: S -> R are positive, then the Laplacian operator returned corresponds to equipping a scalar product on the 
+    coboundary vector spaces of S. By default, if symmetric = True, then the exact form of the combinatorial laplacian returned is: 
+
+    L_sym := Wl(fp)^{+/2} @ D @ W(fq) @ D^T @ Wr(fp)^{+/2}
+
+    where A^{+/2} denotes the pseudo-inverse of A^(1/2). This operator is compact and symmetric, has real eigenvalues, and is 
+    spectrally-similar to the asymmetric form (where symmetric=False) given by 
     
-    Let w: S -> R+ denote a weight function, corresponding to a scalar product S. 
+    L_asym := Wl(fp)^{+} @ D @ W(fq) @ D^T 
 
-    weight == None  => all weight matrices are identity matrices
-    weight != None  => (W_p^l) = diag({ 1/w(s1), 1/w(s2), ..., 1/w(sn) }) and W_{p+1} = diag({ w(q1), w(q2), ..., w(qm) }) 
-    normed + weight => (W_p^l) = diag({ 1/sqrt(deg(s1)), 1/sqrt(deg(s2)), ..., 1/sqrt(deg(sn)) }) and W_{p+1} = diag({ w(q1), w(q2), ..., w(qm) }) 
+    If normed = True, then L is referred to as the _normalized_ combinatorial Laplacian, which has the form: 
 
-    Some specializations:
-      - (p=0)                           <=> graph laplacian  
-      - (p=0, weight=...)               <=> weighted graph laplacian
-      - (p=0, weight=..., normed=True)  <=> normalized weighted graph Laplacian 
-      - (p>0, weight=...)               <=> weighted combinatorial up-laplacian
-      - (p>0, weight=..., normed=True)  <=> normalized weighted combinatorial up-laplacian 
-      - weighted symmetric combinatorial up-laplacian := 
-      - weighted normalized symmetric combinatorial up-laplacian := (D_p^l)^{+/2} @ B_{p+1} @ W_{p+1} @ B_{p+1}^T @ (D_p^r)^{+/2}
+    L_norm := Wl(deg(fp))^{+/2} @ D @ W(fq) @ D^T Wr(deg(fp))^{+/2} 
+
+    where deg(...) denotes the weighted degrees of the p-simplices. Note that L_norm has a bounded spectrum in the interval [0, p+2].
+
+    Summary of the specializations:
+      - (p=0)                               <=> graph laplacian  
+      - (p=0, weight=...)                   <=> weighted graph laplacian
+      - (p=0, weight=..., normed=True)      <=> normalized weighted graph Laplacian 
+      - (p>0, weight=...)                   <=> weighted combinatorial up-laplacian
+      - (p>0, weight=..., normed=True)      <=> normalized weighted combinatorial up-laplacian 
+      - (p>0, weight=..., symmetric=False)  <=> asymmetric weighted combinatorial up-laplacian 
+      ...
 
     Parameters:
-      S := Simplicial Complex 
-      p := dimension of the up Laplacian. Defaults to 0 (graph Laplacian).
-      weight := Callable weight function to be evaluated on each simplex in S. Must return either a value or a 2-tuple (wl, wr). 
-      normed := Whether to degree-normalize the corresponding up-laplacian. See details. 
-      return_diag := whether to return diagonal degree matrix along with the laplacian
-      form := return type. One of ['array', 'lo', 'function']
+      S = _ComplexLike_ or _FiltrationLike_ instance
+      p = dimension of the up Laplacian. Defaults to 0 (graph Laplacian).
+      weight = Callable weight function to be evaluated on each simplex in S. Must return either a value or a 2-tuple (wl, wr). 
+      normed = Whether to degree-normalize the corresponding up-laplacian. See details. 
+      return_diag = whether to return diagonal degree matrix along with the laplacian
+      form = return type. One of ['array', 'lo', 'function']
+      symmetric = boolean whether to use the spectrally-similar symmetric form. Defaults to True.
       dtype := dtype of associated laplacian. 
       kwargs := unused. 
     
     The argument names for this function is loosely based on SciPy 'laplacian' interface in the sparse.csgraph module. 
-    See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html.
-    However, note that the LinearOperator returned by csgraph.laplacian is actually not matrix-free, see: 
-    https://github.com/scipy/scipy/blob/main/scipy/sparse/csgraph/_laplacian.py
+    See https://docs.scipy.org/doc/scipy/reference/generated/scipy.sparse.csgraph.laplacian.html. However, unlike the 
+    LinearOperator returned by csgraph.laplacian, the operator returned here is always matrix-free.  
+    (see https://github.com/scipy/scipy/blob/main/scipy/sparse/csgraph/_laplacian.py)
     """
     # assert isinstance(K, ComplexLike), "K must be a Simplicial Complex for now"
     assert isinstance(weight, Callable) if weight is not None else True
@@ -763,7 +770,12 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
     assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
       B = boundary_matrix(S, p = p+1)
-      L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
+      if normed: 
+        L = B @ diags(wq) @ B.T
+        deg = L.diagonal()
+        L = (diags(pseudo(np.sqrt(deg))) @ L @ diags(pseudo(np.sqrt(deg)))).tocoo()
+      else:
+        L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
       return (L, L.diagonal()) if return_diag else L
     elif form == 'lo':
       p_faces = list(faces(S, p))        ## need to make a view 
@@ -771,14 +783,22 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
       _lap_cls = eval(f"UpLaplacian{int(p)}D")
       lo = _lap_cls(p_simplices, p_faces, card(S, 0))
       if normed:
-        deg = np.zeros(len(p_faces))
-        for cc, qs in enumerate(p_simplices):
-          face_ind = np.array([lo.index(ps) for ps in boundary(qs)])
-          deg[face_ind] += wq[cc]
-        lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg)))  # normalized weighted symmetric psd version 
+        if not(symmetric):
+          import warnings
+          warnings.warn("symmetric = False is not a valid option when normed = True")
+        lo.set_weights(None, wq, None)
+        deg = lo.diagonal()
+        lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) # normalized weighted symmetric psd version 
+        # deg = np.zeros(len(p_faces))
+        # for cc, qs in enumerate(p_simplices):
+        #   face_ind = np.array([lo.index(ps) for ps in boundary(qs)])
+        #   deg[face_ind] += wq[cc]
+        # lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) 
       else: 
-        # lo.set_weights(pseudo(wpl), wq, None)                         # asymmetric version
-        lo.set_weights(pseudo(np.sqrt(wpl)), wq, pseudo(np.sqrt(wpr)))  # weighted symmetric psd version 
+        if symmetric:
+          lo.set_weights(pseudo(np.sqrt(wpl)), wq, pseudo(np.sqrt(wpr)))  # weighted symmetric psd version 
+        else:
+          lo.set_weights(pseudo(wpl), wq, None)                           # asymmetric version
       return lo
       # f = _up_laplacian_matvec_p(p_simplices, p_faces, w0, w1, p, "default")
       # lo = f if form == 'function' else LinearOperator(shape=(ns[p],ns[p]), matvec=f, dtype=np.dtype(float))

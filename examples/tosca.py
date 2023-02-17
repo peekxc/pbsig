@@ -8,21 +8,15 @@ import numpy as np
 import re
 import requests
 
-# import lzma
-# import requests
-# url = "https://raw.githubusercontent.com/peekxc/pbsig/main/src/pbsig/data/tosca/tosca.tar.xz"
-# r = requests.get(url, stream=True)
-# z = lzma.decompress(r.content)
-
-# lzma.open(z)
-
-# %% 
+# %% I/O
 import requests
-
 def tosca():
   import tarfile
   from urllib.request import urlopen
   from io import BytesIO
+  # tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
+  # mat_rgx, cls_rgx = re.compile(r".*[.]mat"), re.compile(r"^([a-zA-Z]+)(\d+)[.]mat")
+  # tosca_files = [fn for fn in os.listdir(tosca_dir) if mat_rgx.match(fn) is not None]
   url = "https://raw.githubusercontent.com/peekxc/tosca_signatures/main/tosca.tar.xz"
   tosca_file = tarfile.open(fileobj=BytesIO(urlopen(url).read()) , mode="r:xz")
   tosca_files = [name[:-4] for name in tosca_file.getnames() if name[0] != "."]
@@ -44,65 +38,12 @@ def tosca():
 
 ## Usage 
 get_model, tosca_model_names = tosca()
-# get_model("wolf1") <=> 
+# get_model("wolf1")
 # get_model("wolf", 1)
 # get_model(model_names[0])
 
-# for member in tosca_file.getmembers():
-#   if member.name[0] != ".":
-#     w = tosca_file.extractfile(member)
-#     S = scipy.io.loadmat(BytesIO(w.read()))
-#   print(S)
-
-# with tarfile.open(fileobj=response.raw, mode="r:xz") as tosca_file:
-#   tosca_file.extractall(path=".") 
-#   for member in tosca_file.getmembers():
-#     if member.name[0] != "." and member.size > 0:
-#       print(member.name)
-#       scipy.io.loadmat(tosca_file.extractfile(member))
-
-
-# url = "https://raw.githubusercontent.com/peekxc/pbsig/main/src/pbsig/data/tosca/tosca.zip"
-# from urllib.request import urlopen
-# from io import BytesIO
-# from zipfile import ZipFile
-# http_response = urlopen(url)
-# zipfile = ZipFile(BytesIO(http_response.read()))
-# for name in zipfile.namelist():
-#   data = zipfile.read(name)
-#   S = scipy.io.loadmat(BytesIO(data))
-#   print(S)
-
-# import urllib.request
-# import tarfile
-# filename = url.split("/")[-1]
-# urllib.request.urlretrieve(url, filename)
-# tosca_file = tarfile.open(filename, "r:xz")
-# wut = []
-# for member in tosca_file.getmembers():
-#   f = tosca_file.extractfile(member)
-#   print(f.name)
-#   wut.append(f)
-#   if f.name is not None:
-#     S = scipy.io.loadmat(f.read())
-#     print(type(S))
 
 # %% Tosca preprocessing 
-# tosca_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/tosca/"
-# mat_rgx, cls_rgx = re.compile(r".*[.]mat"), re.compile(r"^([a-zA-Z]+)(\d+)[.]mat")
-# tosca_files = [fn for fn in os.listdir(tosca_dir) if mat_rgx.match(fn) is not None]
-# def tosca_model(file_path: str, normalize: bool = True):
-#   mat = scipy.io.loadmat(file_path)
-#   x = np.ravel(mat['surface']['X'][0][0]).astype(float)
-#   y = np.ravel(mat['surface']['Y'][0][0]).astype(float)
-#   z = np.ravel(mat['surface']['Z'][0][0]).astype(float)
-#   S = np.c_[x,y,z]
-#   T = mat['surface']['TRIV'][0][0] - 1 # TOSCA is 1-based 
-#   if normalize:
-#     S -= S.mean(axis=0)
-#     c = np.linalg.norm(S.min(axis=0) - S.max(axis=0))
-#     S *= (1/c)
-#   return S, T
 import re 
 cls_rgx = re.compile(r"^([a-zA-Z]+)(\d+)")
 tosca_classes = ['dog', 'cat', 'michael', 'centaur', 'victoria', 'horse', 'david', 'gorilla', 'wolf'] 
@@ -141,7 +82,7 @@ def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Seque
     T = (m x 3) array of triangle indices 
     f = array of vertex values to filter by 
     bins = number of bins, or a sequence of threshold values 
-    method = strng indicating which method to use to compute the curve. Defaults to "simple". 
+    method = string indicating which method to use to compute the curve. Defaults to "simple". 
 
   Returns: 
     array of euler values of the mesh along _bins_ 
@@ -197,12 +138,7 @@ def euler_curve(X: ArrayLike, T: ArrayLike, f: ArrayLike, bins: Union[int, Seque
     ecc = np.append(0, (v_counts - e_counts + t_counts))
   return ecc 
 
-# %% 
-import timeit 
-timeit.timeit(lambda: euler_curve(X, T, f, method="simple"), number=10)
-timeit.timeit(lambda: euler_curve(X, T, f, method="top_down"), number=10)
-timeit.timeit(lambda: euler_curve(X, T, f, method="top_down_vec"), number=10)
-
+# %% validation 
 from splex.geometry import delaunay_complex
 X = np.random.uniform(size=(8,2))
 S = delaunay_complex(X)
@@ -212,30 +148,10 @@ euler_curve(X, T, f, method="simple")
 euler_curve(X, T, f, method="top_down")
 euler_curve(X, T, f, method="top_down_vec")
 
-
-# hirola experimentation 
-# from hirola import HashTable
-# # TV = np.array(T, dtype=[('i', "u4"), ('j', "u4"), ('k', "u4")])
-
-# vw = np.ones(len(f))*(-np.inf)
-# vw[T[:,0]] = np.maximum(vw[T[:,0]], ft)
-# vw[T[:,1]] = np.maximum(vw[T[:,1]], ft)
-# vw[T[:,2]] = np.maximum(vw[T[:,2]], ft)
-
-# h = HashTable((3*T.shape[0])*1.25, dtype=(T.dtype, 2))
-# h.add(T[:,[0,1]])
-# h.add(T[:,[0,2]])
-# h.add(T[:,[1,2]])
-# ew = np.ones(h.length)*(-np.inf)
-# for ij in combinations(range(3), 2):
-#   e_ind = h[T[:,ij]]
-#   ew[e_ind] = np.maximum(ew[e_ind], ft)
-
-
-
-# h.add(T[:,[0,2]])
-# h.add(T[:,[1,2]])
-
+import timeit 
+timeit.timeit(lambda: euler_curve(X, T, f, method="simple"), number=10)
+timeit.timeit(lambda: euler_curve(X, T, f, method="top_down"), number=10)
+timeit.timeit(lambda: euler_curve(X, T, f, method="top_down_vec"), number=10)
 
 # %% 
 from bokeh.plotting import figure, show
