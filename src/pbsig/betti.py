@@ -259,7 +259,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   
   ## Compute the multiplicities 
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-6
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-15
   kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   EW = [None]*4
@@ -284,7 +284,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
     raise ValueError(f"Invalid form '{form}'.")
   return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
-def mu_query_mat(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p: int = 0, solver=None, **kwargs):
+def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, form = 'lo', **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -292,28 +292,45 @@ def mu_query_mat(S: Union[LinearOperator, ComplexLike], R: tuple, f: Callable, p
     S = Simplicial complex, or its corresponding Laplacian operator 
     R = box (i,j,k,l,w) to restrict to, where i < j <= k < l, and w > 0 is a smoothing parameter
     f = filter function on S (or equivalently, scalar product on its Laplacian operator)
+    p = homology dimension 
     smoothing = parameters for singular values
   """
   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
+  # L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form=form)
+  assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
+  #assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
   (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else R
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  D = boundary_matrix(S, p=p+1)
-  fw = np.array([f(s) for s in faces(S, p)])
-  sw = np.array([f(s) for s in faces(S, p+1)])
+  # fw = np.array([f(s) for s in L.faces])
+  # sw = np.array([f(s) for s in L.simplices]) ## TODO: replace 
+  pw = np.array([f(s) for s in faces(S, p)])
+  qw = np.array([f(s) for s in faces(S, p+1)])
   delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
-  fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+  fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+  fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+  fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  
+  ## Compute the multiplicities 
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-15
+  kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
   L = [None]*4
-  for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-    di = (D @ diags(J) @ D.T).diagonal()
-    fw_norm = pseudo(np.sqrt(I * di)) # normalized degree weights
-    L[cc] = diags(fw_norm) @ D @ diags(J) @ D.T @ diags(fw_norm)
+  if form == "lo":
+    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+      L[cc] = up_laplacian(S, p=p, form="lo")
+      L[cc].set_weights(None, J, None)
+      I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+      L[cc].set_weights(I_norm, J, I_norm)
+  elif form == "array":
+    D = boundary_matrix(S, p=p+1)
+    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+      di = (D @ diags(J) @ D.T).diagonal()
+      I_norm = pseudo(np.sqrt(I * di))
+      L[cc] = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+  else: 
+    raise ValueError(f"Invalid form '{form}'.")
   return L
-
 
 def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
   """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 

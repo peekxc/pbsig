@@ -50,7 +50,7 @@ from pbsig.vis import plot_dgm
 dgm = ph(K)
 plot_dgm(dgm[1])
 
-## Test the multiplicity queries with the coned complex
+#%%  Test the multiplicity queries with the coned complex
 from pbsig.betti import mu_query
 R = np.array([-np.inf, 5, 15, np.inf])
 print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=None, sqrt=False, terms=True, form='lo'))
@@ -79,26 +79,28 @@ p.line(np.arange(len(rr)), rr)
 show(p)
 
 
+# R = np.array([-np.inf, 4, 15, np.inf])
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True))
+# R = np.array([-np.inf, 5, 15, np.inf])
 
-R = np.array([-np.inf, 4, 15, np.inf])
-print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-10, 1.0, 0), sqrt=True))
-R = np.array([-np.inf, 5, 15, np.inf])
 
-## WHYYYYY 
-eigh2rank(mat2eigh(mat2dense(time2mat(t))))
-# mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0), terms=True)
-mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False)
-MM = mat2eigh(mat2dense(time2mat(tau)))
-sum(np.sqrt(np.maximum(MM[2], 0.0)))
+# eigh2rank(mat2eigh(mat2dense(time2mat(t))))
+# # mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(0.000000001, 1.0, 0), terms=True)
+# mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False)
+# MM = mat2eigh(mat2dense(time2mat(tau)))
+# sum(np.sqrt(np.maximum(MM[2], 0.0)))
 
-mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False, raw=True)[2]
-MM[2]
+# mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing = None, terms = True, sqrt=False, raw=True)[2]
+# MM[2]
 # sum(np.sqrt(np.maximum(MM[2], 0.0)))
 
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
+# print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, terms=False, form='array'))
+mu_query_mat
 from pbsig.betti import *
-time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1)
+R = np.array([-np.inf, 5, 15, np.inf])
+time2mat = lambda t: mu_query(K, f=cone_weight(SW(n=N, d=M, tau=t), sv), R=R, p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, form='lo')
 mat2dense = lambda L: [l.todense() for l in L]
 mat2eigh = lambda L: [np.linalg.eigvalsh(l) for l in L]
 eigh2nucl = lambda E: [sum(np.sqrt(np.maximum(0.0, e))) for e in E]
@@ -111,7 +113,7 @@ nucl_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 from bokeh.io import output_notebook
 from bokeh.plotting import show, figure
 from bokeh.models import Span 
-T_dom = np.linspace(0.50*tau, 1.50*tau, 100)
+T_dom = np.linspace(0.50*tau, 1.50*tau, 1000)
 p = figure(width=400, height=200)
 p.scatter(T_dom, [nucl_obj(t) for t in T_dom], color='blue')
 p.scatter(T_dom, [rank_obj(t) for t in T_dom], color='red')
