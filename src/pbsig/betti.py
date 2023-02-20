@@ -321,7 +321,7 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
     for cc, (I,J) in enumerate([(j, k), (i, k), (j, l), (i, l)]):
       face_f = smooth_upstep(lb = I, ub = I+w)
       coface_f = smooth_dnstep(lb = J-w, ub = J+delta)
-      weight_f = lambda s: face_f(f(s)) if dim(s) == p else coface_f(f(s))
+      weight_f = lambda s: face_f(f(s)).item() if dim(s) == p else coface_f(f(s)).item()
       L[cc] = up_laplacian(S, p=p, form="array", normed=True, weight=weight_f)
   else: 
     raise ValueError(f"Invalid form '{form}'.")
@@ -387,103 +387,25 @@ class MuSignature:
   Methods: 
     precompute := precomputes the signature
   """
-  def __init__(self, S: ComplexLike, family: Iterable[Callable], R: ArrayLike, p: int = 0, **kwargs):
+  def __init__(self, S: ComplexLike, family: Iterable[Callable], R: ArrayLike, p: int = 0, form: str = "array"):
     assert len(R) == 4 and is_sorted(R)
     # assert isinstance(S, ComplexLike)
     assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
-    self.L = up_laplacian(S, p, form='lo', **kwargs)
+    self.S = S
     self.R = R
     self.family = family
     self.np = card(S, p)
     self.nq = card(S, p+1)
-  
-  ## Does not change eigenvalues!
-  def precompute(self, w: float = 0.0, normed: bool = False, **kwargs) -> None:
-    """
-    pp: 
-    """
-    k = len(self.family)
-    self._T1 = [None]*k
-    self._T2 = [None]*k
-    self._T3 = [None]*k
-    self._T4 = [None]*k
-    i,j,k,l = self.R
-    eigh_solver = parameterize_solver(self.L, **kwargs) 
-    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-    # as-is? self.L.set_weights(self._fj, self._fl, self._fj)
-    for i, f in progressbar(enumerate(self.family), count=len(self.family)):
-      assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
-      self.update_weights(f, self.R, w=w)
-      if not(normed): 
-        self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fk, pseudo(np.sqrt(self._fj)))
-        # print(f"LW: {sum(self.L.face_left_weights)}, CW: {sum(self.L.simplex_weights)}, RW: {sum(self.L.face_right_weights)}")
-        self._T1[i] = eigh_solver(self.L)
-        self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fk, pseudo(np.sqrt(self._fi)))
-        self._T2[i] = eigh_solver(self.L)
-        self.L.set_weights(pseudo(np.sqrt(self._fj)), self._fl, pseudo(np.sqrt(self._fj)))
-        self._T3[i] = eigh_solver(self.L)
-        self.L.set_weights(pseudo(np.sqrt(self._fi)), self._fl, pseudo(np.sqrt(self._fi)))
-        self._T4[i] = eigh_solver(self.L)
-        self.L.set_weights(None, None, None)
-      else: ## Normalize and solve
-        
-        ## 1: k, j
-        self.L.set_weights(None, self._fk, None)
-        self.L.precompute_degree()
-        fj_norm = self._fj * self.L.diagonal() # degrees
-        self.L.set_weights(pseudo(np.sqrt(fj_norm)), self._fk, pseudo(np.sqrt(fj_norm)))
-        self._T1[i] = eigh_solver(self.L)
-
-        ## 2: k, i 
-        self.L.set_weights(None, self._fk, None)
-        self.L.precompute_degree()
-        fi_norm = self._fi * self.L.diagonal() # degrees
-        self.L.set_weights(pseudo(np.sqrt(fi_norm)), self._fk, pseudo(np.sqrt(fi_norm)))
-        self._T2[i] = eigh_solver(self.L)
-
-        ## 3: l, j 
-        self.L.set_weights(None, self._fl, None)
-        self.L.precompute_degree()
-        fi_norm = self._fi * self.L.diagonal() # degrees
-        self.L.set_weights(pseudo(np.sqrt(fj_norm)), self._fl, pseudo(np.sqrt(fj_norm)))
-        self._T3[i] = eigh_solver(self.L)
-
-        ## 4: l, i 
-        self.L.set_weights(None, self._fl, None)
-        self.L.precompute_degree()
-        fi_norm = self._fi * self.L.diagonal() # degrees
-        self.L.set_weights(pseudo(np.sqrt(fi_norm)), self._fl, pseudo(np.sqrt(fi_norm)))
-        self._T4[i] = eigh_solver(self.L)
-        
-        ## For some reason, this is needed for determinism...
-        self.L.set_weights(None, None, None)
-    def _fix_ew(ew): 
-      atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-      ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
-      #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-        #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
-        # print(ew)
-        # print(min(ew))
-      #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
-      return np.maximum(ew, 0.0)
-    self._T1 = [_fix_ew(t) for t in self._T1]
-    self._T2 = [_fix_ew(t) for t in self._T2]
-    self._T3 = [_fix_ew(t) for t in self._T3]
-    self._T4 = [_fix_ew(t) for t in self._T4]
-    self._T1 = csr_array(self._T1)
-    self._T2 = csr_array(self._T2)
-    self._T3 = csr_array(self._T3)
-    self._T4 = csr_array(self._T4)
-    self._T1.eliminate_zeros() 
-    self._T2.eliminate_zeros() 
-    self._T3.eliminate_zeros() 
-    self._T4.eliminate_zeros() 
+    self.p = p
+    self.form = form
   
   ## Changes the eigenvalues! 
-  def update_weights(self, f: Callable[SimplexLike, float], R: ArrayLike, w: float):
+  def update_weights(self, f: Callable[SimplexConvertible, float], R: ArrayLike, w: float):
+    """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_.
+    """
     assert len(R) == 4 and is_sorted(R)
-    fw = np.array([f(s) for s in self.L.faces])
-    sw = np.array([f(s) for s in self.L.simplices])
+    fw = np.array([f(s) for s in faces(self.S, self.p)])
+    sw = np.array([f(s) for s in faces(self.S, self.p+1)])
     i,j,k,l = R 
     delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
     self._fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
@@ -491,7 +413,70 @@ class MuSignature:
     self._fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
     self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
 
+  ## Does not change eigenvalues!
+  def precompute(self, w: float = 0.0, normed: bool = False, progress: bool = False, **kwargs) -> None:
+    """Precomputes the signature across a parameterized family.
 
+    Parameters: 
+      w = smoothing parameter. Defaults to 0.  
+      normed = whether to normalize the laplacian(s). Defaults to false. 
+      kwargs = additional arguments to pass to eigvalsh_solver.
+    """
+    k = len(self.family)
+    self._terms = [[None]*k for i in range(4)] 
+    i,j,k,l = self.R
+    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+    # as-is? self.L.set_weights(self._fj, self._fl, self._fj)
+    family_it = progressbar(enumerate(self.family), count=len(self.family)) if progress else enumerate(self.family)
+    for i, f in family_it:
+      assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
+      self.update_weights(f=f, R=self.R, w=w) # updates self._fi, ..., self._fl
+      if self.form == "array":
+        D = boundary_matrix(self.S, p=self.p+1)
+        for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
+          if normed:
+            di = (D @ diags(J) @ D.T).diagonal()
+            I_norm = pseudo(np.sqrt(I * di))
+            L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+          else:
+            L = diags(np.sqrt(I)) @ D @ diags(J) @ D.T @ diags(np.sqrt(I))
+          solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
+          self._terms[cc][i] = solver(L)
+      elif self.form == "lo":
+        L = up_laplacian(self.S, p=self.p, form="lo")
+        for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
+          if normed:
+            L.set_weights(None, J, None) ## adjusts degree
+            I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+            L.set_weights(I_norm, J, I_norm)
+          else:
+            L.set_weights(pseudo(np.sqrt(I)), J, pseudo(np.sqrt(I)))
+          solver = eigvalsh_solver(L, **kwargs)
+          self._terms[cc][i] = solver(L)
+      else: 
+        raise ValueError("Unknown type")       
+    # def _fix_ew(ew): 
+    #   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+    #   ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
+    #   #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+    #     #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+    #     # print(ew)
+    #     # print(min(ew))
+    #   #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
+    #   return np.maximum(ew, 0.0)
+    # self._T1 = [_fix_ew(t) for t in self._T1]
+    # self._T2 = [_fix_ew(t) for t in self._T2]
+    # self._T3 = [_fix_ew(t) for t in self._T3]
+    # self._T4 = [_fix_ew(t) for t in self._T4]
+    # self._T1 = csr_array(self._T1)
+    # self._T2 = csr_array(self._T2)
+    # self._T3 = csr_array(self._T3)
+    # self._T4 = csr_array(self._T4)
+    # self._T1.eliminate_zeros() 
+    # self._T2.eliminate_zeros() 
+    # self._T3.eliminate_zeros() 
+    # self._T4.eliminate_zeros() 
+  
   ## Changes the eigenvalues! 
   ## TODO: allow multiple rectangles
   def _update_rectangle(self, R: ArrayLike, defer: bool = False):

@@ -11,7 +11,7 @@ sw_f = lambda t: np.cos(t) + np.cos(3*t)
 dom = np.linspace(0, 12*np.pi, 1200)
 
 p = figure(width=400, height=200)
-p.line(dom, f(dom))
+p.line(dom, sw_f(dom))
 show(p)
 
 
@@ -33,6 +33,8 @@ for t in np.linspace(0.50*tau, 1.50*tau, 10):
   scatters.append(plot_complex(S, pos=pca(X_delay), width=125, height=125))
 show(row(*scatters))
 
+from pbsig.persistence import ph
+from pbsig.vis import plot_dgm
 K = filtration(S, f=flag_weight(X))
 dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
@@ -57,6 +59,7 @@ dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
 
 ## Verify mu queries 
+from pbsig.betti import mu_query, mu_query_mat
 R = np.array([4, 4.2, 4.8, 5.2])
 print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
 R = np.array([3.8, 4.0, 4.8, 5.2])
@@ -71,6 +74,38 @@ R = np.array([4, 4.2, 4.8, 5.2])
 print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
 
 
+from pbsig.betti import MuSignature
+T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
+t_family = [cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2) for t in T_dom]
+
+## Plot cone weights over time 
+p = figure(width=400, height=250)
+for s in faces(K):
+  s_vals = np.array([f(s) for f in t_family])
+  p.line(T_dom, s_vals)
+# p.legend.location = "bottom_right"
+show(p) 
+
+## Compute the signatures
+sig = MuSignature(S, family=t_family, R=R, p=1)
+sig.precompute()
+
+print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
+
+sum(sig._terms[2][0] > 1e-12)
+
+
+## Verify spectrum 
+# R = np.array([4, 4.2, 4.8, 5.2])
+# LM  = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0, diam/2), R=R, p=1, form='array')
+
+for L in LM:
+  #print(max(np.linalg.eigvalsh(L.todense())))
+  #print(max(np.linalg.eigvalsh(L.todense())))
+  print(np.linalg.matrix_rank(L.todense()))
+
+## Verify queries match up with matrices
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array', terms=True))
 
 #%%  Test the multiplicity queries with the coned complex
 # from pbsig.betti import mu_query
@@ -124,19 +159,18 @@ print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1
 
 ## MAD https://arxiv.org/pdf/2202.11014.pdf
 # print(mu_query(K, R=R, f=cone_weight(X,sv), p=1, smoothing=(1e-4, 1.0, 0), sqrt=True, terms=False, form='array'))
-from pbsig.betti import *
-assert np.allclose(X - SW(n=N, d=M, tau=tau), 0.0)
-R = np.array([4, 4.2, 4.8, 5.2])
-print(mu_query(K, R=R, f=cone_weight(X,sv, 0.0, diam/2), p=1, smooth=False, sqrt=True, terms=True, form='array'))
-DL = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0, diam/2), R=R, p=1, form='array')
-# np.linalg.matrix_rank(DL[0].todense()) - np.linalg.matrix_rank(DL[1].todense()) - np.linalg.matrix_rank(DL[2].todense()) + np.linalg.matrix_rank(DL[3].todense())
+# from pbsig.betti import *
+# assert np.allclose(X - SW(n=N, d=M, tau=tau), 0.0)
+# R = np.array([4, 4.2, 4.8, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(X,sv, 0.0, diam/2), p=1, smooth=False, sqrt=True, terms=True, form='array'))
+# DL = mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0, diam/2), R=R, p=1, form='array')
+# # np.linalg.matrix_rank(DL[0].todense()) - np.linalg.matrix_rank(DL[1].todense()) - np.linalg.matrix_rank(DL[2].todense()) + np.linalg.matrix_rank(DL[3].todense())
 
 ## 
 from pbsig.linalg import prox_nuclear
-moreau_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 
 
-R = np.array([4, 4.2, 4.8, 5.2, 0.05]) # TODO: <--- add w term here 
+R = np.array([4, 4.2, 4.8, 5.0]) # TODO: <--- add w term here 
 time2mat = lambda t: mu_query_mat(K, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0, diam/2), R=R, p=1, form='array')
 mat2dense = lambda L: [l.todense() for l in L]
 mat2eigh = lambda L: [np.linalg.eigvalsh(l) for l in L]
@@ -149,11 +183,7 @@ rank_obj = lambda t: terms2mu(mat2rank(mat2dense(time2mat(t))))
 nucl_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 # prox_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 mora_obj = lambda t,s: terms2mu(mat2mora(mat2dense(time2mat(t)), s))
-
-i = np.argmin(moreau3_query)
-L = time2mat(T_dom[i])
-L = up_laplacian(K, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0, diam/2), p=1, normed=True, form='array')
-np.linalg.eigvalsh(L.todense())
+# moreau_obj = lambda t: terms2mu(eigh2nucl(mat2eigh(mat2dense(time2mat(t)))))
 
 ## Compute the various objectives
 T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
