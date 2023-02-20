@@ -202,14 +202,8 @@ def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
 def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, **kwargs) -> Callable:
   return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
 
-def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, prec: float = None, **kwargs):
-  """Computes the rank of an operator _A_ using by counting non-zero eigenvalues.
-  
-  This method attempts to use various means with which to estimate the rank of _A_ in a stable fashion. 
-  """
-  solver = eigvalsh_solver(A)
-  ew = solver(A)
-  prec = np.finfo(A.dtype).eps
+def spectral_rank(ew: ArrayLike, method: int = 0, prec: float = None) -> int:
+  prec = np.finfo(ew.dtype).eps if prec is None else prec
   if method == 0:
     ## Default: identifies only those as positive cannot have been introduced by numerical errors 
     tol = ew.max() * max(A.shape) * prec
@@ -230,6 +224,15 @@ def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, 
     return values[np.argmax(counts)]
   else:
     raise ValueError("Invalid method chosen")
+
+def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, prec: float = None, **kwargs):
+  """Computes the rank of an operator _A_ using by counting non-zero eigenvalues.
+  
+  This method attempts to use various means with which to estimate the rank of _A_ in a stable fashion. 
+  """
+  solver = eigvalsh_solver(A)
+  ew = solver(A)
+  spectral_rank(ew, method=method, prec=prec)
 
 def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, raw: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
   """ 

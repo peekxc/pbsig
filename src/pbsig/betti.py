@@ -459,7 +459,7 @@ class MuSignature:
     ## Compress the eigenvalues into sparse matrices 
     self._Terms = [None]*4
     for ti in range(4):
-      self._Terms[ti] = lil_array((len(self.family), card(self.S, self.p+1)), dtype=np.float64)
+      self._Terms[ti] = lil_array((len(self.family), card(self.S, self.p)), dtype=np.float64)
       for cc, ev in enumerate(self._terms[ti]):
         self._Terms[ti][cc,:len(ev)] = ev
       self._Terms[ti] = self._Terms[ti].tocsr()
@@ -472,14 +472,14 @@ class MuSignature:
     pass
 
   ## Vectorized version 
-  def __call__(self, i: int = None, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
+  def __call__(self, smooth: bool = False, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
     eps,p,method = smoothing
-    S = sgn_approx(eps=eps, p=p, method=method)
+    sv_op = sgn_approx(eps=eps, p=p, method=method)
     sig = np.zeros(len(self.family))
-    sig += np.add.reduceat(S(self._T1.data), self._T1.indptr[:-1]) if len(self._T1.data) > 0 else 0
-    sig -= np.add.reduceat(S(self._T2.data), self._T2.indptr[:-1]) if len(self._T2.data) > 0 else 0
-    sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1]) if len(self._T3.data) > 0 else 0
-    sig += np.add.reduceat(S(self._T4.data), self._T4.indptr[:-1]) if len(self._T4.data) > 0 else 0
+    sig += np.add.reduceat(sv_op(self._Terms[0].data), self._Terms[0].indptr[:-1]) if len(self._Terms[0].data) > 0 else 0
+    sig -= np.add.reduceat(sv_op(self._Terms[1].data), self._Terms[1].indptr[:-1]) if len(self._Terms[1].data) > 0 else 0
+    sig -= np.add.reduceat(sv_op(self._Terms[2].data), self._Terms[2].indptr[:-1]) if len(self._Terms[2].data) > 0 else 0
+    sig += np.add.reduceat(sv_op(self._Terms[3].data), self._Terms[3].indptr[:-1]) if len(self._Terms[3].data) > 0 else 0
     return sig
 
 # E: Union[ArrayLike, Iterable],
