@@ -90,9 +90,16 @@ show(p)
 sig = MuSignature(S, family=t_family, R=R, p=1)
 sig.precompute()
 
-print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
+# print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
 
-sum(sig._terms[2][0] > 1e-12)
+# from scipy.sparse import lil_array
+# T1 = lil_array((len(t_family), card(S, 1)), dtype=np.float64)
+# for cc in range(T1.shape[0]):
+#   v = sig._terms[0][cc]
+#   T1[cc,:len(v)] = v
+# T1 = T1.tocsr()
+
+# sum(sig._terms[2][0] > 1e-12)
 
 
 ## Verify spectrum 

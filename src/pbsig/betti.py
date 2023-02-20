@@ -454,29 +454,18 @@ class MuSignature:
           solver = eigvalsh_solver(L, **kwargs)
           self._terms[cc][i] = solver(L)
       else: 
-        raise ValueError("Unknown type")       
-    # def _fix_ew(ew): 
-    #   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-    #   ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
-    #   #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-    #     #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
-    #     # print(ew)
-    #     # print(min(ew))
-    #   #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
-    #   return np.maximum(ew, 0.0)
-    # self._T1 = [_fix_ew(t) for t in self._T1]
-    # self._T2 = [_fix_ew(t) for t in self._T2]
-    # self._T3 = [_fix_ew(t) for t in self._T3]
-    # self._T4 = [_fix_ew(t) for t in self._T4]
-    # self._T1 = csr_array(self._T1)
-    # self._T2 = csr_array(self._T2)
-    # self._T3 = csr_array(self._T3)
-    # self._T4 = csr_array(self._T4)
-    # self._T1.eliminate_zeros() 
-    # self._T2.eliminate_zeros() 
-    # self._T3.eliminate_zeros() 
-    # self._T4.eliminate_zeros() 
-  
+        raise ValueError("Unknown type")  
+    
+    ## Compress the eigenvalues into sparse matrices 
+    self._Terms = [None]*4
+    for ti in range(4):
+      self._Terms[ti] = lil_array((len(self.family), card(self.S, self.p+1)), dtype=np.float64)
+      for cc, ev in enumerate(self._terms[ti]):
+        self._Terms[ti][cc,:len(ev)] = ev
+      self._Terms[ti] = self._Terms[ti].tocsr()
+      self._Terms[ti].eliminate_zeros() 
+    
+
   ## Changes the eigenvalues! 
   ## TODO: allow multiple rectangles
   def _update_rectangle(self, R: ArrayLike, defer: bool = False):
@@ -492,73 +481,6 @@ class MuSignature:
     sig -= np.add.reduceat(S(self._T3.data), self._T3.indptr[:-1]) if len(self._T3.data) > 0 else 0
     sig += np.add.reduceat(S(self._T4.data), self._T4.indptr[:-1]) if len(self._T4.data) > 0 else 0
     return sig
-    # if i is None: 
-    #   sig = np.array([self.__call__(i, smoothing) for i in range(self.k)])
-    #   return sig
-    # else: 
-    #   assert isinstance(i, Integral) and i >= 0 and i < self.k, "operator(i) defined for i in [0, 1, ..., k]"
-    #   eps,p,method = smoothing
-    #   t1 = sum(sgn_approx(self._T1[i], eps, p, method))
-    #   t2 = sum(sgn_approx(self._T2[i], eps, p, method))
-    #   t3 = sum(sgn_approx(self._T3[i], eps, p, method))
-    #   t4 = sum(sgn_approx(self._T4[i], eps, p, method))
-    #   return t1 - t2 - t3 + t4
-
-
-
-#   ## Prep smooth-step functions for rectangle R = [i,j] x [k,l]
-#   i,j,k,l = R 
-#   sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-#   sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-#   su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-#   su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  
-#   ## Get initial set of weights based on weight function
-#   weight = (lambda s: 1) if weight is None else weight 
-#   L = up_laplacian(S, p=0, form='lo')
-#   fw = np.array([weight(s) for s in L.faces])
-#   sw = np.array([weight(s) for s in L.simplices])
-  
-#   ## Multiplicity formula 
-#   fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
-  
-#   ## Choose a eigenvalue solver 
-#   eigh_solver = parameterize_solver(L) 
-#   # pairs = [(i,j), (), (), ()
-  
-#   ## Precompute the eigenvalues for each box r \in R 
-#   EW1 = [] ## eigenvalues for first pair
-
-#   pass
-
-# def mu_query(S: ComplexLike, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
-#   """
-#   Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
-
-#   The rank is computed by evaluating the given weight function on all p and (p+1)-simplices of S, and then 
-#   restricting the entries to non-zero if (p+1)-simplices have weight <= j and p-simplices have weight > than i. 
-
-#   S := an abstract simplicial complex. 
-#   i := (p-1)-face threshold. Only (p-1)-simplices with weight strictly greater than i are considered.  
-#   j := p-face threshold. Only p-simplices with weight less than or equal to j are considered. 
-#   p := dimension of the chain group on S with which to construct the boundary matrix.
-#   w := non-negative smoothing parameter. If 0, non-zero entries will have value 1, and otherwise they will be in [0,1]. 
-#   weight := real-valued weight function on S. 
-#   """
-#   assert i <= j, "i must be <= j"
-#   assert w >= 0, "smoothing parameter mut be non-negative."
-#   assert p >= 0, "Invalid homology dimension."
-#   assert isinstance(weight, Callable)
-#   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
-#   ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-#   ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
-#   smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
-#   # print(p)
-#   LS = up_laplacian(S, p = p-1, weight = smoothed_weight, form = 'lo') # 0th up laplacian = D1 @ D1.T
-  
-#   # print(LS)
-#   # print(LS.data)
-#   return numerical_rank(LS)
 
 # E: Union[ArrayLike, Iterable],
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
@@ -636,32 +558,119 @@ class Laplacian_DT_2D:
 
 
 
-  # A_exc = ss_ac(f[E]).flatten()
-  # B_inc = np.repeat(ss_b(edge_f), 2)
-  # D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
-  # L = D1 @ D1.T
-  # k = structural_rank(L)
-  # if k > 0: 
-  #   k = k - 1 if k == min(D1.shape) else k
-  #   T4 = eigsh(L, return_eigenvectors=False, k=k)
-  #   terms[3] = relax_f(np.array(T4))
-  # else: 
-  #   terms[3] = 0.0
-  #   nv, ne = shape
-  # r, rz = np.zeros(ne), np.zeros(nv)
-  # def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
-  #   r.fill(0) # r = Ax ~ O(E)
-  #   rz.fill(0)# rz = Ar ~ O(V)
-  #   for cc, (i,j) in enumerate(E):
-  #     ew = max(fv[i], fv[j])
-  #     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
-  #   for cc, (i,j) in enumerate(E):
-  #     ew = max(fv[i], fv[j])
-  #     rz[i] += ew*r[cc] #?? 
-  #     rz[j] -= ew*r[cc]
-  #   return(rz)
-    
+# A_exc = ss_ac(f[E]).flatten()
+# B_inc = np.repeat(ss_b(edge_f), 2)
+# D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
+# L = D1 @ D1.T
+# k = structural_rank(L)
+# if k > 0: 
+#   k = k - 1 if k == min(D1.shape) else k
+#   T4 = eigsh(L, return_eigenvectors=False, k=k)
+#   terms[3] = relax_f(np.array(T4))
+# else: 
+#   terms[3] = 0.0
+#   nv, ne = shape
+# r, rz = np.zeros(ne), np.zeros(nv)
+# def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
+#   r.fill(0) # r = Ax ~ O(E)
+#   rz.fill(0)# rz = Ar ~ O(V)
+#   for cc, (i,j) in enumerate(E):
+#     ew = max(fv[i], fv[j])
+#     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
+#   for cc, (i,j) in enumerate(E):
+#     ew = max(fv[i], fv[j])
+#     rz[i] += ew*r[cc] #?? 
+#     rz[j] -= ew*r[cc]
+#   return(rz)
+
 # def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
 #   a,b,c,d = next(iter(R))
 #   Ef = [f[E].max(axis=1) for f in F]
 
+
+# def _fix_ew(ew): 
+#   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+#   ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
+#   #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+#     #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+#     # print(ew)
+#     # print(min(ew))
+#   #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
+#   return np.maximum(ew, 0.0)
+# self._T1 = [_fix_ew(t) for t in self._T1]
+# self._T2 = [_fix_ew(t) for t in self._T2]
+# self._T3 = [_fix_ew(t) for t in self._T3]
+# self._T4 = [_fix_ew(t) for t in self._T4]
+# self._T1 = csr_array(self._T1)
+# self._T2 = csr_array(self._T2)
+# self._T3 = csr_array(self._T3)
+# self._T4 = csr_array(self._T4)
+# self._T1.eliminate_zeros() 
+# self._T2.eliminate_zeros() 
+# self._T3.eliminate_zeros() 
+# self._T4.eliminate_zeros() 
+
+#   ## Prep smooth-step functions for rectangle R = [i,j] x [k,l]
+#   i,j,k,l = R 
+#   sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+#   sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+#   su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+
+#   ## Get initial set of weights based on weight function
+#   weight = (lambda s: 1) if weight is None else weight 
+#   L = up_laplacian(S, p=0, form='lo')
+#   fw = np.array([weight(s) for s in L.faces])
+#   sw = np.array([weight(s) for s in L.simplices])
+
+#   ## Multiplicity formula 
+#   fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
+
+#   ## Choose a eigenvalue solver 
+#   eigh_solver = parameterize_solver(L) 
+#   # pairs = [(i,j), (), (), ()
+
+#   ## Precompute the eigenvalues for each box r \in R 
+#   EW1 = [] ## eigenvalues for first pair
+
+#   pass
+
+# def mu_query(S: ComplexLike, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
+#   """
+#   Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.
+
+#   The rank is computed by evaluating the given weight function on all p and (p+1)-simplices of S, and then 
+#   restricting the entries to non-zero if (p+1)-simplices have weight <= j and p-simplices have weight > than i. 
+
+#   S := an abstract simplicial complex. 
+#   i := (p-1)-face threshold. Only (p-1)-simplices with weight strictly greater than i are considered.  
+#   j := p-face threshold. Only p-simplices with weight less than or equal to j are considered. 
+#   p := dimension of the chain group on S with which to construct the boundary matrix.
+#   w := non-negative smoothing parameter. If 0, non-zero entries will have value 1, and otherwise they will be in [0,1]. 
+#   weight := real-valued weight function on S. 
+#   """
+#   assert i <= j, "i must be <= j"
+#   assert w >= 0, "smoothing parameter mut be non-negative."
+#   assert p >= 0, "Invalid homology dimension."
+#   assert isinstance(weight, Callable)
+#   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?
+#   ss_ic = smooth_upstep(lb = i, ub = i+w)         # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   ss_j = smooth_dnstep(lb = j-w, ub = j+delta)    # STEP DOWN: 1 (j-w) -> 0 (j), includes (-infty, j]
+#   smoothed_weight = lambda s: float(ss_ic(weight(s)) if len(s) == p else ss_j(weight(s)))
+#   # print(p)
+#   LS = up_laplacian(S, p = p-1, weight = smoothed_weight, form = 'lo') # 0th up laplacian = D1 @ D1.T
+
+#   # print(LS)
+#   # print(LS.data)
+#   return numerical_rank(LS)
+# if i is None: 
+#   sig = np.array([self.__call__(i, smoothing) for i in range(self.k)])
+#   return sig
+# else: 
+#   assert isinstance(i, Integral) and i >= 0 and i < self.k, "operator(i) defined for i in [0, 1, ..., k]"
+#   eps,p,method = smoothing
+#   t1 = sum(sgn_approx(self._T1[i], eps, p, method))
+#   t2 = sum(sgn_approx(self._T2[i], eps, p, method))
+#   t3 = sum(sgn_approx(self._T3[i], eps, p, method))
+#   t4 = sum(sgn_approx(self._T4[i], eps, p, method))
+#   return t1 - t2 - t3 + t4
