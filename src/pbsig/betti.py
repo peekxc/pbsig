@@ -245,7 +245,7 @@ def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
       return flag_w(s)
   return _cone_weight
 
-def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smooth: bool = False, smoothing: tuple = (0.5, 1.5, 0), solver=None, terms: bool = False, form = 'lo', **kwargs):
+def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smoothing: Callable = None, solver=None, terms: bool = False, form = 'array', **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -295,51 +295,51 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
     raise ValueError(f"Invalid form '{form}'.")
   return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
-def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, terms: bool = False, form = 'lo', **kwargs):
-  """
-  Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
+# def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, terms: bool = False, form = 'lo', **kwargs):
+#   """
+#   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
-  Parameters: 
-    S = Simplicial complex, or its corresponding Laplacian operator 
-    R = box (i,j,k,l,w) to restrict to, where i < j <= k < l, and w > 0 is a smoothing parameter
-    f = filter function on S (or equivalently, scalar product on its Laplacian operator)
-    p = homology dimension 
-    smoothing = parameters for singular values
-  """
-  assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
-  assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
-  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
-  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  pw = np.array([f(s) for s in faces(S, p)])
-  qw = np.array([f(s) for s in faces(S, p+1)])
-  delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
-  fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  L = [None]*4
-  if form == "lo":
-    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      L[cc] = up_laplacian(S, p=p, form="lo")
-      L[cc].set_weights(None, J, None)
-      I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
-      L[cc].set_weights(I_norm, J, I_norm)
-  elif form == "array":
-    # D = boundary_matrix(S, p=p+1)
-    #for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      # LM = D @ diags(J) @ D.T
-      # di = LM.diagonal()
-      # I_norm = pseudo(np.sqrt(I * di))
-      # L[cc] = diags(I_norm) @ LM @ diags(I_norm)
-    for cc, (I,J) in enumerate([(j, k), (i, k), (j, l), (i, l)]):
-      face_f = smooth_upstep(lb = I, ub = I+w)
-      coface_f = smooth_dnstep(lb = J-w, ub = J+delta)
-      weight_f = lambda s: face_f(f(s)).item() if dim(s) == p else coface_f(f(s)).item()
-      L[cc] = up_laplacian(S, p=p, form="array", normed=True, weight=weight_f)
-  else: 
-    raise ValueError(f"Invalid form '{form}'.")
-  return L
+#   Parameters: 
+#     S = Simplicial complex, or its corresponding Laplacian operator 
+#     R = box (i,j,k,l,w) to restrict to, where i < j <= k < l, and w > 0 is a smoothing parameter
+#     f = filter function on S (or equivalently, scalar product on its Laplacian operator)
+#     p = homology dimension 
+#     smoothing = parameters for singular values
+#   """
+#   assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
+#   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
+#   (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
+#   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+#   pw = np.array([f(s) for s in faces(S, p)])
+#   qw = np.array([f(s) for s in faces(S, p+1)])
+#   delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
+#   fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+#   fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+#   fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+#   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+#   L = [None]*4
+#   if form == "lo":
+#     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+#       L[cc] = up_laplacian(S, p=p, form="lo")
+#       L[cc].set_weights(None, J, None)
+#       I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+#       L[cc].set_weights(I_norm, J, I_norm)
+#   elif form == "array":
+#     # D = boundary_matrix(S, p=p+1)
+#     #for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+#       # LM = D @ diags(J) @ D.T
+#       # di = LM.diagonal()
+#       # I_norm = pseudo(np.sqrt(I * di))
+#       # L[cc] = diags(I_norm) @ LM @ diags(I_norm)
+#     for cc, (I,J) in enumerate([(j, k), (i, k), (j, l), (i, l)]):
+#       face_f = smooth_upstep(lb = I, ub = I+w)
+#       coface_f = smooth_dnstep(lb = J-w, ub = J+delta)
+#       weight_f = lambda s: face_f(f(s)).item() if dim(s) == p else coface_f(f(s)).item()
+#       L[cc] = up_laplacian(S, p=p, form="array", normed=True, weight=weight_f)
+#   else: 
+#     raise ValueError(f"Invalid form '{form}'.")
+#   return L
 
 def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
   """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 

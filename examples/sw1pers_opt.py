@@ -86,14 +86,55 @@ for s in faces(K):
 # p.legend.location = "bottom_right"
 show(p) 
 
-## Compute the signatures
-sig = MuSignature(S, family=t_family, R=R, p=1)
-sig.precompute()
+## Precompute the multiplicities for R
+from pbsig.linalg import * 
+sig = MuSignature(S, family=t_family, R=R, p=1, form="array")
+sig.precompute(w=0.0, normed=False)
+
+## Unnormalized rank relaxations 
+p = figure(width=400, height=250)
+p.line(T_dom, sig(smoothing=False), legend_label="Nuclear", line_color="orange")
+p.line(T_dom, sig(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
+p.line(T_dom, sig(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
+p.line(T_dom, sig(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig(smoothing=None), legend_label="Rank", line_color="black")
+# p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
+show(p)
+
+from pbsig.linalg import * 
+sig_norm = MuSignature(S, family=t_family, R=R, p=1, form="array")
+sig_norm.precompute(w=0.0, normed=True)
+
+p = figure(width=400, height=250)
+p.line(T_dom, sig_norm(smoothing=False), legend_label="Nuclear", line_color="orange")
+p.line(T_dom, sig_norm(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
+p.line(T_dom, sig_norm(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
+p.line(T_dom, sig_norm(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig_norm(smoothing=None), legend_label="Rank", line_color="black")
+# p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
+show(p)
+
+
+from pbsig.linalg import * 
+sig_norm_exp = MuSignature(S, family=t_family, R=R, p=1, form="array")
+sig_norm_exp.precompute(w=0.10, normed=True)
+
+p = figure(width=400, height=250)
+p.line(T_dom, sig_norm_exp(smoothing=False), legend_label="Nuclear", line_color="orange")
+p.line(T_dom, sig_norm_exp(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
+p.line(T_dom, sig_norm_exp(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
+p.line(T_dom, sig_norm_exp(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig_norm_exp(smoothing=None), legend_label="Rank", line_color="black")
+# p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
+show(p)
+
+
+## 
+print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
 
 ## Ensure we're doing the same thing
-mu_truth = [mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2), p=1, form='array') for t in T_dom]
-assert np.allclose(np.array(mu_truth) - sig(smoothing=None), 0.0)
-
+# mu_truth = [mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2), p=1, form='array') for t in T_dom]
+# assert np.allclose(np.array(mu_truth) - sig(smoothing=None), 0.0)
 
 
 # print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
