@@ -89,7 +89,11 @@ show(p)
 ## Compute the signatures
 sig = MuSignature(S, family=t_family, R=R, p=1)
 sig.precompute()
+sig(smooth=True)
 
+_Terms = sig._Terms
+T = _Terms[0]
+from pbsig.linalg import spectral_rank
 # print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
 
 # from scipy.sparse import lil_array

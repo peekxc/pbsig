@@ -202,15 +202,17 @@ def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
 def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, **kwargs) -> Callable:
   return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
 
-def spectral_rank(ew: ArrayLike, method: int = 0, prec: float = None) -> int:
+def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: float = None) -> int:
+  if len(ew) == 0: return 0
+  ew = np.array(ew) if not isinstance(ew, np.ndarray) else ew
   prec = np.finfo(ew.dtype).eps if prec is None else prec
+  m,n = shape if (shape is not None and len(shape) == 2) else (len(ew), len(ew))
   if method == 0:
     ## Default: identifies only those as positive cannot have been introduced by numerical errors 
-    tol = ew.max() * max(A.shape) * prec
+    tol = ew.max() * max(m,n) * prec
     return sum(ew > tol)
   elif method == 1: 
     ## Minimizes expected roundoff error
-    m,n = A.shape
     tol = ew.max() * prec / 2. * np.sqrt(m + n + 1.)
     return sum(ew > tol)
   elif method == 2:
@@ -232,7 +234,7 @@ def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, 
   """
   solver = eigvalsh_solver(A)
   ew = solver(A)
-  spectral_rank(ew, method=method, prec=prec)
+  return spectral_rank(ew, method=method, prec=prec)
 
 def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, raw: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
   """ 

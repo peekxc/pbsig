@@ -472,14 +472,37 @@ class MuSignature:
     pass
 
   ## Vectorized version 
-  def __call__(self, smooth: bool = False, smoothing: tuple = (0.5, 1.0, 0)) -> Union[float, ArrayLike]:
-    eps,p,method = smoothing
-    sv_op = sgn_approx(eps=eps, p=p, method=method)
-    sig = np.zeros(len(self.family))
-    sig += np.add.reduceat(sv_op(self._Terms[0].data), self._Terms[0].indptr[:-1]) if len(self._Terms[0].data) > 0 else 0
-    sig -= np.add.reduceat(sv_op(self._Terms[1].data), self._Terms[1].indptr[:-1]) if len(self._Terms[1].data) > 0 else 0
-    sig -= np.add.reduceat(sv_op(self._Terms[2].data), self._Terms[2].indptr[:-1]) if len(self._Terms[2].data) > 0 else 0
-    sig += np.add.reduceat(sv_op(self._Terms[3].data), self._Terms[3].indptr[:-1]) if len(self._Terms[3].data) > 0 else 0
+  def __call__(self, smooth: bool = False, smoothing: tuple = (0.5, 1.0, 0), terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
+    if smooth:
+      sig = np.zeros(len(self.family))
+      # if smoothing is None: # use nuclear norm
+
+      # elif isinstance(smoothing, tuple):
+      #   eps,p,method = smoothing
+      #   sv_op = sgn_approx(eps=eps, p=p, method=method)
+      # elif isinstance(smoothing, str):
+
+      # else:
+      #   raise ValueError("Invalid")
+      
+      rs = np.ravel(np.add.reduceat(np.append(T.data, 0), T.indptr)[:-1])
+      rs[np.ravel(np.isclose(T.sum(axis=1), 0))] = 0
+
+      sig += np.add.reduceat(sv_op(self._Terms[0].data), self._Terms[0].indptr[:-1]) if len(self._Terms[0].data) > 0 else 0
+      sig -= np.add.reduceat(sv_op(self._Terms[1].data), self._Terms[1].indptr[:-1]) if len(self._Terms[1].data) > 0 else 0
+      sig -= np.add.reduceat(sv_op(self._Terms[2].data), self._Terms[2].indptr[:-1]) if len(self._Terms[2].data) > 0 else 0
+      sig += np.add.reduceat(sv_op(self._Terms[3].data), self._Terms[3].indptr[:-1]) if len(self._Terms[3].data) > 0 else 0
+    else:
+      boundary_shape = card(self.S, self.p), card(self.S, self.p+1)
+      if terms:
+        sig = np.zeros((4, len(self.family)))
+        for cc,(T,s) in enumerate(self._Terms, [1,-1,-1,1]):
+          sig[cc,:] += s*np.array([spectral_rank(T[[i],:].data, shape=boundary_shape, **kwargs) for i in range(T.shape[0])])
+      else:
+        sig = np.zeros(len(self.family))
+        for T,s in zip(self._Terms, [1,-1,-1,1]):
+          sig += s*np.array([spectral_rank(T[[i],:].data, shape=boundary_shape, **kwargs) for i in range(T.shape[0])])
+      sig = sig.astype(int)
     return sig
 
 # E: Union[ArrayLike, Iterable],
