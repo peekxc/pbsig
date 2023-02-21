@@ -132,6 +132,13 @@ def soft_threshold(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
     return np.sign(x) * np.maximum(np.abs(x) - t, 0)
   return _st if x is None else _st(x)
 
+def moreau(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
+  def _moreau(x: ArrayLike):
+    x = np.array(x)
+    #return sum(x) + sum(np.where(x >= t, 0.5, x)**2)
+    return x + np.where(x >= t, 0.5, x)**2
+  return _moreau if x is None else _moreau(np.array(x))
+
 def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
   def _huber(x: ArrayLike): 
     return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
@@ -209,7 +216,7 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
 def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
   return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
 
-def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, **kwargs) -> Callable:
+def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Callable:
   return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
 
 def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: float = None) -> int:
@@ -262,9 +269,9 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
     kwargs := keyword arguments to pass to the parameterize_solver.
   """
   if solver is None: 
-    solver = parameterize_solver(A, pp=1.0)
+    solver = eigvalsh_solver(A, pp=1.0)
   elif isinstance(solver, str):
-    solver = parameterize_solver(A, pp=1.0, solver=solver)
+    solver = eigvalsh_solver(A, pp=1.0, solver=solver)
   else:
     assert isinstance(solver, Callable), "Solver must callable, if not string or None"
   ew = solver(A)
@@ -295,10 +302,10 @@ def prox_nuclear(x: ArrayLike, t: float = 1.0):
   solver = eigh_solver(x)
   ew, ev = solver(x)
   sv = np.sqrt(np.maximum(ew, 0.0))                     ## singular values 
-  ew_prox = np.maximum(sv - t, 0.0)                     ## soft-thresholded singular values
-  A = ev @ diags(ew_prox) @ ev.T                        ## prox operator 
+  sw_prox = np.maximum(sv - t, 0.0)                     ## soft-thresholded singular values
+  A = ev @ diags(sw_prox) @ ev.T                        ## prox operator 
   proj_d = (1/2*t)*np.linalg.norm(A - x, 'fro')**2      ## projection distance (rhs)
-  me = sum(ew_prox) + proj_d                            ## Moreau envelope value
+  me = sum(sw_prox) + proj_d                            ## Moreau envelope value
   return A, me, ew
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:

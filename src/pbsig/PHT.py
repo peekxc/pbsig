@@ -119,7 +119,6 @@ def pht_0_dist(X: Iterable, mod_rotation: bool = True, nd: int = 32, preprocess:
     pht_dist = np.array([wd(D0, D1) for D0, D1 in comb_it])
   return(pht_dist)
 
-from pbsig.betti import lower_star_betti_sig
 
 def pbt_birth_death(X: Iterable[ArrayLike], E: Iterable[ArrayLike], nd: int = 32, preprocess: bool = True):
   if preprocess: 

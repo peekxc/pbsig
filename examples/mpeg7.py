@@ -5,7 +5,7 @@ from pbsig.datasets import mpeg7
 from pbsig.betti import *
 from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import *
-from pbsig.simplicial import cycle_graph, MutableFiltration
+from pbsig.simplicial import cycle_graph, filtration
 import matplotlib.pyplot as plt 
 from pbsig.vis import plot_complex
 
@@ -22,12 +22,6 @@ from scipy.sparse import eye
 from scipy.sparse.linalg import aslinearoperator
 cI = aslinearoperator(0.01*eye(L.shape[0]))
 
-# timeit.timeit(lambda: )
-
-# fv = X @ np.array([0,1])
-# K = MutableFiltration(S, f = lambda s: max(fv[s]))
-# K = K.reindex_keys(np.arange(len(K)))
-
 ## Sample a couple rectangles in the upper half-plane and plot them 
 R = sample_rect_halfplane(1, area=(0.10, 1.00))
 
@@ -43,13 +37,6 @@ for ii, v in enumerate(uniform_S1(64)):
   kl = np.logical_and(dgm[:,1] >= k, dgm[:,1] <= l) 
   #if np.any(np.logical_and(ij, kl)): print(ii)
 
-ax = plt.gca()
-for i,j,k,l in R:  
-  rec = plt.Rectangle((i,k), j-i, l-k)
-  rec.set_color('#0000000f')
-  ax.add_patch(rec)
-
-from pbsig.simplicial import SimplicialComplex
 from pbsig.betti import MuSignature
 
 def directional_transform(X: ArrayLike):
@@ -78,10 +65,10 @@ sig = MuSignature(S, family, R[0,:])
 import line_profiler
 profile = line_profiler.LineProfiler()
 profile.add_function(sig.precompute)
-profile.add_function(sig.L._matvec)
-profile.add_function(sig.L._matmat)
-profile.add_function(sig.L.L_up.precompute_degree)
-profile.add_function(sig.update_weights)
+# profile.add_function(sig.L._matvec)
+# profile.add_function(sig.L._matmat)
+# profile.add_function(sig.L.L_up.precompute_degree)
+# profile.add_function(sig.update_weights)
 profile.enable_by_count()
 sig.precompute()
 profile.print_stats(output_unit=1e-3)
@@ -93,12 +80,13 @@ for k, X in dataset.items():
   S = cycle_graph(X)
   dt = directional_transform(X)
   family = [dt(theta) for theta in Theta]
-  Sigs[k] = MuSignature(S, family, R[0,:])
+  Sigs[k] = MuSignature(S, family, R[0,:], form="lo")
 
 ## Precompute the singular values associated with the DT for each shape 
 #keys = list(filter(lambda k: k[0] == 'watch', Sigs.keys())) # [(i,sig) for i,(k,sig) in enumerate(Sigs.items()) if k in keys]
 for ii, key in enumerate(Sigs.keys()):
   Sigs[key].precompute(pp=0.30, tol=1e-4, w=1.30, normed=True)
+  print(key)
 
 s1 = Sigs[('watch',1)]()
 s2 = Sigs[('watch',2)]()

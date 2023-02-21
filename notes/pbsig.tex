@@ -1,5 +1,5 @@
 \documentclass[12pt]{article}
-\usepackage[margin=1.5in]{geometry}
+\usepackage[margin=1.0in]{geometry}
 \usepackage{amsmath, amsthm, amssymb}
 \usepackage{mathtools}
 \usepackage{hyperref}
@@ -697,11 +697,12 @@ In particular, if $E \in \mathbb{R}^{n \times n}$ represents a small perturbatio
 \begin{equation}
 \frac{\lVert (M + E)^{-1}  - M^{-1} \rVert}{\lVert M^{-1} \rVert} \leq \kappa(M) \frac{\lVert E \rVert}{ \lVert M \rVert }
 \end{equation}
-Moreover, note that:  
+Moreover, note the effect of adding $\epsilon I_n$ to a given matrix (as above) has the effect:  
 \begin{equation}
 \lvert \lambda_n(M) \rvert  \leq \lvert \lambda_n(M + \epsilon I) \rvert  \leq \lvert \lambda_1(M) \rvert \leq \lvert \lambda_1(M + \epsilon) \rvert 
 \end{equation}
-From this expression, it's clear that $\epsilon$ not only plays the role of an accuracy parameter, but as a \emph{smoothing parameter}. Adding larger $\epsilon$ amount of mass to the diagonal of $M$ has the effect of lowering the Lipshitz constant of the corresponding operator $\lVert \Phi_\epsilon(X) \rVert_\ast$, improving its smoothness. Indeed, the operator norm is the Lipshitz constant. 
+From this expression,  observe that since operator norm determines the Lipshitz constant of a given function, $\epsilon$ not only plays the role of an accuracy parameter, but as a \emph{smoothing parameter}. 
+That is, adding an $\epsilon$ amount of mass to the diagonal of $M$ has the effect of improving the smoothness of $\lVert \Phi_\epsilon(X) \rVert_\ast$ with respect to perturbations.
 %Moreover, by the cyclic property of the trace operator, since $X = \partial_1$ here and $L = \partial_1 \partial_1^T = [l_1, l_2, \dots, l_n]$ we have: 
 %\begin{equation*}
 %	\lVert \Phi_\epsilon(X) \rVert_\ast = \mathrm{Tr}[(L + \epsilon I_n)^{-1} L] = \sum\limits_{i=1}^n (L_\epsilon^{-1} l_i)_i

@@ -442,20 +442,25 @@ class MuSignature:
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     # as-is? self.L.set_weights(self._fj, self._fl, self._fj)
     family_it = progressbar(enumerate(self.family), count=len(self.family)) if progress else enumerate(self.family)
+    D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
     for i, f in family_it:
       assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
       self.update_weights(f=f, R=self.R, w=w) # updates self._fi, ..., self._fl
       if self.form == "array":
-        D = boundary_matrix(self.S, p=self.p+1)
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
             di = (D @ diags(J) @ D.T).diagonal()
-            I_norm = pseudo(np.sqrt(I * di))
+            I_norm = pseudo(np.sqrt(di)) # used to be I * di 
+            #I_norm = pseudo(np.sqrt(I * di)) # used to be I * di 
             L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
           else:
-            L = diags(np.sqrt(I)) @ D @ diags(J) @ D.T @ diags(np.sqrt(I))
+            #L = diags(np.sqrt(I)) @ D @ diags(J) @ D.T @ diags(np.sqrt(I)) # diags(np.sqrt(I)) 
+            L = D @ diags(J) @ D.T
           solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
-          self._terms[cc][i] = solver(L)
+          ew = solver(L)
+          #self._terms[cc][i] = ew
+          ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
+          self._terms[cc][i] = ew_ext * np.sort(I)
       elif self.form == "lo":
         L = up_laplacian(self.S, p=self.p, form="lo")
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):

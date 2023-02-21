@@ -58,23 +58,22 @@ from pbsig.vis import plot_dgm
 dgm = ph(K, engine="cpp")
 plot_dgm(dgm[1])
 
-## Verify mu queries 
-from pbsig.betti import mu_query, mu_query_mat
-R = np.array([4, 4.2, 4.8, 5.2])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
-R = np.array([3.8, 4.0, 4.8, 5.2])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
-R = np.array([4.2, 4.4, 4.8, 5.2])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
-R = np.array([4, 4.2, 5.1, 5.2])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
-R = np.array([4, 4.2, 4.8, 4.85])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
-R = np.array([4, 4.2, 4.8, 5.2])
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# ## Verify mu queries 
+# from pbsig.betti import mu_query, mu_query_mat
+# R = np.array([4, 4.2, 4.8, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# R = np.array([3.8, 4.0, 4.8, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# R = np.array([4.2, 4.4, 4.8, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# R = np.array([4, 4.2, 5.1, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# R = np.array([4, 4.2, 4.8, 4.85])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+# R = np.array([4, 4.2, 4.8, 5.2])
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
 
 
-from pbsig.betti import MuSignature
 T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
 t_family = [cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2) for t in T_dom]
 
@@ -87,7 +86,9 @@ for s in faces(K):
 show(p) 
 
 ## Precompute the multiplicities for R
+from pbsig.betti import MuSignature
 from pbsig.linalg import * 
+R = np.array([4, 4.2, 4.8, 5.2])
 sig = MuSignature(S, family=t_family, R=R, p=1, form="array")
 sig.precompute(w=0.0, normed=False)
 
@@ -96,7 +97,7 @@ p = figure(width=400, height=250)
 p.line(T_dom, sig(smoothing=False), legend_label="Nuclear", line_color="orange")
 p.line(T_dom, sig(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
 p.line(T_dom, sig(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
-p.line(T_dom, sig(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig(smoothing=soft_threshold(t=0.01)), legend_label="Soft", line_color="red")
 p.line(T_dom, sig(smoothing=None), legend_label="Rank", line_color="black")
 # p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
 show(p)
@@ -109,7 +110,8 @@ p = figure(width=400, height=250)
 p.line(T_dom, sig_norm(smoothing=False), legend_label="Nuclear", line_color="orange")
 p.line(T_dom, sig_norm(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
 p.line(T_dom, sig_norm(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
-p.line(T_dom, sig_norm(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig_norm(smoothing=soft_threshold(t=1.55)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig_norm(smoothing=moreau(t=.05)), legend_label="Moreau", line_color="green")
 p.line(T_dom, sig_norm(smoothing=None), legend_label="Rank", line_color="black")
 # p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
 show(p)
@@ -124,13 +126,107 @@ p.line(T_dom, sig_norm_exp(smoothing=False), legend_label="Nuclear", line_color=
 p.line(T_dom, sig_norm_exp(smoothing=huber(delta=0.10)), legend_label="Huber-0.10", line_color="purple")
 p.line(T_dom, sig_norm_exp(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
 p.line(T_dom, sig_norm_exp(smoothing=soft_threshold(t=3.5)), legend_label="Soft", line_color="red")
+#p.line(T_dom, sig_norm_exp(smoothing=moreau(t=3.5)), legend_label="Moreau", line_color="green")
 p.line(T_dom, sig_norm_exp(smoothing=None), legend_label="Rank", line_color="black")
 # p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
 show(p)
 
+## Ensure the rank is correct between all three 
+assert np.allclose(sig_norm(smoothing=None), sig_norm_exp(smoothing=None))
+assert np.allclose(sig(smoothing=None), sig_norm_exp(smoothing=None))
 
-## 
-print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=tau), sv, 0.0,diam/2), p=1, form='array'))
+
+from pbsig.linalg import * 
+sig_norm_exp = MuSignature(S, family=t_family, R=R, p=1, form="array")
+sig_norm_exp.precompute(w=0.50, normed=True)
+
+p = figure(width=400, height=250)
+p.line(T_dom, sig_norm_exp(smoothing=False), legend_label="Nuclear", line_color="orange")
+p.line(T_dom, sig_norm_exp(smoothing=huber(delta=0.50)), legend_label="Huber-0.10", line_color="purple")
+p.line(T_dom, sig_norm_exp(smoothing=sgn_approx(eps=0.05, method=0, p=1.5)), legend_label="Sgn_Approx", line_color="blue")
+p.line(T_dom, sig_norm_exp(smoothing=soft_threshold(t=0.85)), legend_label="Soft", line_color="red")
+p.line(T_dom, sig_norm_exp(smoothing=moreau(t=0.85)), legend_label="Moreau", line_color="green")
+p.line(T_dom, sig_norm_exp(smoothing=None), legend_label="Rank", line_color="black")
+# p.line(T_dom, sig(smoothing=True), legend_label="Huber", line_color="purple")
+show(p)
+
+## Make animation 
+
+X = np.random.uniform(size=(5,5))
+M = X @ X.T 
+ew, U = np.linalg.eigh(M)
+assert np.allclose(M - (U @ diags(ew) @ U.T), 0.0)
+A = U @ diags(soft_threshold(ew, 0.50)) @ U.T
+m_env = sum(abs(ew)) + (1/(2*0.50))*np.linalg.norm(A - M, 'fro')**2
+
+sum(ew) + sum(np.where(ew >= 0.50, 0.5, ew)**2) ## here it is 
+
+
+from pbsig.linalg import * 
+prox_nuclear(X @ X.T)
+
+
+
+
+## Debug w
+from pbsig.utility import *
+p = 1
+w = 0.30
+ti = np.argmax(abs(sig_norm_exp(smoothing=True)))
+t, cone_f = T_dom[ti], t_family[ti]
+(i,j,k,l) = R
+pw = np.array([cone_f(s) for s in faces(S, p)])
+qw = np.array([cone_f(s) for s in faces(S, p+1)])
+delta = np.finfo(float).eps                       
+fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+
+## Ensure the signs are all equivalent
+assert all(np.sign(smooth_upstep(lb = i, ub = i+0.0)(pw)) == np.sign(fi))
+assert all(np.sign(smooth_upstep(lb = j, ub = j+0.0)(pw)) == np.sign(fj))
+assert all(np.sign(smooth_dnstep(lb = k-0.0, ub = k+delta)(qw)) == np.sign(fk))
+assert all(np.sign(smooth_dnstep(lb = l-0.0, ub = l+delta)(qw)) == np.sign(fl))
+
+## Compute the multiplicities 
+pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+EW = [None]*4
+D = boundary_matrix(S, p=p+1)
+for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+  di = (D @ diags(J) @ D.T).diagonal()
+  I_norm = pseudo(np.sqrt(di))
+  L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+  EW[cc] = smooth_rank(L, pp=1.0, smoothing=None) # sum(np.linalg.eigvalsh(L.todense())) 
+
+## Try fixing the degree
+fj = smooth_upstep(lb = j, ub = j+w)         
+fl = smooth_dnstep(lb = l-w, ub = l+delta)
+I,J = fj(pw), fl(qw)
+edges = list(faces(S,p))
+edge_weights = np.zeros(len(edges))
+for coface in faces(S, p+1):
+  e_ind = np.array([edges.index(e) for e in coface.boundary()])
+  edge_weights[e_ind] += fl(cone_f(coface)).item()
+assert np.allclose((D @ diags(J) @ D.T).diagonal() - edge_weights, 0)
+
+di = (D @ diags(J) @ D.T).diagonal()
+#np.linalg.eigvalsh((diags(1.0/di) @ D @ diags(J) @ D.T).todense())
+L = diags(pseudo(np.sqrt(di))) @ D @ diags(J) @ D.T @ diags(pseudo(np.sqrt(di)))
+np.linalg.eigvalsh(L.todense())
+
+
+
+
+
+
+C = [list(S.cofaces(e)) for e in faces(S, p)]
+deg_F = np.array([sum([cone_f(c) for c in CF if dim(c) == p+1]) for CF in C])
+deg_F
+
+# np.linalg.eigvalsh((D @ diags(J) @ D.T).todense())
+
+# print(mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2), p=1, form='array'))
 
 ## Ensure we're doing the same thing
 # mu_truth = [mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2), p=1, form='array') for t in T_dom]
