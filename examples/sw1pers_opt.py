@@ -89,11 +89,13 @@ show(p)
 ## Compute the signatures
 sig = MuSignature(S, family=t_family, R=R, p=1)
 sig.precompute()
-sig(smooth=True)
 
-_Terms = sig._Terms
-T = _Terms[0]
-from pbsig.linalg import spectral_rank
+## Ensure we're doing the same thing
+mu_truth = [mu_query(K, R=R, f=cone_weight(SW(n=N, d=M, tau=t), sv, 0.0,diam/2), p=1, form='array') for t in T_dom]
+assert np.allclose(np.array(mu_truth) - sig(smoothing=None), 0.0)
+
+
+
 # print(mu_query(K, R=R, f=t_family[0], p=1, form='array', terms=True))
 
 # from scipy.sparse import lil_array
@@ -282,3 +284,19 @@ ew, ev = np.linalg.eigh(LM[0].todense())
 # vline = Span(location=kneedle.knee, dimension='height', line_color='red', line_width=1)
 # p.add_layout(vline)
 # show(p)
+# assert np.allclose(sig.elementwise_row_sum(sig._Terms[0], lambda x: x) - sig._Terms[0].sum(axis=1), 0)
+# T = sig._Terms[0].copy()
+# h = huber(delta=0.25)
+# T.data = h(T.data+1)
+# assert np.allclose(sig.elementwise_row_sum(T, lambda x: x) - sig.elementwise_row_sum(sig._Terms[0], lambda x: h(x+1)), 0)
+
+
+# T = sig._Terms[0].copy()
+# h = soft_threshold(t=0.05)
+# T.data = h(T.data+1)
+# assert np.allclose(sig.elementwise_row_sum(T, lambda x: x) - sig.elementwise_row_sum(sig._Terms[0], lambda x: h(x+1)), 0)
+
+# T = sig._Terms[0].copy()
+# h = sgn_approx(eps=1e-5, p=1.2)
+# T.data = h(T.data+1)
+# assert np.allclose(sig.elementwise_row_sum(T, lambda x: x) - sig.elementwise_row_sum(sig._Terms[0], lambda x: h(x+1)), 0)

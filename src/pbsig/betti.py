@@ -492,34 +492,16 @@ class MuSignature:
     return rs
     
   ## Vectorized version 
-  def __call__(self, smooth: bool = False, smoothing: Callable = None, terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
-    if smooth:
-      sig = np.zeros(len(self.family))
-      if terms == False:
-        if smoothing is None: # use nuclear norm
-          sig += self._Terms[0].data.sum(axis=1)
-          sig -= self._Terms[1].data.sum(axis=1)
-          sig -= self._Terms[2].data.sum(axis=1)
-          sig += self._Terms[3].data.sum(axis=1)
-        elif isinstance(smoothing, tuple):
-          eps,p,method = smoothing
-          sv_op = sgn_approx(eps=eps, p=p, method=method)
-          sig += elementwise_row_sum(self._Terms[0].data, sv_op)
-          sig -= elementwise_row_sum(self._Terms[1].data, sv_op)
-          sig -= elementwise_row_sum(self._Terms[2].data, sv_op)
-          sig += elementwise_row_sum(self._Terms[3].data, sv_op)
-        elif isinstance(smoothing, str):
-          if smoothing == "huber":
-            raise NotImplemented("Haven't done hinge loss yet")
-          elif smoothing == "soft-thresholding":
-            soft_threshold = lambda s: np.sign(s) * np.maximum(np.abs(s) - t, 0)
-            sig += elementwise_row_sum(self._Terms[0].data, soft_threshold)
-            sig -= elementwise_row_sum(self._Terms[1].data, soft_threshold)
-            sig -= elementwise_row_sum(self._Terms[2].data, soft_threshold)
-            sig += elementwise_row_sum(self._Terms[3].data, soft_threshold)
-        else:
-          raise ValueError("Invalid")
-    else:
+  def __call__(self, smoothing: Callable = None, terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
+    """Evaluates the precomputed eigenvalues to yield the (possibly smoothed) multiplicities. 
+    
+    Vectorized evaluation of various reductions on a precomputed set of eigenvalues.
+    
+    Parameters: 
+      smoothing = Element-wise real-valued callable, boolean, or None. Defaults to None, which returns the numerical rank.
+      terms = bool indicating whether to return the multiplicities or the 4 constitutive terms themselves. Defaults to false. 
+    """
+    if smoothing is None: 
       boundary_shape = card(self.S, self.p), card(self.S, self.p+1)
       if terms:
         sig = np.zeros((4, len(self.family)))
@@ -530,6 +512,20 @@ class MuSignature:
         for T,s in zip(self._Terms, [1,-1,-1,1]):
           sig += s*np.array([spectral_rank(T[[i],:].data, shape=boundary_shape, **kwargs) for i in range(T.shape[0])])
       sig = sig.astype(int)
+    else:
+      if isinstance(smoothing, bool):
+        smoothing = lambda x: x if smoothing else huber()
+      assert isinstance(smoothing, Callable)
+      sig = np.zeros(len(self.family))
+      if terms == False:
+        sig += self.elementwise_row_sum(self._Terms[0], smoothing)
+        sig -= self.elementwise_row_sum(self._Terms[1], smoothing)
+        sig -= self.elementwise_row_sum(self._Terms[2], smoothing)
+        sig += self.elementwise_row_sum(self._Terms[3], smoothing)
+      else: 
+        sig = np.zeros((4, len(self.family)))
+        for cc,(T,s) in enumerate(self._Terms, [1,-1,-1,1]):
+          sig[cc,:] += s*self.elementwise_row_sum(T, smoothing)
     return sig
 
 # E: Union[ArrayLike, Iterable],

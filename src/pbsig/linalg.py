@@ -132,7 +132,10 @@ def soft_threshold(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
     return np.sign(x) * np.maximum(np.abs(x) - t, 0)
   return _st if x is None else _st(x)
 
-
+def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
+  def _huber(x: ArrayLike): 
+    return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
+  return _huber if x is None else _huber(x)
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
 def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True,  return_eigenvectors: bool = False, **kwargs):
