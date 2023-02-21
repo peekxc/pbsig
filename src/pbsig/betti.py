@@ -51,15 +51,29 @@ def smooth_grad(b, bp):
     return(-(3*(b-bp)*(bp-x))/(bp-b)**3)
   return(sg)
 
-def soft_threshold(s: ArrayLike, mu: Union[float, ArrayLike] = 1.0):
-  s = s.copy()
-  if isinstance(mu, float):
-    mu = np.repeat(mu, len(s))
-  gt, et, lt = s >= mu, np.logical_and(-mu <= s, s <= mu), s <= -mu
-  s[gt] = s[gt] - mu[gt]
-  s[et] = 0.0
-  s[lt] = s[lt] + mu[lt]
-  return(s)
+# if smoothing is None: # use nuclear norm
+#   sig += self._Terms[0].data.sum(axis=1)
+#   sig -= self._Terms[1].data.sum(axis=1)
+#   sig -= self._Terms[2].data.sum(axis=1)
+#   sig += self._Terms[3].data.sum(axis=1)
+# elif isinstance(smoothing, tuple):
+#   eps,p,method = smoothing
+#   sv_op = sgn_approx(eps=eps, p=p, method=method)
+#   sig += elementwise_row_sum(self._Terms[0].data, sv_op)
+#   sig -= elementwise_row_sum(self._Terms[1].data, sv_op)
+#   sig -= elementwise_row_sum(self._Terms[2].data, sv_op)
+#   sig += elementwise_row_sum(self._Terms[3].data, sv_op)
+# elif isinstance(smoothing, str):
+#   if smoothing == "huber":
+#     raise NotImplemented("Haven't done hinge loss yet")
+#   elif smoothing == "soft-thresholding":
+#     soft_threshold = lambda s: np.sign(s) * np.maximum(np.abs(s) - t, 0)
+#     sig += elementwise_row_sum(self._Terms[0].data, soft_threshold)
+#     sig -= elementwise_row_sum(self._Terms[1].data, soft_threshold)
+#     sig -= elementwise_row_sum(self._Terms[2].data, soft_threshold)
+#     sig += elementwise_row_sum(self._Terms[3].data, soft_threshold)
+# else:
+#   raise ValueError("Invalid")
 
 def prox_moreau(X: Union[ArrayLike, Tuple], alpha: float = 1.0, mu: Union[float, ArrayLike] = 0.0):
   """
@@ -470,28 +484,41 @@ class MuSignature:
   ## TODO: allow multiple rectangles
   def _update_rectangle(self, R: ArrayLike, defer: bool = False):
     pass
-
+  
+  @staticmethod
+  def elementwise_row_sum(T: spmatrix, f: Callable):
+    rs = np.ravel(np.add.reduceat(np.append(f(T.data), 0), T.indptr)[:-1])
+    rs[np.ravel(np.isclose(T.sum(axis=1), 0))] = 0
+    return rs
+    
   ## Vectorized version 
-  def __call__(self, smooth: bool = False, smoothing: tuple = (0.5, 1.0, 0), terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
+  def __call__(self, smooth: bool = False, smoothing: Callable = None, terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
     if smooth:
       sig = np.zeros(len(self.family))
-      # if smoothing is None: # use nuclear norm
-
-      # elif isinstance(smoothing, tuple):
-      #   eps,p,method = smoothing
-      #   sv_op = sgn_approx(eps=eps, p=p, method=method)
-      # elif isinstance(smoothing, str):
-
-      # else:
-      #   raise ValueError("Invalid")
-      
-      rs = np.ravel(np.add.reduceat(np.append(T.data, 0), T.indptr)[:-1])
-      rs[np.ravel(np.isclose(T.sum(axis=1), 0))] = 0
-
-      sig += np.add.reduceat(sv_op(self._Terms[0].data), self._Terms[0].indptr[:-1]) if len(self._Terms[0].data) > 0 else 0
-      sig -= np.add.reduceat(sv_op(self._Terms[1].data), self._Terms[1].indptr[:-1]) if len(self._Terms[1].data) > 0 else 0
-      sig -= np.add.reduceat(sv_op(self._Terms[2].data), self._Terms[2].indptr[:-1]) if len(self._Terms[2].data) > 0 else 0
-      sig += np.add.reduceat(sv_op(self._Terms[3].data), self._Terms[3].indptr[:-1]) if len(self._Terms[3].data) > 0 else 0
+      if terms == False:
+        if smoothing is None: # use nuclear norm
+          sig += self._Terms[0].data.sum(axis=1)
+          sig -= self._Terms[1].data.sum(axis=1)
+          sig -= self._Terms[2].data.sum(axis=1)
+          sig += self._Terms[3].data.sum(axis=1)
+        elif isinstance(smoothing, tuple):
+          eps,p,method = smoothing
+          sv_op = sgn_approx(eps=eps, p=p, method=method)
+          sig += elementwise_row_sum(self._Terms[0].data, sv_op)
+          sig -= elementwise_row_sum(self._Terms[1].data, sv_op)
+          sig -= elementwise_row_sum(self._Terms[2].data, sv_op)
+          sig += elementwise_row_sum(self._Terms[3].data, sv_op)
+        elif isinstance(smoothing, str):
+          if smoothing == "huber":
+            raise NotImplemented("Haven't done hinge loss yet")
+          elif smoothing == "soft-thresholding":
+            soft_threshold = lambda s: np.sign(s) * np.maximum(np.abs(s) - t, 0)
+            sig += elementwise_row_sum(self._Terms[0].data, soft_threshold)
+            sig -= elementwise_row_sum(self._Terms[1].data, soft_threshold)
+            sig -= elementwise_row_sum(self._Terms[2].data, soft_threshold)
+            sig += elementwise_row_sum(self._Terms[3].data, soft_threshold)
+        else:
+          raise ValueError("Invalid")
     else:
       boundary_shape = card(self.S, self.p), card(self.S, self.p+1)
       if terms:

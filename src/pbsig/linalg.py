@@ -92,7 +92,7 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
     method = the type of smoothing to apply. Should be integer in [0,3]. Defaults to 0. 
     normalize = whether to normalize the output such that eps in [0,1] interpolates the integrated area of phi() in the unit interval
   """
-  assert isinstance(method, Integral) and method >= 0 and method <= 3, "Invalid method given"
+  assert method >= 0 and method <= 3, "Invalid method given"
   assert eps >= 0.0, "Epsilon must be non-negative"
   # assert isinstance(sigma, np.ndarray), "Only numpy arrays supported for now"
   if eps == 0 and (x is not None): return np.sign(x)
@@ -115,18 +115,25 @@ def sgn_approx(x: ArrayLike = None, eps: float = 0.0, p: float = 1.0, method: in
   else:
     _f = lambda z: z
   
-  # print(_f)
   ## Ridiculous syntax due to python: see https://stackoverflow.com/questions/2295290/what-do-lambda-function-closures-capture
+  method = int(method)
   if method == 0: 
-    phi = lambda x, eps=eps, p=p, f=_f: x**p / (x**p + f(eps)**p)
+    phi = lambda x, eps=eps, p=p, f=_f: np.sign(x) * (np.abs(x)**p / (np.abs(x)**p + f(eps)**p))
   elif method == 1: 
-    phi = lambda x, eps=eps, p=p, f=_f: x**p / (x**p + f(eps))
+    phi = lambda x, eps=eps, p=p, f=_f: np.sign(x) * (np.abs(x)**p / (np.abs(x)**p + f(eps)))
   elif method == 2: 
-    phi = lambda x, eps=eps, p=p, f=_f: x / (x**p + f(eps)**p)**(1/p)
+    phi = lambda x, eps=eps, p=p, f=_f: np.sign(x) * (np.abs(x) / (np.abs(x)**p + f(eps)**p)**(1/p))
   else: 
-    phi = lambda x, eps=eps, p=p, f=_f: 1.0 - np.exp(-x/f(eps))
+    phi = lambda x, eps=eps, p=p, f=_f: np.sign(x) * (1.0 - np.exp(-np.abs(x)/f(eps)))
   return phi if x is None else phi(x)
   
+def soft_threshold(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
+  def _st(x: ArrayLike):
+    return np.sign(x) * np.maximum(np.abs(x) - t, 0)
+  return _st if x is None else _st(x)
+
+
+
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
 def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True,  return_eigenvectors: bool = False, **kwargs):
   """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_.
