@@ -112,7 +112,7 @@ struct UpLaplacian {
   const vector< uint_64 > qr;             // p+1 ranks
   vector< uint_64 > pr;                   // p ranks; not necessary but good to have
   mutable vector< F > y;                  // workspace
-  mutable Map_t index_map;                        // indexing function
+  mutable Map_t index_map;                // indexing function
   vector< F > fpl;                        // p-simplex left weights 
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights

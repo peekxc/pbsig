@@ -757,7 +757,7 @@ from scipy.sparse import coo_array
 def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
   assert len(S) > p, "Empty simplicial complex"
   if dim(S) <= (p+1):
-    return coo_array(card(S,p), card(S,p), dtype=int)
+    return coo_array((card(S,p), card(S,p)), dtype=int)
   weights = np.ones(card(S,p+1)) if weights is None else weights
   assert len(weights) == card(S,p+1), "Invalid weight array, must match length of p+1 simplices"
   V = list(faces(S, p))

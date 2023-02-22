@@ -19,32 +19,52 @@ from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
 
-def plot_dgm(dgm, pt_size: int = 5, show_filter: bool = False):
-  #output_notebook(verbose=False, hide_banner=True)
-  max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
-  max_val = (max_val if max_val != np.inf else max(dgm["birth"])*5)
-  min_val = min(dgm["birth"])
-  min_val = (min_val if min_val != max_val else 0.0)
-  delta = abs(min_val-max_val)
-  min_val, max_val = min_val - delta*0.10, max_val + delta*0.10
-  p = figure(width=400, height=400, x_range=(min_val, max_val), y_range=(min_val, max_val), match_aspect=True,aspect_scale=1)
-  p.title = "Persistence diagram"
+def figure_dgm(dgm, pt_size: int = 5, show_filter: bool = False, **kwargs):
+  default_figkwargs = dict(width=400, height=400, match_aspect=True,aspect_scale=1, title="Persistence diagram")
+  fig_kwargs = default_figkwargs.copy()
+  if len(dgm) == 0:
+    fig_kwargs["x_range"] = (0, 1)
+    fig_kwargs["y_range"] = (0, 1)
+    min_val = 0
+    max_val = 1
+  else: 
+    max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
+    max_val = (max_val if max_val != np.inf else max(dgm["birth"])*5)
+    min_val = min(dgm["birth"])
+    min_val = (min_val if min_val != max_val else 0.0)
+    delta = abs(min_val-max_val)
+    min_val, max_val = min_val - delta*0.10, max_val + delta*0.10
+    fig_kwargs["x_range"] = (min_val, max_val)
+    fig_kwargs["y_range"] = (min_val, max_val)
+
+  ## Parameterize the figure
+  fig_kwargs |= kwargs
+  p = figure(**fig_kwargs)
   p.xaxis.axis_label = "Birth"
   p.yaxis.axis_label = "Death"
-  x = dgm["birth"][dgm["death"] != np.inf]
-  y = dgm["death"][dgm["death"] != np.inf]
-  p.scatter(x,y, size=pt_size)
-  x = dgm["birth"][dgm["death"] == np.inf]
-  y = np.repeat(max_val - delta*0.05, sum(dgm["death"] == np.inf))
-  s = Span(dimension="width", location=max_val - delta*0.05, line_width=1.0, line_color="gray", line_dash="dotted")
-  s.level = 'underlay'
-  p.add_layout(s)
-  p.scatter(x,y, size=pt_size, color="red")
   p.patch([min_val, max_val, max_val], [min_val, min_val, max_val], line_width=0, fill_color="gray", fill_alpha=0.80)
-  show(p)
+  
+  ## Plot non-essential points, where applicable 
+  if any(dgm["death"] != np.inf):
+    x = dgm["birth"][dgm["death"] != np.inf]
+    y = dgm["death"][dgm["death"] != np.inf]
+    p.scatter(x,y, size=pt_size)
+
+  ## Plot essential points, where applicable 
+  if any(dgm["death"] == np.inf):
+    x = dgm["birth"][dgm["death"] == np.inf]
+    y = np.repeat(max_val - delta*0.05, sum(dgm["death"] == np.inf))
+    s = Span(dimension="width", location=max_val - delta*0.05, line_width=1.0, line_color="gray", line_dash="dotted")
+    s.level = 'underlay'
+    p.add_layout(s)
+    p.scatter(x,y, size=pt_size, color="red")
+
   return p
 
-def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
+def plot_dgm(*args, **kwargs) -> None:
+  show(dgm_figure(*args, **kwargs))
+
+def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   n = inverse_choose(len(d), 2)
   C = np.floor(bin_color(d)*255).astype(int)
   D = np.zeros((n,n), dtype=np.uint32)
@@ -67,10 +87,11 @@ def plot_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   # p.y_range = Range1d(0,-10)
   # p.x_range = Range1d(0,10)
   p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
-  show(p)
 
+def plot_dist(*args, **kwargs) -> None:
+  show(dist_figure(*args, **kwargs))
 
-def plot_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
+def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
   """
   Plots a simplicial complex in 2D with Bokeh 
   
@@ -109,13 +130,14 @@ def plot_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLik
   from pbsig.linalg import adjacency_matrix
   pos = "mds" if pos is None else pos
   use_grid_lines = False
-  A = adjacency_matrix(S)
   if isinstance(pos, str) and pos == "spring":
     import networkx as nx
+    A = adjacency_matrix(S)
     G = nx.from_numpy_array(A)
     pos = np.array(list(nx.spring_layout(G).values()))
   elif isinstance(pos, str) and pos == "mds":
     from scipy.sparse.csgraph import floyd_warshall
+    A = adjacency_matrix(S)
     pos = cmds(floyd_warshall(A, directed=False, unweighted=True)**2)
     use_grid_lines = True
   elif isinstance(pos, np.ndarray) and pos.shape[1] == 2:
@@ -187,3 +209,6 @@ def plot_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLik
   p.toolbar.logo = None
   #show(p)
   return p 
+
+def plot_complex(*args, **kwargs) -> None:
+  show(figure_complex(*args, **kwargs))

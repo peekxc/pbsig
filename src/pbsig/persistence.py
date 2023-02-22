@@ -161,12 +161,13 @@ def is_reduced(R: lil_array) -> bool:
 
 def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float = 10*np.finfo(float).eps):
   valid = is_reduced(R1)
-  valid &= np.isclose(sum(abs(((D1 @ V1) - R1).data).flatten()), 0.0)
-  valid &= np.isclose(np.sum(V1 - triu(V1)), 0.0)
+  tol = 10*np.finfo(R1.dtype).eps
+  valid &= np.isclose(sum(abs(((D1 @ V1) - R1).data).flatten()), tol)
+  valid &= np.isclose(np.sum(V1 - triu(V1)), tol)
   if not(D2 is None):
     valid &= is_reduced(R2)
-    valid &= np.isclose(sum(abs(((D2 @ V2) - R2).data).flatten()), 0.0) #np.isclose(np.sum((D2 @ V2) - R2), 0.0)
-    valid &= np.isclose(np.sum(V2 - triu(V2)), 0.0)
+    valid &= np.isclose(sum(abs(((D2 @ V2) - R2).data).flatten()), tol) #np.isclose(np.sum((D2 @ V2) - R2), 0.0)
+    valid &= np.isclose(np.sum(V2 - triu(V2)), tol)
   return(valid)
 
 def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
@@ -208,7 +209,9 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
 
   ## Split diagram based on homology dimension
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
-
+  for p in dgm.keys():
+    if dgm[p] == 0:
+      dgm[p] = np.empty((0,2),dtype=[('birth', 'f4'), ('death', 'f4')])
   return dgm 
 
 def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collapse: bool = True):
@@ -260,7 +263,7 @@ def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: 
       assert validate_decomp(boundary_matrix(K), R, V)
       return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "cpp": 
-      D, V = boundary_matrix(K), sps.identity(len(K))
+      D, V = boundary_matrix(K), sps.identity(len(K)).astype(np.int64)
       R, V = pm.phcol(D, V, range(len(K)))  
       assert validate_decomp(D, R, V)
       return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)

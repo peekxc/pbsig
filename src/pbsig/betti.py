@@ -245,7 +245,7 @@ def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
       return flag_w(s)
   return _cone_weight
 
-def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, smoothing: Callable = None, solver=None, terms: bool = False, form = 'array', **kwargs):
+def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, solver=None, form = 'array', **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -273,26 +273,46 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   
   ## Compute the multiplicities 
-  kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
+  # kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   EW = [None]*4
   if form == "lo":
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      # print(L.shape)
       L.set_weights(None, J, None)
       I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
       L.set_weights(I_norm, J, I_norm)
-      EW[cc] = stable_rank(L, method=2) if not smooth else smooth_rank(L, pp=1.0, smoothing=smoothing, **kwargs)
+      solver = eigvalsh_solver(L)
+      EW[cc] = solver(L)
   elif form == "array":
     D = boundary_matrix(S, p=p+1)
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       di = (D @ diags(J) @ D.T).diagonal()
       I_norm = pseudo(np.sqrt(I * di))
       L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
-      EW[cc] = stable_rank(L, method=2) if not smooth else smooth_rank(L, pp=1.0, smoothing=smoothing, **kwargs)
+      solver = eigvalsh_solver(L)
+      EW[cc] = solver(L)
   else: 
     raise ValueError(f"Invalid form '{form}'.")
+
+  n, m = card(S, p), card(S, p+1)
+  def _transform(smoothing: Callable = None, terms: bool = False):
+    if smoothing is None: 
+      mu = np.zeros(4)
+      for cc,(ew,s) in enumerate(zip(EW, [1,-1,-1,1])):
+        mu[cc] += s*spectral_rank(EW[cc], shape=(n,m), **kwargs)
+      return mu.astype(int) if terms else sum(mu)
+    else:
+      if isinstance(smoothing, bool):
+        smoothing = lambda x: x if smoothing else huber()
+      assert isinstance(smoothing, Callable)
+      mu = np.array([sum(smoothing(EW[0])), -sum(smoothing(EW[1])), -sum(smoothing(EW[2])), sum(smoothing(EW[3]))])
+      return mu if terms else sum(mu)
+  return _transform
+
+
+
+
   return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
 # def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, terms: bool = False, form = 'lo', **kwargs):
@@ -340,49 +360,48 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
 #   else: 
 #     raise ValueError(f"Invalid form '{form}'.")
 #   return L
-
-def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
-  """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 
-  """
-  assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
-  assert len(R) == 4, "Must be a rectangle"
-  i,j,k,l = R
-  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+# def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
+#   """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 
+#   """
+#   assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
+#   assert len(R) == 4, "Must be a rectangle"
+#   i,j,k,l = R
+#   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+#   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   
-  L = up_laplacian(S, p=p, form='lo')
-  eigh_solver = parameterize_solver(L, **kwargs)
-  fw = np.array([f(s) for s in L.faces])
-  sw = np.array([f(s) for s in L.simplices])
-  delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
-  fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+#   L = up_laplacian(S, p=p, form='lo')
+#   eigh_solver = parameterize_solver(L, **kwargs)
+#   fw = np.array([f(s) for s in L.faces])
+#   sw = np.array([f(s) for s in L.simplices])
+#   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
+#   fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+#   fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+#   fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+#   fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
 
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-  EW = [None]*4
-  # min(eigh_solver(L)) vs min(eigh_solver(LM))
-  for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-    L.set_weights(None, J, None)
-    # L.precompute_degree()
-    I_norm = I * L.diagonal() # degrees
-    L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
-    EW[cc] = eigh_solver(L)
-    #EW[cc][np.isclose(abs(EW[cc]), 0.0, atol=atol)] = 0.0 # compress
-    # if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-    #   print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
-    #EW[cc] = np.maximum(EW[cc], 0.0)
+#   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
+#   EW = [None]*4
+#   # min(eigh_solver(L)) vs min(eigh_solver(LM))
+#   for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+#     L.set_weights(None, J, None)
+#     # L.precompute_degree()
+#     I_norm = I * L.diagonal() # degrees
+#     L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
+#     EW[cc] = eigh_solver(L)
+#     #EW[cc][np.isclose(abs(EW[cc]), 0.0, atol=atol)] = 0.0 # compress
+#     # if not(all(np.isreal(ew)) and all(ew >= 0.0)):
+#     #   print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
+#     #EW[cc] = np.maximum(EW[cc], 0.0)
 
-  def _transform(smoothing: tuple = (0.5, 1.0, 0)):
-    eps,p,method = smoothing
-    S = sgn_approx(eps=eps, p=p, method=method)
-    sig = np.sum(S(EW[0])) if len(EW[0]) > 0 else  0
-    sig -= np.sum(S(EW[1])) if len(EW[1]) > 0 else  0
-    sig -= np.sum(S(EW[2])) if len(EW[2]) > 0 else  0
-    sig += np.sum(S(EW[3])) if len(EW[3]) > 0 else  0
-    return sig
-  return _transform
+#   def _transform(smoothing: tuple = (0.5, 1.0, 0)):
+#     eps,p,method = smoothing
+#     S = sgn_approx(eps=eps, p=p, method=method)
+#     sig = np.sum(S(EW[0])) if len(EW[0]) > 0 else  0
+#     sig -= np.sum(S(EW[1])) if len(EW[1]) > 0 else  0
+#     sig -= np.sum(S(EW[2])) if len(EW[2]) > 0 else  0
+#     sig += np.sum(S(EW[3])) if len(EW[3]) > 0 else  0
+#     return sig
+#   return _transform
 
 
 class MuSignature:

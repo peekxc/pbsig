@@ -19,41 +19,41 @@ _ROOT = os.path.abspath(os.path.dirname(__file__))
 def _package_data(path: str = ""):
     return os.path.join(_ROOT, 'data', path)
 
-def plot_dgm(dgm: ArrayLike):
-  import matplotlib.pyplot as plt
-  from matplotlib.patches import Polygon
-  from matplotlib.collections import PatchCollection
-  import copy 
-  dgm = copy.deepcopy(dgm)
-  fig = plt.figure(figsize=(2,2), dpi=320)
-  ax = fig.gca()
-  fmax = max(filter(lambda x: x != np.inf, dgm.flatten()))
-  fmin = min(filter(lambda x: x != np.inf, dgm.flatten()))
-  contains_inf = False
-  if any(dgm[:,1] == np.inf):
-    dgm[dgm[:,1] == np.inf, 1] = fmax*1.05
-    contains_inf = True
-  ax.scatter(*dgm.T, s=0.55, c='red')
-  diff = abs(fmax-fmin)
-  ll, rr = fmin-0.10*diff, fmax+0.10*diff
-  ax.set_xlim(ll, rr)
-  ax.set_ylim(ll, rr)
-  ax.set_aspect('equal')
-  p = Polygon(np.array([[ll,ll], [rr, ll], [rr, rr]]), True)
-  P = PatchCollection([p],facecolor="#808080", alpha=0.40, edgecolor='black', linewidth=0.0)
-  formatter = "{:.2f}".format
-  tick_loc = np.linspace(ll, rr, 8, endpoint=False)
-  ax.add_collection(P)
-  #ax.set_yticks(ax.get_xticklabels())
-  if contains_inf:
-    ax.set_yticks(np.append(tick_loc, rr), [formatter(x) for x in tick_loc]+['inf'])
-  else: 
-    ax.set_yticks(np.append(tick_loc, rr), [formatter(x) for x in tick_loc] + [formatter(1.05*fmax)])
-  #ax.set_xticks(tick_loc, [formatter(x) for x in tick_loc])
-  ax.tick_params(axis='both', which='major', labelsize=5)
-  if contains_inf:
-    ax.plot([ll, rr], [rr, rr], color='gray', linestyle='dashed', linewidth=0.50, alpha=1.0)
-  return(fig, ax)
+# def plot_dgm(dgm: ArrayLike):
+#   import matplotlib.pyplot as plt
+#   from matplotlib.patches import Polygon
+#   from matplotlib.collections import PatchCollection
+#   import copy 
+#   dgm = copy.deepcopy(dgm)
+#   fig = plt.figure(figsize=(2,2), dpi=320)
+#   ax = fig.gca()
+#   fmax = max(filter(lambda x: x != np.inf, dgm.flatten()))
+#   fmin = min(filter(lambda x: x != np.inf, dgm.flatten()))
+#   contains_inf = False
+#   if any(dgm[:,1] == np.inf):
+#     dgm[dgm[:,1] == np.inf, 1] = fmax*1.05
+#     contains_inf = True
+#   ax.scatter(*dgm.T, s=0.55, c='red')
+#   diff = abs(fmax-fmin)
+#   ll, rr = fmin-0.10*diff, fmax+0.10*diff
+#   ax.set_xlim(ll, rr)
+#   ax.set_ylim(ll, rr)
+#   ax.set_aspect('equal')
+#   p = Polygon(np.array([[ll,ll], [rr, ll], [rr, rr]]), True)
+#   P = PatchCollection([p],facecolor="#808080", alpha=0.40, edgecolor='black', linewidth=0.0)
+#   formatter = "{:.2f}".format
+#   tick_loc = np.linspace(ll, rr, 8, endpoint=False)
+#   ax.add_collection(P)
+#   #ax.set_yticks(ax.get_xticklabels())
+#   if contains_inf:
+#     ax.set_yticks(np.append(tick_loc, rr), [formatter(x) for x in tick_loc]+['inf'])
+#   else: 
+#     ax.set_yticks(np.append(tick_loc, rr), [formatter(x) for x in tick_loc] + [formatter(1.05*fmax)])
+#   #ax.set_xticks(tick_loc, [formatter(x) for x in tick_loc])
+#   ax.tick_params(axis='both', which='major', labelsize=5)
+#   if contains_inf:
+#     ax.plot([ll, rr], [rr, rr], color='gray', linestyle='dashed', linewidth=0.50, alpha=1.0)
+#   return(fig, ax)
 
 def plot_mesh2D(X: ArrayLike, edges: ArrayLike, triangles: ArrayLike, labels: bool = False, **kwargs):
   import matplotlib.pyplot as plt 

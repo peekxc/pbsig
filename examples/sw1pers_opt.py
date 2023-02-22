@@ -14,14 +14,17 @@ p = figure(width=400, height=200)
 p.line(dom, sw_f(dom))
 show(p)
 
+# st = SimplexTree(complete_graph(X.shape[0]))
+# st.expand(2)
+# S = st
 
 N, M = 20, 24
 SW = sliding_window(sw_f, bounds=(0, 12*np.pi))
 d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6)
 #S = delaunay_complex(F(n=N, d=M, tau=tau))
 X = SW(n=N, d=M, tau=tau)
-r = enclosing_radius(X)*0.60
-S = rips_complex(X, r, 2)
+# r = enclosing_radius(X)*0.60
+# S = rips_complex(X, r, 2)
 show(plot_complex(S, X[:,:2]))
 
 ## Plot 
@@ -36,8 +39,29 @@ show(row(*scatters))
 from pbsig.persistence import ph
 from pbsig.vis import plot_dgm
 K = filtration(S, f=flag_weight(X))
-dgm = ph(K, engine="cpp")
+dgm = ph(K, engine="dionysus")
 plot_dgm(dgm[1])
+
+from pbsig.betti import MuSignature, mu_query
+from pbsig.linalg import * 
+R = np.array([4, 4.5, 6.5, 7.5])
+T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
+t_family = [flag_weight(SW(n=N, d=M, tau=t)) for t in T_dom]
+
+MU_f = mu_query(S, R=R, f=flag_weight(SW(n=N, d=M, tau=tau)), p=1, form="array")
+MU_f(smoothing=None)
+MU_f(smoothing=False)
+MU_f(smoothing=True)
+MU_f(smoothing=huber())
+MU_f(smoothing=soft_threshold())
+MU_f(smoothing=moreau(), terms=True)
+
+
+sig = MuSignature(S, family=t_family, R=R, p=1, form="array")
+sig.precompute(w=0.0, normed=False, progress=True)
+
+max(sig(smoothing=False))
+
 
 ## Cone the complex
 from scipy.spatial.distance import pdist 

@@ -1,0 +1,154 @@
+---
+title: "Circle optimization"
+format: html
+jupyter: python3
+---
+
+```{python}
+import numpy as np
+from pbsig.linalg import * 
+from pbsig.persistence import sliding_window, sw_parameters
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+from bokeh.layouts import row
+output_notebook(verbose=False)
+from pbsig.vis import figure_complex
+from pbsig import * 
+```
+
+Generate a noisy circle
+
+```{python}
+np.random.seed(1234)
+theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
+circle = np.c_[np.sin(theta), np.cos(theta)]
+
+## Plot the circle + noise 
+p = figure(width=200, height=200, match_aspect=True)
+p.scatter(*circle.T, color="blue")
+show(p)
+```
+
+For any choice of fixed radius $\epsilon \in \mathbb{R}_+$, we can construct a rips filtration $\mathcal{R}(X; \epsilon)$. For example:
+
+```{python}
+from splex import *
+eps_radius = 1.0
+R = rips_filtration(circle, 1.0, p=2)
+show(plot_complex(R, circle))
+```
+
+The homology of the rips complex is highly dependent on the scale parameter $\epsilon$. This shows that homology, in general, is not scale-invariant. To counter this, the typical approach is to vary $\epsilon \in [0, +\infty)$ and track the changes in the homology groups. Homology groups that seem to persist for over long contiguous subsets of $[0, +\infty)$ are thought to contain highly persistent cycles, i.e. homeomorphic cycles that are stable with respect to changes in the geometry. This is a bit of a misnomer, as the actual "cycles" generating the homology groups change quite often; indeed, each inclusion map $K_{i-1} \hookrightarrow K_{i}$ induces an entirely new coset.
+
+Persistence is often summarized with a persistence diagram. 
+
+```{python}
+
+```
+
+## Changing a different parameter 
+
+Indeed, suppose we scale our circle by some scaling factor $\alpha \in [0,1]$, fixing $\epsilon$ arbitrarily.
+
+```{python}
+from bokeh.layouts import gridplot
+from itertools import product
+nr, nc, r = 2, 6, 0.5 # num rows, num columns, radius 
+max_scale = 3.0
+F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, eps_radius, p=2))
+plots = [[None]*nc for r in range(nr)]
+for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
+  X, R = F(alpha)
+  plots[i][j] = figure_complex(R, X, width=80, height=80, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
+show(gridplot(plots))
+```
+
+We have essentially the same effect, but in reverse: at first the complex is the full $n$-simplex, collapsed to trivial point in its embedding. As the complex expands, it changes from being a disk (trivial $H_1$) to a circle (non-trivial $H_1$) to $n$ disconnected points (trivial $H_1$). 
+
+Suppose one is interested in finding the interval wherein the cycle generating the single homology group $H_1$ is the most "persistent" in $\alpha$. We could build a filtration in reverse to get inclusions...
+
+```{python}
+from pbsig.vis import plot_dgm, figure_dgm
+from pbsig.persistence import ph 
+# X, R = F(0.50)
+# dgm = ph(R, engine="dionysus")[1]
+# plot_dgm(dgm)
+
+plots = [[None]*nc for r in range(nr)]
+for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
+  X, R = F(alpha)
+  dgm = ph(R, engine="dionysus")[1]
+  plots[i][j] = figure_dgm(dgm, width=120, height=120) # x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r)
+  plots[i][j].title = None
+  plots[i][j].xaxis.axis_label = None
+  plots[i][j].yaxis.axis_label = None
+  # plots[i][j].xaxis.visible = False
+show(gridplot(plots))
+```
+
+Observe we have a few "phase changes" that occur here. Initially, there is no $H_1$ class. As the the complex expands beyond the trivial point, a point appears representing the aforementioned cycle. Since the persistence diagram is stable, we know this point must appear first on the diagonal---it then travels further from the diagonal until the cycle is broken apart. In this situation, it becomes an _essential class_; we have not expanded the rips complex to a large enough $\epsilon$ to see triangles close up the cycle. The birth of the cycle grows infinitely as $\alpha \to \infty$. 
+
+
+```{python}
+alpha_thresholds = np.linspace(1e-12, max_scale*r, 100)
+vine = np.vstack([ph(F(alpha)[1], engine="dionysus")[1] for alpha in alpha_thresholds])
+
+from bokeh.models import Range1d
+p = figure_dgm(vine[-1,:])
+p.scatter(np.ravel(vine['birth']), np.ravel(vine['death']))
+p.x_range = Range1d(0, max_scale*r)
+p.y_range = Range1d(0, max_scale*r)
+show(p)
+```
+
+Suppose we wanted to determine when, via $\alpha$, this cycle existed. It's clear from the set of persistence diagrams that a 
+
+```{python}
+from pbsig import mu_query
+R = (0.5, 1.0, 1.5, 1.75)
+S = simplicial_complex(faces(SimplexTree([np.arange(8)]), 2))
+
+wut = [mu_query(S, R=R, f=flag_weight(circle*alpha))() for alpha in alpha_thresholds]
+  
+```
+
+
+
+
+Use discrete vineyards to get an idea of what the
+
+# st = SimplexTree(complete_graph(X.shape\[0\]))
+
+# st.expand(2)
+
+# S = st
+
+N, M = 20, 24 SW = sliding_window(sw_f, bounds=(0, 12*np.pi)) d, tau = sw_parameters(bounds=(0,12*np.pi), d=M, L=6) #S = delaunay_complex(F(n=N, d=M, tau=tau)) X = SW(n=N, d=M, tau=tau) \# r = enclosing_radius(X)\*0.60 \# S = rips_complex(X, r, 2) show(plot_complex(S, X\[:,:2\]))
+
+## Plot
+
+scatters = \[\] for t in np.linspace(0.50*tau, 1.50*tau, 10): X_delay = SW(n=N, d=M, tau=t) p = figure(width=150, height=150, toolbar_location=None) p.scatter(*pca(X_delay).T) scatters.append(plot_complex(S, pos=pca(X_delay), width=125, height=125)) show(row(*scatters))
+
+from pbsig.persistence import ph from pbsig.vis import plot_dgm K = filtration(S, f=flag_weight(X)) dgm = ph(K, engine="dionysus") plot_dgm(dgm\[1\])
+
+from pbsig.betti import MuSignature, mu_query from pbsig.linalg import \* R = np.array(\[4, 4.5, 6.5, 7.5\]) T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False)) t_family = \[flag_weight(SW(n=N, d=M, tau=t)) for t in T_dom\]
+
+MU_f = mu_query(S, R=R, f=flag_weight(SW(n=N, d=M, tau=tau)), p=1, form="array")
+
+Generate a noisy circle
+
+```{python}
+np.random.seed(1234)
+theta = np.linspace(0, 2*np.pi, 80, endpoint=False)
+circle = np.c_[np.sin(theta), np.cos(theta)]
+noise_scale = np.random.uniform(size=circle.shape[0], low=0.90, high=1.10)
+noise_scale = np.c_[noise_scale, noise_scale]
+noise = np.random.uniform(size=(10, 2), low=-1, high=1)
+X = np.vstack((circle*noise_scale, noise))
+
+## Plot the circle + noise 
+p = figure(width=400, height=200)
+p.scatter(X[:,0], X[:,1], color="blue")
+p.scatter(*noise.T, color="red")
+show(p)
+```
