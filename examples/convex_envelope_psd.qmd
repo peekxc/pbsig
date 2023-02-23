@@ -1,0 +1,179 @@
+---
+title: "Verifying the convex envelope"
+format: html
+jupyter: python3
+---
+
+```{python}
+import numpy as np
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+from bokeh.layouts import row
+output_notebook(verbose=False)
+```
+
+
+
+
+```{python}
+np.random.seed(1234)
+X = np.random.uniform(size=(5,5))
+Q, _ = np.linalg.qr(X @ X.T)
+nuc_norm = lambda M: sum(np.maximum(np.linalg.eigvalsh(M),0.0)**(1/2))
+rank_m = lambda M: spectral_rank(np.linalg.eigvalsh(M), method=2)
+```
+
+
+Unit ball convex-envelope example using pairwise setting to 0 
+```{python}
+np.random.seed(1234)
+e0 = np.random.uniform(size=5, low=0, high=1) ## high must be 1; must be in unit-ball! 
+M1 = Q @ np.diag(e0) @ Q.T
+np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+assert np.allclose(M1.sum(axis=1), 0.0)
+ind = np.array(list(combinations(range(5), 2)))[np.random.choice(range(int(5*4/2)), size=int(5*4/2), replace=False)]
+
+family_rank = []
+family_nuc = []
+for i,j in ind:
+  e = M1[i,j]
+  for alpha in np.linspace(0, 1, 10)[1:]:
+    M1[i,j] = M1[j,i] = (1-alpha)*e
+    np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+    family_nuc.append(nuc_norm(M1))
+    family_rank.append(rank_m(M1))
+
+# for i,j in ind:
+#   e = float(np.random.uniform(size=1, low=0, high=1.0))
+#   for alpha in np.linspace(0, 1, 10)[1:]:
+#     M1[i,j] = M1[j,i] = alpha*e
+#     np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+#     family_nuc.append(nuc_norm(M1))
+#     family_rank.append(rank_m(M1))
+
+## The entries should be non-increasing and the nuclear norm should be convex 
+# assert all(np.diff(np.array(family_nuc)) <= 0)
+
+p = figure(width=200, height=200)
+p.line(np.arange(len(family_nuc)), family_nuc, line_color='red')
+p.line(np.arange(len(family_rank)), family_rank, line_color='black')
+show(p)
+```
+
+
+Unit ball convex-envelope example using random non-increasing hadamard scaling
+
+```{python}
+np.random.seed(1234)
+e0 = np.random.uniform(size=5, low=0, high=1) ## high must be 1; must be in unit-ball! 
+M1 = Q @ np.diag(e0) @ Q.T
+np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+assert np.allclose(M1.sum(axis=1), 0.0)
+
+family_rank = []
+family_nuc = []
+while any(np.ravel(M1) > 0):
+  M1 *= np.random.uniform(size=M1.shape, low=0, high=1)
+  M1 = 0.5*(M1 + M1.T)
+  np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+  M1[abs(M1) <= 1e-12] = 0.0
+  family_nuc.append(nuc_norm(M1))
+  family_rank.append(rank_m(M1))
+
+p = figure(width=200, height=200)
+p.line(np.arange(len(family_nuc)), family_nuc, line_color='red')
+p.line(np.arange(len(family_rank)), family_rank, line_color='black')
+show(p)
+```
+
+Unit ball convex-envelope example using random spectral shrinkage / scaling
+
+```{python}
+np.random.seed(1234)
+e0 = np.random.uniform(size=5, low=0, high=1) ## high must be 1; must be in unit-ball! 
+M1 = Q @ np.diag(e0) @ Q.T
+np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+assert np.allclose(M1.sum(axis=1), 0.0)
+
+family_rank = []
+family_nuc = []
+e = e0.copy()
+while any(np.ravel(M1 != 0)):
+  i = int(np.random.choice(np.flatnonzero(e != 0), size=1))
+  for alpha in np.linspace(0, 1, 10)[1:]:
+    e[i] *= 0.80
+    M1 = Q @ np.diag(e) @ Q.T
+    np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+    family_nuc.append(nuc_norm(M1))
+    family_rank.append(rank_m(M1))
+    if e[i] <= 1e-12:
+      e[i] = 0.0
+    #print(e)
+
+p = figure(width=200, height=200)
+p.line(np.arange(len(family_nuc)), family_nuc, line_color='red')
+p.step(np.arange(len(family_rank)), family_rank, line_color='black')
+show(p)
+```
+
+
+Unit ball convex-envelope example using random non-increasing hadamard scaling (sampled)
+
+```{python}
+np.random.seed(1234)
+e0 = np.random.uniform(size=5, low=0, high=1) ## high must be 1; must be in unit-ball! 
+M1 = Q @ np.diag(e0) @ Q.T
+np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+assert np.allclose(M1.sum(axis=1), 0.0)
+
+ps = 0.02
+family_rank = []
+family_nuc = []
+while any(np.ravel(M1) > 0):
+  U = np.random.uniform(size=M1.shape, low=0, high=1)
+  U[np.random.choice([0,1], size=U.shape, replace=True, p=[ps, 1-ps])] = 1.0
+  M1 *= U
+  M1 = 0.5*(M1 + M1.T)
+  np.fill_diagonal(M1, abs(M1).sum(axis=1) - M1.diagonal())
+  M1[abs(M1) <= 1e-12] = 0.0
+  family_nuc.append(nuc_norm(M1))
+  family_rank.append(rank_m(M1))
+
+p = figure(width=200, height=200)
+p.line(np.arange(len(family_nuc)), family_nuc, line_color='red')
+p.line(np.arange(len(family_rank)), family_rank, line_color='black')
+show(p)
+```
+
+```{python}
+np.random.seed(1244)
+A = np.linspace(0, 1, 100)
+ew = np.random.uniform(size=(15,5), low=0, high=1)
+for i in range(15):
+  pr = np.random.uniform(size=5, low=0, high=1)
+  ew[i,:] = np.where(pr <= 0.35, 0.0, ew[i,:])
+
+family_nn, family_rk  = [],[]
+for cc, (e0, e1) in enumerate(zip(ew[:-1], ew[1:])):
+  M1 = Q @ np.diag(e0) @ Q.T
+  M2 = Q @ np.diag(e1) @ Q.T
+  family_nn.extend(np.array([nuc_norm((1-alpha)*M1 + alpha*M2) for alpha in A]))
+  family_rk.extend(np.array([rank_m((1-alpha)*M1 + alpha*M2) for alpha in A]))
+
+M1 = Q @ np.diag(ew[0]) @ Q.T
+M2 = Q @ np.diag(ew[-1]) @ Q.T
+family_rn = []
+for alpha in np.linspace(0,1,len(family_rk)):
+  
+  family_rn.append(nuc_norm((1-alpha)*M1 + alpha*M2))
+
+p = figure(width=400, height=250)
+p.line(np.arange(len(family_nn)), family_nn, line_color="red")
+p.step(np.arange(len(family_nn)), family_rk, line_color="black")
+p.step(np.arange(len(family_nn)), family_rn, line_color="orange")
+show(p)
+
+
+
+
+```

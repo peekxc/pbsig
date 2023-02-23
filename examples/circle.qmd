@@ -6,14 +6,14 @@ jupyter: python3
 
 ```{python}
 import numpy as np
+from splex import *
+from pbsig import * 
 from pbsig.linalg import * 
-from pbsig.persistence import sliding_window, sw_parameters
+from pbsig.vis import figure_complex
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.layouts import row
 output_notebook(verbose=False)
-from pbsig.vis import figure_complex
-from pbsig import * 
 ```
 
 Generate a noisy circle
@@ -24,18 +24,18 @@ theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
 circle = np.c_[np.sin(theta), np.cos(theta)]
 
 ## Plot the circle + noise 
-p = figure(width=200, height=200, match_aspect=True)
-p.scatter(*circle.T, color="blue")
+p = figure(width=300, height=300, match_aspect=True)
+p.scatter(*circle.T, color="blue", size=12)
 show(p)
 ```
 
 For any choice of fixed radius $\epsilon \in \mathbb{R}_+$, we can construct a rips filtration $\mathcal{R}(X; \epsilon)$. For example:
 
 ```{python}
-from splex import *
+from pbsig.vis import *
 eps_radius = 1.0
 R = rips_filtration(circle, 1.0, p=2)
-show(plot_complex(R, circle))
+show(figure_complex(R, circle))
 ```
 
 The homology of the rips complex is highly dependent on the scale parameter $\epsilon$. This shows that homology, in general, is not scale-invariant. To counter this, the typical approach is to vary $\epsilon \in [0, +\infty)$ and track the changes in the homology groups. Homology groups that seem to persist for over long contiguous subsets of $[0, +\infty)$ are thought to contain highly persistent cycles, i.e. homeomorphic cycles that are stable with respect to changes in the geometry. This is a bit of a misnomer, as the actual "cycles" generating the homology groups change quite often; indeed, each inclusion map $K_{i-1} \hookrightarrow K_{i}$ induces an entirely new coset.
@@ -55,7 +55,7 @@ from bokeh.layouts import gridplot
 from itertools import product
 nr, nc, r = 2, 6, 0.5 # num rows, num columns, radius 
 max_scale = 3.0
-F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, eps_radius, p=2))
+F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, r, p=2))
 plots = [[None]*nc for r in range(nr)]
 for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
   X, R = F(alpha)
@@ -107,10 +107,79 @@ Suppose we wanted to determine when, via $\alpha$, this cycle existed. It's clea
 from pbsig import mu_query
 R = (0.5, 1.0, 1.5, 1.75)
 S = simplicial_complex(faces(SimplexTree([np.arange(8)]), 2))
-
-wut = [mu_query(S, R=R, f=flag_weight(circle*alpha))() for alpha in alpha_thresholds]
-  
+Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1) for alpha in alpha_thresholds]
 ```
+
+Let's look at the multiplicities in this box
+```{python}
+from bokeh.models import Title
+mult_H1 = [mu() for mu in Q]
+p = figure(
+  width=350, height=200, 
+  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+)
+p.step(alpha_thresholds, np.array(mult_H1, dtype=int))
+p.yaxis.minor_tick_line_alpha = 0
+show(p)
+```
+
+Let's look at the constiutive terms that make up this multiplicity queries 
+```{python}
+mu_terms = np.array([mu(terms=True) for mu in Q])
+p = figure(
+  width=350, height=200, 
+  title=f"Circle multiplicities for R={R}", 
+  x_axis_label="alpha (scaling factor)", 
+  y_axis_label="Constititive ranks"
+)
+p.step(alpha_thresholds, mu_terms[:,0], line_color="orange")
+p.step(alpha_thresholds, mu_terms[:,1], line_color="blue")
+p.step(alpha_thresholds, mu_terms[:,2], line_color="red")
+p.step(alpha_thresholds, mu_terms[:,3], line_color="green")
+p.yaxis.minor_tick_line_alpha = 0
+show(p)
+```
+
+Not at all intuitive, though there is some interpretation. 
+
+Now, let's look at a continuous relaxation of both the multiplicity function and its constitituive terms. 
+
+```{python}
+# from pbsig.linalg import *
+# p = figure(
+#   width=350, height=200, 
+#   title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+# )
+# mult_H1 = np.array([mu(smoothing=None) for mu in Q], dtype=int)
+# mult_moreau_H1 = np.array([mu(smoothing=moreau()) for mu in Q])
+# p.step(alpha_thresholds, mult_H1)
+# p.line(alpha_thresholds, mult_moreau_H1)
+# p.yaxis.minor_tick_line_alpha = 0
+
+
+## constituive terms
+mu_terms = np.array([mu(smoothing=None, terms=True) for mu in Q], dtype=int)
+mu_terms_moreau = np.array([mu(smoothing=moreau(), terms=True) for mu in Q])
+mu_terms_nuclear = np.array([mu(smoothing=False, terms=True) for mu in Q]) 
+mu_terms_sgn_approx = np.array([mu(smoothing=sgn_approx(eps=1e-1, p=1.2), terms=True) for mu in Q]) 
+q = figure(
+  width=350, height=200, 
+  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+)
+q.yaxis.minor_tick_line_alpha = 0
+q.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red")
+q.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange")
+q.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue")
+q.step(alpha_thresholds, -mu_terms[:,0], line_color = "black")
+show(q)
+
+```
+
+
+Let's 
+
+
+
 
 
 

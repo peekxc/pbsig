@@ -301,7 +301,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
       mu = np.zeros(4)
       for cc,(ew,s) in enumerate(zip(EW, [1,-1,-1,1])):
         mu[cc] += s*spectral_rank(EW[cc], shape=(n,m), **kwargs)
-      return mu.astype(int) if terms else sum(mu)
+      return mu.astype(int) if terms else int(sum(mu))
     else:
       if isinstance(smoothing, bool):
         smoothing = lambda x: x if smoothing else huber()

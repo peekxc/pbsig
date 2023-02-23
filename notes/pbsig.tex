@@ -987,7 +987,8 @@ Since a $p$-simplex has $p+1$ proper faces in its boundary, and we need to itera
 	\begin{equation}
 		\hat{L}_p^{\textrm{up}} x = ((V_p^\ast)^{+/2} \circ \partial_{p+1} \circ W_{p+1}^+ \circ \partial_{p+1}^T \circ (V_p^\ast)^{+/2})x
 	\end{equation}
-	in $O(m(p+1))$ time and $O(n)$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
+	in $O(m(p+1))$ time and $O(n)$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
+	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{lemma}
 \noindent From a practical perspective, $p \geq 0$ is generally a very small constant---typically no more than $2$---thus we conclude that we can evaluate $x \mapsto \partial_{p+1} \partial_{p+1}^T x$ is $\approx O(m)$ time, essentially linear in the number of $p+1$ simplices. 
