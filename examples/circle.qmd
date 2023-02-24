@@ -63,9 +63,9 @@ for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr),
 show(gridplot(plots))
 ```
 
-We have essentially the same effect, but in reverse: at first the complex is the full $n$-simplex, collapsed to trivial point in its embedding. As the complex expands, it changes from being a disk (trivial $H_1$) to a circle (non-trivial $H_1$) to $n$ disconnected points (trivial $H_1$). 
+We have essentially the same effect, but in reverse: at first the complex is the full $n$-simplex, collapsed to trivial point in its embedding. As the complex expands, it changes from being a disk (trivial $H_1$) to a circle (non-trivial $H_1$) to $n$ disconnected points (trivial $H_1$). Essentially, rather than having an $\epsilon$-parameterized filtration over a fixed point cloud, we have an $\alpha$-parameterized family of rips filtrations $\{ \mathcal{R}_{\epsilon}(\alpha) \}_{\alpha \in A}$ of varying size but fixed filter. 
 
-Suppose one is interested in finding the interval wherein the cycle generating the single homology group $H_1$ is the most "persistent" in $\alpha$. We could build a filtration in reverse to get inclusions...
+<!-- Suppose one is interested in finding the interval wherein the cycle generating the single homology group $H_1$ is the most "persistent" in $\alpha$. We could build a filtration in reverse to get inclusions... -->
 
 ```{python}
 from pbsig.vis import plot_dgm, figure_dgm
@@ -77,8 +77,10 @@ from pbsig.persistence import ph
 plots = [[None]*nc for r in range(nr)]
 for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
   X, R = F(alpha)
-  dgm = ph(R, engine="dionysus")[1]
-  plots[i][j] = figure_dgm(dgm, width=120, height=120) # x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r)
+  dgm = ph(R, engine="dionysus")
+  dgm = dgm[1] if 1 in dgm.keys() else np.empty((0,2),dtype=[('birth', 'f4'), ('death', 'f4')])
+  # figure_complex(R, X, width=100, height=100, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
+  plots[i][j] = figure_dgm(dgm, width=100, height=100) # x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r)
   plots[i][j].title = None
   plots[i][j].xaxis.axis_label = None
   plots[i][j].yaxis.axis_label = None
@@ -88,31 +90,14 @@ show(gridplot(plots))
 
 Observe we have a few "phase changes" that occur here. Initially, there is no $H_1$ class. As the the complex expands beyond the trivial point, a point appears representing the aforementioned cycle. Since the persistence diagram is stable, we know this point must appear first on the diagonal---it then travels further from the diagonal until the cycle is broken apart. In this situation, it becomes an _essential class_; we have not expanded the rips complex to a large enough $\epsilon$ to see triangles close up the cycle. The birth of the cycle grows infinitely as $\alpha \to \infty$. 
 
+Suppose we wanted to determine the choices of $\alpha$ where this cycle existed. We can peek at these via a set of multiplicity queries:
 
 ```{python}
-alpha_thresholds = np.linspace(1e-12, max_scale*r, 100)
-vine = np.vstack([ph(F(alpha)[1], engine="dionysus")[1] for alpha in alpha_thresholds])
-
-from bokeh.models import Range1d
-p = figure_dgm(vine[-1,:])
-p.scatter(np.ravel(vine['birth']), np.ravel(vine['death']))
-p.x_range = Range1d(0, max_scale*r)
-p.y_range = Range1d(0, max_scale*r)
-show(p)
-```
-
-Suppose we wanted to determine when, via $\alpha$, this cycle existed. It's clear from the set of persistence diagrams that a 
-
-```{python}
-from pbsig import mu_query
+from pbsig.betti import mu_query
 R = (0.5, 1.0, 1.5, 1.75)
 S = simplicial_complex(faces(SimplexTree([np.arange(8)]), 2))
-Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1) for alpha in alpha_thresholds]
-```
+Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1, normed=False) for alpha in alpha_thresholds]
 
-Let's look at the multiplicities in this box
-```{python}
-from bokeh.models import Title
 mult_H1 = [mu() for mu in Q]
 p = figure(
   width=350, height=200, 
@@ -123,64 +108,135 @@ p.yaxis.minor_tick_line_alpha = 0
 show(p)
 ```
 
+Equivalently, we can amortize the cost of creating so many matrices by re-using the results from previous computations. 
+```{python}
+from pbsig.betti import MuFamily
+F = [flag_weight(alpha*circle) for alpha in alpha_thresholds]
+mu_f = MuFamily(S, family=F, p=1, form="array")
+mu_f.precompute(R=R, progress=True)
+
+p = figure(
+  width=350, height=200, 
+  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+)
+p.step(alpha_thresholds, np.array(mu_f(smoothing=None), dtype=int))
+p.yaxis.minor_tick_line_alpha = 0
+show(p)
+```
+
 Let's look at the constiutive terms that make up this multiplicity queries 
 ```{python}
-mu_terms = np.array([mu(terms=True) for mu in Q])
 p = figure(
   width=350, height=200, 
   title=f"Circle multiplicities for R={R}", 
   x_axis_label="alpha (scaling factor)", 
   y_axis_label="Constititive ranks"
 )
+mu_terms = mu_f(smoothing=None, terms=True).T
 p.step(alpha_thresholds, mu_terms[:,0], line_color="orange")
-p.step(alpha_thresholds, mu_terms[:,1], line_color="blue")
-p.step(alpha_thresholds, mu_terms[:,2], line_color="red")
+p.step(alpha_thresholds, -mu_terms[:,1], line_color="blue")
+p.step(alpha_thresholds, -mu_terms[:,2], line_color="red")
 p.step(alpha_thresholds, mu_terms[:,3], line_color="green")
+p.step(alpha_thresholds, mu_f(smoothing=None), line_color="black")
 p.yaxis.minor_tick_line_alpha = 0
 show(p)
 ```
 
-Not at all intuitive, though there is some interpretation. 
-
 Now, let's look at a continuous relaxation of both the multiplicity function and its constitituive terms. 
 
+
+
+
 ```{python}
-# from pbsig.linalg import *
-# p = figure(
-#   width=350, height=200, 
-#   title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
-# )
-# mult_H1 = np.array([mu(smoothing=None) for mu in Q], dtype=int)
-# mult_moreau_H1 = np.array([mu(smoothing=moreau()) for mu in Q])
-# p.step(alpha_thresholds, mult_H1)
-# p.line(alpha_thresholds, mult_moreau_H1)
-# p.yaxis.minor_tick_line_alpha = 0
-
-
 ## constituive terms
-mu_terms = np.array([mu(smoothing=None, terms=True) for mu in Q], dtype=int)
-mu_terms_moreau = np.array([mu(smoothing=moreau(), terms=True) for mu in Q])
-mu_terms_nuclear = np.array([mu(smoothing=False, terms=True) for mu in Q]) 
-mu_terms_sgn_approx = np.array([mu(smoothing=sgn_approx(eps=1e-1, p=1.2), terms=True) for mu in Q]) 
+mu_f.precompute(R=R, w=0.35, normed=False, progress=True)
+mu_terms = mu_f(smoothing=None, terms=True).T
+mu_terms_moreau = mu_f(smoothing=moreau(), terms=True).T
+mu_terms_nuclear = mu_f(smoothing=False, terms=True).T
+mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5), terms=True).T
 q = figure(
-  width=350, height=200, 
+  width=450, height=300, 
   title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
 )
 q.yaxis.minor_tick_line_alpha = 0
-q.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red")
-q.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange")
-q.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue")
-q.step(alpha_thresholds, -mu_terms[:,0], line_color = "black")
-show(q)
+q.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red", legend_label="Moreau")
+q.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange", legend_label="Nuclear")
+q.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue", legend_label="SgnApprox")
+q.step(alpha_thresholds, -mu_terms[:,0], line_color = "black", legend_label="Rank")
+q.legend.label_text_font_size = '4pt'
+q.legend.padding = 0
+q.legend.spacing = 0
 
+mu_f.precompute(R=R, w=0.35, normed=True, progress=True)
+mu_terms = mu_f(smoothing=None, terms=True).T
+mu_terms_moreau = mu_f(smoothing=moreau(), terms=True).T
+mu_terms_nuclear = mu_f(smoothing=False, terms=True).T
+mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5), terms=True).T
+p = figure(
+  width=450, height=300, 
+  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+)
+p.yaxis.minor_tick_line_alpha = 0
+p.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red", legend_label="Moreau")
+p.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue", legend_label="SgnApprox")
+p.step(alpha_thresholds, -mu_terms[:,0], line_color = "black", legend_label="Rank")
+p.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange", legend_label="Nuclear")
+p.legend.label_text_font_size = '4pt'
+p.legend.padding = 0
+p.legend.spacing = 0
+
+from bokeh.layouts import row
+show(row([q, p]))
+```
+
+The weighted combinatorial laplacian is simply unstable whenever $w > 0$, due to the face that $1/\epsilon$ can produce arbitrarily large values as $\epsilon \to 0^+$. This is not a problem for the normalized laplacian, as the spectrum is always bounded in the range $[0, p+2]$. From now on, let's only consider the normalized weighted combinatorial laplacian. 
+
+```{python}
+mu_f.precompute(R=R, w=0.35, normed=True, progress=True)
+figs = []
+fig_kwargs = dict(width=250, height=150,title=f"Circle multiplicities", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity")
+for ef in [None, False, sgn_approx(eps=1e-2, p=1.2), moreau(t=0.15)]:
+  mu_terms = mu_f(smoothing=ef, terms=True).T
+  p = figure(**fig_kwargs)
+  p.line(alpha_thresholds, mu_terms[:,0], line_color="orange")
+  p.line(alpha_thresholds, -mu_terms[:,1], line_color="blue")
+  p.line(alpha_thresholds, -mu_terms[:,2], line_color="red")
+  p.line(alpha_thresholds, mu_terms[:,3], line_color="green")
+  p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+  p.yaxis.minor_tick_line_alpha = 0
+  figs.append(p)
+
+show(row(figs))
+# mu_query(S, R=np.append(R, 0.35), f=F[j], p=1, normed=True)(smoothing=False, terms=True)
+```
+
+```{python}
+mu_f.precompute(R=R, normed=True, progress=True)
+mu_terms = mu_f(smoothing=None)
+mu_terms_moreau = mu_f(smoothing=moreau())
+mu_terms_nuclear = mu_f(smoothing=False)
+mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5))
+p = figure(
+  width=450, height=300, 
+  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+)
+p.yaxis.minor_tick_line_alpha = 0
+p.line(alpha_thresholds, mu_terms_moreau, line_color = "red", legend_label="Moreau")
+p.line(alpha_thresholds, mu_terms_sgn_approx, line_color = "blue", legend_label="SgnApprox")
+p.step(alpha_thresholds, mu_terms, line_color = "black", legend_label="Rank")
+p.line(alpha_thresholds, mu_terms_nuclear, line_color = "orange", legend_label="Nuclear")
+p.legend.label_text_font_size = '4pt'
+p.legend.padding = 0
+p.legend.spacing = 0
+show(p)
 ```
 
 
-Let's 
 
+```{python}
+mu_f.precompute(R=R, normed=False, progress=True)
 
-
-
+```
 
 
 
@@ -221,3 +277,17 @@ p.scatter(X[:,0], X[:,1], color="blue")
 p.scatter(*noise.T, color="red")
 show(p)
 ```
+
+<!-- 
+
+```{python}
+alpha_thresholds = np.linspace(1e-12, max_scale*r, 100)
+vine = np.vstack([ph(F(alpha)[1], engine="dionysus")[1] for alpha in alpha_thresholds])
+
+from bokeh.models import Range1d
+p = figure_dgm(vine[-1,:])
+p.scatter(np.ravel(vine['birth']), np.ravel(vine['death']))
+p.x_range = Range1d(0, max_scale*r)
+p.y_range = Range1d(0, max_scale*r)
+show(p)
+``` -->

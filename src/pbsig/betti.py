@@ -245,7 +245,7 @@ def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
       return flag_w(s)
   return _cone_weight
 
-def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, solver=None, form = 'array', **kwargs):
+def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, solver=None, form = 'array', normed: bool = False, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -279,19 +279,31 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
   if form == "lo":
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      L.set_weights(None, J, None)
-      I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
-      L.set_weights(I_norm, J, I_norm)
+      if normed:
+        I_sgn = np.sign(abs(I))
+        L.set_weights(I_sgn, J, I_sgn)
+        I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+        L.set_weights(I_norm, J, I_norm)
+      else:
+        I_norm = pseudo(np.sqrt(I))
+        L.set_weights(I_norm, J, I_norm)
       solver = eigvalsh_solver(L)
       EW[cc] = solver(L)
-  elif form == "array":
+  elif form == "array": 
+    # I_norm = pseudo(np.sqrt(I * di))
     D = boundary_matrix(S, p=p+1)
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      di = (D @ diags(J) @ D.T).diagonal()
-      I_norm = pseudo(np.sqrt(I * di))
-      L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+      if normed: 
+        I_sgn = np.sign(abs(I)) 
+        di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
+        I_norm = pseudo(np.sqrt(di))
+        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+      else:
+        I_norm = pseudo(np.sqrt(I))
+        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
       solver = eigvalsh_solver(L)
       EW[cc] = solver(L)
+      ## (p+2)*max((D @ diags(J) @ D.T).diagonal())/min(I[I > 0])
   else: 
     raise ValueError(f"Invalid form '{form}'.")
 
@@ -309,11 +321,6 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
       mu = np.array([sum(smoothing(EW[0])), -sum(smoothing(EW[1])), -sum(smoothing(EW[2])), sum(smoothing(EW[3]))])
       return mu if terms else sum(mu)
   return _transform
-
-
-
-
-  return EW[0] - EW[1] - EW[2] + EW[3] if not terms else EW
 
 # def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, terms: bool = False, form = 'lo', **kwargs):
 #   """
@@ -404,28 +411,28 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
 #   return _transform
 
 
-class MuSignature:
+class MuFamily:
   """ 
-  A multiplicity (mu) signature M is a shape statistic M(i) generated from a parameterized family of F = { f1, f2, ..., fk }
+  A multiplicity (mu) family M is a multiplicity statistic M(i) generated over a parameterized family of F = { f1, f2, ..., fk }
 
   Given a pair (S, r) where 'S' is simplicial complex and 'r' a box in the upper half-plane, 
-  the quantity M(i) is real number representing the *smoothed* cardinality of dgm(S, fi) restricted to 'r'
+  the quantity M(i) is real number representing the cardinality of dgm(S, fi) restricted to 'r'. To obtain this cardinality, 
+  the multiplicity is characterized via a set of numerical rank computations performed on certain sub-matrices of the boundary operator. 
+  Since these quantities are derived spectrally, this class precomputes the eigenvalues of these linear operators, storing them for 
+  efficient (vectorized) access via the __call__ operator. 
 
   Constructor parameters: 
     S := Fixed simplicial complex 
     F := Iterable of filter functions, each representing scalar-products equipped to S
-    R := Rectangle in the upper half-plane 
     p := dimension of persistence to restrict R too
 
   Methods: 
     precompute := precomputes the signature
   """
-  def __init__(self, S: ComplexLike, family: Iterable[Callable], R: ArrayLike, p: int = 0, form: str = "array"):
-    assert len(R) == 4 and is_sorted(R)
+  def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "array"):
     # assert isinstance(S, ComplexLike)
     assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
     self.S = S
-    self.R = R
     self.family = family
     self.np = card(S, p)
     self.nq = card(S, p+1)
@@ -434,8 +441,7 @@ class MuSignature:
   
   ## Changes the eigenvalues! 
   def update_weights(self, f: Callable[SimplexConvertible, float], R: ArrayLike, w: float):
-    """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_.
-    """
+    """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_"""
     assert len(R) == 4 and is_sorted(R)
     fw = np.array([f(s) for s in faces(self.S, self.p)])
     sw = np.array([f(s) for s in faces(self.S, self.p+1)])
@@ -447,54 +453,59 @@ class MuSignature:
     self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
 
   ## Does not change eigenvalues!
-  def precompute(self, w: float = 0.0, normed: bool = False, progress: bool = False, **kwargs) -> None:
+  def precompute(self, R: ArrayLike, w: float = 0.0, normed: bool = False, progress: bool = False, **kwargs) -> None:
     """Precomputes the signature across a parameterized family.
 
     Parameters: 
-      w = smoothing parameter. Defaults to 0.  
+      R := Rectangle in the upper half-plane 
+      w = smoothing parameter associated to _R_. Defaults to 0.  
       normed = whether to normalize the laplacian(s). Defaults to false. 
       kwargs = additional arguments to pass to eigvalsh_solver.
     """
+    assert len(R) == 4 and is_sorted(R)
     k = len(self.family)
-    self._terms = [[None]*k for i in range(4)] 
-    i,j,k,l = self.R
+    self._terms = list([[None]*k for _ in range(4)])
+
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-    # as-is? self.L.set_weights(self._fj, self._fl, self._fj)
     family_it = progressbar(enumerate(self.family), count=len(self.family)) if progress else enumerate(self.family)
-    D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
     for i, f in family_it:
       assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
-      self.update_weights(f=f, R=self.R, w=w) # updates self._fi, ..., self._fl
+      self.update_weights(f=f, R=R, w=w) # updates self._fi, ..., self._fl
       if self.form == "array":
+        D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            di = (D @ diags(J) @ D.T).diagonal()
+            I_sgn = np.sign(abs(I))
+            di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
             I_norm = pseudo(np.sqrt(di)) # used to be I * di 
             #I_norm = pseudo(np.sqrt(I * di)) # used to be I * di 
             L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
           else:
-            #L = diags(np.sqrt(I)) @ D @ diags(J) @ D.T @ diags(np.sqrt(I)) # diags(np.sqrt(I)) 
-            L = D @ diags(J) @ D.T
+            I_norm = pseudo(np.sqrt(I))
+            L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+            # L = D @ diags(J) @ D.T
           solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
-          ew = solver(L)
-          #self._terms[cc][i] = ew
-          ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
-          self._terms[cc][i] = ew_ext * np.sort(I)
+          self._terms[cc][i] = solver(L)
+          # ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
+          # self._terms[cc][i] = ew_ext * np.sort(I)
       elif self.form == "lo":
         L = up_laplacian(self.S, p=self.p, form="lo")
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            L.set_weights(None, J, None) ## adjusts degree
-            I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+            I_sgn = np.sign(abs(I))
+            L.set_weights(I_sgn, J, I_sgn) ## TODO: PERHAPS don't set face weights to None, as that defaults to identity. Use entries in {0,1}
+            I_norm = pseudo(np.sqrt(L.diagonal())) # degree computation
             L.set_weights(I_norm, J, I_norm)
           else:
-            L.set_weights(pseudo(np.sqrt(I)), J, pseudo(np.sqrt(I)))
+            I_norm = pseudo(np.sqrt(I))
+            L.set_weights(I_norm, J, I_norm)
           solver = eigvalsh_solver(L, **kwargs)
           self._terms[cc][i] = solver(L)
       else: 
         raise ValueError("Unknown type")  
     
-    ## Compress the eigenvalues into sparse matrices 
+    # Compress the eigenvalues into sparse matrices, where each row _i_ contains the 
+    # set of non-negative eigenvalues for the scalar-product fi
     self._Terms = [None]*4
     for ti in range(4):
       self._Terms[ti] = lil_array((len(self.family), card(self.S, self.p)), dtype=np.float64)
@@ -503,12 +514,6 @@ class MuSignature:
       self._Terms[ti] = self._Terms[ti].tocsr()
       self._Terms[ti].eliminate_zeros() 
     
-
-  ## Changes the eigenvalues! 
-  ## TODO: allow multiple rectangles
-  def _update_rectangle(self, R: ArrayLike, defer: bool = False):
-    pass
-  
   @staticmethod
   def elementwise_row_sum(T: spmatrix, f: Callable):
     rs = np.ravel(np.add.reduceat(np.append(f(T.data), 0), T.indptr)[:-1])
@@ -520,16 +525,24 @@ class MuSignature:
     """Evaluates the precomputed eigenvalues to yield the (possibly smoothed) multiplicities. 
     
     Vectorized evaluation of various reductions on a precomputed set of eigenvalues.
+    Smoothing has a few effects depending on its usage: 
+      - smoothing = None      <=> compute the numerical rank              ||*||_0
+      - smoothing = False     <=> compute the nuclear norm                ||*||_1
+      - smoothing = True      <=> compute the huber (hinge)               balance between ||*||_1 and ||*||_2 
+      - smoothing = Callable  <=> apply an elementwise operation to the eigenvalues 
     
     Parameters: 
       smoothing = Element-wise real-valued callable, boolean, or None. Defaults to None, which returns the numerical rank.
       terms = bool indicating whether to return the multiplicities or the 4 constitutive terms themselves. Defaults to false. 
+
+    Returns:
+      ndarray of shape (k,) where k := size of the family if terms = False, otherwise of shape (4,k)
     """
     if smoothing is None: 
       boundary_shape = card(self.S, self.p), card(self.S, self.p+1)
       if terms:
         sig = np.zeros((4, len(self.family)))
-        for cc,(T,s) in enumerate(self._Terms, [1,-1,-1,1]):
+        for cc,(T,s) in enumerate(zip(self._Terms, [1,-1,-1,1])):
           sig[cc,:] += s*np.array([spectral_rank(T[[i],:].data, shape=boundary_shape, **kwargs) for i in range(T.shape[0])])
       else:
         sig = np.zeros(len(self.family))
@@ -548,7 +561,7 @@ class MuSignature:
         sig += self.elementwise_row_sum(self._Terms[3], smoothing)
       else: 
         sig = np.zeros((4, len(self.family)))
-        for cc,(T,s) in enumerate(self._Terms, [1,-1,-1,1]):
+        for cc,(T,s) in enumerate(zip(self._Terms, [1,-1,-1,1])):
           sig[cc,:] += s*self.elementwise_row_sum(T, smoothing)
     return sig
 
