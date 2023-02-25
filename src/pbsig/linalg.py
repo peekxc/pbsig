@@ -136,7 +136,7 @@ def moreau(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
   def _moreau(x: ArrayLike):
     x = np.array(x)
     #return sum(x) + sum(np.where(x >= t, 0.5, x)**2)
-    return x + np.where(x >= t, 0.5, x)**2
+    return x + np.where(x >= t, t, x)**2
   return _moreau if x is None else _moreau(np.array(x))
 
 def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
@@ -176,15 +176,27 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
   assert solver is not None, "Invalid solver"
   tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
-  if pp == 0.0: return 0.0
+  if pp == 0.0: 
+    if return_eigenvectors:
+      return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+    else: 
+      return lambda x: 0.0
   if solver == 'dac':
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
     params = kwargs
     solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
-    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): return(lambda A: np.zeros(1))
-    if A.shape[0] == 0 or A.shape[1] == 0: return(lambda A: np.zeros(1))
+    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
+      if return_eigenvectors:
+        return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+      else:
+        return(lambda A: np.zeros(1))
+    if A.shape[0] == 0 or A.shape[1] == 0: 
+      if return_eigenvectors:
+        return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+      else:
+        return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
     nev = min(nev, A.shape[0] - 1) if laplacian else nev
     if nev == 0: return(lambda A: np.zeros(1))
@@ -207,10 +219,7 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
   else: 
     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
   def _call_solver(A, **kwargs):
-    ew = solver(A, **(params | kwargs))
-    if len(ew) == 0: 
-      raise RuntimeError("Solver did not return any eigenvalues!")
-    return ew
+    return solver(A, **(params | kwargs)) 
   return _call_solver
 
 def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
@@ -301,12 +310,21 @@ def prox_nuclear(x: ArrayLike, t: float = 1.0):
   """
   solver = eigh_solver(x)
   ew, ev = solver(x)
-  sv = np.sqrt(np.maximum(ew, 0.0))                     ## singular values 
-  sw_prox = np.maximum(sv - t, 0.0)                     ## soft-thresholded singular values
+  # sv = np.maximum(ew, 0.0)                  ## singular values (sqrt?)
+  sw_prox = np.maximum(ew - t, 0.0)                     ## soft-thresholded singular values
   A = ev @ diags(sw_prox) @ ev.T                        ## prox operator 
-  proj_d = (1/2*t)*np.linalg.norm(A - x, 'fro')**2      ## projection distance (rhs)
-  me = sum(sw_prox) + proj_d                            ## Moreau envelope value
+  proj_d = (1/(2*t))*np.linalg.norm(A - x, 'fro')**2      ## projection distance (rhs)
+  me = sum(abs(sw_prox)) + proj_d                            ## Moreau envelope value
   return A, me, ew
+
+def prox_sgn_approx(x: ArrayLike, t: float = 1.0, **kwargs):
+  """ Proximal operator for sgn approximation function"""
+  from scipy.optimize import minimize
+  sf = sgn_approx(**kwargs)  
+  solver = eigh_solver(x)
+  ew, ev = solver(x)
+  minimize(rosen, x0)
+
 
 def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = None, solver: str = 'default', **kwargs) -> int:
   """ 

@@ -16,26 +16,23 @@ from bokeh.layouts import row
 output_notebook(verbose=False)
 ```
 
-Generate a noisy circle
+Generate a noisy circle. For any choice of fixed radius $\epsilon \in \mathbb{R}_+$, we can construct a rips filtration $\mathcal{R}(X; \epsilon)$. For example:
+
 
 ```{python}
+from pbsig.vis import *
 np.random.seed(1234)
 theta = np.linspace(0, 2*np.pi, 8, endpoint=False)
 circle = np.c_[np.sin(theta), np.cos(theta)]
 
+eps_radius = 1.0
+R = rips_filtration(circle, 1.0, p=2)
+
 ## Plot the circle + noise 
 p = figure(width=300, height=300, match_aspect=True)
 p.scatter(*circle.T, color="blue", size=12)
-show(p)
-```
 
-For any choice of fixed radius $\epsilon \in \mathbb{R}_+$, we can construct a rips filtration $\mathcal{R}(X; \epsilon)$. For example:
-
-```{python}
-from pbsig.vis import *
-eps_radius = 1.0
-R = rips_filtration(circle, 1.0, p=2)
-show(figure_complex(R, circle))
+show(row(p, figure_complex(R, circle)))
 ```
 
 The homology of the rips complex is highly dependent on the scale parameter $\epsilon$. This shows that homology, in general, is not scale-invariant. To counter this, the typical approach is to vary $\epsilon \in [0, +\infty)$ and track the changes in the homology groups. Homology groups that seem to persist for over long contiguous subsets of $[0, +\infty)$ are thought to contain highly persistent cycles, i.e. homeomorphic cycles that are stable with respect to changes in the geometry. This is a bit of a misnomer, as the actual "cycles" generating the homology groups change quite often; indeed, each inclusion map $K_{i-1} \hookrightarrow K_{i}$ induces an entirely new coset.
@@ -59,7 +56,7 @@ F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, r, p=2))
 plots = [[None]*nc for r in range(nr)]
 for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
   X, R = F(alpha)
-  plots[i][j] = figure_complex(R, X, width=80, height=80, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
+  plots[i][j] = figure_complex(R, X, width=100, height=100, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
 show(gridplot(plots))
 ```
 
@@ -94,6 +91,7 @@ Suppose we wanted to determine the choices of $\alpha$ where this cycle existed.
 
 ```{python}
 from pbsig.betti import mu_query
+alpha_thresholds = np.linspace(0, max_scale*r, 100)
 R = (0.5, 1.0, 1.5, 1.75)
 S = simplicial_complex(faces(SimplexTree([np.arange(8)]), 2))
 Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1, normed=False) for alpha in alpha_thresholds]
@@ -124,7 +122,7 @@ p.yaxis.minor_tick_line_alpha = 0
 show(p)
 ```
 
-Let's look at the constiutive terms that make up this multiplicity queries 
+Let's look at the constitutive terms that make up this multiplicity queries 
 ```{python}
 p = figure(
   width=350, height=200, 
@@ -133,10 +131,10 @@ p = figure(
   y_axis_label="Constititive ranks"
 )
 mu_terms = mu_f(smoothing=None, terms=True).T
-p.step(alpha_thresholds, mu_terms[:,0], line_color="orange")
-p.step(alpha_thresholds, -mu_terms[:,1], line_color="blue")
-p.step(alpha_thresholds, -mu_terms[:,2], line_color="red")
-p.step(alpha_thresholds, mu_terms[:,3], line_color="green")
+p.step(alpha_thresholds, mu_terms[:,0], line_color="red")
+p.step(alpha_thresholds, -mu_terms[:,1], line_color="green")
+p.step(alpha_thresholds, -mu_terms[:,2], line_color="blue")
+p.step(alpha_thresholds, mu_terms[:,3], line_color="orange")
 p.step(alpha_thresholds, mu_f(smoothing=None), line_color="black")
 p.yaxis.minor_tick_line_alpha = 0
 show(p)
@@ -144,92 +142,211 @@ show(p)
 
 Now, let's look at a continuous relaxation of both the multiplicity function and its constitituive terms. 
 
-
-
-
 ```{python}
 ## constituive terms
-mu_f.precompute(R=R, w=0.35, normed=False, progress=True)
-mu_terms = mu_f(smoothing=None, terms=True).T
-mu_terms_moreau = mu_f(smoothing=moreau(), terms=True).T
-mu_terms_nuclear = mu_f(smoothing=False, terms=True).T
-mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5), terms=True).T
-q = figure(
-  width=450, height=300, 
-  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
-)
-q.yaxis.minor_tick_line_alpha = 0
-q.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red", legend_label="Moreau")
-q.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange", legend_label="Nuclear")
-q.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue", legend_label="SgnApprox")
-q.step(alpha_thresholds, -mu_terms[:,0], line_color = "black", legend_label="Rank")
-q.legend.label_text_font_size = '4pt'
-q.legend.padding = 0
-q.legend.spacing = 0
+figures = [[] for i in range(4)]
+for w, normed in [(0.0,False), (0.0,True), (0.30,False), (0.30,True)]:
+  mu_f.precompute(R=R, w=w, normed=normed, progress=True)
+  mu_terms = mu_f(smoothing=None, terms=True).T
+  mu_terms_nuclear = mu_f(smoothing=False, terms=True).T
+  mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-1, p=1.5), terms=True).T
+  for i in range(4):
+    p = figure(
+      width=200, height=200, 
+      title=f"w:{w}, normed:{normed}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
+    )
+    p.yaxis.minor_tick_line_alpha = 0
+    p.line(alpha_thresholds, mu_terms_nuclear[:,i], line_color = "orange", line_width=2.0)
+    p.line(alpha_thresholds, mu_terms_sgn_approx[:,i], line_color = "blue",  line_width=1.5)
+    p.step(alpha_thresholds, mu_terms[:,i], line_color = "black", line_width=1.0)
+    figures[i].append(p)
 
-mu_f.precompute(R=R, w=0.35, normed=True, progress=True)
-mu_terms = mu_f(smoothing=None, terms=True).T
-mu_terms_moreau = mu_f(smoothing=moreau(), terms=True).T
-mu_terms_nuclear = mu_f(smoothing=False, terms=True).T
-mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5), terms=True).T
-p = figure(
-  width=450, height=300, 
-  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
-)
-p.yaxis.minor_tick_line_alpha = 0
-p.line(alpha_thresholds, -mu_terms_moreau[:,0], line_color = "red", legend_label="Moreau")
-p.line(alpha_thresholds, -mu_terms_sgn_approx[:,0], line_color = "blue", legend_label="SgnApprox")
-p.step(alpha_thresholds, -mu_terms[:,0], line_color = "black", legend_label="Rank")
-p.line(alpha_thresholds, -mu_terms_nuclear[:,0], line_color = "orange", legend_label="Nuclear")
-p.legend.label_text_font_size = '4pt'
-p.legend.padding = 0
-p.legend.spacing = 0
-
-from bokeh.layouts import row
-show(row([q, p]))
+show(row([column(f) for f in figures]))
 ```
 
-The weighted combinatorial laplacian is simply unstable whenever $w > 0$, due to the face that $1/\epsilon$ can produce arbitrarily large values as $\epsilon \to 0^+$. This is not a problem for the normalized laplacian, as the spectrum is always bounded in the range $[0, p+2]$. From now on, let's only consider the normalized weighted combinatorial laplacian. 
+The weighted combinatorial laplacian is unstable whenever $w > 0$, due to the fact that $1/\epsilon$ can produce arbitrarily large values as $\epsilon \to 0^+$. This is not a problem for the normalized laplacian, as the spectrum is always bounded in the range $[0, p+2]$. 
+
+__TAKEAWAY__: If $w > 0$, you need degree normalization to stabilize the spectrum.
+
+---
+
+From now on, let's only consider the normalized weighted combinatorial laplacian. 
 
 ```{python}
-mu_f.precompute(R=R, w=0.35, normed=True, progress=True)
-figs = []
-fig_kwargs = dict(width=250, height=150,title=f"Circle multiplicities", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity")
-for ef in [None, False, sgn_approx(eps=1e-2, p=1.2), moreau(t=0.15)]:
-  mu_terms = mu_f(smoothing=ef, terms=True).T
-  p = figure(**fig_kwargs)
-  p.line(alpha_thresholds, mu_terms[:,0], line_color="orange")
-  p.line(alpha_thresholds, -mu_terms[:,1], line_color="blue")
-  p.line(alpha_thresholds, -mu_terms[:,2], line_color="red")
-  p.line(alpha_thresholds, mu_terms[:,3], line_color="green")
-  p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
-  p.yaxis.minor_tick_line_alpha = 0
-  figs.append(p)
+W = [0.0, 0.20, 0.40, 0.60, 0.80]
+fig_kwargs = dict(width=200, height=150)
 
-show(row(figs))
-# mu_query(S, R=np.append(R, 0.35), f=F[j], p=1, normed=True)(smoothing=False, terms=True)
+## Try varying epsilon in [1e-1, 100] to see interpolation of behavior
+figures = [[] for i in range(len(W))]
+for i,w in enumerate([0.0, 0.20, 0.40, 0.60, 0.80]):
+  mu_f.precompute(R=R, w=w, normed=True, progress=True)
+  for j,ef in enumerate([None, sgn_approx(eps=1e-1, p=1.2), False]):
+    mu_terms = mu_f(smoothing=ef, terms=True).T
+    p = figure(**(fig_kwargs | dict(title=f"w:{w}, smooth:{j}")))
+    p.line(alpha_thresholds, mu_terms[:,0], line_color="red")
+    p.line(alpha_thresholds, -mu_terms[:,1], line_color="green")
+    p.line(alpha_thresholds, -mu_terms[:,2], line_color="blue")
+    p.line(alpha_thresholds, mu_terms[:,3], line_color="orange")
+    p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+    p.yaxis.minor_tick_line_alpha = 0
+    figures[i].append(p)
+
+show(column([row(f) for f in figures]))
 ```
+
+The nuclear norm not only causes a spurious modes, it effectively removes the existing maximizer. Changing `w` has the effect of smoothing the objective 
+and expanding the feasible set when appropriately chosen and the sgn approximation is used, whereas seemingly has neglible on the nuclear norm. 
+
+Let's evaluate the Moreau envelope on the nuclear norm. 
 
 ```{python}
-mu_f.precompute(R=R, normed=True, progress=True)
-mu_terms = mu_f(smoothing=None)
-mu_terms_moreau = mu_f(smoothing=moreau())
-mu_terms_nuclear = mu_f(smoothing=False)
-mu_terms_sgn_approx = mu_f(smoothing=sgn_approx(eps=1e-3, p=1.5))
-p = figure(
-  width=450, height=300, 
-  title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
-)
+from pbsig.linalg import * 
+mu_mats = [mu_query_mat(S=S, R=R, f=f, p=1, form = 'array', normed=True) for f in mu_f.family]
+me = lambda M, t: prox_nuclear(M, t)[1]
+
+mu_moreau = [[] for i in range(4)]
+for M1, M2, M3, M4 in mu_mats:
+  mu_moreau[0].append(me(M1, 0.01))
+  mu_moreau[1].append(me(M2, 0.01))
+  mu_moreau[2].append(me(M3, 0.01))
+  mu_moreau[3].append(me(M4, 0.01))
+mu_morea_np.array(mu_moreau)
+
+p = figure(**(fig_kwargs | dict(title=f"w:{w}, smooth:{j}")))
+p.line(alpha_thresholds, mu_terms[:,0], line_color="red")
+p.line(alpha_thresholds, -mu_terms[:,1], line_color="green")
+p.line(alpha_thresholds, -mu_terms[:,2], line_color="blue")
+p.line(alpha_thresholds, mu_terms[:,3], line_color="orange")
+p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
 p.yaxis.minor_tick_line_alpha = 0
-p.line(alpha_thresholds, mu_terms_moreau, line_color = "red", legend_label="Moreau")
-p.line(alpha_thresholds, mu_terms_sgn_approx, line_color = "blue", legend_label="SgnApprox")
-p.step(alpha_thresholds, mu_terms, line_color = "black", legend_label="Rank")
-p.line(alpha_thresholds, mu_terms_nuclear, line_color = "orange", legend_label="Nuclear")
-p.legend.label_text_font_size = '4pt'
-p.legend.padding = 0
-p.legend.spacing = 0
-show(p)
+figures[i].append(p)
 ```
+
+
+
+
+
+
+```{python}
+## Testing the moreau envelope 
+from pbsig.linalg import prox_nuclear
+X = np.random.uniform(size=(10,10))
+X = X @ X.T
+
+from pbsig.linalg import soft_threshold
+t = 0.15
+ew, ev = np.linalg.eigh(X)
+assert np.isclose(sum(np.linalg.eigvalsh(ev @ np.diag(ew) @ ev.T)), sum(ew))
+assert np.isclose(sum(np.linalg.eigvalsh(ev @ np.diag(soft_threshold(ew, 0.15)) @ ev.T)), sum(soft_threshold(ew, 0.15)))
+P = ev @ np.diag(soft_threshold(ew, 0.15)) @ ev.T  #  proximal operator 
+assert np.isclose(sum(np.linalg.eigvalsh(P)), sum(soft_threshold(ew, 0.15)))
+me = sum(soft_threshold(ew, 0.15)) + (1/(2*0.15))*np.linalg.norm(X - P, 'fro')**2
+P, mf, _ = prox_nuclear(X, t=t) # 35.36999221118293
+assert np.isclose(me, mf)
+
+
+A = np.random.uniform(size=(10,10))
+A = A @ A.T
+print(np.linalg.norm(A - X, 'fro')**2)
+ew_x, U =np.linalg.eigh(X)
+ew_v, V =np.linalg.eigh(A)
+S = np.diag(ew_x)
+D = np.diag(ew_v)
+
+np.trace(S**2) + np.trace(D**2) - 2*np.trace(V.T @ U @ S @ U.T @ V @ D)
+np.trace(S**2) + np.trace(D**2) - 2*np.trace(S**2 @ U.T @ X @ D @ X.T @ U)
+
+sum((np.diag(A) - np.diag(X))**2)
+sum((np.diag(A)**2 - np.diag(X)**2))
+
+
+
+from pbsig.linalg import moreau
+sum(moreau(ew, t))
+
+```
+
+Investigate why the nuclear and moreau are so far away from the rank representations (and why they are biased)? This does not have anything to do with _w_ apparently, as _w = 0_ yields the same behavior. So let's just conclude the nuclear is not a good subtitute for the rank function.  Instead, let's develop a proximal operator for the sign approximation function. 
+```{python}
+
+def moreau_loss(x: ArrayLike, eps: float, p: float = 1.0, t: float = 1.0):
+  sf = sgn_approx(eps=eps, p=p)  
+  x_ew = np.linalg.eigvalsh(x)
+  def sgn_approx_cost(ew_hat: ArrayLike, t: float):
+    return sum(sf(ew_hat)) + (1/(t*2)) * np.linalg.norm(sf(ew_hat) - sf(x_ew))**2
+  w = minimize(sgn_approx_cost, x0=y_ew_noise, args=(t), tol=1e-15, method="Powell")
+  if w.status != 0:
+    import warnings
+    warnings.warn("Did not converge to sign vector prox")
+  ew = w.x if w.status == 0 else x_ew
+  return sgn_approx_cost(ew, t)
+
+
+```
+
+
+
+```{python}
+from pbsig.linalg import eigh_solver, eigvalsh_solver
+from pbsig.betti import mu_query_mat
+sf = sgn_approx(eps=1e-2, p=1.2)  
+LM = mu_query_mat(S, R=R, f=F[jj], p=1, form="array")
+Y = LM[3].todense()
+#ew, ev = eigh_solver(Y)(Y)
+
+y_shape = Y.shape
+y = np.ravel(Y)
+def moreau_cost(y_hat: ArrayLike, t: float = 1.0):
+  Y_hat = y_hat.reshape(y_shape)
+  ew = np.maximum(np.real(np.linalg.eigvals(Y_hat)), 0.0) # eiegnvalues can be negative, so we project onto the PSD cone!
+  ew_yhat = sum(sf(ew)) 
+  if t == 0.0: 
+    return ew_yhat
+  return ew_yhat + (1/(t*2))*np.linalg.norm(Y_hat - Y, "fro")**2
+# ev @ np.diag(sf(ew)) @ ev.T
+
+from scipy.optimize import minimize
+y_noise = y+np.random.uniform(size=len(y), low=0, high=0.01)
+w = minimize(moreau_cost, x0=y_noise, args=(0.01))
+Z = w.x.reshape(y_shape)
+print(f"Status: {w.status}, total error: {np.linalg.norm(Z - Y, 'fro')}, Num it: {w.nit}, Num evals: {w.nfev} \nMessage: {w.message}")
+
+## Try a vector based optimization
+from scipy.optimize import minimize
+y_ew = np.linalg.eigvalsh(Y)
+def sgn_approx_cost(ew_hat: ArrayLike, t: float = 1.0):
+  return sum(sf(ew_hat)) + (1/(t*2)) * np.linalg.norm(sf(ew_hat) - sf(y_ew))**2
+y_ew_noise = y_ew + np.random.uniform(size=len(y_ew), low=0.0, high=0.50)
+w = minimize(sgn_approx_cost, x0=y_ew_noise, args=(0.5), tol=1e-15, method="Powell")
+print(f"Status: {w.status}, total error: {np.linalg.norm(y_ew - w.x)}, Num it: {w.nit}, Num evals: {w.nfev} \nMessage: {w.message}")
+
+
+
+eigvalsh_solver(Z)(Z)
+
+mu_query(S, R, f)
+solver = eigh_solver(x)
+ew, ev = solver(x)
+
+
+x0 
+
+# j = np.searchsorted(alpha_thresholds, 0.90)
+# mu = mu_query(S, R=np.append(R, 0.35), f=F[j], p=1, normed=True)
+# mu(smoothing=None, terms=False) # 1 
+# mu(smoothing=None, terms=True) # 8,  -8, -16,  17
+# mu(smoothing=sgn_approx(eps=1e-2, p=1.2), terms=False) # 1.0004954387928944
+# mu(smoothing=sgn_approx(eps=0.90, p=1.0), terms=False) # 0.5891569860030863
+# mu(smoothing=False, terms=True) #  8., -16., -16.,  24.
+
+# jj = np.searchsorted(alpha_thresholds, 1.15)
+# f=F[jj]
+# spectral_rank(EW[0])
+
+# mu = mu_query(S, R=np.append(R, 0.35), f=F[jj], p=1, normed=True)
+# mu(smoothing=False, terms=True)
+```
+
 
 
 
