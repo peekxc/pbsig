@@ -1,0 +1,26 @@
+---
+
+---
+title: "Quarto example"
+format: html
+jupyter: python3
+editor: 
+  render-on-save: false
+execute:
+  freeze: false
+  cache: false
+---
+
+```{python}
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook 
+output_notebook()
+p = figure(width=100, height=100)
+p.step([0,1,2,3],[0,1,1,0],color="black")
+# show(p)
+```
+
+```{python}
+print("testing2")
+print("testing10")
+```

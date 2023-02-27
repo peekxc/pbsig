@@ -11,6 +11,8 @@ trash
 .vscode
 .textpadtmp
 extern/
+.jupyter* 
+
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
