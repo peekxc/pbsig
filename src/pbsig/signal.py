@@ -1,6 +1,5 @@
 from typing import *
 import numpy as np 
-from scipy import signal
 
 ## From: https://stackoverflow.com/a/4696026/6912436
 def _rfft_xcorr(x, y):

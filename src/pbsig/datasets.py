@@ -74,6 +74,9 @@ def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich"
   pixels = np.asarray(image.convert('L'))
   return(pixels)
 
+def letters():
+  pass
+
 def freudenthal_image(image: ArrayLike, threshold: int = 200):
   """
   Given an grayscale image and a threshold between [0, 255], returns the 'Freundenthal triangulation'
@@ -127,7 +130,8 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   contours = (contours[np.argmax([len(c) for c in contours])])
   S = contours[:,0,:]
   return(S)
-  
+
+
 def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
   base_dir = _package_data('mpeg7')
   if simplify == 150 and contour == True and which == "default":

@@ -19,10 +19,10 @@ from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
 
-def figure_dgm(dgm, pt_size: int = 5, show_filter: bool = False, **kwargs):
+def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = False, **kwargs):
   default_figkwargs = dict(width=400, height=400, match_aspect=True,aspect_scale=1, title="Persistence diagram")
   fig_kwargs = default_figkwargs.copy()
-  if len(dgm) == 0:
+  if dgm is None or len(dgm) == 0:
     fig_kwargs["x_range"] = (0, 1)
     fig_kwargs["y_range"] = (0, 1)
     min_val = 0
@@ -42,16 +42,16 @@ def figure_dgm(dgm, pt_size: int = 5, show_filter: bool = False, **kwargs):
   p = figure(**fig_kwargs)
   p.xaxis.axis_label = "Birth"
   p.yaxis.axis_label = "Death"
-  p.patch([min_val, max_val, max_val], [min_val, min_val, max_val], line_width=0, fill_color="gray", fill_alpha=0.80)
+  p.patch([min_val-100, max_val+100, max_val+100], [min_val-100, min_val-100, max_val+100], line_width=0, fill_color="gray", fill_alpha=0.80)
   
   ## Plot non-essential points, where applicable 
-  if any(dgm["death"] != np.inf):
+  if dgm is not None and any(dgm["death"] != np.inf):
     x = dgm["birth"][dgm["death"] != np.inf]
     y = dgm["death"][dgm["death"] != np.inf]
     p.scatter(x,y, size=pt_size)
 
   ## Plot essential points, where applicable 
-  if any(dgm["death"] == np.inf):
+  if dgm is not None and any(dgm["death"] == np.inf):
     x = dgm["birth"][dgm["death"] == np.inf]
     y = np.repeat(max_val - delta*0.05, sum(dgm["death"] == np.inf))
     s = Span(dimension="width", location=max_val - delta*0.05, line_width=1.0, line_color="gray", line_dash="dotted")

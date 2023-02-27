@@ -40,7 +40,12 @@ The homology of the rips complex is highly dependent on the scale parameter $\ep
 Persistence is often summarized with a persistence diagram. 
 
 ```{python}
-
+from pbsig.persistence import ph
+max_radius = 3.0
+K = rips_filtration(circle, max_radius, p=2)
+dgms = ph(K, engine="dionysus")
+dgm = dgms[1]
+show(figure_dgm(dgm))
 ```
 
 ## Changing a different parameter 
@@ -48,16 +53,27 @@ Persistence is often summarized with a persistence diagram.
 Indeed, suppose we scale our circle by some scaling factor $\alpha \in [0,1]$, fixing $\epsilon$ arbitrarily.
 
 ```{python}
-from bokeh.layouts import gridplot
-from itertools import product
-nr, nc, r = 2, 6, 0.5 # num rows, num columns, radius 
-max_scale = 3.0
-F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, r, p=2))
-plots = [[None]*nc for r in range(nr)]
-for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
-  X, R = F(alpha)
-  plots[i][j] = figure_complex(R, X, width=100, height=100, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
-show(gridplot(plots))
+from pbsig.vis import bin_color
+max_scale = 2.0
+alpha_family = np.linspace(0, max_scale, 100)
+vine = np.c_[alpha_family*dgm["birth"], alpha_family*dgm["death"]]
+
+p = figure_dgm()
+p.scatter(vine[:,0],vine[:,1], color=bin_color(alpha_family, "turbo"))
+# p.lookup(name)
+show(p)
+
+
+# from bokeh.layouts import gridplot
+# from itertools import product
+# nr, nc, r = 2, 6, 0.5 # num rows, num columns, radius 
+# max_scale = 3.0
+# F = lambda alpha: (alpha*circle, rips_filtration(alpha*circle, r, p=2))
+# plots = [[None]*nc for r in range(nr)]
+# for alpha, (i,j) in zip(np.linspace(0.0, max_scale*r, nr*nc), product(range(nr), range(nc))):
+#   X, R = F(alpha)
+#   plots[i][j] = figure_complex(R, X, width=100, height=100, x_range=(-max_scale*r,max_scale*r), y_range=(-max_scale*r,max_scale*r))
+# show(gridplot(plots))
 ```
 
 We have essentially the same effect, but in reverse: at first the complex is the full $n$-simplex, collapsed to trivial point in its embedding. As the complex expands, it changes from being a disk (trivial $H_1$) to a circle (non-trivial $H_1$) to $n$ disconnected points (trivial $H_1$). Essentially, rather than having an $\epsilon$-parameterized filtration over a fixed point cloud, we have an $\alpha$-parameterized family of rips filtrations $\{ \mathcal{R}_{\epsilon}(\alpha) \}_{\alpha \in A}$ of varying size but fixed filter. 
@@ -91,17 +107,16 @@ Suppose we wanted to determine the choices of $\alpha$ where this cycle existed.
 
 ```{python}
 from pbsig.betti import mu_query
-alpha_thresholds = np.linspace(0, max_scale*r, 100)
-R = (0.5, 1.0, 1.5, 1.75)
+R = (0.5, 1.0, 1.5, 2.0)
 S = simplicial_complex(faces(SimplexTree([np.arange(8)]), 2))
-Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1, normed=False) for alpha in alpha_thresholds]
+Q = [mu_query(S, R=R, f=flag_weight(alpha*circle), p=1, normed=False) for alpha in alpha_family]
 
 mult_H1 = [mu() for mu in Q]
 p = figure(
   width=350, height=200, 
   title=f"Circle multiplicities for R={R}", x_axis_label="alpha (scaling factor)", y_axis_label="multiplicity"
 )
-p.step(alpha_thresholds, np.array(mult_H1, dtype=int))
+p.step(alpha_family, np.array(mult_H1, dtype=int))
 p.yaxis.minor_tick_line_alpha = 0
 show(p)
 ```
@@ -109,7 +124,7 @@ show(p)
 Equivalently, we can amortize the cost of creating so many matrices by re-using the results from previous computations. 
 ```{python}
 from pbsig.betti import MuFamily
-F = [flag_weight(alpha*circle) for alpha in alpha_thresholds]
+F = [flag_weight(alpha*circle) for alpha in alpha_family]
 mu_f = MuFamily(S, family=F, p=1, form="array")
 mu_f.precompute(R=R, progress=True)
 
@@ -166,11 +181,11 @@ show(row([column(f) for f in figures]))
 
 The weighted combinatorial laplacian is unstable whenever $w > 0$, due to the fact that $1/\epsilon$ can produce arbitrarily large values as $\epsilon \to 0^+$. This is not a problem for the normalized laplacian, as the spectrum is always bounded in the range $[0, p+2]$. 
 
-__TAKEAWAY__: If $w > 0$, you need degree normalization to stabilize the spectrum.
+__TAKEAWAY__: If $w > 0$, you need degree normalization to stabilize the spectrum. Though the nuclear norm is at times quite similar to the rank, it can also differ greatly. 
 
 ---
 
-From now on, let's only consider the normalized weighted combinatorial laplacian. 
+From now on, let's only consider the normalized weighted combinatorial laplacian. Let's look at the effect of w
 
 ```{python}
 W = [0.0, 0.20, 0.40, 0.60, 0.80]
@@ -178,7 +193,7 @@ fig_kwargs = dict(width=200, height=150)
 
 ## Try varying epsilon in [1e-1, 100] to see interpolation of behavior
 figures = [[] for i in range(len(W))]
-for i,w in enumerate([0.0, 0.20, 0.40, 0.60, 0.80]):
+for i,w in enumerate(W):
   mu_f.precompute(R=R, w=w, normed=True, progress=True)
   for j,ef in enumerate([None, sgn_approx(eps=1e-1, p=1.2), False]):
     mu_terms = mu_f(smoothing=ef, terms=True).T
@@ -198,32 +213,134 @@ The nuclear norm not only causes a spurious modes, it effectively removes the ex
 and expanding the feasible set when appropriately chosen and the sgn approximation is used, whereas seemingly has neglible on the nuclear norm. 
 
 Let's evaluate the Moreau envelope on the nuclear norm. 
+```{python}
+w = 10000.35
+mu_f.precompute(R=R, w=w, normed=True, progress=True) 
+```
 
 ```{python}
-from pbsig.linalg import * 
-mu_mats = [mu_query_mat(S=S, R=R, f=f, p=1, form = 'array', normed=True) for f in mu_f.family]
+from pbsig.linalg import *
+from pbsig.utility import *
+
+
+mu_terms = mu_f(smoothing=True, terms=True).T
+mu_mats = [mu_query_mat(S=S, R=np.append(R, w), f=f, p=1, form = 'array', normed=True) 
+           for f in mu_f.family]
 me = lambda M, t: prox_nuclear(M, t)[1]
 
+t = 0.50
+mu_moreau = [[] for i in range(4)]
+for M1, M2, M3, M4 in progressbar(mu_mats):
+  mu_moreau[0].append(me(M1, t))
+  mu_moreau[1].append(-me(M2, t))
+  mu_moreau[2].append(-me(M3, t))
+  mu_moreau[3].append(me(M4, t))
+mu_moreau = np.array(mu_moreau).T
+
+magnitudes = abs(mu_terms).sum(axis=1)
+magnitudes = np.isclose(magnitudes, 0.0).astype(int)
+feasible = np.flatnonzero(np.diff(magnitudes) != 0.0)
+
+p = figure(**(fig_kwargs | dict(title=f"w:{w}, smooth:{j}")))
+p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+p.line(alpha_thresholds, mu_moreau.sum(axis=1), line_color="black", line_dash="dotted", line_width=1.5)
+p.yaxis.minor_tick_line_alpha = 0
+show(p)
+```
+
+```{python}
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(mu_f.precompute)
+profile.enable_by_count()
+mu_f.precompute(R=R, w=w, normed=True, progress=True) 
+profile.print_stats(output_unit=1e-3)
+```
+
+```{python}
+def moreau_loss(x: ArrayLike, eps: float, p: float = 1.0, t: float = 1.0):
+  """
+  Parameters:
+    x: ndarray, spmatrix, or LinearOperator
+    t: proximal scaling operator 
+  """
+  from scipy.sparse import spmatrix
+  from scipy.optimize import minimize
+  if isinstance(x, np.ndarray) and all(np.ravel(x == 0)):
+    return 0
+  elif isinstance(x, spmatrix) and len(x.data) == 0:
+    return 0
+  sf = sgn_approx(eps=eps, p=p)  
+  x_ew = np.linalg.eigvalsh(x)
+  def sgn_approx_cost(ew_hat: ArrayLike, t: float):
+    return sum(sf(ew_hat)) + (1/(t*2)) * np.linalg.norm(sf(ew_hat) - sf(x_ew))**2
+  w = minimize(sgn_approx_cost, x0=x_ew, args=(t), tol=1e-15, method="Powell")
+  if w.status != 0:
+    import warnings
+    warnings.warn("Did not converge to sign vector prox")
+  ew = w.x if w.status == 0 else x_ew
+  return sgn_approx_cost(ew, t)
+
+
+t, eps = 0.80, 1e-1
 mu_moreau = [[] for i in range(4)]
 for M1, M2, M3, M4 in mu_mats:
-  mu_moreau[0].append(me(M1, 0.01))
-  mu_moreau[1].append(me(M2, 0.01))
-  mu_moreau[2].append(me(M3, 0.01))
-  mu_moreau[3].append(me(M4, 0.01))
-mu_morea_np.array(mu_moreau)
+  mu_moreau[0].append(moreau_loss(M1.todense(), eps=eps, p=1.5, t=t))
+  mu_moreau[1].append(-moreau_loss(M2.todense(), eps=eps, p=1.5, t=t))
+  mu_moreau[2].append(-moreau_loss(M3.todense(), eps=eps, p=1.5, t=t))
+  mu_moreau[3].append(moreau_loss(M4.todense(), eps=eps, p=1.5, t=t))
+mu_moreau = np.array(mu_moreau).T
+
+p = figure(**(fig_kwargs | dict(title=f"w:{w}, t:{t}, eps:{eps}")))
+p.line(alpha_thresholds, mu_terms[:,0], line_color="red")
+p.line(alpha_thresholds, mu_moreau[:,0], line_color="red", line_dash="dotted", line_width=1.5)
+p.line(alpha_thresholds, -mu_terms[:,1], line_color="green")
+p.line(alpha_thresholds, -mu_moreau[:,1], line_color="green", line_dash="dotted", line_width=1.5)
+p.line(alpha_thresholds, -mu_terms[:,2], line_color="blue")
+p.line(alpha_thresholds, -mu_moreau[:,2], line_color="blue", line_dash="dotted", line_width=1.5)
+p.line(alpha_thresholds, mu_terms[:,3], line_color="orange")
+p.line(alpha_thresholds, mu_moreau[:,3], line_color="orange", line_dash="dotted", line_width=1.5)
+q = figure(**(fig_kwargs | dict(title=f"w:{w}, t:{t}, eps:{eps}")))
+q.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+q.line(alpha_thresholds, mu_moreau.sum(axis=1), line_color="black", line_dash="dotted", line_width=1.5)
+p.line(alpha_thresholds, mu_moreau.sum(axis=1), line_color="black", line_dash="dotted", line_width=1.5)
+q.yaxis.minor_tick_line_alpha = 0
+show(row(p, q))
+```
+
+```{python}
+from pbsig.linalg import *
+w = 0.35
+mu_f.precompute(R=R, w=w, normed=True, progress=True) 
+mu_terms = mu_f(smoothing=True, terms=True).T
+mu_mats = [mu_query_mat(S=S, R=R, f=f, p=1, form = 'array', normed=True, w=w) for f in mu_f.family]
+me = lambda M, t: prox_nuclear(M, t)[1]
+
+t = 5.0
+mu_moreau = [[] for i in range(4)]
+for M1, M2, M3, M4 in mu_mats:
+  mu_moreau[0].append(me(M1, t))
+  mu_moreau[1].append(-me(M2, t))
+  mu_moreau[2].append(-me(M3, t))
+  mu_moreau[3].append(me(M4, t))
+mu_moreau = np.array(mu_moreau).T
 
 p = figure(**(fig_kwargs | dict(title=f"w:{w}, smooth:{j}")))
 p.line(alpha_thresholds, mu_terms[:,0], line_color="red")
+p.line(alpha_thresholds, mu_moreau[:,0], line_color="red", line_dash="dotted", line_width=1.5)
 p.line(alpha_thresholds, -mu_terms[:,1], line_color="green")
+p.line(alpha_thresholds, -mu_moreau[:,1], line_color="green", line_dash="dotted", line_width=1.5)
 p.line(alpha_thresholds, -mu_terms[:,2], line_color="blue")
+p.line(alpha_thresholds, -mu_moreau[:,2], line_color="blue", line_dash="dotted", line_width=1.5)
 p.line(alpha_thresholds, mu_terms[:,3], line_color="orange")
+p.line(alpha_thresholds, mu_moreau[:,3], line_color="orange", line_dash="dotted", line_width=1.5)
 p.line(alpha_thresholds, mu_terms.sum(axis=1), line_color="black")
+p.line(alpha_thresholds, mu_moreau.sum(axis=1), line_color="black", line_dash="dotted", line_width=1.5)
 p.yaxis.minor_tick_line_alpha = 0
-figures[i].append(p)
+show(p)
+
 ```
-
-
-
 
 
 
@@ -269,17 +386,6 @@ sum(moreau(ew, t))
 Investigate why the nuclear and moreau are so far away from the rank representations (and why they are biased)? This does not have anything to do with _w_ apparently, as _w = 0_ yields the same behavior. So let's just conclude the nuclear is not a good subtitute for the rank function.  Instead, let's develop a proximal operator for the sign approximation function. 
 ```{python}
 
-def moreau_loss(x: ArrayLike, eps: float, p: float = 1.0, t: float = 1.0):
-  sf = sgn_approx(eps=eps, p=p)  
-  x_ew = np.linalg.eigvalsh(x)
-  def sgn_approx_cost(ew_hat: ArrayLike, t: float):
-    return sum(sf(ew_hat)) + (1/(t*2)) * np.linalg.norm(sf(ew_hat) - sf(x_ew))**2
-  w = minimize(sgn_approx_cost, x0=y_ew_noise, args=(t), tol=1e-15, method="Powell")
-  if w.status != 0:
-    import warnings
-    warnings.warn("Did not converge to sign vector prox")
-  ew = w.x if w.status == 0 else x_ew
-  return sgn_approx_cost(ew, t)
 
 
 ```

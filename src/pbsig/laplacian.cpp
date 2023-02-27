@@ -298,7 +298,7 @@ void declare_laplacian(py::module &m, std::string typestr) {
 }
 auto boundary_ranks(const size_t p_rank, const size_t n, const size_t k) -> py::array_t< int > {
   std::vector< I > br(k,0);
-  boundary(p_rank, n, k, br.begin())
+  boundary(p_rank, n, k, br.begin());
   return py::cast(br);
 }
 

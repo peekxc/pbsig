@@ -475,11 +475,20 @@ class MuFamily:
 
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     family_it = progressbar(enumerate(self.family), count=len(self.family)) if progress else enumerate(self.family)
+    
+    ## Construct a single operator or matrix for iteration
+    if self.form == "array":
+      D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
+    elif self.form == "lo":
+      L = up_laplacian(self.S, p=self.p, form="lo")
+    else: 
+      raise ValueError("Unknown type") 
+
+    ## Traverse the family 
     for i, f in family_it:
       assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
       self.update_weights(f=f, R=R, w=w) # updates self._fi, ..., self._fl
       if self.form == "array":
-        D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
             I_sgn = np.sign(abs(I))
@@ -496,7 +505,6 @@ class MuFamily:
           # ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
           # self._terms[cc][i] = ew_ext * np.sort(I)
       elif self.form == "lo":
-        L = up_laplacian(self.S, p=self.p, form="lo")
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
             I_sgn = np.sign(abs(I))

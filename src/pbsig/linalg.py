@@ -178,9 +178,9 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
   tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
   if pp == 0.0: 
     if return_eigenvectors:
-      return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+      return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
     else: 
-      return lambda x: 0.0
+      return lambda x: np.zeros(1)
   if solver == 'dac':
     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
@@ -189,12 +189,12 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
       if return_eigenvectors:
-        return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
       else:
         return(lambda A: np.zeros(1))
     if A.shape[0] == 0 or A.shape[1] == 0: 
       if return_eigenvectors:
-        return lambda x: 0.0, np.c_[np.zeros(A.shape[0])]
+        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
       else:
         return(lambda A: np.zeros(1))
     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
@@ -312,7 +312,7 @@ def prox_nuclear(x: ArrayLike, t: float = 1.0):
   ew, ev = solver(x)
   # sv = np.maximum(ew, 0.0)                  ## singular values (sqrt?)
   sw_prox = np.maximum(ew - t, 0.0)                     ## soft-thresholded singular values
-  A = ev @ diags(sw_prox) @ ev.T                        ## prox operator 
+  A = ev @ diags(np.array(sw_prox)) @ ev.T                        ## prox operator 
   proj_d = (1/(2*t))*np.linalg.norm(A - x, 'fro')**2      ## projection distance (rhs)
   me = sum(abs(sw_prox)) + proj_d                            ## Moreau envelope value
   return A, me, ew
