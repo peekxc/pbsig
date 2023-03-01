@@ -139,6 +139,29 @@ def moreau(x: ArrayLike = None, t: float = 1.0) -> ArrayLike:
     return x + np.where(x >= t, t, x)**2
   return _moreau if x is None else _moreau(np.array(x))
 
+def moreau_loss(x: ArrayLike, sf: Callable, t: float = 1.0):
+  """
+  Parameters:
+    x:  ndarray, spmatrix, or LinearOperator
+    sf: element-wise function to apply to the eigenvalues 
+    t:  proximal scaling operator 
+  """
+  from scipy.sparse import spmatrix
+  from scipy.optimize import minimize
+  if x.ndim == 0: return 0
+  if isinstance(x, np.ndarray) and all(np.ravel(x == 0)): return 0
+  elif isinstance(x, spmatrix) and (len(x.data) == 0 or x.nnz == 0): return 0
+  #x_ew = np.linalg.eigvalsh(x)
+  x_ew = eigvalsh_solver(x)(x)
+  def sgn_approx_cost(ew_hat: ArrayLike, t: float):
+    return sum(sf(ew_hat)) + (1/(t*2)) * np.linalg.norm(sf(ew_hat) - sf(x_ew))**2
+  w = minimize(sgn_approx_cost, x0=x_ew, args=(t), tol=1e-15, method="Powell")
+  if w.status != 0:
+    import warnings
+    warnings.warn("Did not converge to sign vector prox")
+  ew = w.x if w.status == 0 else x_ew
+  return sgn_approx_cost(ew, t)
+
 def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
   def _huber(x: ArrayLike): 
     return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
@@ -790,7 +813,7 @@ def adjacency_matrix(S: ComplexLike, p: int = 0, weights: ArrayLike = None):
   return A
 
 ## TODO: change weight to optionally be a string when attr system added to SC's
-def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, normed=False, return_diag=False, form='array', symmetric: bool = True, dtype=None, **kwargs):
+def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] = None, normed=False, return_diag=False, form='array', symmetric: bool = True, dtype=None, **kwargs):
     """Returns the weighted combinatorial p-th up-laplacian of an abstract simplicial complex S. 
 
     Given D = boundary_matrix(S, p+1), this function parameterizes any (generic) weighted p-th up-laplacian L of the form: 
@@ -840,18 +863,30 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
     (see https://github.com/scipy/scipy/blob/main/scipy/sparse/csgraph/_laplacian.py)
     """
     # assert isinstance(K, ComplexLike), "K must be a Simplicial Complex for now"
-    assert isinstance(weight, Callable) if weight is not None else True
-    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     weight = (lambda s: 1.0) if weight is None else weight
-    _ = weight(next(faces(S, p)))
-    if not isinstance(_, Number) and len(_) == 2:
-      W_LR = np.array([weight(s) for s in faces(S, p)]).astype(float)
-      wpl = W_LR[:,0]
-      wpr = W_LR[:,1]
+    if isinstance(weight, Callable):
+      _ = weight(next(faces(S, p)))
+      if not isinstance(_, Number) and len(_) == 2:
+        W_LR = np.array([weight(s) for s in faces(S, p)]).astype(float)
+        wpl = W_LR[:,0]
+        wpr = W_LR[:,1]
+      else: 
+        wpl = np.array([float(weight(s)) for s in faces(S, p)])
+        wpr = wpl
+      wq = np.array([float(weight(s)) for s in faces(S, p+1)])
+    elif isinstance(weight, Iterable):
+      assert len(weight) == card(S, p+1) or len(weight) == len(S), "If weights given, they must match size of complex or p-faces"
+      weight = np.asarray(weight)
+      if len(weight) == card(S, p+1):
+        wq, wpl, wpr = weight, np.ones(card(S, p)), np.ones(card(S, p))
+      else:
+        f_dim = np.array([dim(s) for s in faces(S)], dtype=np.uint16)
+        wq = weight[f_dim == (p+1)]
+        wpr = weight[f_dim == p]
+        wpl = wpr
     else: 
-      wpl = np.array([float(weight(s)) for s in faces(S, p)])
-      wpr = wpl
-    wq = np.array([float(weight(s)) for s in faces(S, p+1)])
+      raise ValueError("Invalid weight function given")
+    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     assert len(wpl) == card(S,p) and len(wq) == card(S,p+1), "Invalid weight arrays given."
     assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
@@ -875,11 +910,6 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Optional[Callable] = None, 
         lo.set_weights(None, wq, None)
         deg = lo.diagonal()
         lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) # normalized weighted symmetric psd version 
-        # deg = np.zeros(len(p_faces))
-        # for cc, qs in enumerate(p_simplices):
-        #   face_ind = np.array([lo.index(ps) for ps in boundary(qs)])
-        #   deg[face_ind] += wq[cc]
-        # lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) 
       else: 
         if symmetric:
           lo.set_weights(pseudo(np.sqrt(wpl)), wq, pseudo(np.sqrt(wpr)))  # weighted symmetric psd version 

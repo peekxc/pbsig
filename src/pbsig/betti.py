@@ -245,7 +245,30 @@ def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
       return flag_w(s)
   return _cone_weight
 
-def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, solver=None, form = 'array', normed: bool = False, **kwargs):
+## Changes the eigenvalues! 
+def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: int, R: ArrayLike, w: float = 0.0, biased: bool = True):
+  """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_"""
+  assert len(R) == 4 and is_sorted(R)
+  i,j,k,l = R 
+  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
+  fw = np.array([f(s) for s in faces(S, p)])
+  sw = np.array([f(s) for s in faces(S, p+1)])
+  delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
+  if biased:
+    fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  else:
+    x = w/2
+    fi = smooth_upstep(lb = i-x, ub = i+x)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
+    fj = smooth_upstep(lb = j-x, ub = j+x)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
+    fk = smooth_dnstep(lb = k-x, ub = k+x+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
+    fl = smooth_dnstep(lb = l-x, ub = l+x+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  return fi,fj,fk,fl
+
+
+def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True, solver=None, form = 'array', normed: bool = False, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -256,22 +279,9 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
     p = homology dimension 
     smoothing = parameters for singular values
   """
-  assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
-  # L = S if issubclass(type(S), UpLaplacianBase) else up_laplacian(S, p=p, form=form)
   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
-  #assert issubclass(type(L), UpLaplacianBase), f"Type '{type(L)}' be derived from UpLaplacianBase"
-  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
-  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  # fw = np.array([f(s) for s in L.faces])
-  # sw = np.array([f(s) for s in L.simplices]) ## TODO: replace 
-  pw = np.array([f(s) for s in faces(S, p)])
-  qw = np.array([f(s) for s in faces(S, p+1)])
-  delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
-  fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-  
+  fi,fj,fk,fl = update_weights(S, f, p, R, w, biased)
+
   ## Compute the multiplicities 
   # kwargs['sqrt'] = True if 'sqrt' not in kwargs.keys() else kwargs['sqrt']
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
@@ -322,7 +332,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Simple
       return mu if terms else sum(mu)
   return _transform
 
-def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[SimplexConvertible, float], p: int = 0, form = 'array', normed=False, **kwargs):
+def mu_query_mat(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True,  form = 'array', normed=False, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'
   
@@ -333,17 +343,8 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
     p = homology dimension 
     smoothing = parameters for singular values
   """
-  assert len(R) == 4 or len(R) == 5, "Must be a rectangle"
   assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
-  (i,j,k,l), w = (R[:4], 0.0) if len(R) == 4 else (R[:4], R[4])
-  assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  pw = np.array([f(s) for s in faces(S, p)])
-  qw = np.array([f(s) for s in faces(S, p+1)])
-  delta = np.finfo(float).eps                       # TODO: use bound on spectral norm to get tol instead of eps?
-  fi = smooth_upstep(lb = i, ub = i+w)(pw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  fj = smooth_upstep(lb = j, ub = j+w)(pw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  fk = smooth_dnstep(lb = k-w, ub = k+delta)(qw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  fl = smooth_dnstep(lb = l-w, ub = l+delta)(qw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
+  fi,fj,fk,fl = update_weights(S, f, p, R, w, biased)
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   L = [None]*4
   if form == "lo":
@@ -373,51 +374,6 @@ def mu_query_mat(S: Union[FiltrationLike, ComplexLike], R: tuple, f: Callable[Si
     raise ValueError(f"Invalid form choice {form}")
   return L
 
-
-# def mu_sig(S: ComplexLike, R: tuple, f: Callable, p: int = 0, w: float = 0.0, **kwargs):
-#   """Creates a multiplicity signature for some box _R_ over a 1-parameter family _f_. 
-#   """
-#   assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
-#   assert len(R) == 4, "Must be a rectangle"
-#   i,j,k,l = R
-#   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-#   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  
-#   L = up_laplacian(S, p=p, form='lo')
-#   eigh_solver = parameterize_solver(L, **kwargs)
-#   fw = np.array([f(s) for s in L.faces])
-#   sw = np.array([f(s) for s in L.simplices])
-#   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
-#   fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-#   fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-#   fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-#   fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-
-#   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-#   EW = [None]*4
-#   # min(eigh_solver(L)) vs min(eigh_solver(LM))
-#   for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-#     L.set_weights(None, J, None)
-#     # L.precompute_degree()
-#     I_norm = I * L.diagonal() # degrees
-#     L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm)))
-#     EW[cc] = eigh_solver(L)
-#     #EW[cc][np.isclose(abs(EW[cc]), 0.0, atol=atol)] = 0.0 # compress
-#     # if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-#     #   print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
-#     #EW[cc] = np.maximum(EW[cc], 0.0)
-
-#   def _transform(smoothing: tuple = (0.5, 1.0, 0)):
-#     eps,p,method = smoothing
-#     S = sgn_approx(eps=eps, p=p, method=method)
-#     sig = np.sum(S(EW[0])) if len(EW[0]) > 0 else  0
-#     sig -= np.sum(S(EW[1])) if len(EW[1]) > 0 else  0
-#     sig -= np.sum(S(EW[2])) if len(EW[2]) > 0 else  0
-#     sig += np.sum(S(EW[3])) if len(EW[3]) > 0 else  0
-#     return sig
-#   return _transform
-
-
 class MuFamily:
   """ 
   A multiplicity (mu) family M is a multiplicity statistic M(i) generated over a parameterized family of F = { f1, f2, ..., fk }
@@ -446,21 +402,8 @@ class MuFamily:
     self.p = p
     self.form = form
   
-  ## Changes the eigenvalues! 
-  def update_weights(self, f: Callable[SimplexConvertible, float], R: ArrayLike, w: float):
-    """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_"""
-    assert len(R) == 4 and is_sorted(R)
-    fw = np.array([f(s) for s in faces(self.S, self.p)])
-    sw = np.array([f(s) for s in faces(self.S, self.p+1)])
-    i,j,k,l = R 
-    delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
-    self._fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-    self._fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-    self._fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-    self._fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-
   ## Does not change eigenvalues!
-  def precompute(self, R: ArrayLike, w: float = 0.0, normed: bool = False, progress: bool = False, **kwargs) -> None:
+  def precompute(self, R: ArrayLike, w: float = 0.0, biased: bool = True, normed: bool = False, progress: bool = False, **kwargs) -> None:
     """Precomputes the signature across a parameterized family.
 
     Parameters: 
@@ -472,7 +415,6 @@ class MuFamily:
     assert len(R) == 4 and is_sorted(R)
     k = len(self.family)
     self._terms = list([[None]*k for _ in range(4)])
-
     pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
     family_it = progressbar(enumerate(self.family), count=len(self.family)) if progress else enumerate(self.family)
     
@@ -487,7 +429,7 @@ class MuFamily:
     ## Traverse the family 
     for i, f in family_it:
       assert isinstance(f, Callable), "f must be a simplex-wise weight function f: S -> float !"
-      self.update_weights(f=f, R=R, w=w) # updates self._fi, ..., self._fl
+      self._fi, self._fj, self._fk, self._fl = update_weights(self.S, f=f, p=self.p, R=R, w=w, biased=biased) # updates self._fi, ..., self._fl
       if self.form == "array":
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
