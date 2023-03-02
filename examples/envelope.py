@@ -1,12 +1,33 @@
-from multiprocessing.sharedctypes import Value
+# ---
+# jupyter:
+#   jupytext:
+#     cell_metadata_filter: -all
+#     custom_cell_magics: kql
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.11.2
+#   kernelspec:
+#     display_name: pbsig
+#     language: python
+#     name: python3
+# ---
+
+# %%
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.interpolate import CubicSpline
 
+# %%
 pts = np.random.uniform(low=0, high=1,size=(15,2))
 pts = pts[np.argsort(pts[:,0]),:]
 plt.plot(*pts.T)
 
+print("hello")
+
+
+# %%
 x = np.linspace(0.0, 1.0, 20)
 y = 0.50+np.cumsum(np.random.uniform(low=-0.10, high=0.10, size=20))
 

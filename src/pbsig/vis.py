@@ -91,20 +91,27 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
 def plot_dist(*args, **kwargs) -> None:
   show(dist_figure(*args, **kwargs))
 
-def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayLike] = None, palette: str = "viridis", notebook: bool = True, bin_kwargs = None, **kwargs):
+def figure_complex(
+  S: ComplexLike, 
+  pos: ArrayLike = None, 
+  color: Optional[ArrayLike] = None, palette: str = "viridis", bin_kwargs = None, 
+  simplex_kwargs = None,
+  **kwargs
+):
   """
   Plots a simplicial complex in 2D with Bokeh 
   
   Parameters: 
-    S := simplicial complex
-    pos := one of 'mds', 'spring', or a np.ndarray instance of vertex positions
-    notebook := use Bokeh's 'output_notebook()' functionality
-    **kwargs := additional arguments to pass to figure()
+    S: _ComplexLike_ representing a simplicial complex.
+    pos: where to position the vertices. Can be one of 'mds', 'spring', or a ndarray instance of vertex positions.
+    color: either a 2-d ndarray of colors, or a 1-d array of weights to infer colors from via _palette_
+    palette: color palette (string) indicating which color palette to use
+    bin_kwargs: arguments to pass to _bin\_color()_ when _color_ is supplied
+    simplex_kwargs: 
+    kwargs := additional arguments to pass to figure()
   """
-  
-  ## Default scales
-  #if (notebook): output_notebook(verbose=False, hide_banner=True)
   TOOLTIPS = [ ("index", "$value") ]
+  simplex_kwargs = simplex_kwargs if simplex_kwargs is not None else {}
 
   ## Default color values == dimension of the simplex 
   d = np.array([len(s)-1 for s in faces(S)], dtype=np.int8)
@@ -113,9 +120,10 @@ def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayL
   elif len(color) == len(S):
     cv = np.array(color)
   elif len(color) == card(S, 0):
+    cv = np.zeros(len(S))
     cv[d == 0] = color
-    cv[d == 1] = [max(color[e]) for e in faces(S,1)]
-    cv[d == 2] = [max(color[e]) for t in faces(S,2)]
+    for di in range(1, dim(S)+1):
+      cv[d == di] = [max(color[e]) for e in faces(S,di)]
   else: 
     raise ValueError(f"Invalid color argument {type(color)}")
   assert isinstance(cv, Container)
@@ -160,7 +168,7 @@ def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayL
     plot_height=300,
     **kwargs
   )
-  p.axis.visible = False
+  p.axis.visible = use_grid_lines
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
 
@@ -197,7 +205,7 @@ def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayL
     
   ## Create node renderer
   if card(S, 0) > 0:
-    v_scale = 35.0
+    v_scale = simplex_kwargs[0]['size'] if (0 in simplex_kwargs.keys() and 'size' in simplex_kwargs[0].keys()) else 10.0
     v_data = {
       'x' : pos[:,0],
       'y' : pos[:,1],
@@ -205,7 +213,7 @@ def figure_complex(S: ComplexLike, pos: ArrayLike = None, color: Optional[ArrayL
       'color' : color[d == 0]
     }
     v_source = ColumnDataSource(data=v_data)
-    v_renderer = p.circle(x='x', y='y', color='color', alpha=1.0, source=v_source)
+    v_renderer = p.circle(x='x', y='y', color='color', size='size', alpha=1.0, source=v_source)
   p.toolbar.logo = None
   #show(p)
   return p 

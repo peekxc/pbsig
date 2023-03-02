@@ -30,6 +30,30 @@ def random_lower_star(n: int = 50, v: list = [0,1]):
   K = MutableFiltration(S, f=lambda s: max(fv[s]))
   return X, K
 
+def noisy_circle(n: int = 32, n_noise: int = 10, perturb: float = 0.05, r: float = 0.20):
+  """Samples points around the unit circle
+  Parameters: 
+    n: number of points around the main circle 
+    n_noise: number of additional noise points to add outside the _n_ points along the circle
+    perturb: the value p such that that polar coordinates are pertubed by 1 +/- p
+    r: minimum Hausdorff distance from the main circle the rejection sampler will consider a point as 'noise'
+  """
+  theta = np.linspace(0, 2*np.pi, n, endpoint=False)
+  perturb_theta = np.random.uniform(size=n, low=1-perturb, high=1+perturb)
+  circle = np.c_[np.sin(theta*perturb_theta), np.cos(theta*perturb_theta)]
+  circle *= np.random.uniform(size=circle.shape, low=1-perturb, high=1+perturb)
+  def _reject_sampler(n: int, r: float):
+    pts = []
+    while len(pts) < n:
+      pt = np.random.uniform(size=(2,), low=-1-perturb, high=1+perturb)
+      Y = circle if len(pts) == 0 else np.vstack([circle, np.array(pts)])
+      if all([np.linalg.norm(pt - y) > r for y in Y]):
+        pts.append(pt)
+    return np.array(pts)
+  noise = _reject_sampler(n_noise, r)
+  X = np.vstack((circle, noise))
+  return X 
+
 def animal_svgs():
   """
   Loads a list of animal svgs
