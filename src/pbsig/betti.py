@@ -470,13 +470,47 @@ class MuFamily:
         self._Terms[ti][cc,:len(ev)] = ev
       self._Terms[ti] = self._Terms[ti].tocsr()
       self._Terms[ti].eliminate_zeros() 
-    
+  
+  def make_callable(self, R: ArrayLike, w: float = 0.0, biased: bool = True, normed: bool = False, form: str = "array") -> Callable:
+    assert form == "array" or form == "lo", f"Invalid form argument '{str(form)}'"
+    _terms = list([[None]*k for _ in range(4)])
+    pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+    if self.form == "array":
+      D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
+    else:
+      L = up_laplacian(self.S, p=self.p, form="lo")
+    def _mu_smooth(f: Callable):
+      self._fi, self._fj, self._fk, self._fl = update_weights(self.S, f=f, p=self.p, R=R, w=w, biased=biased) 
+      if self.form == "array":
+        for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
+          if normed:
+            I_sgn = np.sign(abs(I))
+            di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
+            I_norm = pseudo(np.sqrt(di)) # used to be I * di 
+            L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+          else:
+            I_norm = pseudo(np.sqrt(I))
+            L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+          solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
+      else:
+        for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
+          if normed:
+            I_sgn = np.sign(abs(I))
+            L.set_weights(I_sgn, J, I_sgn) 
+            I_norm = pseudo(np.sqrt(L.diagonal())) # degree computation
+            L.set_weights(I_norm, J, I_norm)
+          else:
+            I_norm = pseudo(np.sqrt(I))
+            L.set_weights(I_norm, J, I_norm)
+            solver = eigvalsh_solver(L, **kwargs)
+        _terms[cc] = solver(L)
+      
   @staticmethod
   def elementwise_row_sum(T: spmatrix, f: Callable):
     rs = np.ravel(np.add.reduceat(np.append(f(T.data), 0), T.indptr)[:-1])
     rs[np.ravel(np.isclose(T.sum(axis=1), 0))] = 0
     return rs
-    
+
   ## Vectorized version 
   def __call__(self, smoothing: Callable = None, terms: bool = False, **kwargs) -> Union[float, ArrayLike]:
     """Evaluates the precomputed eigenvalues to yield the (possibly smoothed) multiplicities. 
