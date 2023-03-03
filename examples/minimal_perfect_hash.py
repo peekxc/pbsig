@@ -8,8 +8,8 @@ from scipy.sparse.linalg import spsolve, lsqr, splu
 is_prime = np.vectorize(lambda n: False if n % 2 == 0 and n > 2 else all(n % i for i in range(3, int(np.sqrt(n)) + 1, 2)))
 primes = np.fromiter(filter(is_prime, np.arange(1000)), int)
 
-n = 1000
-S = np.random.choice(range(n), size=50, replace=False) # alphabet size
+n = 100000 # alphabet size
+S = np.random.choice(range(n), size=5000, replace=False) # alphabet size
 N = len(S)  # size of index set to map to
 
 ## Optimal hash
@@ -104,7 +104,7 @@ from scipy.sparse.csgraph import structural_rank
 
 for cc in range(1500):
   ## Sample uniformly random universal hash functions
-  HF = [random_hash_function(N, 10) for i in range(3)]
+  HF = [random_hash_function(N, 10) for i in range(5)]
   
   ## Build the hash matrix 
   I, J = [], []
@@ -146,7 +146,7 @@ def perfect_hash(g, HF, integral: bool = False):
 ## The 'closed form' expression of 
 '+'.join(["g[(({0}*x+{1})%{2})%{3}]".format(*h(0, True)) for h in HF])
 
-(lambda x: round(eval('+'.join(["g[(({0}*x+{1})-{2})%{3}]".format(*h(0, True)) for h in HF]))))(0)
+# (lambda x: round(eval('+'.join(["g[(({0}*x+{1})-{2})%{3}]".format(*h(0, True)) for h in HF]))))(0)
 
 from scipy.sparse.linalg import spsolve
 g = spsolve(H.tocsc(), np.arange(N))
@@ -155,7 +155,7 @@ hf = perfect_hash(g, HF)
 assert all(np.array([hf(s) for s in S]) == np.arange(N))
 
 
-phf = lambda x: round(g[((8*x+34)%67)%50]+g[((40*x+8)%61)%50]+g[((32*x+25)%59)%50])
+phf = lambda x: int(round(g[((75*x+9)%79)%50]+g[((24*x+15)%61)%50]+g[((58*x+16)%73)%50]))
 [phf(s) for s in S]
 
 ## Optimization: val & (4 in hex) <==> val % 4
@@ -355,4 +355,56 @@ Int.__hash__ = lambda self: 0
 h = { s : i for i,s in enumerate(S) }
 timeit.timeit(lambda: [h[s] for s in S], number=100)/100
 
-  
+## Generated from: 
+## python perfect_hash.py ../test_keys --hft=2 -o std
+# G = [0, 0, 0, 0, 1, 0, 2, 2, 1]
+# S1 = [3, 4]
+# S2 = [1, 2]
+# assert len(S1) == len(S2) == 2
+# def hash_f(key, T): return sum(T[i % 2] * ord(c) for i, c in enumerate(key)) % 9
+# def perfect_hash(key): return (G[hash_f(key, S1)] + G[hash_f(key, S2)]) % 9
+
+# [(r,i) for (i,r) in enumerate(rank_combs(faces(S, 1)))]
+
+
+
+G = [0, 0, 0, 0, 0, 0, 0, 35, 0, 0, 33, 0, 31, 0, 0, 0, 0,
+    0, 0, 0, 0, 29, 0, 70, 0, 71, 0, 0, 0, 0, 0, 21, 0, 6, 0, 95, 12, 19,
+    75, 117, 82, 0, 48, 0, 0, 0, 10, 29, 0, 34, 119, 0, 29, 0, 51, 0, 37,
+    6, 0, 0, 22, 0, 45, 54, 0, 0, 37, 30, 43, 81, 0, 0, 0, 26, 64, 94, 0,
+    47, 149, 53, 0, 23, 0, 69, 0, 27, 0, 74, 0, 47, 1, 0, 30, 148, 54, 0,
+    44, 60, 0, 67, 58, 0, 0, 73, 62, 118, 0, 0, 0, 2, 109, 88, 137, 0, 0,
+    0, 7, 116, 0, 67, 0, 48, 139, 40, 6, 5, 0, 3, 72, 12, 84, 0, 136, 28,
+    125, 0, 13, 0, 5, 20, 115, 0, 0, 24, 11, 49, 0, 45, 17, 81, 42]
+
+S1 = [111, 111, 7]
+S2 = [64, 59, 99]
+assert len(S1) == len(S2) == 3
+
+def hash_f(key, T):
+    return sum(T[i % 3] * ord(c) for i, c in enumerate(key)) % 151
+
+def perfect_hash(key):
+    return (G[hash_f(key, S1)] + G[hash_f(key, S2)]) % 151
+
+# ============================ Sanity check =============================
+
+K = ["45", "78", "171", "300", "378", "22", "67", "352",
+    "8", "17", "38", "57", "107", "9", "13", "123", "256", "303", "381",
+    "14", "19", "59", "124", "157", "20", "50", "258", "411", "470", "111",
+    "196", "471", "73", "98", "332", "358", "442", "128", "239", "284",
+    "443", "64", "100", "114", "334", "360", "181", "416", "475", "164",
+    "336", "148", "222", "243", "447", "149", "223", "289", "391", "339",
+    "365", "205", "366", "169", "292", "394", "451", "227", "343", "453",
+    "319", "425", "485", "252", "297", "298", "457", "323", "429", "402",
+    "403", "431", "461"]
+assert len(K) == 83
+
+for h, k in enumerate(K):
+    assert perfect_hash(k) == h
+
+
+rank_combs(faces(S, 1))
+w = "\n".join([f"{r},{i}" for i,r in enumerate(rank_combs(faces(S, 1)))])
+
+with open("test_keys", "w") as text_file: text_file.write(w)
