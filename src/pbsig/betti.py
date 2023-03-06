@@ -268,6 +268,44 @@ def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: in
   return fi,fj,fk,fl
 
 
+class MuQuery():
+  def __init__(self, S: Union[FiltrationLike, ComplexLike], p: int):
+    assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
+    self.R: tuple = None 
+    self.w: float = 0.0
+    self.biased: bool = True
+
+  def choose_solver(solver=None, form = 'array', normed: bool = False, **kwargs):
+     if form == "lo":
+        self.L = up_laplacian(S, p=p, form="lo")
+
+      EW[cc] = solver(L)
+  elif form == "array": 
+    # I_norm = pseudo(np.sqrt(I * di))
+    D = boundary_matrix(S, p=p+1)
+    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+      if normed: 
+        I_sgn = np.sign(abs(I)) 
+        di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
+        I_norm = pseudo(np.sqrt(di))
+        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+      else:
+        I_norm = pseudo(np.sqrt(I))
+        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+      solver = eigvalsh_solver(L)
+  def __call__(f: Callable[SimplexConvertible, float]):
+    fi,fj,fk,fl = update_weights(S, f, p, R, w, biased)
+    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+      if normed:
+        I_sgn = np.sign(abs(I))
+        L.set_weights(I_sgn, J, I_sgn)
+        I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+        L.set_weights(I_norm, J, I_norm)
+      else:
+        I_norm = pseudo(np.sqrt(I))
+        L.set_weights(I_norm, J, I_norm)
+      solver = eigvalsh_solver(L)
+
 def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True, solver=None, form = 'array', normed: bool = False, **kwargs):
   """
   Parameterizes a multiplicity (mu) query restricting the persistence diagram of a simplicial complex to box 'R'

@@ -72,7 +72,7 @@ for a in alpha_family:
 show(row(figures))
 
 
-# %% Show the persistence diagrams
+# %% Show the persistence diagrams as functions of codensity 
 kw = dict(width=200, height=200)
 cpx_figures, dgm_figures = [], []
 for a in alpha_family: 
@@ -115,10 +115,10 @@ for a in alpha_family:
 p = figure(width=400, height=250)
 for s in faces(S):
   s_weights = np.array([[a, f(s)] for a, f in zip(alpha_family, codensity_family)])
-  p.line(s_weights[:,0], s_weights[:,1])
+  p.line(s_weights[:,0], s_weights[:,1], line_color=(0, 40, 50))
 show(p)
 
-# %% 
+# %% Precompute the multiplicity 
 from pbsig.betti import MuFamily
 R = (0.2, 0.4, 0.6, 0.8)
 mu_f = MuFamily(S, codensity_family, p = 1)
@@ -130,7 +130,7 @@ p.scatter(family_dgms[:,1], family_dgms[:,2], color=bin_color(family_dgms[:,0]))
 r_width, r_height = R[1]-R[0], R[3]-R[2]
 p.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, alpha=1.0, fill_alpha=0.0)
 q = figure(width=300, height=250, title="Multiplicity")
-q.step(alpha_family, mu_f())
+q.step(alpha_family, mu_f(smoothing=None))
 show(row(p,q))
 
 # %% Look at the other relaxations
@@ -175,25 +175,30 @@ def codensity_mu(alpha: float):
   return mu_query(S, R=R, f=codensity(alpha), p=1, w=0.40, normed=True)(smoothing=sgn_approx(eps=1e-2, p=2.0), terms=False)
 
 
-codensity_d(0.05)
+# codensity_d(0.05)
 
 
 
 
 ## Takes 10 seconds to evaluate a single derivative! 
-# from scipy.sparse.linalg import eigsh
-# from splex.sparse import _boundary
-# import line_profiler
-# profile = line_profiler.LineProfiler()
-# profile.add_function(codensity_mu)
-# profile.add_function(mu_query)
-# profile.add_function(_boundary)
-# profile.add_function(polymorphic_psd_solver)
-# profile.add_function(eigsh)
-# profile.enable_by_count()
-# codensity_d = nd.Derivative(codensity_mu, n=1, order=1)
-# codensity_d(0.05)
-# profile.print_stats(output_unit=1e-3)
+from scipy.sparse.linalg import eigsh
+from splex.sparse import boundary_matrix, _fast_boundary
+from pbsig.betti import update_weights
+from pbsig.linalg import rank_bound, trace_threshold
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(codensity_mu)
+profile.add_function(mu_query)
+profile.add_function(boundary_matrix)
+profile.add_function(_fast_boundary)
+profile.add_function(rank_bound)
+profile.add_function(trace_threshold)
+profile.add_function(polymorphic_psd_solver)
+profile.add_function(eigsh)
+profile.enable_by_count()
+codensity_d = nd.Derivative(codensity_mu, n=1, order=1)
+codensity_d(0.05)
+profile.print_stats(output_unit=1e-3)
 
 
 

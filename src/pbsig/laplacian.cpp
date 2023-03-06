@@ -293,7 +293,9 @@ void declare_laplacian(py::module &m, std::string typestr) {
     .def("precompute_degree", &Class::precompute_degree)
     // .def("compute_indexes", &Class::compute_indexes)
     .def("_matvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
+    .def("_rmatvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
     .def("_matmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
+    .def("_rmatmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
     ;
 }
 auto boundary_ranks(const size_t p_rank, const size_t n, const size_t k) -> py::array_t< int > {

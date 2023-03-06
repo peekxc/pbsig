@@ -8,8 +8,8 @@ from scipy.sparse.linalg import spsolve, lsqr, splu
 is_prime = np.vectorize(lambda n: False if n % 2 == 0 and n > 2 else all(n % i for i in range(3, int(np.sqrt(n)) + 1, 2)))
 primes = np.fromiter(filter(is_prime, np.arange(1000)), int)
 
-n = 100000 # alphabet size
-S = np.random.choice(range(n), size=5000, replace=False) # alphabet size
+n = 100 # alphabet size
+S = np.random.choice(range(n), size=50, replace=False) # alphabet size
 N = len(S)  # size of index set to map to
 
 ## Optimal hash
@@ -78,7 +78,7 @@ def hash7(key, p = 15):
 ## https://en.wikipedia.org/wiki/Linear_congruential_generator
 ## NOTE: If c = 1, then the prime will be fixed which isn't good for hashing apparently. 
 ## In particular, H will likely not achieve full rank. 
-def random_hash_function(m: int, c: int = 10):
+def random_hash_function(m: int, c: int = 100):
   """
   Produces a (random) Universal Hash Function 
   Parameters: 
@@ -100,27 +100,33 @@ def random_hash_function(m: int, c: int = 10):
 from scipy.sparse.csgraph import structural_rank
 #hash_function = lambda x: np.random.choice(primes)*(x+np.random.choice(range(N))) % N
  
-# N := len(S)
+N_ITER = 100    # number of iterations to try 
+N_HASH = 15     # number of random hash functions to use
+#N_PRIME = 10    # number of primes to sample from 
+for n_hash in range(2, int(N/10)):
+  for cc in range(5):
+    ## Sample uniformly random universal hash functions
+    HF = [random_hash_function(N) for i in range(n_hash)]
+    
+    ## Build the hash matrix 
+    I, J = [], []
+    for i,s in enumerate(S):
+      I += [i] * len(HF)
+      J += [h(s) for h in HF]
+    H = coo_array(([1]*(N*len(HF)), (I,J)), shape=(N, N))
+    
+    ## Compute determinant and rank
+    # d = np.linalg.det(H.todense())
+    # r = np.linalg.matrix_rank(H.todense())
 
-for cc in range(1500):
-  ## Sample uniformly random universal hash functions
-  HF = [random_hash_function(N, 10) for i in range(5)]
-  
-  ## Build the hash matrix 
-  I, J = [], []
-  for i,s in enumerate(S):
-    I += [i] * len(HF)
-    J += [h(s) for h in HF]
-  H = coo_array(([1]*(N*len(HF)), (I,J)), shape=(N, N))
-  
-  ## Compute determinant and rank
-  d = np.linalg.det(H.todense())
-  r = np.linalg.matrix_rank(H.todense())
-
-  ## Full rank constraint
-  if r == N:
-    print(f"H is full-rank @ {cc}")
-    break 
+    res = linprog(c=np.ones(N), A_eq=H, b_eq=np.arange(N).astype(int), bounds=(None, None), integrality=np.ones(N))
+    if res.success:
+      print("Success")
+      break
+  # ## Full rank constraint
+  # if r == N:
+  #   print(f"H is full-rank @ {cc}")
+  #   break 
 
   ## If we insist on a solution comprised of integers, we need H to be unimodular
   # if d in [-1, 1, 0] and r == N:
@@ -154,9 +160,15 @@ hf = perfect_hash(g, HF)
 
 assert all(np.array([hf(s) for s in S]) == np.arange(N))
 
-
 phf = lambda x: int(round(g[((75*x+9)%79)%50]+g[((24*x+15)%61)%50]+g[((58*x+16)%73)%50]))
 [phf(s) for s in S]
+
+## Could also solve with linear program 
+from scipy.optimize import linprog
+res = linprog(c=np.ones(N), A_eq=H, b_eq=np.arange(N), bounds=(None, None)) # integrality=np.ones(N)
+print(res.success)
+
+# (H @ res.x.astype(int))+1
 
 ## Optimization: val & (4 in hex) <==> val % 4
 ## Thus, if the modulo is a power of two, we can use right shifting

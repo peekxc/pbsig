@@ -167,9 +167,65 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
     return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
   return _huber if x is None else _huber(x)
 
+
+class PsdSolver():
+  def __init__(self, A, solver: str = 'default', laplacian: bool = True, return_eigenvectors: bool = False, tolerance=1e-16):
+    assert A.shape[0] == A.shape[1], "A must be square"
+    assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+    assert solver is not None, "Invalid solver"
+    tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
+    if pp == 0.0: 
+      if return_eigenvectors:
+        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+      else: 
+        return lambda x: np.zeros(1)
+    if solver == 'dac':
+      assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
+    if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
+      params = kwargs
+      solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
+    elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+      if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
+        if return_eigenvectors:
+          return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+        else:
+          return(lambda A: np.zeros(1))
+      if A.shape[0] == 0 or A.shape[1] == 0: 
+        if return_eigenvectors:
+          return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+        else:
+          return(lambda A: np.zeros(1))
+      nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+      nev = min(nev, A.shape[0] - 1) if laplacian else nev
+      if nev == 0: return(lambda A: np.zeros(1))
+      if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
+        import warnings
+        warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
+        solver = 'jd'
+      solver = 'irl' if solver == 'default' else solver
+      assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
+      if solver == 'irl':
+        params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=return_eigenvectors) | kwargs
+        solver = eigsh
+      else:
+        import primme
+        n = A.shape[0]
+        ncv = min(2*nev + 1, 20) # use modification of scipy rule
+        methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
+        params = dict(ncv=ncv, maxiter=n*100, tol=tol, k=nev, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
+        self.solver = primme.eigsh
+    else: 
+      raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
+
+    
+    def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0) -> Union[ArrayLike, tuple]:
+      self._solver(**(params | kwargs))
+
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
-def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True,  return_eigenvectors: bool = False, **kwargs):
-  """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_.
+## TODO: change p to be accepted at runtime from returned Callable, accept argument that has heuristic 'rank_estimate'  
+## that parameterizes how to compute the rank bound 
+def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, return_eigenvectors: bool = False, **kwargs):
+  """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_ (optionally coming from a laplacian).
 
   _A_ can be a dense np.array, any of the sparse arrays from SciPy, or a _LinearOperator_. The default solver 'default' chooses 
   the solver dynamically based on the size, structure, and estimated rank of _A_. In particular, if 'A' is dense, then the divide-and-conquer 
@@ -184,13 +240,13 @@ def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: fl
     'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
 
   Parameters: 
-    A = array, sparse matrix, or linear operator to compute the rank of
-    pp = proportional part of the spectrum to compute. 
-    solver = One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
-    laplacian = whether to assume _A_ comes from a Laplacian. Defaults to True. 
-    return_eigenvector = whether to return both eigen values and eigenvector pairs, or just eigenvalues. Defaults to False. 
+    A: array, sparse matrix, or linear operator to compute the rank of
+    pp: proportional part of the spectrum to compute. 
+    solver: One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
+    laplacian: whether _A_ represents a Laplacian operator. Defaults to True. 
+    return_eigenvector: whether to return both eigen values and eigenvector pairs, or just eigenvalues. Defaults to False. 
   Returns:
-    a callable f(A, ...) accepting operators of the same type as _A_ and returns spectral information
+    a callable f(A, ...) that returns spectral information for psd operators _A_
 
   Notes:
     For fast parameterization, _A_ should support efficient access to its diagonal via a method A.diagonal()
@@ -317,6 +373,14 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
   else: 
     ew = np.sqrt(ew) if sqrt else ew
   return ew if raw else sum(ew)
+
+def pseudoinverse(x: ArrayLike) -> np.ndarray:
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  if isinstance(x, np.ndarray):
+    return np.linalg.pinv(x) if x.ndim == 1 else pseudo(x)
+  else: 
+    return np.array([pseudo(xi) for xi in x])
+  
 
 def prox_nuclear(x: ArrayLike, t: float = 1.0):
   """Prox operator on the nuclear norm.
@@ -1011,7 +1075,7 @@ class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian0D.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
 
 class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
@@ -1020,7 +1084,7 @@ class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
 
 class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
@@ -1029,7 +1093,7 @@ class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
 
 class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
@@ -1038,7 +1102,7 @@ class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
     
 class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
@@ -1047,7 +1111,7 @@ class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
 
 class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
@@ -1056,7 +1120,7 @@ class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
     q_ranks = rank_combs(S, n=nv, order="lex")
     UpLaplacianBase.__init__(S, F)
     laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
-    self.compute_indexes()
+    #self.compute_indexes()
     self.precompute_degree()
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
