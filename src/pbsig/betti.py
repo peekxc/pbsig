@@ -267,44 +267,69 @@ def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: in
     fl = smooth_dnstep(lb = l-x, ub = l+x+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   return fi,fj,fk,fl
 
+def _transform_mult_ew(EW: list[ArrayLike], smoothing: Callable = None, terms: bool = False, shape: tuple = None) -> Union[tuple, float, int]:
+  n, m = (len(EW[0]), len(EW[0])) if shape is None else shape
+  if smoothing is None: 
+    mu = np.zeros(4)
+    for cc,(ew,s) in enumerate(zip(EW, [1,-1,-1,1])):
+      mu[cc] += s*spectral_rank(EW[cc], shape=(n,m), **kwargs)
+    return mu.astype(int) if terms else int(sum(mu))
+  else:
+    if isinstance(smoothing, bool):
+      smoothing = lambda x: x if smoothing else huber()
+    assert isinstance(smoothing, Callable)
+    mu = np.array([sum(smoothing(EW[0])), -sum(smoothing(EW[1])), -sum(smoothing(EW[2])), sum(smoothing(EW[3]))])
+    return mu if terms else sum(mu)
 
 class MuQuery():
   def __init__(self, S: Union[FiltrationLike, ComplexLike], p: int):
     assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
+    self.S: ComplexLike = S
     self.R: tuple = None 
     self.w: float = 0.0
     self.biased: bool = True
 
   def choose_solver(solver=None, form = 'array', normed: bool = False, **kwargs):
-     if form == "lo":
-        self.L = up_laplacian(S, p=p, form="lo")
+    if form == "lo":
+      self.form = "lo"
+      self.L = up_laplacian(S, p=self.p, form="lo")
+      self.D = None
+      self.solver = eigvalsh_solver(self.L)
+    elif form == "array": 
+      self.form = "array"
+      self.D = boundary_matrix(S, p=self.p+1)
+      self.L = None
+      self.solver = eigvalsh_solver(self.D)
+    else: 
+      raise ValueError(f"Invalid form '{str(form)}'.")
 
-      EW[cc] = solver(L)
-  elif form == "array": 
-    # I_norm = pseudo(np.sqrt(I * di))
-    D = boundary_matrix(S, p=p+1)
-    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      if normed: 
-        I_sgn = np.sign(abs(I)) 
-        di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
-        I_norm = pseudo(np.sqrt(di))
-        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
-      else:
-        I_norm = pseudo(np.sqrt(I))
-        L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
-      solver = eigvalsh_solver(L)
-  def __call__(f: Callable[SimplexConvertible, float]):
-    fi,fj,fk,fl = update_weights(S, f, p, R, w, biased)
-    for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-      if normed:
-        I_sgn = np.sign(abs(I))
-        L.set_weights(I_sgn, J, I_sgn)
-        I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
-        L.set_weights(I_norm, J, I_norm)
-      else:
-        I_norm = pseudo(np.sqrt(I))
-        L.set_weights(I_norm, J, I_norm)
-      solver = eigvalsh_solver(L)
+  def __call__(f: Callable[SimplexConvertible, float], *args, **kwargs):
+    fi,fj,fk,fl = update_weights(self.S, f, self.p, self.R, self.w, self.biased)
+    EW = [[None] for _ in range(4)]
+    if self.form == "lo":
+      for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+        if normed:
+          I_sgn = np.sign(abs(I))
+          L.set_weights(I_sgn, J, I_sgn)
+          I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+          L.set_weights(I_norm, J, I_norm)
+        else:
+          I_norm = pseudo(np.sqrt(I))
+          L.set_weights(I_norm, J, I_norm)
+        EW[cc] = self.solver(L)
+    else:
+      for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+        if normed: 
+          I_sgn = np.sign(abs(I)) 
+          L = D @ diags(J) @ D.T
+          di = (diags(I_sgn) @ L @ diags(I_sgn)).diagonal()
+          I_norm = pseudo(np.sqrt(di))
+          L = diags(I_norm) @ L @ diags(I_norm)
+        else:
+          I_norm = pseudo(np.sqrt(I))
+          L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
+        EW[cc] = self.solver(L)
+    return _transform_mult_ew(EW, *args, **kwargs)
 
 def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True, solver=None, form = 'array', normed: bool = False, **kwargs):
   """
@@ -354,20 +379,6 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
       ## (p+2)*max((D @ diags(J) @ D.T).diagonal())/min(I[I > 0])
   else: 
     raise ValueError(f"Invalid form '{form}'.")
-
-  n, m = card(S, p), card(S, p+1)
-  def _transform(smoothing: Callable = None, terms: bool = False):
-    if smoothing is None: 
-      mu = np.zeros(4)
-      for cc,(ew,s) in enumerate(zip(EW, [1,-1,-1,1])):
-        mu[cc] += s*spectral_rank(EW[cc], shape=(n,m), **kwargs)
-      return mu.astype(int) if terms else int(sum(mu))
-    else:
-      if isinstance(smoothing, bool):
-        smoothing = lambda x: x if smoothing else huber()
-      assert isinstance(smoothing, Callable)
-      mu = np.array([sum(smoothing(EW[0])), -sum(smoothing(EW[1])), -sum(smoothing(EW[2])), sum(smoothing(EW[3]))])
-      return mu if terms else sum(mu)
   return _transform
 
 def mu_query_mat(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True,  form = 'array', normed=False, **kwargs):

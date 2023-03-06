@@ -169,57 +169,53 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
 
 
 class PsdSolver():
-  def __init__(self, A, solver: str = 'default', laplacian: bool = True, return_eigenvectors: bool = False, tolerance=1e-16):
+  def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
     assert A.shape[0] == A.shape[1], "A must be square"
     assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     assert solver is not None, "Invalid solver"
-    tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
-    if pp == 0.0: 
-      if return_eigenvectors:
-        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-      else: 
-        return lambda x: np.zeros(1)
+    if isinstance(rank_ub, Number):
+      self._rank_bound = lambda A, _rank_ub=rank_ub: _rank_ub
+    else: 
+      self._rank_bound = lambda A: rank_bound(A, upper=True)
+    tol = tolerance if tolerance is not None else np.finfo(A.dtype).eps
+
     if solver == 'dac':
       assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
     if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
-      params = kwargs
-      solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
+      self.params = kwargs
+      self.solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
     elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
-      if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
-        if return_eigenvectors:
-          return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-        else:
-          return(lambda A: np.zeros(1))
-      if A.shape[0] == 0 or A.shape[1] == 0: 
-        if return_eigenvectors:
-          return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-        else:
-          return(lambda A: np.zeros(1))
-      nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
-      nev = min(nev, A.shape[0] - 1) if laplacian else nev
-      if nev == 0: return(lambda A: np.zeros(1))
-      if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
-        import warnings
-        warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
-        solver = 'jd'
+      # if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
+      #   import warnings
+      #   warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
+      #   solver = 'jd'
       solver = 'irl' if solver == 'default' else solver
       assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
       if solver == 'irl':
-        params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=return_eigenvectors) | kwargs
-        solver = eigsh
+        self.params = dict(which='LM', tol=self.tolerance, return_eigenvectors=return_eigenvectors) | kwargs
+        self.solver = eigsh
+        self.use_PRIMME = False
       else:
         import primme
-        n = A.shape[0]
-        ncv = min(2*nev + 1, 20) # use modification of scipy rule
         methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-        params = dict(ncv=ncv, maxiter=n*100, tol=tol, k=nev, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
+        self.params = dict(ncv=ncv, maxiter=n*100, tol=self.tolerance, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
         self.solver = primme.eigsh
+        self.use_PRIMME = True
     else: 
       raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
-
     
     def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0) -> Union[ArrayLike, tuple]:
-      self._solver(**(params | kwargs))
+      n = A.shape[0]
+      nev = trace_threshold(A, pp) if pp != 1.0 else self._rank_ub(A)
+      nev = min(nev, A.shape[0] - 1) if laplacian else nev
+      if (isinstance(A, spmatrix) and len(A.data) == 0) or (A.shape[0] == 0 or A.shape[1] == 0) or nev == 0 or pp == 0.0: 
+        return np.zeros(1) if self.return_eigenvectors else (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+      if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
+        self.params['k'] = nev    
+      ncv = min(2*nev + 1, 20) # use modification of scipy rule
+      if self.use_PRIMME: 
+        self.params["maxiter"] = A.shape[0]*100
+      return self._solver(**(self.params | kwargs))
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
 ## TODO: change p to be accepted at runtime from returned Callable, accept argument that has heuristic 'rank_estimate'  
