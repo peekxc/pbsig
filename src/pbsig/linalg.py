@@ -69,7 +69,6 @@ def rank_bound(A: Union[ArrayLike, spmatrix, LinearOperator], upper: bool = True
   else:
     ## https://konradswanepoel.wordpress.com/2014/03/04/the-rank-lemma/
     n, m = A.shape
-    # np.eye(5,1,k=0)
     col_sum = lambda j: sum((A @ np.array([1 if i == j else 0 for i in range(m)]))**2)
     fn2 = sum([col_sum(j) for j in range(m)])
     bound = min([A.shape[0], A.shape[1], np.ceil(sum(diagonal(A))**2 / fn2)])
@@ -170,17 +169,13 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
 
 class PsdSolver():
   def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
-    assert A.shape[0] == A.shape[1], "A must be square"
-    assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     assert solver is not None, "Invalid solver"
-    if isinstance(rank_ub, Number):
-      self._rank_bound = lambda A, _rank_ub=rank_ub: _rank_ub
-    else: 
-      self._rank_bound = lambda A: rank_bound(A, upper=True)
-    tol = tolerance if tolerance is not None else np.finfo(A.dtype).eps
-
-    if solver == 'dac':
-      assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
+    self._rank_bound = lambda A: rank_bound(A, upper=True)
+    self.tolerance = tolerance if tolerance is not None else np.finfo(A.dtype).eps
+    self.laplacian = laplacian
+    self.configure_type = type(A)
+    self.return_eigenvectors = return_eigenvectors
+    if solver == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
     if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
       self.params = kwargs
       self.solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
@@ -194,114 +189,116 @@ class PsdSolver():
       if solver == 'irl':
         self.params = dict(which='LM', tol=self.tolerance, return_eigenvectors=return_eigenvectors) | kwargs
         self.solver = eigsh
-        self.use_PRIMME = False
       else:
         import primme
         methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-        self.params = dict(ncv=ncv, maxiter=n*100, tol=self.tolerance, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
+        self.params = dict(tol=self.tolerance, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
         self.solver = primme.eigsh
-        self.use_PRIMME = True
     else: 
       raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
     
-    def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0) -> Union[ArrayLike, tuple]:
-      n = A.shape[0]
-      nev = trace_threshold(A, pp) if pp != 1.0 else self._rank_ub(A)
-      nev = min(nev, A.shape[0] - 1) if laplacian else nev
-      if (isinstance(A, spmatrix) and len(A.data) == 0) or (A.shape[0] == 0 or A.shape[1] == 0) or nev == 0 or pp == 0.0: 
-        return np.zeros(1) if self.return_eigenvectors else (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-      if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
-        self.params['k'] = nev    
-      ncv = min(2*nev + 1, 20) # use modification of scipy rule
-      if self.use_PRIMME: 
-        self.params["maxiter"] = A.shape[0]*100
-      return self._solver(**(self.params | kwargs))
+  def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, **kwargs) -> Union[ArrayLike, tuple]:
+    # assert type(A) == self.configure_type, f"Invalid type '{str(type(A))}'. Must match configuration type {str(self.configure_type)}."
+    assert A.shape[0] == A.shape[1], "A must be square"
+    assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+    n = A.shape[0]
+    nev = trace_threshold(A, pp) if pp != 1.0 else self._rank_bound(A)
+    nev = min(nev, A.shape[0] - 1) if self.laplacian else nev
+    if (isinstance(A, spmatrix) and len(A.data) == 0) or (A.shape[0] == 0 or A.shape[1] == 0) or nev == 0 or pp == 0.0: 
+      return (np.zeros(1), np.c_[np.zeros(A.shape[0])]) if self.return_eigenvectors else np.zeros(1)
+    params = self.params
+    if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
+      default_params = dict(k=nev, maxiter=A.shape[0]*100, ncv=None)
+      params = (default_params | params) | kwargs  # if 'scipy' in self.solver.__module__ else None #min(2*nev + 1, 20) 
+    return self.solver(A, **params)
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
 ## TODO: change p to be accepted at runtime from returned Callable, accept argument that has heuristic 'rank_estimate'  
 ## that parameterizes how to compute the rank bound 
-def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, return_eigenvectors: bool = False, **kwargs):
-  """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_ (optionally coming from a laplacian).
+# def polymorphic_psd_solver(A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, solver: str = 'default', laplacian: bool = True, return_eigenvectors: bool = False, **kwargs):
+#   """Configures an eigen-solver for a symmetric positive semi-definite linear operator _A_ (optionally coming from a laplacian).
 
-  _A_ can be a dense np.array, any of the sparse arrays from SciPy, or a _LinearOperator_. The default solver 'default' chooses 
-  the solver dynamically based on the size, structure, and estimated rank of _A_. In particular, if 'A' is dense, then the divide-and-conquer 
-  approach is chosen. 
+#   _A_ can be a dense np.array, any of the sparse arrays from SciPy, or a _LinearOperator_. The default solver 'default' chooses 
+#   the solver dynamically based on the size, structure, and estimated rank of _A_. In particular, if 'A' is dense, then the divide-and-conquer 
+#   approach is chosen. 
 
-  The solver can also be specified explicitly as one of:
-    'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
-    'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
-    'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
-    'gd' <=> Generalized Davidson w/ robust shifting (via PRIMME)
-    'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
-    'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
+#   The solver can also be specified explicitly as one of:
+#     'dac' <=> Divide-and-conquer (via LAPACK routine 'syevd')
+#     'irl' <=> Implicitly Restarted Lanczos (via ARPACK)
+#     'lanczos' <=> Lanczos Iteration (non-restarted, w/ PRIMME)
+#     'gd' <=> Generalized Davidson w/ robust shifting (via PRIMME)
+#     'jd' <=> Jacobi Davidson w/ Quasi Minimum Residual (via PRIMME)
+#     'lobpcg' <=> Locally Optimal Block Preconditioned Conjugate Gradient (via PRIMME)
 
-  Parameters: 
-    A: array, sparse matrix, or linear operator to compute the rank of
-    pp: proportional part of the spectrum to compute. 
-    solver: One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
-    laplacian: whether _A_ represents a Laplacian operator. Defaults to True. 
-    return_eigenvector: whether to return both eigen values and eigenvector pairs, or just eigenvalues. Defaults to False. 
-  Returns:
-    a callable f(A, ...) that returns spectral information for psd operators _A_
+#   Parameters: 
+#     A: array, sparse matrix, or linear operator to compute the rank of
+#     pp: proportional part of the spectrum to compute. 
+#     solver: One of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'.
+#     laplacian: whether _A_ represents a Laplacian operator. Defaults to True. 
+#     return_eigenvector: whether to return both eigen values and eigenvector pairs, or just eigenvalues. Defaults to False. 
+#   Returns:
+#     a callable f(A, ...) that returns spectral information for psd operators _A_
 
-  Notes:
-    For fast parameterization, _A_ should support efficient access to its diagonal via a method A.diagonal()
-  """
-  assert A.shape[0] == A.shape[1], "A must be square"
-  assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
-  assert solver is not None, "Invalid solver"
-  tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
-  if pp == 0.0: 
-    if return_eigenvectors:
-      return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-    else: 
-      return lambda x: np.zeros(1)
-  if solver == 'dac':
-    assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
-  if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
-    params = kwargs
-    solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
-  elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
-    if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
-      if return_eigenvectors:
-        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-      else:
-        return(lambda A: np.zeros(1))
-    if A.shape[0] == 0 or A.shape[1] == 0: 
-      if return_eigenvectors:
-        return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
-      else:
-        return(lambda A: np.zeros(1))
-    nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
-    nev = min(nev, A.shape[0] - 1) if laplacian else nev
-    if nev == 0: return(lambda A: np.zeros(1))
-    if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
-      import warnings
-      warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
-      solver = 'jd'
-    solver = 'irl' if solver == 'default' else solver
-    assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
-    if solver == 'irl':
-      params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=return_eigenvectors) | kwargs
-      solver = eigsh
-    else:
-      import primme
-      n = A.shape[0]
-      ncv = min(2*nev + 1, 20) # use modification of scipy rule
-      methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-      params = dict(ncv=ncv, maxiter=pp*n*100, tol=tol, k=nev, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
-      solver = primme.eigsh
-  else: 
-    raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
-  def _call_solver(A, **kwargs):
-    return solver(A, **(params | kwargs)) 
-  return _call_solver
+#   Notes:
+#     For fast parameterization, _A_ should support efficient access to its diagonal via a method A.diagonal()
+#   """
+#   assert A.shape[0] == A.shape[1], "A must be square"
+#   assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+#   assert solver is not None, "Invalid solver"
+#   tol = kwargs['tol'] if 'tol' in kwargs.keys() else np.finfo(A.dtype).eps
+#   if pp == 0.0: 
+#     if return_eigenvectors:
+#       return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+#     else: 
+#       return lambda x: np.zeros(1)
+#   if solver == 'dac':
+#     assert isinstance(A, np.ndarray), "Cannot use divide-and-conquer with linear operators"
+#   if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
+#     params = kwargs
+#     solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
+#   elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+#     if isinstance(A, spmatrix) and np.allclose(A.data, 0.0): 
+#       if return_eigenvectors:
+#         return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+#       else:
+#         return(lambda A: np.zeros(1))
+#     if A.shape[0] == 0 or A.shape[1] == 0: 
+#       if return_eigenvectors:
+#         return lambda x: (np.zeros(1), np.c_[np.zeros(A.shape[0])])
+#       else:
+#         return(lambda A: np.zeros(1))
+#     nev = trace_threshold(A, pp) if pp != 1.0 else rank_bound(A, upper=True)
+#     nev = min(nev, A.shape[0] - 1) if laplacian else nev
+#     if nev == 0: return(lambda A: np.zeros(1))
+#     if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
+#       import warnings
+#       warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
+#       solver = 'jd'
+#     solver = 'irl' if solver == 'default' else solver
+#     assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
+#     if solver == 'irl':
+#       params = dict(k=nev, which='LM', tol=tol, return_eigenvectors=return_eigenvectors) | kwargs
+#       solver = eigsh
+#     else:
+#       import primme
+#       n = A.shape[0]
+#       ncv = min(2*nev + 1, 20) # use modification of scipy rule
+#       methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
+#       params = dict(ncv=ncv, maxiter=pp*n*100, tol=tol, k=nev, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
+#       solver = primme.eigsh
+#   else: 
+#     raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
+#   def _call_solver(A, **kwargs):
+#     return solver(A, **(params | kwargs)) 
+#   return _call_solver
 
 def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
-  return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
+  #return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
+  return PsdSolver(A, return_eigenvectors=True, **kwargs)
 
 def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Callable:
-  return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
+  #return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
+  return PsdSolver(A, return_eigenvectors=False, **kwargs)
 
 def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: float = None) -> int:
   if len(ew) == 0: return 0
@@ -373,7 +370,7 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
 def pseudoinverse(x: ArrayLike) -> np.ndarray:
   pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   if isinstance(x, np.ndarray):
-    return np.linalg.pinv(x) if x.ndim == 1 else pseudo(x)
+    return np.linalg.pinv(x) if x.ndim == 2 else pseudo(x)
   else: 
     return np.array([pseudo(xi) for xi in x])
   
@@ -1174,3 +1171,7 @@ def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps
     raise ValueError("Invalid method given.")
   return(PI)
   # np.sum(abs(np.linalg.svd(np.c_[PI @ D1.T, PI @ D2])[1]))
+
+
+
+

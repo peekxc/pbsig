@@ -1,4 +1,5 @@
 import numpy as np
+from typing import *
 from numpy.typing import ArrayLike
 from .combinatorial import * 
 

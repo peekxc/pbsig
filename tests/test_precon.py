@@ -1,8 +1,22 @@
 import numpy as np 
 import networkx as nx
-from scipy.sparse.linalg import eigsh
+from scipy.sparse.linalg import eigsh, aslinearoperator
 from pbsig.simplicial import graph_laplacian, complete_graph, is_symmetric, edge_iterator
 from pbsig.precon import graph_sparsifier
+from pbsig.linalg import PsdSolver
+
+def test_psd_solver():
+  X = np.random.uniform(size=(10,10))
+  X = X @ X.T
+  #(X - np.diag(X.diagonal())).sum(axis=1) - X.diagonal()
+  solver = PsdSolver(X, laplacian=False)
+  ew_np = solver(X)
+  solver = PsdSolver(aslinearoperator(X), laplacian=False, solver="gd")
+  ew_gd = solver(aslinearoperator(X))
+  assert np.allclose(np.sort(ew_gd) - np.sort(ew_np), 0.0, rtol=1e-10)
+  solver = eigvalsh_solver(aslinearoperator(X))
+  #solver(aslinearoperator(X))
+  assert solver is not None
 
 def test_precon():
   assert True

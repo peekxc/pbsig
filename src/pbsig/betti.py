@@ -248,11 +248,18 @@ def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
 ## Changes the eigenvalues! 
 def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: int, R: ArrayLike, w: float = 0.0, biased: bool = True):
   """Updates the smooth step functions to reflect the scalar-product _f_ on _R_ smoothed by _w_"""
+  if isinstance(f, Callable):
+    fw = np.array([f(s) for s in faces(S, p)])
+    sw = np.array([f(s) for s in faces(S, p+1)])
+  elif isinstance(f, np.ndarray):
+    d = np.array([dim(s) for s in S], dtype=np.uint16)
+    fw = f[d == p]
+    sw = f[d == (p+1)]
+  else: 
+    raise ValueError(f"Invalid form '{type(f)}' for f")
   assert len(R) == 4 and is_sorted(R)
   i,j,k,l = R 
   assert i < j and j <= k and k < l, f"Invalid rectangle ({i:.2f}, {j:.2f}, {k:.2f}, {l:.2f}): each rectangle must have positive measure"
-  fw = np.array([f(s) for s in faces(S, p)])
-  sw = np.array([f(s) for s in faces(S, p+1)])
   delta = np.finfo(float).eps # TODO: use bound on spectral norm to get tol instead of eps?        
   if biased:
     fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
@@ -267,7 +274,7 @@ def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: in
     fl = smooth_dnstep(lb = l-x, ub = l+x+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
   return fi,fj,fk,fl
 
-def _transform_mult_ew(EW: list[ArrayLike], smoothing: Callable = None, terms: bool = False, shape: tuple = None) -> Union[tuple, float, int]:
+def _transform_mult_ew(EW: list[ArrayLike], smoothing: Callable = None, terms: bool = False, shape: tuple = None, **kwargs) -> Union[tuple, float, int]:
   n, m = (len(EW[0]), len(EW[0])) if shape is None else shape
   if smoothing is None: 
     mu = np.zeros(4)
@@ -282,54 +289,98 @@ def _transform_mult_ew(EW: list[ArrayLike], smoothing: Callable = None, terms: b
     return mu if terms else sum(mu)
 
 class MuQuery():
-  def __init__(self, S: Union[FiltrationLike, ComplexLike], p: int):
+  def __init__(self, S: Union[FiltrationLike, ComplexLike], p: int, R: tuple, w: float = 0.0, smoothing=None):
     assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
+    assert len(R) == 4 and is_sorted(R), f"Invalid rectangle"
     self.S: ComplexLike = S
-    self.R: tuple = None 
-    self.w: float = 0.0
+    self.R: tuple = R
+    self.w: float = w
+    self.p: int = p
     self.biased: bool = True
+    self.smoothing = smoothing
+    self.terms: bool = False
+    self.choose_solver()
 
-  def choose_solver(solver=None, form = 'array', normed: bool = False, **kwargs):
+  def choose_solver(self, solver='default', form = 'array', normed: bool = True, **kwargs):
     if form == "lo":
       self.form = "lo"
-      self.L = up_laplacian(S, p=self.p, form="lo")
+      self.normed = normed
+      self.L = up_laplacian(self.S, p=self.p, normed=normed, form="lo", dtype=np.float64)
       self.D = None
-      self.solver = eigvalsh_solver(self.L)
+      self.solver = eigvalsh_solver(self.L, solver=solver, **kwargs)
     elif form == "array": 
       self.form = "array"
-      self.D = boundary_matrix(S, p=self.p+1)
+      self.normed = normed
+      self.D = boundary_matrix(self.S, p=self.p+1).astype(np.float64).tocsr()
       self.L = None
-      self.solver = eigvalsh_solver(self.D)
+      if solver == "dac":
+        self.D = self.D.todense()
+      self.solver = eigvalsh_solver(self.D, solver=solver, **kwargs)
     else: 
       raise ValueError(f"Invalid form '{str(form)}'.")
 
-  def __call__(f: Callable[SimplexConvertible, float], *args, **kwargs):
+  def _grad_scalar_product(self, f: Callable[float, Callable], **kwargs) -> Callable:
+    import numdifftools as nd
+    def _f(alpha: float):
+      wf = f(alpha)
+      return np.array([wf(s) for s in self.S])
+    return nd.Derivative(_f, n=1, **kwargs)
+
+  def _grad_laplacian(self): #f: Callable[float, Callable], t0: float): ## normed + array only
+    import hirola
+    L = self.D @ self.D.T
+    I,J = L.nonzero()
+    ht = hirola.HashTable(int(len(I)*1.25), dtype=(np.uint16, 2))
+    ht.add(np.c_[I,J].astype(np.uint16))
+    data_vec = L.data.copy()
+    def _grad(f: ArrayLike, as_matrix: bool = False, term: str = "i"):
+      """Accepts a scalar product _f_ over K and returns its gradient parameterizing _L_."""
+      fi,fj,fk,fl = update_weights(self.S, f, self.p, self.R, self.w, self.biased)
+      data_vec.fill(0)
+      L_tmp = up_laplacian(self.S, p=self.p, weight=f, form="array")
+      data_vec[ht[np.c_[L_tmp.nonzero()].astype(np.uint16)]] = L_tmp.data
+      if as_matrix: 
+        L.data = data_vec
+        return L
+      else:
+        return data_vec
+   
+    # for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
+    #   I_sgn = np.sign(abs(I)) 
+    #   L = self.D @ diags(J) @ self.D.T
+    #   di = (diags(I_sgn) @ L @ diags(I_sgn)).diagonal()
+    #   I_norm = pseudoinverse(np.sqrt(di))
+    #   L = diags(I_norm) @ L @ diags(I_norm)
+    #   L.data 
+
+  def __call__(self, f: Callable[SimplexConvertible, float], **kwargs):
+    #print("Here")
     fi,fj,fk,fl = update_weights(self.S, f, self.p, self.R, self.w, self.biased)
     EW = [[None] for _ in range(4)]
     if self.form == "lo":
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-        if normed:
+        if self.normed:
           I_sgn = np.sign(abs(I))
-          L.set_weights(I_sgn, J, I_sgn)
-          I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
-          L.set_weights(I_norm, J, I_norm)
+          self.L.set_weights(I_sgn, J, I_sgn)
+          I_norm = pseudoinverse(np.sqrt(I * self.L.diagonal())) # degrees
+          self.L.set_weights(I_norm, J, I_norm)
         else:
-          I_norm = pseudo(np.sqrt(I))
-          L.set_weights(I_norm, J, I_norm)
-        EW[cc] = self.solver(L)
+          I_norm = pseudoinverse(np.sqrt(I))
+          self.L.set_weights(I_norm, J, I_norm)
+        EW[cc] = self.solver(self.L, **kwargs)
     else:
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-        if normed: 
+        if self.normed: 
           I_sgn = np.sign(abs(I)) 
-          L = D @ diags(J) @ D.T
+          L = self.D @ diags(J) @ self.D.T
           di = (diags(I_sgn) @ L @ diags(I_sgn)).diagonal()
-          I_norm = pseudo(np.sqrt(di))
+          I_norm = pseudoinverse(np.sqrt(di))
           L = diags(I_norm) @ L @ diags(I_norm)
         else:
-          I_norm = pseudo(np.sqrt(I))
-          L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
-        EW[cc] = self.solver(L)
-    return _transform_mult_ew(EW, *args, **kwargs)
+          I_norm = pseudoinverse(np.sqrt(I))
+          L = diags(I_norm) @ self.D @ diags(J) @ self.D.T @ diags(I_norm)
+        EW[cc] = self.solver(L, **kwargs)
+    return _transform_mult_ew(EW, smoothing=self.smoothing, terms=self.terms)
 
 def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True, solver=None, form = 'array', normed: bool = False, **kwargs):
   """
@@ -379,7 +430,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
       ## (p+2)*max((D @ diags(J) @ D.T).diagonal())/min(I[I > 0])
   else: 
     raise ValueError(f"Invalid form '{form}'.")
-  return _transform
+  return _transform_mult_ew(EW, shape=(card(S,p), card(S,p+1)), **kwargs)
 
 def mu_query_mat(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True,  form = 'array', normed=False, **kwargs):
   """

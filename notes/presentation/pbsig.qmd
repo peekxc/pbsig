@@ -1,0 +1,81 @@
+---
+title: "Spectral relaxations of Persistence Invariants"
+author: "Matt Piekenbrock"
+format: 
+  revealjs:
+    smaller: true
+    theme: simple 
+    spotlight:
+      useAsPointer: false
+      size: 25
+      toggleSpotlightOnMouseDown: false
+      spotlightOnKeyPressAndHold: 16 # shift : 
+      presentingCursor: "default"
+revealjs-plugins:
+  - spotlight
+html: 
+  html-math-method: katex
+filters:
+  # - pandoc-katex.lua
+  - roughnotation
+# keycodes: https://gcctech.org/csc/javascript/javascript_keycodes.htm
+---
+
+
+## Persistence
+
+Many interpretations of persistence: 
+
+
+::: {.fragment .fade-in fragment-index=1}
+::: {.fragment .semi-fade-out fragment-index=2}
+- $f \to M$ (algebraic)
+:::
+:::
+
+::: {.fragment .fade-in fragment-index=2}
+::: {.fragment .semi-fade-out fragment-index=3}
+- $\sum\limits_{i=1}^n \beta_p^{i,j}(K)$ (combinatorial)
+:::
+:::
+
+::: {.fragment .fade-in fragment-index=3}
+::: {.fragment .semi-fade-out fragment-index=4}
+- $\mu_{\mathbb{V}}(R) = \mathrm{card}(\mathrm{dgm}(\mathbb{V}|_R))$ (persistence measure)
+:::
+:::
+
+
+
+::: aside
+Some additional commentary of more peripheral interest.
+:::
+
+::: {.notes}
+Speaker notes go here.
+:::
+
+## Vectorizing diagrams
+
+:::: {.columns}
+
+$$ {\displaystyle \mathrm{dgm}_p(f) := \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta } $$
+
+::: {.column width="40%" align=center}
+contents...
+:::
+
+::: {.column width="60%"}
+contents...
+:::
+
+::::
+
+
+<script>
+  window.WebFontConfig = {
+    custom: {
+      families: ['KaTeX_AMS'],
+    },
+  };
+</script>
