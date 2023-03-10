@@ -397,6 +397,28 @@ def test_rips_laplacian():
   LP.set_weights()
 
 
+def test_laplacian_derivative():
+  from numdifftools import Derivative
+  family = lambda a: a**2
+  S = simplicial_complex([[0,1,2,3]])
+  L = up_laplacian(S, form="array", p=0)
+
+  np.random.seed(1234)
+  w = np.random.uniform(size=card(S, 1), low=0, high=1.0)
+  D = boundary_matrix(S, p=1)
+  L_family = lambda a: D @ np.diag(family(a)*w) @ D.T
+  L_deriv = Derivative(L_family)
+  L_deriv(0.001)
+
+  w_deriv = Derivative(lambda a: family(a)*w)
+  deg = np.diag((D @ D.T).todense())
+  np.diag(w_deriv(0.001)) @ D @ D.T
+
+
+
+
+
+
 
 
 
