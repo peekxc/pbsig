@@ -328,13 +328,17 @@
 
 <section id="title-slide" class="quarto-title-block center">
   <h1 class="title">Spectral relaxations of Persistence Invariants</h1>
+  <p class="subtitle">Rididng</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
 <div class="quarto-title-author-name">
 Matt Piekenbrock 
 </div>
-</div>
+        <p class="quarto-title-affiliation">
+            Northeastern University - Khoury College of Computer Science
+          </p>
+    </div>
 </div>
 
 </section>
@@ -388,6 +392,89 @@ Matt Piekenbrock
 <p>contents…</p>
 </div>
 </div>
+</section>
+<section id="motivating-derivation" class="slide level2">
+<h2>Motivating Derivation</h2>
+<!-- $$
+\begin{align}
+\beta_p^{i,j} & = \mathrm{dim} \big( \; \mathrm{Ker}(\partial_p(K_i)) \; / \; \mathrm{Im}(\partial_{p+1}(K_j)) \; \big ) \\
+&= \mathrm{dim}\big( \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \big ) \\
+&= \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\big)
+\end{align}
+$$ -->
+<div style="list-style-type: none;">
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=1">
+<span class="math inline">\(\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )\)</span>
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=2">
+<span class="math inline">\(\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )\)</span>
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=3">
+<span class="math inline">\(\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)\)</span>
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=4">
+Rank-nullity says: <span class="math display">\[
+\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
+\]</span>
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=5">
+Replacing dimensions with ranks, we have:
+<p style="text-align: left; margin-tb: 2em;">
+<span class="rn" data-rn-type="circle" data-rn-color="red"><span class="math inline">\(\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -\)</span></span> <span class="rn" data-rn-type="strike-through" data-rn-color="red"><span class="math inline">\(\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\)</span></span>
+</p>
+</li>
+</div>
+</section>
+<section id="motivating-derivation-1" class="slide level2">
+<h2>Motivating Derivation</h2>
+</section>
+<section id="rank-invariances" class="slide level2">
+<h2>Rank Invariances</h2>
+<p><span class="math inline">\(\mathrm{rank}\)</span> is invariant to many things:</p>
+<p><span class="math display">\[
+\begin{align}
+  \mathrm{rank}(A) &amp;\triangleq \mathrm{dim}(\mathrm{Im}(A)) &amp; \\
+  &amp;\equiv \mathrm{rank}(A^T) &amp; \text{(adjoint)} \\
+  &amp;\equiv \mathrm{rank}(A^T A) &amp; \text{(inner product)} \\
+  &amp;\equiv \mathrm{rank}(A A^T) &amp; \text{(outer product)} \\
+  &amp;\equiv \mathrm{rank}(S^{-1}AS) &amp; \text{(change of basis)} \\
+  &amp;\equiv \mathrm{rank}(O^T A O) &amp; \text{(rotations)} \\
+  &amp;\equiv \mathrm{rank}(P^T A P) &amp; \text{(permutation)} \\
+  &amp;\equiv \mathrm{rank}(W \, \mathrm{sgn}(A) \, W)^\ast &amp; \text{(sign pattern)} \\
+  &amp;\equiv \dots &amp; \text{etc.}
+\end{align}
+\]</span></p>
+<p><em>Q</em>: Can we exploit some of these?</p>
+</section>
+<section id="permutation-invariance" class="slide level2">
+<h2>Permutation Invariance</h2>
+<p>Consider the setting where <span class="math inline">\(f_\alpha : \mathbb{R} \to \mathbb{R}^N\)</span> is an <span class="math inline">\(\alpha\)</span>-parameterized filter function:</p>
+<p><span class="math display">\[ \mu_p^R(\, f_\alpha \, ) = \{ \mu_p^R(K_\bullet^\alpha) : \alpha \in \mathbb{R} \}\]</span></p>
+<p>Difficult to compute <span class="math inline">\(R_\alpha = \partial_\alpha V_\alpha\)</span> for all <span class="math inline">\(\alpha\)</span> as <span class="math inline">\(K_\bullet = (K, f_\alpha)\)</span> is changing constantly…</p>
+<!-- #\mathrm{rank}(\partial_p(K_\bullet( \, f_\alpha \,))) -->
+<!-- On the other hand... -->
+<p><span class="math display">\[ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(P^T \partial_p(K) P) \]</span> <span class="math display">\[ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(W \mathrm{sgn}(\partial_p(K)) W) \]</span></p>
+<p>Thus we may decouple <span class="math inline">\(f_\alpha\)</span> and <span class="math inline">\(K\)</span> in the computation:</p>
+<p><span class="math display">\[
+\begin{align*}
+\mu_p^{R}(K,f_\alpha) &amp;\triangleq \mathrm{rank}\big(\,\hat{\partial}_{q}^{j + \delta, k}\,\big) - \; \dots \; + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i + \delta, l}\,\big)  \\
+&amp;\equiv \mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) - \; \dots \; + \mathrm{rank}\big(\,V_p^{i+\delta} \circ \partial_{q} \circ W_q^l \,\big)
+\end{align*}
+\]</span></p>
+<p>where the entries of <span class="math inline">\(V\)</span>, <span class="math inline">\(W\)</span> change continuously w/ <span class="math inline">\(\alpha\)</span>, while <span class="math inline">\(\partial_q\)</span> remains <em>fixed</em>…</p>
+</section>
+<section id="combinatorial-laplacian" class="slide level2">
+<h2>Combinatorial Laplacian</h2>
+<p>Recall <span class="math inline">\(\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)\)</span></p>
+<p>For boundary matrices, these matrices translate into up- and down- <em>Laplacians</em>:</p>
+<p><span class="math display">\[ \Delta_p = \partial_{p+1} \partial_{p+1}^T  + \partial_{p}^T \partial_{p+1} \]</span></p>
+<p>Thus: <span class="math display">\[\begin{align}
+\mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) \\
+= \mathrm{rank}(L_{\ast, p}^{j,k}) + \dots - \mathrm{rank}(L_{\ast, p}^{j,k})
+\end{align}
+\]</span></p>
+<p>“weight function” is 1-to-1 with scalar product on cochain groups <span class="math inline">\(C^p(K, \mathbb{R})\)</span></p>
+<p><strong>Summary:</strong> We can obtain <span class="math inline">\(\mu_p^R(K, f_\alpha)\)</span> for varying <span class="math inline">\(\alpha\)</span> by using thresholded versions of <span class="math inline">\(f_\alpha\)</span> as scalar-products</p>
 <script>
   window.WebFontConfig = {
     custom: {
@@ -432,7 +519,7 @@ Matt Piekenbrock
 'autoAnimateDuration': 1,
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
-'spotlight': {"size":25,"lockPointerInsideCanvas":false,"toggleSpotlightOnMouseDown":false,"spotlightOnKeyPressAndHold":16,"spotlightCursor":"none","presentingCursor":"default","initialPresentationMode":true,"disablingUserSelect":true,"fadeInAndOut":100,"useAsPointer":false,"pointerColor":"red"},
+'spotlight': {"size":45,"lockPointerInsideCanvas":false,"toggleSpotlightOnMouseDown":false,"spotlightOnKeyPressAndHold":16,"spotlightCursor":"none","presentingCursor":"default","initialPresentationMode":true,"disablingUserSelect":true,"fadeInAndOut":100,"useAsPointer":false,"pointerColor":"red"},
 'smaller': true,
  
         // Display controls in the bottom right corner
@@ -583,7 +670,7 @@ Matt Piekenbrock
         height: 700,
 
         // Factor of the display size that should remain empty around the content
-        margin: 0.1,
+        margin: 7.5e-2,
 
         math: {
           mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',

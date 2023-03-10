@@ -1,16 +1,20 @@
 ---
-title: "Spectral relaxations of Persistence Invariants"
+title: Spectral relaxations of Persistence Invariants
+subtitle: Rididng
 author: "Matt Piekenbrock"
 format: 
   revealjs:
     smaller: true
     theme: simple 
+    institute: Northeastern University - Khoury College of Computer Science 
     spotlight:
       useAsPointer: false
-      size: 25
+      size: 45
       toggleSpotlightOnMouseDown: false
       spotlightOnKeyPressAndHold: 16 # shift : 
       presentingCursor: "default"
+    overview: true
+    margin: 0.075
 revealjs-plugins:
   - spotlight
 html: 
@@ -70,6 +74,113 @@ contents...
 :::
 
 ::::
+
+## Motivating Derivation 
+	
+<!-- $$
+\begin{align}
+\beta_p^{i,j} & = \mathrm{dim} \big( \; \mathrm{Ker}(\partial_p(K_i)) \; / \; \mathrm{Im}(\partial_{p+1}(K_j)) \; \big ) \\
+&= \mathrm{dim}\big( \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \big ) \\
+&= \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\big)
+\end{align}
+$$ -->
+
+:::{.incremental style="list-style-type: none;"}
+
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=1">
+$\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=2">
+$\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )$
+</li>
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=3">
+$\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)$
+</li>
+
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=4">
+Rank-nullity says: 
+$$
+\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
+$$
+</li>
+
+<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=5">
+Replacing dimensions with ranks, we have: 
+<p style="text-align: left; margin-tb: 2em;">
+[$\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -$]{.rn rn-type=circle rn-color=red}
+[$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))$]{.rn rn-type=strike-through rn-color=red}
+</p>
+</li>
+:::
+
+## Motivating Derivation 
+
+
+
+## Rank Invariances 
+
+$\mathrm{rank}$ is invariant to many things:
+
+$$
+\begin{align}
+  \mathrm{rank}(A) &\triangleq \mathrm{dim}(\mathrm{Im}(A)) & \\
+  &\equiv \mathrm{rank}(A^T) & \text{(adjoint)} \\
+  &\equiv \mathrm{rank}(A^T A) & \text{(inner product)} \\
+  &\equiv \mathrm{rank}(A A^T) & \text{(outer product)} \\
+  &\equiv \mathrm{rank}(S^{-1}AS) & \text{(change of basis)} \\
+  &\equiv \mathrm{rank}(O^T A O) & \text{(rotations)} \\
+  &\equiv \mathrm{rank}(P^T A P) & \text{(permutation)} \\
+  &\equiv \mathrm{rank}(W \, \mathrm{sgn}(A) \, W)^\ast & \text{(sign pattern)} \\
+  &\equiv \dots & \text{etc.}
+\end{align}
+$$
+
+_Q_: Can we exploit some of these? 
+
+## Permutation Invariance 
+
+Consider the setting where $f_\alpha : \mathbb{R} \to \mathbb{R}^N$ is an $\alpha$-parameterized filter function: 
+
+$$ \mu_p^R(\, f_\alpha \, ) = \{ \mu_p^R(K_\bullet^\alpha) : \alpha \in \mathbb{R} \}$$
+
+Difficult to compute $R_\alpha = \partial_\alpha V_\alpha$ for all $\alpha$ as $K_\bullet = (K, f_\alpha)$ is changing constantly...
+
+<!-- #\mathrm{rank}(\partial_p(K_\bullet( \, f_\alpha \,))) -->
+
+<!-- On the other hand... -->
+$$ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(P^T \partial_p(K) P) $$
+$$ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(W \mathrm{sgn}(\partial_p(K)) W) $$
+
+Thus we may decouple $f_\alpha$ and $K$ in the computation: 
+
+$$
+\begin{align*}
+ \mu_p^{R}(K,f_\alpha) &\triangleq \mathrm{rank}\big(\,\hat{\partial}_{q}^{j + \delta, k}\,\big) - \; \dots \; + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i + \delta, l}\,\big)  \\
+&\equiv \mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) - \; \dots \; + \mathrm{rank}\big(\,V_p^{i+\delta} \circ \partial_{q} \circ W_q^l \,\big)
+ \end{align*}
+ $$
+
+where the entries of $V$, $W$ change continuously w/ $\alpha$, while $\partial_q$ remains _fixed_...
+
+## Combinatorial Laplacian 
+
+Recall $\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)$
+
+For boundary matrices, these matrices translate into up- and down- _Laplacians_:
+
+$$ \Delta_p = \partial_{p+1} \partial_{p+1}^T  + \partial_{p}^T \partial_{p+1} $$
+
+Thus: 
+$$\begin{align}
+\mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) \\
+= \mathrm{rank}(L_{\ast, p}^{j,k}) + \dots - \mathrm{rank}(L_{\ast, p}^{j,k})
+\end{align}
+$$
+
+"weight function" is 1-to-1 with scalar product on cochain groups $C^p(K, \mathbb{R})$ 
+
+__Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products 
+
 
 
 <script>
