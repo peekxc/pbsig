@@ -948,12 +948,12 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
     assert all(wq >= 0.0) and all(wpl >= 0.0), "Weight function must be non-negative"
     if form == 'array':
       B = boundary_matrix(S, p = p+1)
+      L = B @ diags(wq) @ B.T
       if normed: 
-        L = B @ diags(wq) @ B.T
-        deg = L.diagonal()
+        deg = (diags(np.sign(wpl)) @ L @ diags(np.sign(wpr))).diagonal() ## retain correct nullspace
         L = (diags(pseudo(np.sqrt(deg))) @ L @ diags(pseudo(np.sqrt(deg)))).tocoo()
       else:
-        L = (diags(pseudo(np.sqrt(wpl))) @ B @ diags(wq) @ B.T @ diags(pseudo(np.sqrt(wpr)))).tocoo()
+        L = (diags(pseudo(np.sqrt(wpl))) @ L @ diags(pseudo(np.sqrt(wpr)))).tocoo()
       return (L, L.diagonal()) if return_diag else L
     elif form == 'lo':
       p_faces = list(faces(S, p))        ## need to make a view 
@@ -964,7 +964,7 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
         if not(symmetric):
           import warnings
           warnings.warn("symmetric = False is not a valid option when normed = True")
-        lo.set_weights(None, wq, None)
+        lo.set_weights(np.sign(wpl), wq, np.sign(wpr))
         deg = lo.diagonal()
         lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) # normalized weighted symmetric psd version 
       else: 

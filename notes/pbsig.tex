@@ -761,9 +761,9 @@ We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties 
 \end{equation}
 has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corresponds to the weighted degree matrix with entries $\{ \mathrm{deg}_w(\sigma) \}$. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. For now we conclude this section with a proposition. 
 \begin{proposition}[Extended from~\cite{}]
-	Let $f : (\mathbb{R}^n, W_n) \to (\mathbb{R}^m, W_m)$ be a linear map between [possibly degenerate] inner product matrices $W_n \in \mathbb{R}^{n \times n}$ and $W_m \in \mathbb{R}^{m \times m}$, and let $F \in \mathbb{R}^{m \times n}$ denote the matrix representation of $f$. Then, for any $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, we have the following equivalence of inner products: 
-	$$ \langle f x, y \rangle_{\mathbb{R}^m}  = \langle x, f^\ast y \rangle_{\mathbb{R}^n} = x^T F^T W_m y = x^T W_n F^\ast y $$
-	where $F^\ast = W_n^+ F^T W_m$ is a matrix representative of the adjoint $f^\ast : (\mathbb{R}^m, W_m) \to (\mathbb{R}^n, W_n)$ of $f$. 
+	Let $f : (\mathbb{R}^n, H_n) \to (\mathbb{R}^m, H_m)$ be a linear map between [possibly degenerate] inner product matrices $H_n \in \mathbb{R}^{n \times n}$ and $H_m \in \mathbb{R}^{m \times m}$, and let $F \in \mathbb{R}^{m \times n}$ denote the matrix representation of $f$. Then, for any $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, we have the following equivalence of inner products: 
+	$$ \langle f x, y \rangle_{\mathbb{R}^m}  = \langle x, f^\ast y \rangle_{\mathbb{R}^n} = x^T F^T H_m y = x^T H_n F^\ast y $$
+	where $F^\ast = H_n^+ F^T H_m$ is a matrix representative of the adjoint $f^\ast : (\mathbb{R}^m, H_m) \to (\mathbb{R}^n, H_n)$ of $f$. 
 \end{proposition}
 \begin{remark}
 ~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
@@ -922,12 +922,12 @@ The exact form of equation~\eqref{eq:lap_quad_from} does not immediately general
 %In particular, writing down a succinct expression for $x \mapsto L_p^{\textrm{up}} x$ (or $x \mapsto L_p^{\textrm{dn}} x$) requires a generalization of the notion of path-connectedness between $p$-simplices, as well as knowledge of the orientation of every simplex to evaluate the sign..
 
 Noting the observations in section~\ref{sec:laplacian_theory}, we exclusively consider the symmetric version of $\hat{L}_p^{up}$. The down-Laplacian $\hat{L}_p^{dn}$ can be handled in essentially the same way. 
-Towards generalizing the path-connected relation from~\eqref{eq:lap_quad_from}, let $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and let $d_f(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} f(\sigma)^2$ denote the \emph{degree} of $\tau$.
+Towards generalizing the path-connected relation from~\eqref{eq:lap_quad_from}, let $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and let $\mathrm{deg}_f(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} f(\sigma)^2$ denote the \emph{degree} of $\tau$.
 Since $K$ is a simplicial complex, note that if $\mathrm{co}(\tau) \cap \mathrm{co}(\tau') \neq \emptyset$, then the $\tau, \tau'$ not only share a cofacet $\sigma$, but this cofacet $\{\sigma\} = \mathrm{co}(\tau) \cap \mathrm{co}(\tau')$ is \emph{unique}~\cite{}. 
 Given two distinct $p$-simplices $\tau \neq \tau'$ in $K^p$, we use the notation $\tau \overset{\sigma}{\sim} \tau'$ to denote this cofacet. Thus, equation~\eqref{eq:l_up} can now be written element-wise as: 
 \begin{align}\label{eq:up_laplace_theory}
 	 \hat{L}_p^{\text{up}}(\tau, \tau')= \begin{cases}
-		 d_f(\tau) \cdot f(\tau) & \text{ if } \tau = \tau' \\ 
+		 \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) & \text{ if } \tau = \tau' \\ 
 %		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
 		s_{\tau, \tau'} \cdot  f^{+/2}(\tau) \cdot f(\sigma) \cdot f^{+/2}(\tau') & \text{ if } \tau \overset{\sigma}{\sim} \tau' \\
 		0 & \text{ otherwise} 
@@ -943,7 +943,8 @@ In general, the sign of the coefficients in $[\tau]$ and $[\tau']$ depends on th
 
 There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
 For example, if we assume the poset order on $K$ is inherited from the total order on $V$, the orientation of each $[\sigma] \in K$ becomes constant, implying a fixed sign pattern $s_{\tau, \tau'}$ for every $\tau \overset{\sigma}{\sim} \tau'$. 
-Since we are free to choose the permutation of $\hat{L}_P^{\text{up}}$ ahead of time, we may order the $p+1$ simplices $\{\sigma\}$ in such a way as to minimize the latency associated with memory access to $K^{p+1}$; the study of \emph{block-based} or \emph{cache-oblivious} approaches are well studied topic in the high performance computing field~\cite{}.
+Since we are free to choose the permutation of $\hat{L}_P^{\text{up}}$ ahead of time, we may order the $p+1$ simplices $\{\sigma\}$ in such a way as to minimize the latency associated with memory access to $K^{p+1}$.
+%the study of \emph{block-based} or \emph{cache-oblivious} approaches are well studied topic in the high performance computing field~\cite{}.
 For any pair $\tau \in K^p$, evaluating the index function $h(\ast)$ from~\eqref{eq:l_up_matvec} can be accomplished efficiently using a \emph{minimal perfect hash function} with deterministic $O(1)$ access (as opposed to e.g. a random hash function, which has $O(1)$ average case complexity)~\cite{}. 
 Another optimization known to the TDA community due to its usage in the persistence algorithm is the integer-representation of simplices via the \emph{combinatorial number system}. 
 % TODO: flesh out these optimizations a little more

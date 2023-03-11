@@ -130,7 +130,6 @@ $$
   &\equiv \mathrm{rank}(S^{-1}AS) & \text{(change of basis)} \\
   &\equiv \mathrm{rank}(O^T A O) & \text{(rotations)} \\
   &\equiv \mathrm{rank}(P^T A P) & \text{(permutation)} \\
-  &\equiv \mathrm{rank}(W \, \mathrm{sgn}(A) \, W)^\ast & \text{(sign pattern)} \\
   &\equiv \dots & \text{etc.}
 \end{align}
 $$

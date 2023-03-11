@@ -120,7 +120,7 @@ show(p)
 from pbsig.betti import MuFamily
 R = (0.2, 0.4, 0.6, 0.8)
 mu_f = MuFamily(S, codensity_family, p = 1)
-mu_f.precompute(R, w=0.0, normed=True)
+mu_f.precompute(R, w=0.30, normed=True)
 
 # %% Compare
 p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=250, height=250)
@@ -146,6 +146,7 @@ show(p)
 # %% Constitutive terms
 mu_rk = mu_f(smoothing=None, terms=True).T
 mu_nn = mu_f(smoothing=False, terms=True).T
+#mu_nn = mu_f(smoothing=lambda x: sum(abs(x))/max(abs(x)), terms=True).T
 mu_sa = mu_f(smoothing=sgn_approx(eps=1e-1, p=1.0), terms=True).T
 
 figures = []

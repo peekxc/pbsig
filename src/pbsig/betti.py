@@ -360,7 +360,7 @@ class MuQuery():
     if self.form == "lo":
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
         if self.normed:
-          I_sgn = np.sign(abs(I))
+          I_sgn = I # np.sign(abs(I))
           self.L.set_weights(I_sgn, J, I_sgn)
           I_norm = pseudoinverse(np.sqrt(I * self.L.diagonal())) # degrees
           self.L.set_weights(I_norm, J, I_norm)
@@ -371,7 +371,7 @@ class MuQuery():
     else:
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
         if self.normed: 
-          I_sgn = np.sign(abs(I)) 
+          I_sgn = I  # np.sign(abs(I)) 
           L = self.D @ diags(J) @ self.D.T
           di = (diags(I_sgn) @ L @ diags(I_sgn)).diagonal()
           I_norm = pseudoinverse(np.sqrt(di))
@@ -404,7 +404,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       if normed:
-        I_sgn = np.sign(abs(I))
+        I_sgn = I # np.sign(abs(I))
         L.set_weights(I_sgn, J, I_sgn)
         I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
         L.set_weights(I_norm, J, I_norm)
@@ -418,7 +418,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
     D = boundary_matrix(S, p=p+1)
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       if normed: 
-        I_sgn = np.sign(abs(I)) 
+        I_sgn = I # np.sign(abs(I)) 
         di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
         I_norm = pseudo(np.sqrt(di))
         L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
@@ -533,7 +533,7 @@ class MuFamily:
       if self.form == "array":
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            I_sgn = np.sign(abs(I))
+            I_sgn = I # np.sign(abs(I))
             di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
             I_norm = pseudo(np.sqrt(di)) # used to be I * di 
             #I_norm = pseudo(np.sqrt(I * di)) # used to be I * di 
@@ -549,7 +549,7 @@ class MuFamily:
       elif self.form == "lo":
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            I_sgn = np.sign(abs(I))
+            I_sgn = I # np.sign(abs(I))
             L.set_weights(I_sgn, J, I_sgn) ## TODO: PERHAPS don't set face weights to None, as that defaults to identity. Use entries in {0,1}
             I_norm = pseudo(np.sqrt(L.diagonal())) # degree computation
             L.set_weights(I_norm, J, I_norm)
