@@ -159,15 +159,17 @@ def is_reduced(R: lil_array) -> bool:
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
 
-def validate_decomp(D1, R1, V1, D2 = None, R2 = None, V2 = None, epsilon: float = 10*np.finfo(float).eps):
-  valid = is_reduced(R1)
-  tol = 10*np.finfo(R1.dtype).eps
-  valid &= np.isclose(sum(abs(((D1 @ V1) - R1).data).flatten()), tol)
-  valid &= np.isclose(np.sum(V1 - triu(V1)), tol)
-  if not(D2 is None):
-    valid &= is_reduced(R2)
-    valid &= np.isclose(sum(abs(((D2 @ V2) - R2).data).flatten()), tol) #np.isclose(np.sum((D2 @ V2) - R2), 0.0)
-    valid &= np.isclose(np.sum(V2 - triu(V2)), tol)
+def validate_decomp(D: spmatrix, R: spmatrix, V: spmatrix, epsilon: float = 10*np.finfo(float).eps, warn: bool = True):
+  tol = 10*np.finfo(R.dtype).eps if not np.issubdtype(R.dtype, np.integer) else 0
+  _is_reduced = is_reduced(R)
+  dv_r_diff = abs(((D @ V) - R).data)
+  v_upper_diff = abs((V - triu(V)).data)
+  _is_rv_decomp = len(dv_r_diff) == 0 or np.isclose(sum(dv_r_diff.flatten()), tol)
+  _is_upper_tri = len(v_upper_diff) == 0 or np.isclose(np.sum(v_upper_diff), tol)
+  valid = _is_reduced and _is_rv_decomp and _is_upper_tri
+  if not(valid) and warn:
+    import warnings 
+    warnings.warn(f"Decomposition failed validation checks.\n 1. R is reduced? {_is_reduced}\n 2. R=DV? {_is_rv_decomp} \n 3. V is upper-triangular? {_is_upper_tri}")
   return(valid)
 
 def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
@@ -247,25 +249,31 @@ def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collaps
   # pass 
 
 ## TODO: redo with filtration class at some point
-def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], **kwargs):
+def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], field="reals", validate: bool = True,  **kwargs):
   """
   Given a filtered simplicial complex 'K' and optionally an integer p >= 0, generate p-dimensional barcodes
 
   If p is not specified, all p-dimensional barcodes are generated up to the dimension of the filtration.
+
+  Parameters: 
+    K: filtered simplicial complex. 
+    p: Homology dimension to compute. If None (default), computes all of them.  
+    output: the preferred output. Can be any combination of ["dgm", "generators", "RV"]
+    engine: the persistence implementation to use. 
   """
   assert isinstance(K, FiltrationLike), "Only accepts filtration objects for now"
   engine = "cpp" if isinstance(engine, list) and engine == ["python", "cpp", "dionysus"] else engine
   assert isinstance(engine, str), f"Supplied engine '{engine}' must be string argument"
   if p is None:
     if engine == "python":
-      R, V = boundary_matrix(K), sps.identity(len(K)).tolil()
+      R, V = boundary_matrix(K), sps.identity(len(K), dtype=np.int64).tolil()
       pHcol(R, V)
-      assert validate_decomp(boundary_matrix(K), R, V)
+      assert validate_decomp(boundary_matrix(K), R, V) if validate else True
       return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "cpp": 
-      D, V = boundary_matrix(K), sps.identity(len(K)).astype(np.int64)
+      D, V = boundary_matrix(K).astype(np.float32), sps.identity(len(K)).astype(np.float32) # .astype(np.int64)
       R, V = pm.phcol(D, V, range(len(K)))  
-      assert validate_decomp(D, R, V)
+      assert validate_decomp(D, R, V) if validate else True
       return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "dionysus":
       assert output == "dgm"

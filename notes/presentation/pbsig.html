@@ -328,7 +328,7 @@
 
 <section id="title-slide" class="quarto-title-block center">
   <h1 class="title">Spectral relaxations of Persistence Invariants</h1>
-  <p class="subtitle">Rididng</p>
+  <p class="subtitle">Rank</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
@@ -342,30 +342,44 @@ Matt Piekenbrock
 </div>
 
 </section>
+<section id="relaxing-the-rank-invariant" class="slide level2">
+<h2>Relaxing the Rank invariant</h2>
+<p>Many transforms exist mapping <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces, e.g.&nbsp;</p>
+<ul>
+<li>Persistence Landscapes</li>
+<li>Persistence images</li>
+<li>… a few others</li>
+</ul>
+<p>Decidedly less work done on <em>the rank invariant</em> (exceptions: [][][])</p>
+<p><span class="math display">\[ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))\]</span></p>
+<p>We introduce a <em>spectral-relaxation</em> of <span class="math inline">\(\beta_p^{i,j}\)</span> that is:</p>
+<ol type="1">
+<li>Smooth + differentiable on the PSD cone, semismooth in <span class="math inline">\(\mathbb{R}^{n \times n}\)</span></li>
+<li>a <span class="math inline">\((1{\textstyle -}\epsilon)\)</span>-approximation of <span class="math inline">\(\beta_p^{i,j}\)</span> for any <span class="math inline">\(\epsilon &gt; 0\)</span></li>
+<li>derived from combinatorial Laplacian operators</li>
+</ol>
+<!-- - Continuous relaxation 
+- Captures persistence properties
+- Doesn't require $\mathrm{dgm}$ to compute -->
+<!-- ![](../betti_add.png) -->
+</section>
+<section id="application-parameterized-families" class="slide level2">
+<h2>Application: parameterized families</h2>
+<p>Consider a 1-parameter family of simplicial complexes:</p>
+<p><span class="math display">\[\{ \; \mu_p^R(K_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}\]</span></p>
+</section>
+<section id="why-the-rank-invariant" class="slide level2">
+<h2>Why the rank invariant?</h2>
+<p>There is a duality between diagrams its associated rank function:</p>
+<p><span class="math display">\[ \mathrm{dgm}_p(f) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta \]</span></p>
+<p><span class="math display">\[\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad \]</span></p>
+<p>Dually, the <em>“Fundamental Lemma of Persistent Homology”</em> says that: <span class="math display">\[\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}\]</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span> Diagrams completely characterize their rank functions</p>
+<p><span class="math inline">\(\Longleftrightarrow\)</span> and vice versa</p>
+<p>The rank</p>
+</section>
 <section id="persistence" class="slide level2">
 <h2>Persistence</h2>
-<p>Many interpretations of persistence:</p>
-<div class="fragment fade-in" data-fragment-index="1">
-<div class="fragment semi-fade-out" data-fragment-index="2">
-<ul>
-<li><span class="math inline">\(f \to M\)</span> (algebraic)</li>
-</ul>
-</div>
-</div>
-<div class="fragment fade-in" data-fragment-index="2">
-<div class="fragment semi-fade-out" data-fragment-index="3">
-<ul>
-<li><span class="math inline">\(\sum\limits_{i=1}^n \beta_p^{i,j}(K)\)</span> (combinatorial)</li>
-</ul>
-</div>
-</div>
-<div class="fragment fade-in" data-fragment-index="3">
-<div class="fragment semi-fade-out" data-fragment-index="4">
-<ul>
-<li><span class="math inline">\(\mu_{\mathbb{V}}(R) = \mathrm{card}(\mathrm{dgm}(\mathbb{V}|_R))\)</span> (persistence measure)</li>
-</ul>
-</div>
-</div>
 
 <aside class="notes">
 <p>Speaker notes go here.</p>
@@ -445,6 +459,23 @@ Replacing dimensions with ranks, we have:
 \]</span></p>
 <p><em>Q</em>: Can we exploit some of these?</p>
 </section>
+<section id="rank-test-2" class="slide level2">
+<h2>Rank test 2</h2>
+<!-- https://revealjs.com/auto-animate/ -->
+<section data-auto-animate="">
+<h2>
+<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))\]</span>
+</h2>
+</section>
+<section data-auto-animate="">
+<h2>
+<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))\]</span>
+</h2>
+<h2>
+<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{rank}(\mathrm{Im}(A))\]</span>
+</h2>
+</section>
+</section>
 <section id="permutation-invariance" class="slide level2">
 <h2>Permutation Invariance</h2>
 <p>Consider the setting where <span class="math inline">\(f_\alpha : \mathbb{R} \to \mathbb{R}^N\)</span> is an <span class="math inline">\(\alpha\)</span>-parameterized filter function:</p>
@@ -518,7 +549,7 @@ Replacing dimensions with ranks, we have:
 'autoAnimateDuration': 1,
 'autoAnimateUnmatched': true,
 'menu': {"side":"left","useTextContentForMissingTitles":true,"markers":false,"loadIcons":false,"custom":[{"title":"Tools","icon":"<i class=\"fas fa-gear\"></i>","content":"<ul class=\"slide-menu-items\">\n<li class=\"slide-tool-item active\" data-item=\"0\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.fullscreen(event)\"><kbd>f</kbd> Fullscreen</a></li>\n<li class=\"slide-tool-item\" data-item=\"1\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.speakerMode(event)\"><kbd>s</kbd> Speaker View</a></li>\n<li class=\"slide-tool-item\" data-item=\"2\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>o</kbd> Slide Overview</a></li>\n<li class=\"slide-tool-item\" data-item=\"3\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.overview(event)\"><kbd>e</kbd> PDF Export Mode</a></li>\n<li class=\"slide-tool-item\" data-item=\"4\"><a href=\"#\" onclick=\"RevealMenuToolHandlers.keyboardHelp(event)\"><kbd>?</kbd> Keyboard Help</a></li>\n</ul>"}],"openButton":true},
-'spotlight': {"size":45,"lockPointerInsideCanvas":false,"toggleSpotlightOnMouseDown":false,"spotlightOnKeyPressAndHold":16,"spotlightCursor":"none","presentingCursor":"default","initialPresentationMode":true,"disablingUserSelect":true,"fadeInAndOut":100,"useAsPointer":false,"pointerColor":"red"},
+'spotlight': {"size":35,"lockPointerInsideCanvas":false,"toggleSpotlightOnMouseDown":false,"spotlightOnKeyPressAndHold":16,"spotlightCursor":"none","presentingCursor":"default","initialPresentationMode":true,"disablingUserSelect":true,"fadeInAndOut":100,"useAsPointer":false,"pointerColor":"red"},
 'smaller': true,
  
         // Display controls in the bottom right corner

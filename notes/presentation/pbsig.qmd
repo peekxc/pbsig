@@ -1,6 +1,6 @@
 ---
 title: Spectral relaxations of Persistence Invariants
-subtitle: Rididng
+subtitle: Rank
 author: "Matt Piekenbrock"
 format: 
   revealjs:
@@ -9,7 +9,7 @@ format:
     institute: Northeastern University - Khoury College of Computer Science 
     spotlight:
       useAsPointer: false
-      size: 45
+      size: 35
       toggleSpotlightOnMouseDown: false
       spotlightOnKeyPressAndHold: 16 # shift : 
       presentingCursor: "default"
@@ -25,29 +25,56 @@ filters:
 # keycodes: https://gcctech.org/csc/javascript/javascript_keycodes.htm
 ---
 
+## Relaxing the Rank invariant  
+
+Many transforms exist mapping $\mathrm{dgm}$'s to function spaces, e.g. 
+  
+- Persistence Landscapes 
+- Persistence images 
+- ... a few others
+
+Decidedly less work done on _the rank invariant_ (exceptions: [][][])
+
+$$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
+
+We introduce a _spectral-relaxation_ of $\beta_p^{i,j}$ that is:
+
+  1. Smooth + differentiable on the PSD cone, semismooth in $\mathbb{R}^{n \times n}$
+  2. a $(1{\textstyle -}\epsilon)$-approximation of $\beta_p^{i,j}$ for any $\epsilon > 0$
+  3. derived from combinatorial Laplacian operators
+
+<!-- - Continuous relaxation 
+- Captures persistence properties
+- Doesn't require $\mathrm{dgm}$ to compute -->
+
+<!-- ![](../betti_add.png) -->
+
+## Application: parameterized families 
+Consider a 1-parameter family of simplicial complexes: 
+
+$$\{ \; \mu_p^R(K_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}$$
+
+
+
+## Why the rank invariant?
+
+There is a duality between diagrams its associated rank function:
+
+$$ \mathrm{dgm}_p(f) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
+
+$$\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad $$
+
+Dually, the _"Fundamental Lemma of Persistent Homology"_ says that:
+$$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
+
+$\Longrightarrow$ Diagrams completely characterize their rank functions
+
+$\Longleftrightarrow$ and vice versa
+
+The rank 
 
 ## Persistence
 
-Many interpretations of persistence: 
-
-
-::: {.fragment .fade-in fragment-index=1}
-::: {.fragment .semi-fade-out fragment-index=2}
-- $f \to M$ (algebraic)
-:::
-:::
-
-::: {.fragment .fade-in fragment-index=2}
-::: {.fragment .semi-fade-out fragment-index=3}
-- $\sum\limits_{i=1}^n \beta_p^{i,j}(K)$ (combinatorial)
-:::
-:::
-
-::: {.fragment .fade-in fragment-index=3}
-::: {.fragment .semi-fade-out fragment-index=4}
-- $\mu_{\mathbb{V}}(R) = \mathrm{card}(\mathrm{dgm}(\mathbb{V}|_R))$ (persistence measure)
-:::
-:::
 
 
 
@@ -135,6 +162,21 @@ $$
 $$
 
 _Q_: Can we exploit some of these? 
+
+## Rank test 2 
+
+<!-- https://revealjs.com/auto-animate/ -->
+
+
+<section data-auto-animate>
+
+<h2> $$\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))$$ </h2>
+
+</section>
+<section data-auto-animate>
+  <h2> $$\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))$$ </h2>
+  <h2> $$\mathrm{rank}(A) \triangleq \mathrm{rank}(\mathrm{Im}(A))$$ </h2>
+</section>
 
 ## Permutation Invariance 
 
