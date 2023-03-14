@@ -12,7 +12,7 @@
 <script src="pbsig_files/libs/quarto-contrib/roughnotation-init-1.0.0/rough.js"></script><meta charset="utf-8">
   <meta name="generator" content="quarto-1.3.217">
 
-  <meta name="author" content="Matt Piekenbrock">
+  <meta name="author" content="Matt Piekenbrock\mathrm{}^\dagger &amp; Jose Perea\mathrm{}^\ddagger">
   <title>Spectral relaxations of Persistence Invariants</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -328,15 +328,18 @@
 
 <section id="title-slide" class="quarto-title-block center">
   <h1 class="title">Spectral relaxations of Persistence Invariants</h1>
-  <p class="subtitle">Rank</p>
+  <p class="subtitle">Relaxing the rank invariant for parameterized settings</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
 <div class="quarto-title-author-name">
-Matt Piekenbrock 
+Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jose Perea<span class="math inline">\(\mathrm{}^\ddagger\)</span> 
 </div>
         <p class="quarto-title-affiliation">
-            Northeastern University - Khoury College of Computer Science
+            <span class="math inline">\(\dagger\)</span> Khoury College of Computer Sciences, Northeastern University
+          </p>
+        <p class="quarto-title-affiliation">
+            <span class="math inline">\(\ddagger\)</span>. Department of Mathematics and Khoury College of Computer Sciences, Northeastern University
           </p>
     </div>
 </div>
@@ -344,20 +347,87 @@ Matt Piekenbrock
 </section>
 <section id="relaxing-the-rank-invariant" class="slide level2">
 <h2>Relaxing the Rank invariant</h2>
-<p>Many transforms exist mapping <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces, e.g.&nbsp;</p>
+<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces</p>
+<!-- :::{.incremental style="list-style-type: none; margin-left:2.5em; align=center;"} -->
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<div class="columns">
+<div class="column" style="list-style-type: none; margin-left:2.5em; align=center;">
 <ul>
 <li>Persistence Landscapes</li>
-<li>Persistence images</li>
-<li>… a few others</li>
 </ul>
-<p>Decidedly less work done on <em>the rank invariant</em> (exceptions: [][][])</p>
+</div><div class="column" style="width:40%;">
+<p><img data-src="pers_landscape.png"></p>
+</div>
+</div>
+</div>
+</section>
+<section id="relaxing-the-rank-invariant-1" class="slide level2">
+<h2>Relaxing the Rank invariant</h2>
+<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces</p>
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<div class="columns">
+<div class="column" style="list-style-type: none; margin-left:2.5em; align=center;">
+<ul>
+<li>Persistence Landscapes</li>
+<li>Persistence Images</li>
+</ul>
+</div><div class="column" style="width:40%;">
+<p><img data-src="pers_image.png"></p>
+</div>
+</div>
+</div>
+</section>
+<section id="relaxing-the-rank-invariant-2" class="slide level2">
+<h2>Relaxing the Rank invariant</h2>
+<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces</p>
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<div class="columns">
+<div class="column" style="list-style-type: none; margin-left:2.5em; align=center;">
+<ul>
+<li>Persistence Landscapes</li>
+<li>Persistence Images</li>
+<li>Many others…</li>
+</ul>
+</div><div class="column" style="width:40%;">
+<p><img data-src="pers_landscape.png"> <img data-src="pers_image.png"></p>
+</div>
+</div>
+</div>
+</section>
+<section id="relaxing-the-rank-invariant-3" class="slide level2">
+<h2>Relaxing the Rank invariant</h2>
+<div>
+<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces</p>
+<div class="columns">
+<div class="column" style="list-style-type: none; margin-left:2.5em; align=center;">
+<ul>
+<li>Persistence Landscapes</li>
+<li>Persistence Images</li>
+<li>Many others…</li>
+</ul>
+</div><!-- ::: {.r-stack}
+![](pers_landscape.png){width=20%} 
+![](pers_image.png){width=20%}
+::: -->
+</div>
+</div>
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<p>Less work done on <em>the rank invariant</em> (exceptions: [][][])</p>
 <p><span class="math display">\[ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))\]</span></p>
-<p>We introduce a <em>spectral-relaxation</em> of <span class="math inline">\(\beta_p^{i,j}\)</span> that is:</p>
+</div>
+<div>
+<div class="fragment fade-in" style="text-align: left">
+<p>We introduce a <em>spectral-relaxation</em> of <span class="math inline">\(\beta_p^{i,j}\)</span> that:</p>
+<div style="margin-left:2.5em;">
 <ol type="1">
-<li>Smooth + differentiable on the PSD cone, semismooth in <span class="math inline">\(\mathbb{R}^{n \times n}\)</span></li>
-<li>a <span class="math inline">\((1{\textstyle -}\epsilon)\)</span>-approximation of <span class="math inline">\(\beta_p^{i,j}\)</span> for any <span class="math inline">\(\epsilon &gt; 0\)</span></li>
-<li>derived from combinatorial Laplacian operators</li>
+<li class="fragment">is smooth + differentiable on <span class="math inline">\(\mathbf{S}_+\)</span> and semismooth on <span class="math inline">\(\mathbb{R}^{n \times n}\)</span></li>
+<li class="fragment"><span class="math inline">\((1{\textstyle -}\epsilon)\)</span> approximates of <span class="math inline">\(\beta_p^{i,j}\)</span> for any <span class="math inline">\(\epsilon &gt; 0\)</span></li>
+<li class="fragment">Derives from non-harmonic spectra of Laplacian operators</li>
+<li class="fragment">Has several compute advantages over current approaches</li>
 </ol>
+</div>
+</div>
+</div>
 <!-- - Continuous relaxation 
 - Captures persistence properties
 - Doesn't require $\mathrm{dgm}$ to compute -->
@@ -368,21 +438,24 @@ Matt Piekenbrock
 <p>Consider a 1-parameter family of simplicial complexes:</p>
 <p><span class="math display">\[\{ \; \mu_p^R(K_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}\]</span></p>
 </section>
-<section id="why-the-rank-invariant" class="slide level2">
-<h2>Why the rank invariant?</h2>
-<p>There is a duality between diagrams its associated rank function:</p>
-<p><span class="math display">\[ \mathrm{dgm}_p(f) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta \]</span></p>
-<p><span class="math display">\[\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad \]</span></p>
-<p>Dually, the <em>“Fundamental Lemma of Persistent Homology”</em> says that: <span class="math display">\[\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}\]</span></p>
-<p><span class="math inline">\(\Longrightarrow\)</span> Diagrams completely characterize their rank functions</p>
-<p><span class="math inline">\(\Longleftrightarrow\)</span> and vice versa</p>
-<p>The rank</p>
-</section>
-<section id="persistence" class="slide level2">
-<h2>Persistence</h2>
-
+<section id="why-not-just-use-diagrams" class="slide level2">
+<h2>Why not just use diagrams?</h2>
+<p><strong>Pro:</strong> Diagrams are stable, well-studied, and information rich.</p>
+<p><strong>Con:</strong> Only competitive algorithm to produce a diagram is <em>reduction</em> algorithm:</p>
+<p><span class="math display">\[ \partial(K_\bullet) \mapsto R = \partial V \]</span></p>
+<p>Extending the reduction algorithm to parameterized settings is highly non-trivial</p>
+<div class="columns">
+<div class="column" style="width:33%;">
+<p><img data-src="vineyard.gif" style="width:90.0%"></p>
+</div><div class="column" style="width:33%;">
+<p><img data-src="complex_vine.gif" style="width:90.0%"></p>
+</div><div class="column" style="width:33%;">
+<p><img data-src="spy_matrices.gif" style="width:90.0%"></p>
+</div>
+</div>
+<p>Maintaining the <span class="math inline">\(R = \partial V\)</span> decomposition “across time” <span class="math inline">\(\implies\)</span> huge memory bottleneck</p>
 <aside class="notes">
-<p>Speaker notes go here.</p>
+<p>Reduction algorithm is a restricted form of gaussian elimination.</p>
 <style type="text/css">
         span.MJX_Assistive_MathML {
           position:absolute!important;
@@ -394,53 +467,121 @@ Matt Piekenbrock
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-<aside><div>
-<p>Some additional commentary of more peripheral interest.</p>
-</div></aside></section>
-<section id="vectorizing-diagrams" class="slide level2">
-<h2>Vectorizing diagrams</h2>
+</section>
+<section id="why-not-just-use-diagrams-1" class="slide level2">
+<h2>Why not just use diagrams?</h2>
+<p><strong>Pro:</strong> Diagrams are stable, well-studied, and information rich.</p>
+<p><strong>Con:</strong> Only competitive algorithm to produce a diagram is <em>reduction</em> algorithm:</p>
+<p><span class="math display">\[ \partial(K_\bullet) \mapsto R = \partial V \]</span></p>
+<p>Extending the reduction algorithm to parameterized settings is highly non-trivial</p>
 <div class="columns">
-<p><span class="math display">\[ {\displaystyle \mathrm{dgm}_p(f) := \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta } \]</span></p><div class="column" data-align="center" style="width:40%;">
-<p>contents…</p>
-</div><div class="column" style="width:60%;">
-<p>contents…</p>
+<div class="column" style="width:33%;">
+<p><img data-src="vineyard.gif" style="width:90.0%"></p>
+</div><div class="column" style="width:33%;">
+<p><img data-src="complex_vine.gif" style="width:90.0%"></p>
+</div><div class="column" style="width:33%;">
+<p><img data-src="spy_matrices.gif" style="width:90.0%"></p>
 </div>
 </div>
+<p>Maintaining the <span class="math inline">\(R = \partial V\)</span> decomposition “across time” <span class="math inline">\(\implies\)</span> huge memory bottleneck</p>
+<aside class="notes">
+<p>Reduction algorithm is a restricted form of gaussian elimination.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
 </section>
-<section id="motivating-derivation" class="slide level2">
-<h2>Motivating Derivation</h2>
-<!-- $$
-\begin{align}
-\beta_p^{i,j} & = \mathrm{dim} \big( \; \mathrm{Ker}(\partial_p(K_i)) \; / \; \mathrm{Im}(\partial_{p+1}(K_j)) \; \big ) \\
-&= \mathrm{dim}\big( \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \big ) \\
-&= \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\big)
-\end{align}
-$$ -->
-<div style="list-style-type: none;">
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=1">
-<span class="math inline">\(\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )\)</span>
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=2">
-<span class="math inline">\(\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )\)</span>
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=3">
-<span class="math inline">\(\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)\)</span>
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=4">
-Rank-nullity says: <span class="math display">\[
+<section id="why-the-rank-invariant" class="slide level2">
+<h2>Why the rank invariant?</h2>
+<p>There is a duality between diagrams its associated rank function:</p>
+<p><span class="math display">\[ \mathrm{dgm}_p(f) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta \]</span></p>
+<p><span class="math display">\[\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad \]</span></p>
+<p>Dually, the <em>“Fundamental Lemma of Persistent Homology”</em> says that: <span class="math display">\[\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}\]</span></p>
+<p><span class="math inline">\(\Longrightarrow\)</span> Diagrams completely characterize their rank functions</p>
+<p><span class="math inline">\(\Longleftrightarrow\)</span> and vice versa</p>
+<p>Much recent work on this front recently, in the context of multidimensional persistence[], Mobius inversions[], etc</p>
+</section>
+<section id="revisiting-the-ph-rank-computation" class="slide level2">
+<h2>Revisiting the PH rank computation</h2>
+<hr>
+<p><span class="math display">\[ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))\]</span></p>
+<hr>
+<div style="list-style-type: none;align=center;">
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<p><span class="math inline">\(\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )\)</span></p>
+</div>
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out">
+$\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+</li> -->
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out"> -->
+<p><span class="math inline">\(\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )\)</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" style="text-align: left">
+<p><span class="math inline">\(\color{blue}{\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i)) \; \big)}\)</span> <span class="math inline">\(-\)</span> <span class="math inline">\(\color{red}{\mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)}\)</span></p>
+</div>
+</div>
+<!-- <br>  -->
+<div class="fragment fade-in-then-semi-out">
+<p>Rank-nullity yields the <span style="color: blue">left term</span>: <span class="math display">\[
 \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
-\]</span>
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=5">
-Replacing dimensions with ranks, we have:
-<p style="text-align: left; margin-tb: 2em;">
-<span class="rn" data-rn-type="circle" data-rn-color="red"><span class="math inline">\(\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -\)</span></span> <span class="rn" data-rn-type="strike-through" data-rn-color="red"><span class="math inline">\(\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\)</span></span>
-</p>
-</li>
+\]</span></p>
 </div>
+<div class="fragment fade-in-then-semi-out">
+<p>Computing the <span style="color: red">right term</span> more nuanced:</p>
+</div>
+<div style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em;">
+<ul>
+<li class="fragment">Gaussian elimination []</li>
+<li class="fragment">Pseudo-inverse []</li>
+<li class="fragment">Orthogonal Projectors []</li>
+</ul>
+</div>
+<!-- <p style="text-align: left; margin-tb: 2em;">
+<!-- [$\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -$]{.rn rn-type=circle rn-color=red} -->
+<!-- [$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))$]{.rn rn-type=strike-through rn-color=red} -->
 </section>
-<section id="motivating-derivation-1" class="slide level2">
-<h2>Motivating Derivation</h2>
+<section id="key-observation" class="slide level2">
+<h2>Key Observation</h2>
+<p>The structure theorem[] asserts 1-parameter persistence modules decompose in an <em>essentially unique</em> way into indecomposables, which can be used to show:</p>
+<p><span class="math display">\[ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 \]</span> <span class="math display">\[ \implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})\]</span></p>
+<p>Often used to show correctness of reduction, but far more general, as it implies:</p>
+<div style="padding: 0.40em; border: 1px solid black;">
+<p><strong>Corollary (Bauer)</strong>: Any algorithm that preserves the ranks of the submatrices <span class="math inline">\(\partial^{i,j}\)</span> for all <span class="math inline">\(i,j \in \{ 1, \dots, n \}\)</span> is a valid barcode algorithm.</p>
+</div>
+<p>To see this, note that:</p>
+<p><span class="math display">\[ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) \]</span></p>
+<aside class="notes">
+<p>shows 1-parameter persistence modules decompose in essentially unique way The result about lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.&nbsp;The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. The corollary by Bauer et al.&nbsp;is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="overview" class="slide level2">
+<h2>Overview</h2>
+<ul>
+<li>Introduction</li>
+<li>Background: Duality between rank and diagrams</li>
+<li></li>
+</ul>
+</section>
+<section id="a-continuous-smooth-relaxation" class="slide level2">
+<h2>A continuous &amp; smooth relaxation</h2>
 </section>
 <section id="rank-invariances" class="slide level2">
 <h2>Rank Invariances</h2>

@@ -1,12 +1,14 @@
 ---
 title: Spectral relaxations of Persistence Invariants
-subtitle: Rank
-author: "Matt Piekenbrock"
+subtitle: Relaxing the rank invariant for parameterized settings
+author: Matt Piekenbrock$\mathrm{}^\dagger$   \&   Jose Perea$\mathrm{}^\ddagger$
 format: 
   revealjs:
     smaller: true
     theme: simple 
-    institute: Northeastern University - Khoury College of Computer Science 
+    institute: 
+      - $\dagger$ Khoury College of Computer Sciences, Northeastern University
+      - $\ddagger$. Department of Mathematics and Khoury College of Computer Sciences, Northeastern University
     spotlight:
       useAsPointer: false
       size: 35
@@ -23,26 +25,141 @@ filters:
   # - pandoc-katex.lua
   - roughnotation
 # keycodes: https://gcctech.org/csc/javascript/javascript_keycodes.htm
+# bibliography: references.bib
 ---
 
 ## Relaxing the Rank invariant  
 
-Many transforms exist mapping $\mathrm{dgm}$'s to function spaces, e.g. 
+There are many mappings from $\mathrm{dgm}$'s to function spaces 
   
-- Persistence Landscapes 
-- Persistence images 
-- ... a few others
 
-Decidedly less work done on _the rank invariant_ (exceptions: [][][])
+<!-- :::{.incremental style="list-style-type: none; margin-left:2.5em; align=center;"} -->
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+
+:::{.columns}
+
+:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
+
+- Persistence Landscapes 
+
+::: 
+
+::: {.column width="40%"}
+
+![](pers_landscape.png)
+
+:::
+
+:::
+
+:::
+
+## Relaxing the Rank invariant  
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces 
+  
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+
+:::{.columns}
+
+:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
+
+- Persistence Landscapes 
+- Persistence Images
+
+::: 
+
+::: {.column width="40%"}
+
+![](pers_image.png)
+
+:::
+
+:::
+
+:::
+
+
+## Relaxing the Rank invariant  
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces 
+  
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+
+:::{.columns}
+
+:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
+
+- Persistence Landscapes 
+- Persistence Images
+- Many others...
+
+::: 
+
+::: {.column width="40%"}
+
+![](pers_landscape.png)
+![](pers_image.png)
+
+:::
+
+:::
+
+:::
+
+
+## Relaxing the Rank invariant  
+
+<div >
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces 
+  
+:::{.columns}
+
+:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
+
+- Persistence Landscapes 
+- Persistence Images
+- Many others...
+
+::: 
+
+<!-- ::: {.r-stack}
+![](pers_landscape.png){width=20%} 
+![](pers_image.png){width=20%}
+::: -->
+
+
+:::
+
+</div> 
+
+:::{.fragment .fade-in-then-semi-out style="text-align: left"}
+
+Less work done on _the rank invariant_ (exceptions: [][][])
 
 $$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
 
-We introduce a _spectral-relaxation_ of $\beta_p^{i,j}$ that is:
+:::
 
-  1. Smooth + differentiable on the PSD cone, semismooth in $\mathbb{R}^{n \times n}$
-  2. a $(1{\textstyle -}\epsilon)$-approximation of $\beta_p^{i,j}$ for any $\epsilon > 0$
-  3. derived from combinatorial Laplacian operators
+:::{.incremental}
+:::{.fragment .fade-in style="text-align: left"}
+We introduce a _spectral-relaxation_ of $\beta_p^{i,j}$ that:
 
+<div style="margin-left:2.5em;">
+
+1. is smooth + differentiable on $\mathbf{S}_+$ and semismooth on $\mathbb{R}^{n \times n}$
+2. $(1{\textstyle -}\epsilon)$ approximates of $\beta_p^{i,j}$ for any $\epsilon > 0$
+3. Derives from non-harmonic spectra of Laplacian operators
+4. Has several compute advantages over current approaches
+
+</div>
+
+:::
+:::
 <!-- - Continuous relaxation 
 - Captures persistence properties
 - Doesn't require $\mathrm{dgm}$ to compute -->
@@ -55,6 +172,72 @@ Consider a 1-parameter family of simplicial complexes:
 $$\{ \; \mu_p^R(K_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}$$
 
 
+## Why not just use diagrams?
+
+__Pro:__ Diagrams are stable, well-studied, and information rich.
+
+__Con:__ Only competitive algorithm to produce a diagram is _reduction_ algorithm:
+
+$$ \partial(K_\bullet) \mapsto R = \partial V $$
+
+Extending the reduction algorithm to parameterized settings is highly non-trivial
+
+:::: {.columns}
+
+
+::: {.column width="33%"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](complex_vine.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](spy_matrices.gif){width=90%}
+:::
+
+::::
+
+Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+
+## Why not just use diagrams?
+
+__Pro:__ Diagrams are stable, well-studied, and information rich.
+
+__Con:__ Only competitive algorithm to produce a diagram is _reduction_ algorithm:
+
+$$ \partial(K_\bullet) \mapsto R = \partial V $$
+
+Extending the reduction algorithm to parameterized settings is highly non-trivial
+
+:::: {.columns}
+
+
+::: {.column width="33%"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](complex_vine.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](spy_matrices.gif){width=90%}
+:::
+
+::::
+
+Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
 
 ## Why the rank invariant?
 
@@ -71,76 +254,92 @@ $\Longrightarrow$ Diagrams completely characterize their rank functions
 
 $\Longleftrightarrow$ and vice versa
 
-The rank 
-
-## Persistence
+Much recent work on this front recently, in the context of multidimensional persistence[], Mobius inversions[], etc
 
 
+## Revisiting the PH rank computation
 
-
-::: aside
-Some additional commentary of more peripheral interest.
-:::
-
-::: {.notes}
-Speaker notes go here.
-:::
-
-## Vectorizing diagrams
-
-:::: {.columns}
-
-$$ {\displaystyle \mathrm{dgm}_p(f) := \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta } $$
-
-::: {.column width="40%" align=center}
-contents...
-:::
-
-::: {.column width="60%"}
-contents...
-:::
-
-::::
-
-## Motivating Derivation 
+<hr> 
+$$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
 	
-<!-- $$
-\begin{align}
-\beta_p^{i,j} & = \mathrm{dim} \big( \; \mathrm{Ker}(\partial_p(K_i)) \; / \; \mathrm{Im}(\partial_{p+1}(K_j)) \; \big ) \\
-&= \mathrm{dim}\big( \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \big ) \\
-&= \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\big)
-\end{align}
-$$ -->
+<hr> 
 
-:::{.incremental style="list-style-type: none;"}
+:::{.incremental style="list-style-type: none;align=center;"}
 
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=1">
-$\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=2">
-$\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )$
-</li>
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=3">
-$\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i))\big) - \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)$
-</li>
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+$\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+:::
 
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=4">
-Rank-nullity says: 
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out">
+$\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+</li> -->
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out"> -->
+$\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )$
+:::
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+$\color{blue}{\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i)) \; \big)}$
+$-$
+$\color{red}{\mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)}$
+:::
+
+::: 
+
+<!-- <br>  -->
+::: {.fragment .fade-in-then-semi-out}
+Rank-nullity yields the <span style="color: blue">left term</span>: 
 $$
 \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
 $$
-</li>
-
-<li style="text-align: left" class="fragment fade-in-then-semi-out fragment-index=5">
-Replacing dimensions with ranks, we have: 
-<p style="text-align: left; margin-tb: 2em;">
-[$\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -$]{.rn rn-type=circle rn-color=red}
-[$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))$]{.rn rn-type=strike-through rn-color=red}
-</p>
-</li>
 :::
 
-## Motivating Derivation 
+::: {.fragment .fade-in-then-semi-out}
+Computing the <span style="color: red">right term</span> more nuanced: 
+:::
+
+:::{.incremental style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em;"}
+- Gaussian elimination []
+- Pseudo-inverse []
+- Orthogonal Projectors []
+:::
+
+<!-- <p style="text-align: left; margin-tb: 2em;">
+<!-- [$\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -$]{.rn rn-type=circle rn-color=red} -->
+<!-- [$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))$]{.rn rn-type=strike-through rn-color=red} -->
+
+
+## Key Observation
+
+The structure theorem[] asserts 1-parameter persistence modules decompose in an _essentially unique_ way into indecomposables, which can be used to show: 
+
+$$ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 $$
+$$ \implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})$$
+ 
+Often used to show correctness of reduction, but far more general, as it implies:
+
+<div style="padding: 0.40em; border: 1px solid black;">
+__Corollary (Bauer)__: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
+</div>
+To see this, note that: 
+
+$$ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) $$
+
+
+::: {.notes}
+shows 1-parameter persistence modules decompose in essentially unique way
+The result about lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al. The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. 
+The corollary by Bauer et al. is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm. 
+:::
+
+## Overview
+
+- Introduction 
+- Background: Duality between rank and diagrams 
+- 
+
+## A continuous & smooth relaxation 
+
 
 
 

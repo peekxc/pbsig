@@ -129,9 +129,12 @@ def figure_complex(
   assert isinstance(cv, Container)
 
   ## Replace color with rgba values from color palette 
-  default_bin_kwargs = dict(lb=min(cv), ub=max(cv), color_pal=palette) 
-  bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
-  color = bin_color(cv, **bin_kwargs)
+  if cv.ndim == 1:
+    default_bin_kwargs = dict(lb=min(cv), ub=max(cv), color_pal=palette) 
+    bin_kwargs = default_bin_kwargs if bin_kwargs is None else (default_bin_kwargs | bin_kwargs)
+    color = bin_color(cv, **bin_kwargs)
+  else:
+    color = cv
 
   ## Deduce embedding
   from scipy.sparse import diags

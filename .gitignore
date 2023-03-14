@@ -12,6 +12,8 @@ trash
 .textpadtmp
 extern/
 .jupyter* 
+**.png
+**.gif 
 
 
 # Byte-compiled / optimized / DLL files
