@@ -5,6 +5,7 @@ author: Matt Piekenbrock$\mathrm{}^\dagger$   \&   Jose Perea$\mathrm{}^\ddagger
 format: 
   revealjs:
     smaller: true
+    footer: "Spectral relaxations of persistent rank invariants"
     theme: simple 
     institute: 
       - $\dagger$ Khoury College of Computer Sciences, Northeastern University
@@ -113,7 +114,6 @@ There are many mappings from $\mathrm{dgm}$'s to function spaces
 
 ## Relaxing the Rank invariant  
 
-<div >
 
 There are many mappings from $\mathrm{dgm}$'s to function spaces 
   
@@ -135,7 +135,6 @@ There are many mappings from $\mathrm{dgm}$'s to function spaces
 
 :::
 
-</div> 
 
 :::{.fragment .fade-in-then-semi-out style="text-align: left"}
 
@@ -311,20 +310,26 @@ Computing the <span style="color: red">right term</span> more nuanced:
 
 ## Key Observation
 
-The structure theorem[] asserts 1-parameter persistence modules decompose in an _essentially unique_ way into indecomposables, which can be used to show: 
+The structure theorem[^1] asserts 1-parameter persistence modules decompose in an _essentially unique_ way into indecomposables, which can be used to show: 
 
 $$ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 $$
-$$ \implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})$$
+$$ 
+\begin{equation}
+\implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
+\end{equation}
+$$
  
 Often used to show correctness of reduction, but far more general, as it implies:
 
-<div style="padding: 0.40em; border: 1px solid black;">
-__Corollary (Bauer)__: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
-</div>
-To see this, note that: 
-
 $$ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) $$
 
+$$ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  $$
+
+<div style="margin-top: 0.01em; margin-bottom: 0.01em; border: 1px solid black; ">
+__Corollary (Bauer)__[^1]: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
+</div>
+
+[^1]: Zomorodian \& Carlsson, "Computing persistent homology," Symposium on Computational Geometry, 2004.
 
 ::: {.notes}
 shows 1-parameter persistence modules decompose in essentially unique way

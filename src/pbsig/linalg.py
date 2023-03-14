@@ -824,6 +824,17 @@ class UpLaplacianPy(LinearOperator):
       Y[:,j] = self._matvec(X[:,j])
     return Y
 
+
+def nuclear_norm(X: ArrayLike) -> float:
+  if X.shape[0] != X.shape[1]:
+    X = X @ X.T
+    use_sqrt = True 
+  else: 
+    assert is_symmetric(X)
+    use_sqrt = False
+  solver = eigvalsh_solver(X)
+  return sum(abs(solver(X))) if not(use_sqrt) else sum(np.sqrt(np.abs(solver(X))))
+
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:
   """ Check if a real-valued matrix is symmetric up to a given tolerance (via np.isclose) """

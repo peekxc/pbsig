@@ -1,18 +1,9 @@
-// Header includes 
-#include <cinttypes>
-#include <cstdint>
-#include <array>
-#include <span>
-#include <cmath>	 // round, sqrt, floor
-#include <numeric> // midpoint, accumulate
-#include <unordered_map> 
-
 #include <pybind11/pybind11.h>
 #include <pybind11/iostream.h>
 #include <pybind11/numpy.h>
 #include <pybind11/stl.h>
 
-#include "combinatorial.h"
+#include "laplacian.h"
 // #include "pthash.hpp"
 // #include <omp.h>
 
@@ -29,12 +20,12 @@ using std::unordered_map;
 using uint_32 = uint_fast32_t;
 using uint_64 = uint_fast64_t;
 
-[[nodiscard]]
-inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std::array< uint_64, 2 > {
-  auto i = static_cast< uint_64 >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
-  auto j = static_cast< uint_64 >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
-  return(std::array< uint_64, 2 >{ i, j });
-}
+// [[nodiscard]]
+// inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std::array< uint_64, 2 > {
+//   auto i = static_cast< uint_64 >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
+//   auto j = static_cast< uint_64 >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
+//   return(std::array< uint_64, 2 >{ i, j });
+// }
 
 // template < typename I = int64_t, typename Hasher = pthash::murmurhash2_64, typename Encoder = pthash::dictionary_dictionary >
 // struct IndexMap {
@@ -82,125 +73,6 @@ inline auto lex_unrank_2_array(const uint_64 r, const size_t n) noexcept -> std:
 
 // mutable unordered_map< I, I > index_map; 
 
-// Given codimension-1 ranks, determines the ranks of the corresponding faces
-// p := simplex dimension of given ranks 
-auto decompress_faces(const vector< uint_64 >& cr, const size_t n, const size_t p, bool unique) -> vector< uint_64 > {
-  vector< uint_64 > fr; 
-  fr.reserve(cr.size()); 
-  for (auto ci : cr){
-    combinatorial::apply_boundary(ci, n, p+1, [&](auto face_rank){ fr.push_back(face_rank); });
-  }
-  if (unique) {
-    std::sort(fr.begin(), fr.end());
-    fr.erase(std::unique(fr.begin(), fr.end()), fr.end());
-  }
-  return fr;
-};
-
-
-template< int p = 0, typename F = double, bool lex_order = true >
-struct UpLaplacian {
-  static constexpr int dim = p;
-  using value_type = F; 
-  // typename p dim;
-  // using Map_t = IndexMap< uint_64, pthash::murmurhash2_64, pthash::dictionary_dictionary >;
-  using Map_t = unordered_map< uint_64, uint_64 >;
-  const size_t nv;
-  const size_t np;
-  const size_t nq; 
-  array< size_t, 2 > shape;  // TODO: figure out how to initialize in constructor
-  const vector< uint_64 > qr;             // p+1 ranks
-  vector< uint_64 > pr;                   // p ranks; not necessary but good to have
-  mutable vector< F > y;                  // workspace
-  mutable Map_t index_map;                // indexing function
-  vector< F > fpl;                        // p-simplex left weights 
-  vector< F > fpr;                        // p-simplex right weights 
-  vector< F > fq;                         // (p+1)-simplex weights
-  vector< F > degrees;                    // weighted degrees; pre-computed
-
-  UpLaplacian(const vector< uint_64 > qr_, const size_t nv_, const size_t np_) 
-    : nv(nv_), np(np_), nq(qr_.size()), qr(qr_)  {
-    shape = { np, np };
-    y = vector< F >(np); // todo: experiment with local _alloca allocation
-    fpl = vector< F >(np, 1.0);
-    fpr = vector< F >(np, 1.0);
-    fq = vector< F >(nq, 1.0); 
-    degrees = vector< F >(np, 0.0);
-    pr = decompress_faces(qr, nv, dim+1, true);
-    for (uint64_t i = 0; i < pr.size(); ++i){
-      index_map.emplace(pr[i], i);
-    }
-  }
-
-  
-  // // Prepares indexing hash function 
-  // void compute_indexes(){
-  //   // Build the index map
-  //   // index_map.build(fr.begin(), fr.end());
-  //   for (uint64_t i = 0; i < pr.size(); ++i){
-  //     index_map.emplace(pr[i], i);
-  //   }
-  // }
-
-  // Precomputes the degree term
-  void precompute_degree(){
-    if (fpl.size() != np || fq.size() != nq || fpl.size() != np){ return; }
-    std::fill_n(degrees.begin(), degrees.size(), 0);
-    size_t q_ind = 0; 
-    for (auto qi : qr){
-      combinatorial::apply_boundary(qi, nv, dim+2, [&](auto face_rank){ 
-        const auto ii = index_map[face_rank];
-        degrees.at(ii) += fpl.at(ii) * fq.at(q_ind) * fpr.at(ii);
-      });
-      q_ind += 1; 
-    }
-  };
-
-  // Internal matvec; outputs y = L @ x
-  inline void __matvec(F* x) const noexcept { 
-    // Start with the degree computation
-    std::transform(degrees.begin(), degrees.end(), x, y.begin(), std::multiplies< F >());
-
-    // The matvec
-    size_t q_ind = 0;
-    auto p_ranks = array< uint64_t, dim+2 >();
-
-    // #pragma omp simd
-    for (auto qi: qr){
-      if constexpr (p == 0){
-				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
-        const auto ii = p_ranks[0]; // index_map[q_vertices[0]]; 
-        const auto jj = p_ranks[1];
-        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
-        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
-      } else if constexpr (p == 1) { // inject the sign @ compile time
-        boundary(qi, nv, p+2, begin(p_ranks));
-        const auto ii = index_map[p_ranks[0]];
-        const auto jj = index_map[p_ranks[1]];
-        const auto kk = index_map[p_ranks[2]];
-        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj];
-        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
-        y[ii] += x[kk] * fpl[ii] * fq[q_ind] * fpr[kk]; 
-        y[kk] += x[ii] * fpl[kk] * fq[q_ind] * fpr[ii]; 
-        y[jj] -= x[kk] * fpl[jj] * fq[q_ind] * fpr[kk]; 
-        y[kk] -= x[jj] * fpl[kk] * fq[q_ind] * fpr[jj]; 
-      } else {
-        boundary(qi, nv, p+2, begin(p_ranks));
-        size_t cc = 0;
-        const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
-				for_each_combination(begin(p_ranks), begin(p_ranks)+2, end(p_ranks), [&](auto a, auto b){
-          const auto ii = index_map[*a];
-          const auto jj = index_map[*(b-1)]; // to remove compiler warning
-					y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
-          y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii];
-          cc = (cc + 1) % 2;
-          return false; 
-        });
-      }
-      q_ind += 1;
-    }
-  }
-}; // UpLaplacian
 
 // Matvec operation: Lx |-> y for any vector x
 template< typename Laplacian, typename F = typename Laplacian::value_type > 

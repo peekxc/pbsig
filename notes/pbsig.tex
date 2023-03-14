@@ -737,7 +737,7 @@ Given a simplicial complex $K$, the corresponding Laplace operator is uniquely d
 By choosing the weights, one effectively determines the corresponding inner product, which in-turn determines the spectral range of the corresponding operator. Computationally, the weights of the simplices $\sigma \in K$ manifest in the corresponding Laplace operators via positive diagonal matrices $W_\ast = \mathrm{diag}(\{w(\sigma_1), w(\sigma_2), \dots, w(\sigma_n)\})$, 
 yielding the following \emph{weighted combinatorial laplacian}:  
 \begin{equation}\label{eq:weighted_up_laplace}
-	\Delta_p(K, f) := W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T  + \partial_{p}^T W_p^{-1} \partial_p W_{p+1}
+	\Delta_p(K, f) := \underbrace{W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T}_{L_p^{\mathrm{up}}} \, + \, \underbrace{\partial_{p}^T W_p^{-1} \partial_p W_{p+1}}_{L_p^{\mathrm{dn}}}
 \end{equation} 
 In general, none of the constitutive terms in~\eqref{eq:weighted_up_laplace} are symmetric matrices, unless $W_p = I_n$ (for $L_p^{\text{up}}$) or $W_{p+1} = I_m$ (for $L_p^{\text{dn}}$). 
 %$W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T$ 

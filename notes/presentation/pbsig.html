@@ -396,7 +396,6 @@ Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jos
 </section>
 <section id="relaxing-the-rank-invariant-3" class="slide level2">
 <h2>Relaxing the Rank invariant</h2>
-<div>
 <p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces</p>
 <div class="columns">
 <div class="column" style="list-style-type: none; margin-left:2.5em; align=center;">
@@ -409,7 +408,6 @@ Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jos
 ![](pers_landscape.png){width=20%} 
 ![](pers_image.png){width=20%}
 ::: -->
-</div>
 </div>
 <div class="fragment fade-in-then-semi-out" style="text-align: left">
 <p>Less work done on <em>the rank invariant</em> (exceptions: [][][])</p>
@@ -550,14 +548,18 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 </section>
 <section id="key-observation" class="slide level2">
 <h2>Key Observation</h2>
-<p>The structure theorem[] asserts 1-parameter persistence modules decompose in an <em>essentially unique</em> way into indecomposables, which can be used to show:</p>
-<p><span class="math display">\[ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 \]</span> <span class="math display">\[ \implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})\]</span></p>
+<p>The structure theorem<sup>1</sup> asserts 1-parameter persistence modules decompose in an <em>essentially unique</em> way into indecomposables, which can be used to show:</p>
+<p><span class="math display">\[ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 \]</span> <span class="math display">\[
+\begin{equation}
+\implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
+\end{equation}
+\]</span></p>
 <p>Often used to show correctness of reduction, but far more general, as it implies:</p>
-<div style="padding: 0.40em; border: 1px solid black;">
-<p><strong>Corollary (Bauer)</strong>: Any algorithm that preserves the ranks of the submatrices <span class="math inline">\(\partial^{i,j}\)</span> for all <span class="math inline">\(i,j \in \{ 1, \dots, n \}\)</span> is a valid barcode algorithm.</p>
-</div>
-<p>To see this, note that:</p>
 <p><span class="math display">\[ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) \]</span></p>
+<p><span class="math display">\[ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  \]</span></p>
+<div style="margin-top: 0.01em; margin-bottom: 0.01em; border: 1px solid black; ">
+<p><strong>Corollary (Bauer)</strong><sup>2</sup>: Any algorithm that preserves the ranks of the submatrices <span class="math inline">\(\partial^{i,j}\)</span> for all <span class="math inline">\(i,j \in \{ 1, \dots, n \}\)</span> is a valid barcode algorithm.</p>
+</div>
 <aside class="notes">
 <p>shows 1-parameter persistence modules decompose in essentially unique way The result about lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.&nbsp;The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. The corollary by Bauer et al.&nbsp;is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm.</p>
 <style type="text/css">
@@ -571,7 +573,7 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-</section>
+<aside><ol class="aside-footnotes"><li id="fn1"><p>Zomorodian &amp; Carlsson, “Computing persistent homology,” Symposium on Computational Geometry, 2004.</p></li><li id="fn2"><p>Zomorodian &amp; Carlsson, “Computing persistent homology,” Symposium on Computational Geometry, 2004.</p></li></ol></aside></section>
 <section id="overview" class="slide level2">
 <h2>Overview</h2>
 <ul>
@@ -654,9 +656,10 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
   };
 </script>
 <div class="footer footer-default">
-
+<p>Spectral relaxations of persistent rank invariants</p>
 </div>
 </section>
+
     </div>
   </div>
 

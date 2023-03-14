@@ -135,7 +135,7 @@ show(row(p,q))
 from pbsig.linalg import *
 mu_rk = mu_f(smoothing=None, terms=False)
 mu_nn = mu_f(smoothing=False, terms=False)
-mu_sa = mu_f(smoothing=sgn_approx(eps=1e-1, p=1.0), terms=False)
+mu_sa = mu_f(smoothing=sgn_approx(eps=1e-2, p=2.0), terms=False)
 
 p = figure(width=300, height=250, title="Multiplicity")
 p.step(alpha_family, mu_rk, line_color="black")
@@ -181,17 +181,13 @@ from pbsig.betti import update_weights
 from pbsig.linalg import rank_bound, trace_threshold
 import line_profiler
 profile = line_profiler.LineProfiler()
-profile.add_function(codensity_mu)
-# profile.add_function(mu_query)
-profile.add_function(boundary_matrix)
-profile.add_function(_fast_boundary)
 profile.add_function(rank_bound)
-profile.add_function(trace_threshold)
-profile.add_function(mu_f.__call__)
-#profile.add_function(mu_f.solver.solver.__wrapped__)  # for numpy 
+profile.add_function(mu_q.__call__)
+# if mu_q.solver.solver.__module__ ==  'numpy.linalg':
+#   profile.add_function(mu_q.solver.solver.__wrapped__)  # for numpy 
 profile.enable_by_count()
 codensity_d(0.05)
-profile.print_stats(output_unit=1e-3)
+profile.print_stats(output_unit=1e-3, stripzeros=True)
 
 # %% Inspect the smoothing choice
 mu_f = MuFamily(S, codensity_family, p = 1)
@@ -212,13 +208,22 @@ p.scatter(alpha_family, mu_sa, color=np.where(mu_grads >= 0, "red", "blue"))
 show(p)
 
 # %%
+## Lipshitz constant 
+mu_sa_terms = mu_f(smoothing=mu_q.smoothing, terms=True)
+f_diffs = abs(np.diff(mu_sa_terms[2,:])) / abs(np.diff(alpha_family))
+Lc = max(f_diffs)
+print(f"Estimated Lipshitz constant: {Lc}")
+print(np.histogram(f_diffs))
+
+
+# %%
 mu_q.terms = True
 codensity_mu = lambda alpha: mu_q(f=codensity(alpha))
 codensity_d = nd.Derivative(codensity_mu, n=1, order=2, method="central", richardson_terms=2)
 mu_grad_terms = np.array([codensity_d(alpha) for alpha in alpha_family])
 
 # %% Inspect whether the individual terms are unstable
-j = 2
+j = 0
 mu_rk_terms = mu_f(smoothing=None, terms=True)
 mu_sa_terms = mu_f(smoothing=mu_q.smoothing, terms=True)
 p = figure(width=400, height=400, title="Multiplicity Term 1")
@@ -228,28 +233,28 @@ p.scatter(alpha_family, mu_sa_terms[j,:], color=np.where(mu_grad_terms[:,j] >= 0
 show(p)
 
 # %% Derivative testing
-from pbsig.betti import MuQuery
-mu_q = MuQuery(S, p=1, R=R, w=0.30)
-mu_q.choose_solver(solver="dac", normed=True, form="array")
-mu_q.smoothing = sgn_approx(eps=1e-2, p=2.0) 
+# from pbsig.betti import MuQuery
+# mu_q = MuQuery(S, p=1, R=R, w=0.30)
+# mu_q.choose_solver(solver="dac", normed=True, form="array")
+# mu_q.smoothing = sgn_approx(eps=1e-2, p=2.0) 
 
-## (1) alpha |-> weight on every simplex
-codensity_d = mu_q._grad_scalar_product(codensity)
+# ## (1) alpha |-> weight on every simplex
+# codensity_d = mu_q._grad_scalar_product(codensity)
 
-## (2) weight function |-> Up Laplacian 
+# ## (2) weight function |-> Up Laplacian 
 
 
 
 # %% proxop
-import proxop 
-om = proxop.Root(0.2)
+# import proxop 
+# om = proxop.Root(0.2)
 
-p = figure(width=200, height=100)
-dom = np.linspace(-1,1,1000)
-p.line(dom, [om(xi) for xi in dom])
-q = figure(width=200, height=100)
-q.line(dom, np.ravel([np.sign(xi)*np.sign(om.prox(xi, gamma=0.1))*om.prox(xi, gamma=0.1) for xi in dom]))
-show(row(q,p))
+# p = figure(width=200, height=100)
+# dom = np.linspace(-1,1,1000)
+# p.line(dom, [om(xi) for xi in dom])
+# q = figure(width=200, height=100)
+# q.line(dom, np.ravel([np.sign(xi)*np.sign(om.prox(xi, gamma=0.1))*om.prox(xi, gamma=0.1) for xi in dom]))
+# show(row(q,p))
 
 
 # %%

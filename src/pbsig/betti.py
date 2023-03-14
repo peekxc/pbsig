@@ -288,6 +288,32 @@ def _transform_mult_ew(EW: list[ArrayLike], smoothing: Callable = None, terms: b
     mu = np.array([sum(smoothing(EW[0])), -sum(smoothing(EW[1])), -sum(smoothing(EW[2])), sum(smoothing(EW[3]))])
     return mu if terms else sum(mu)
 
+def weighted_degree(S: ComplexLike, p: int, weights: ArrayLike = None) -> ArrayLike:
+  """Computes the weighted degree of the p-simplices of _S_.
+
+  The degree of a p-simplex _s_ is defined as the sum of the weights of its codimension-1 faces. 
+  """
+  if weights is None: 
+    weights = np.ones(card(S,p+1))
+  elif isinstance(weights, Iterable) and len(weights) == card(S,p+1):
+    weights = np.fromiter(weights, dtype=np.float64)
+  elif isinstance(weights, Iterable) and len(weights) == len(S):
+    d = np.array([dim(s) for s in faces(S)])
+    weights = np.fromiter(weights, dtype=np.float64)[d == p+1]
+  else: 
+    raise ValueError(f"Invalid weights array of type '{type(weights)}' given.")
+  assert len(weights) == card(S,p+1), "Invalid weights array. Must match the length of the number of p+1 simplices of S."
+  import hirola 
+  h_sz = card(S,p)*1.25 if card(S,p) > 1 else 2
+  h = hirola.HashTable(h_sz, dtype=np.uint64)
+  h.add(np.asarray(rank_combs(faces(S,p), order='colex'), dtype=np.uint64))
+  degrees = np.zeros(card(S,p), dtype=np.float64)
+  for j, sigma in enumerate(faces(S,p+1)):
+    for tau in boundary(sigma):
+      i = h[np.uint64(rank_colex(tau))]
+      degrees[i] += weights[j] # the definition of degree 
+  return degrees
+
 class MuQuery():
   def __init__(self, S: Union[FiltrationLike, ComplexLike], p: int, R: tuple, w: float = 0.0, smoothing=None):
     assert isinstance(S, ComplexLike) or isinstance(S, FiltrationLike), f"Invalid complex type '{type(S)}'"
@@ -360,7 +386,7 @@ class MuQuery():
     if self.form == "lo":
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
         if self.normed:
-          I_sgn = I # np.sign(abs(I))
+          I_sgn = np.sign(abs(I)) # I 
           self.L.set_weights(I_sgn, J, I_sgn)
           I_norm = pseudoinverse(np.sqrt(I * self.L.diagonal())) # degrees
           self.L.set_weights(I_norm, J, I_norm)
@@ -371,7 +397,7 @@ class MuQuery():
     else:
       for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
         if self.normed: 
-          I_sgn = I  # np.sign(abs(I)) 
+          I_sgn = np.sign(abs(I)) # I 
           L = self.D @ diags(J) @ self.D.T
           di = (diags(I_sgn) @ L @ diags(I_sgn)).diagonal()
           I_norm = pseudoinverse(np.sqrt(di))
@@ -404,7 +430,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       if normed:
-        I_sgn = I # np.sign(abs(I))
+        I_sgn = np.sign(abs(I)) # I 
         L.set_weights(I_sgn, J, I_sgn)
         I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
         L.set_weights(I_norm, J, I_norm)
@@ -418,7 +444,7 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
     D = boundary_matrix(S, p=p+1)
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       if normed: 
-        I_sgn = I # np.sign(abs(I)) 
+        I_sgn = np.sign(abs(I))  # I
         di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
         I_norm = pseudo(np.sqrt(di))
         L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
@@ -533,7 +559,7 @@ class MuFamily:
       if self.form == "array":
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            I_sgn = I # np.sign(abs(I))
+            I_sgn = np.sign(abs(I)) # I
             di = (diags(I_sgn) @ D @ diags(J) @ D.T @ diags(I_sgn)).diagonal()
             I_norm = pseudo(np.sqrt(di)) # used to be I * di 
             #I_norm = pseudo(np.sqrt(I * di)) # used to be I * di 
@@ -549,7 +575,7 @@ class MuFamily:
       elif self.form == "lo":
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
-            I_sgn = I # np.sign(abs(I))
+            I_sgn = np.sign(abs(I)) # I 
             L.set_weights(I_sgn, J, I_sgn) ## TODO: PERHAPS don't set face weights to None, as that defaults to identity. Use entries in {0,1}
             I_norm = pseudo(np.sqrt(L.diagonal())) # degree computation
             L.set_weights(I_norm, J, I_norm)
