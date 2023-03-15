@@ -12,3 +12,16 @@ def laplacian_matvec(x, simplices, degree, index, v, wfl,  wfr, ws, sgn_pattern)
       v[ii] += sgn_ij * x[jj] * wfl[ii] * ws[s_ind] * wfr[jj]
       v[jj] += sgn_ij * x[ii] * wfl[jj] * ws[s_ind] * wfr[ii]
   return v
+
+
+from pbsig.vis import figure_complex
+from splex import simplicial_complex
+from bokeh.plotting import show, figure
+
+## barbell chain 
+S = simplicial_complex([[0,1,2],[2,3],[3,4],[4,5,6]])
+show(figure_complex(S))
+
+# from pbsig.
+
+boundary_matrix

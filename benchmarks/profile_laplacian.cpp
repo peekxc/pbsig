@@ -48,6 +48,8 @@ float run_benchmark(Laplacian& L, size_t n){
   return y_sum;
 }
 
+
+
 int main(){
   vector< uint64_t > er, tr; 
   read_dataset(er, tr);

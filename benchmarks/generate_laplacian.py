@@ -8,4 +8,6 @@ er = rank_combs(faces(R, 1), n=X.shape[0], order="lex")
 tr = rank_combs(faces(R, 2), n=X.shape[0], order="lex")
 np.savetxt(X=er, fname="/Users/mpiekenbrock/pbsig/data/edge_ranks.txt", fmt="%d")
 np.savetxt(X=tr, fname="/Users/mpiekenbrock/pbsig/data/triangle_ranks.txt", fmt="%d")
+
+
 # %%

@@ -2,15 +2,21 @@ import numpy as np
 from scipy.sparse import csc_array, coo_array
 from scipy.linalg import lu_factor, lu_solve
 from scipy.sparse.linalg import spsolve, lsqr, splu
+from scipy.optimize import linprog
 #from pbsig.utility import rank_combs
 
 # Miller-Rabin primality test
 is_prime = np.vectorize(lambda n: False if n % 2 == 0 and n > 2 else all(n % i for i in range(3, int(np.sqrt(n)) + 1, 2)))
 primes = np.fromiter(filter(is_prime, np.arange(1000)), int)
 
-n = 100 # alphabet size
-S = np.random.choice(range(n), size=50, replace=False) # alphabet size
-N = len(S)  # size of index set to map to
+# %% 
+np.random.seed(1234)
+n = 1500 # alphabet size
+S = np.sort(np.random.choice(range(n), size=350, replace=False)) # alphabet size
+N = len(S)
+# n = 1000 # alphabet size
+# S = np.random.choice(range(n), size=350, replace=False) # alphabet size
+# N = len(S)  # size of index set to map to
 
 ## Optimal hash
 def hash0(k):
@@ -119,10 +125,14 @@ for n_hash in range(2, int(N/10)):
     # d = np.linalg.det(H.todense())
     # r = np.linalg.matrix_rank(H.todense())
 
-    res = linprog(c=np.ones(N), A_eq=H, b_eq=np.arange(N).astype(int), bounds=(None, None), integrality=np.ones(N))
+    res = linprog(c=np.ones(N), A_eq=H, b_eq=np.arange(N).astype(int), bounds=(None, None))#, integrality=np.ones(N))
     if res.success:
-      print("Success")
+      print(f"Success on n={N} set size with n_hash: {n_hash}, structural rank: {structural_rank(H)} ({n_hash*5} attempts)")
       break
+  if res.success: break
+
+# %% 
+
   # ## Full rank constraint
   # if r == N:
   #   print(f"H is full-rank @ {cc}")
@@ -164,7 +174,6 @@ phf = lambda x: int(round(g[((75*x+9)%79)%50]+g[((24*x+15)%61)%50]+g[((58*x+16)%
 [phf(s) for s in S]
 
 ## Could also solve with linear program 
-from scipy.optimize import linprog
 res = linprog(c=np.ones(N), A_eq=H, b_eq=np.arange(N), bounds=(None, None)) # integrality=np.ones(N)
 print(res.success)
 
