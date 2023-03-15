@@ -26,152 +26,99 @@ filters:
   # - pandoc-katex.lua
   - roughnotation
 # keycodes: https://gcctech.org/csc/javascript/javascript_keycodes.htm
-# bibliography: references.bib
+bibliography: references.bib
 ---
 
-## Relaxing the Rank invariant  
 
-There are many mappings from $\mathrm{dgm}$'s to function spaces 
-  
+## Vectorizing diagrams
 
-<!-- :::{.incremental style="list-style-type: none; margin-left:2.5em; align=center;"} -->
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
 
-::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+::: {.fragment .fade-in style="text-align: left"}
 
-:::{.columns}
+- Persistence Landscapes [@bubenik2020persistence]
 
-:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
+:::
 
-- Persistence Landscapes 
+
+::: {.fragment .fade-in-then-out style="text-align: left"}
+
+![](pers_landscape.png){width=35%}
+
+$$ \mathbb{R} $$
+
+:::
+
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+
+::: {style="color: rgb(127,127,127);"}
+- Persistence Landscapes [@bubenik2020persistence]
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+- Persistence Images [@adams2017persistence]
+:::
+
+
+::: {.fragment .fade-in-then-out style="text-align: center"}
+
+![](pers_image.png){width=35%}
+
+$$ \mathbb{R} $$
+
+:::
+
+
+## Optimizing persistence
+
+There's also been much work on optimizing persistence quantities
+
+## What if we could have it all...
+
+::: {.incremental .fragment}
+- Vectorize persistence information
+- Optimize persistence invariants 
+- Make persistence viable in ML contexts 
+
+::: {.fragment style="text-align: center"}
+### ... and avoid computing diagrams? 
+
+:::
 
 ::: 
 
-::: {.column width="40%"}
-
-![](pers_landscape.png)
-
-:::
-
-:::
-
-:::
-
-## Relaxing the Rank invariant  
-
-There are many mappings from $\mathrm{dgm}$'s to function spaces 
-  
-
-::: {.fragment .fade-in-then-semi-out style="text-align: left"}
-
-:::{.columns}
-
-:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
-
-- Persistence Landscapes 
-- Persistence Images
-
-::: 
-
-::: {.column width="40%"}
-
-![](pers_image.png)
-
-:::
-
-:::
-
-:::
-
-
-## Relaxing the Rank invariant  
-
-There are many mappings from $\mathrm{dgm}$'s to function spaces 
-  
-
-::: {.fragment .fade-in-then-semi-out style="text-align: left"}
-
-:::{.columns}
-
-:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
-
-- Persistence Landscapes 
-- Persistence Images
-- Many others...
-
-::: 
-
-::: {.column width="40%"}
-
-![](pers_landscape.png)
-![](pers_image.png)
-
-:::
-
-:::
-
-:::
-
-
-## Relaxing the Rank invariant  
-
-
-There are many mappings from $\mathrm{dgm}$'s to function spaces 
-  
-:::{.columns}
-
-:::{.column width="40%" style="list-style-type: none; margin-left:2.5em; align=center;"}
-
-- Persistence Landscapes 
-- Persistence Images
-- Many others...
-
-::: 
-
-<!-- ::: {.r-stack}
-![](pers_landscape.png){width=20%} 
-![](pers_image.png){width=20%}
-::: -->
-
-
-:::
-
-
-:::{.fragment .fade-in-then-semi-out style="text-align: left"}
-
-Less work done on _the rank invariant_ (exceptions: [][][])
-
-$$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
-
-:::
+<br> 
 
 :::{.incremental}
 :::{.fragment .fade-in style="text-align: left"}
-We introduce a _spectral-relaxation_ of $\beta_p^{i,j}$ that:
+
+In __this talk__ we introduce a _spectral-relaxation_ of the _rank invariant_ that:
 
 <div style="margin-left:2.5em;">
 
 1. is smooth + differentiable on $\mathbf{S}_+$ and semismooth on $\mathbb{R}^{n \times n}$
-2. $(1{\textstyle -}\epsilon)$ approximates of $\beta_p^{i,j}$ for any $\epsilon > 0$
-3. Derives from non-harmonic spectra of Laplacian operators
-4. Has several compute advantages over current approaches
+2. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$
+3. Vectorizes the non-harmonic spectra of Laplacian operators
+4. Is computable _solely_ from matrix-vector products
 
 </div>
 
 :::
 :::
-<!-- - Continuous relaxation 
-- Captures persistence properties
-- Doesn't require $\mathrm{dgm}$ to compute -->
-
-<!-- ![](../betti_add.png) -->
 
 ## Application: parameterized families 
+
 Consider a 1-parameter family of simplicial complexes: 
 
-$$\{ \; \mu_p^R(K_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}$$
+$$\{ \; \mu_p^R(K, \, f_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}$$
 
 
-## Why not just use diagrams?
+
+## Why _not use_ diagrams?
 
 __Pro:__ Diagrams are stable, well-studied, and information rich.
 
@@ -179,7 +126,41 @@ __Con:__ Only competitive algorithm to produce a diagram is _reduction_ algorith
 
 $$ \partial(K_\bullet) \mapsto R = \partial V $$
 
-Extending the reduction algorithm to parameterized settings is highly non-trivial
+<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
+
+:::: {.columns}
+
+
+::: {.column width="33%"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="33%" height="1em"}
+![](complex_vine.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](spy_matrices.gif){width=90%}
+:::
+
+::::
+
+Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+
+## Why _not use_ diagrams?
+
+__Pro:__ Diagrams are stable, well-studied, and information rich.
+
+__Con:__ Only competitive algorithm to produce a diagram is _reduction_ algorithm:
+
+$$ \partial(K_\bullet) \mapsto R = \partial V $$
+
+<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
 
 :::: {.columns}
 
@@ -204,61 +185,30 @@ Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge mem
 Reduction algorithm is a restricted form of gaussian elimination. 
 :::
 
-
-## Why not just use diagrams?
-
-__Pro:__ Diagrams are stable, well-studied, and information rich.
-
-__Con:__ Only competitive algorithm to produce a diagram is _reduction_ algorithm:
-
-$$ \partial(K_\bullet) \mapsto R = \partial V $$
-
-Extending the reduction algorithm to parameterized settings is highly non-trivial
-
-:::: {.columns}
-
-
-::: {.column width="33%"}
-![](vineyard.gif){width=90%}
-:::
-
-::: {.column width="33%"}
-![](complex_vine.gif){width=90%}
-:::
-
-::: {.column width="33%"}
-![](spy_matrices.gif){width=90%}
-:::
-
-::::
-
-Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
-
-::: {.notes}
-Reduction algorithm is a restricted form of gaussian elimination. 
-:::
-
-## Why the rank invariant?
+## Why _prefer_ the rank invariant?
 
 There is a duality between diagrams its associated rank function:
 
-$$ \mathrm{dgm}_p(f) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
+$$ \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
 
 $$\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad $$
 
-Dually, the _"Fundamental Lemma of Persistent Homology"_ says that:
+_"Fundamental Lemma of Persistent Homology"_ shows diagrams characterize their ranks
 $$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
 
-$\Longrightarrow$ Diagrams completely characterize their rank functions
+- _Persistence measures_ [@chazal2016structure] extend (1,2) naturally when $\mathbb{F} = \mathbb{R}$ 
+- Stability in context of multidimensional persistence [@cerri2013betti] 
+- Mobius inversions[], etc.
 
-$\Longleftrightarrow$ and vice versa
 
-Much recent work on this front recently, in the context of multidimensional persistence[], Mobius inversions[], etc
+## Overview
 
+- Introduction \& Motivation  
+- Deriving the relaxation
+- 
 
 ## Revisiting the PH rank computation
-
-<hr> 
+ 
 $$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
 	
 <hr> 
@@ -293,24 +243,19 @@ $$
 $$
 :::
 
-::: {.fragment .fade-in-then-semi-out}
+:::{.fragment .fade-in-then-semi-out}
 Computing the <span style="color: red">right term</span> more nuanced: 
 :::
 
 :::{.incremental style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em;"}
-- Gaussian elimination []
-- Pseudo-inverse []
-- Orthogonal Projectors []
+- Gaussian elimination[^1], pseudo-inverse[^2], projectors[^3], etc.
+- Reduction algorithm[^4], Persistent Laplacian Schur complement[^5]
 :::
-
-<!-- <p style="text-align: left; margin-tb: 2em;">
-<!-- [$\beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p(K_i)) -$]{.rn rn-type=circle rn-color=red} -->
-<!-- [$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))$]{.rn rn-type=strike-through rn-color=red} -->
 
 
 ## Key Observation
 
-The structure theorem[^1] asserts 1-parameter persistence modules decompose in an _essentially unique_ way into indecomposables, which can be used to show: 
+The structure theorem asserts 1-parameter persistence modules decompose in an _essentially unique_ way into indecomposables, which can be used to show: 
 
 $$ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 $$
 $$ 
@@ -326,10 +271,8 @@ $$ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^
 $$ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  $$
 
 <div style="margin-top: 0.01em; margin-bottom: 0.01em; border: 1px solid black; ">
-__Corollary (Bauer)__[^1]: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
+__Corollary [@bauer2022keeping]__: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
 </div>
-
-[^1]: Zomorodian \& Carlsson, "Computing persistent homology," Symposium on Computational Geometry, 2004.
 
 ::: {.notes}
 shows 1-parameter persistence modules decompose in essentially unique way
@@ -337,17 +280,73 @@ The result about lower-left matrices having their rank preserved during reductio
 The corollary by Bauer et al. is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm. 
 :::
 
-## Overview
 
-- Introduction 
-- Background: Duality between rank and diagrams 
-- 
+## A spectral relaxation 
 
-## A continuous & smooth relaxation 
+We can express both $\beta_p^{i,j}(K_\bullet)$ and $\mu_p^{R}(K_\bullet)$ with _ranks_ of _unfactored matrices_
+$$ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  $$
+<!-- $$ R = [i,j] \times [k,l] \subset \Delta_+ $$ -->
+
+<hr> 
+
+<!-- __Spectral Idea:__ The rank of a linear operator can also be defined as: -->
+
+$$ \begin{align}
+\mathrm{rank}(X) &= \lVert \mathbf{\sigma} \rVert_0, \quad \quad & X = U \mathrm{Diag}(\mathbf{\sigma})V^T \\
+& = {\textstyle \sum_{i=1}^{n}} \, \mathrm{sgn}_+(\sigma_i), \quad \quad &\mathrm{sgn}_{+}(x) = \begin{cases}
+		1 & \text{if } x > 0 \\
+		0 & \text{otherwise}
+	\end{cases}  \\ 
+  & \approx {\textstyle \sum_{i=1}^n} \, \phi(\sigma_i, \epsilon), \quad \quad &\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz \\
+  &= \lVert \Phi_\epsilon(X) \rVert_\ast, \quad \quad &\Phi_\epsilon(X): \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}
+\end{align}
+$$
+
+where $\Phi_\epsilon(X)$ is a Löwner operator when $\phi$ is _operator monotone_
+
+## A spectral relaxation: intuition
+
+![](cont_relax.png)
+
+## A spectral relaxation: intuition
+$$ \begin{align}
+\mu_p^{R}(K_\bullet) &= \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{i + 1, l}) \\
+&\approx \lVert \Phi_\epsilon(\partial_{p+1}^{j + 1, k}) \rVert_\ast - \, \dots \, + \Phi_\epsilon(\partial_{p+1}^{i + 1, l})
+\end{align}
+$$
+
+[@bi2013approximation] show that for any smoothed Dirac delta function^[$\delta$ has to ] $\hat{\delta}$ and differentiable _operator monotone_ function $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, we have:
+
+:::{.incremental style="text-align: left; margin-left: 2.5em; " }
+- ($\epsilon$-close) $\quad\quad$ $0 \leq \mathrm{rank}(X) - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(\hat{\delta})$
+- (Monotonicity) $\quad\quad$ $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for any $\epsilon \leq \epsilon'$
+- (Smooth) $\quad\quad$ $\lVert \Phi_\epsilon(X) \rVert_\ast$ Lipshitz continuous, semismooth on $\mathbb{R}^{n \times m}$
+- (Differentiable) Continuously differentiable on $\mathbf{S}_+$
+- (Computable) Differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ has a closed-form solution
+:::
+
+<!-- $\lVert \Phi_\epsilon(X) \rVert_\ast$ also have a variety of other benefits: -->
+
+Generalizes many rank relaxations used in compressed sensing and $\ell_1$ minimization
+
+## $\alpha$-parameterized boundary matrices
+
+Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
+$$ \begin{align}
+f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K 
+\end{align}
+$$
+
+We turn 
+![](boundary_relax.png)
 
 
+<!-- (\, \forall \, z \geq 0, \epsilon > 0  \,)   -->
+<!-- Or equivalently, as the $\ell_0$ norm^[Technically a pseudo-norm] of the singular values a given linear operator $X$... -->
 
-
+<!-- % & =  & 
+% \phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \quad  & 
+% \hat{\delta}(z, \epsilon) = \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) &&  -->
 ## Rank Invariances 
 
 $\mathrm{rank}$ is invariant to many things:
@@ -426,7 +425,42 @@ $$
 
 __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products 
 
+## Summary of relaxation 
 
+Our relaxation can be summarized as follows: 
+
+$$
+\begin{align}
+\mu_p^R(K, \, f_\alpha) &\triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) \\
+&\equiv \mathrm{rank}(\partial_{p+1}^{\ast}) - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{\ast}) \\
+&= \mathrm{rank}(\partial_{p+1}^{\ast} \circ (\partial_{p+1}^{\ast})^T) - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{\ast}) \\
+&= \mathrm{rank}(L_p^{\ast}(f_\alpha^\ast)) - \, \dots \, + \mathrm{rank}(L_p^{\ast}(f_\alpha^\ast)) \\
+&\approx \lVert \Phi_{\epsilon}(L_p^{\ast}(f_\alpha^\ast)) \rVert_\ast \\
+& \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)
+\end{align} 
+$$
+
+That is, 
+
+## Overview 
+
+- Introduction \& Motivation 
+  - Diagram vectorization and optimization
+  - The need to avoid computing diagrams
+  - Duality between rank function and diagrams
+- Derivation of relaxation 
+  - Rank approximation w/ Dirac delta
+  - Spectral connection via Löwner operators
+  - Laplacian connection via inner products
+- Experiments  
+  - Codensity example 
+  - Shape signature example 
+- Conclusion \& Future Work 
+
+## References
+
+::: {#refs}
+:::
 
 <script>
   window.WebFontConfig = {
