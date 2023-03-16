@@ -45,7 +45,7 @@ There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert s
 
 ![](pers_landscape.png){width=35%}
 
-$$ \mathbb{R} $$
+$$ \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} $$
 
 :::
 
@@ -279,6 +279,21 @@ shows 1-parameter persistence modules decompose in essentially unique way
 The result about lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al. The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. 
 The corollary by Bauer et al. is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm. 
 :::
+
+## Example:
+
+![](bowtie.svg){width=50%}
+
+## Example:
+
+:::{.columns}
+
+![](ex_dgm.svg){width=50%}
+
+
+:::
+
+$$\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})$$
 
 
 ## A spectral relaxation 

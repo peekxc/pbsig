@@ -11,9 +11,9 @@ trash
 .vscode
 .textpadtmp
 extern/
-.jupyter* 
+.jupyter*
 **.png
-**.gif 
+**.gif
 **.txt
 
 # Byte-compiled / optimized / DLL files
@@ -146,3 +146,5 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+/.luarc.json
