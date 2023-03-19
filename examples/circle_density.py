@@ -63,6 +63,7 @@ r = figure_complex(S, pos=X, color=x_codensity, title="Complex by codensity", si
 s = figure_complex(S, pos=X, color=s_diam, title="Complex by diameter", simplex_kwargs={0: {'size': 8}}, width=200, height=200) # bin_kwargs={'scaling': 'equalize'})
 show(row(p, q, r, s))
 
+
 # %% [markdown]
 # ## Generate a parameterized family of weight functions
 #
@@ -97,12 +98,45 @@ for a in np.linspace(0.05, 0.70, 6):
   figures.append(p)
 show(row(figures))
 
+## %% Show three plots
+from bokeh.models import Range1d
+from pbsig.vis import figure_complex, figure_dgm
+complex_figures, dgm_figures = [], []
+for a in [0.10, 0.414, 0.75]: 
+  p = figure(width=250, height=250, title=f"Density: {a:.2f}")
+  f = codensity(a)
+  s_codensity = np.array([f(s) for s in faces(S)])
+  p = figure_complex(S, pos=X, color=s_codensity, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=250, height=250)
+  # ?p.scatter(*X.T, color=bin_color(x_codensity, lb=0, ub=0.70), size=9)
+  p.toolbar_location = None
+  complex_figures.append(p)
+  K = filtration(S, f)
+  q = figure_dgm(ph(K, engine="dionysus")[1], pt_size=10, width=250, height=250)
+  q.x_range = Range1d(0,0.90)
+  q.y_range = Range1d(0,0.90)
+  q.toolbar_location = None
+  R = (0.2, 0.4, 0.6, 0.8)
+  r_width, r_height = R[1]-R[0], R[3]-R[2]
+  q.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, color="orange", alpha=1.0, fill_alpha=0.0, line_width=2.0)
+  dgm_figures.append(q)
+
+
+show(column(row(complex_figures), row(dgm_figures)))
+# export_png(column(row(complex_figures), row(dgm_figures)), filename="/Users/mpiekenbrock/pbsig/notes/presentation/codensity_pers_ex.png")
+
+## %% single plot 
+f = codensity(0.404)
+s_codensity = np.array([f(s) for s in S])
+p = figure_complex(S, pos=X, color=s_codensity, title="Complex with optimal codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
+p.toolbar_location = None
+show(p)
+
 
 # %% [markdown]
 # ## Vineyards
 
 # %% Compute the the vineyards
-alpha_family = np.linspace(0.05, 0.70, 100)
+alpha_family = np.linspace(0.15, 0.70, 100)
 codensity_family = [codensity(a) for a in alpha_family]
 dgms = []
 for f in codensity_family:
@@ -123,25 +157,41 @@ mu_f = MuFamily(S, codensity_family, p = 1)
 mu_f.precompute(R, w=0.30, normed=True)
 
 # %% Compare
-p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=250, height=250)
+p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=300, height=300)
 p.scatter(family_dgms[:,1], family_dgms[:,2], color=bin_color(family_dgms[:,0]))
 r_width, r_height = R[1]-R[0], R[3]-R[2]
 p.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, alpha=1.0, fill_alpha=0.0)
-q = figure(width=300, height=250, title="Multiplicity")
+q = figure(width=300, height=300, title="Multiplicity")
 q.step(alpha_family, mu_f(smoothing=None))
+p.toolbar_location = None 
+q.toolbar_location = None
+q.xaxis.axis_label = r"$$\alpha$$"
 show(row(p,q))
 
 # %% Look at the other relaxations
 from pbsig.linalg import *
 mu_rk = mu_f(smoothing=None, terms=False)
 mu_nn = mu_f(smoothing=False, terms=False)
-mu_sa = mu_f(smoothing=sgn_approx(eps=1e-2, p=2.0), terms=False)
+mu_sa = mu_f(smoothing=sgn_approx(eps=0.008, p=2.8), terms=False)
+mu_sa = savgol_filter(mu_sa, 8, 3)
 
-p = figure(width=300, height=250, title="Multiplicity")
-p.step(alpha_family, mu_rk, line_color="black")
-p.line(alpha_family, mu_nn, line_color="red")
-p.line(alpha_family, mu_sa, line_color="blue")
+p = figure(width=450, height=300, title="Multiplicity")
+p.step(alpha_family, mu_rk, line_color="black", legend_label="rank")
+# p.line(alpha_family, mu_nn, line_color="red")
+p.line(alpha_family, mu_sa, line_color="blue", legend_label="spectral approx.")
+
+p.toolbar_location = None
 show(p)
+
+min_supp = min(alpha_family[mu_sa > 0.0001])
+max_supp = max(alpha_family[mu_sa > 0.0001])
+
+
+alpha_family[np.argmax(mu_sa)]
+
+## Just rn optimization
+from scipy.optimize import minimize
+
 
 # %% Constitutive terms
 mu_rk = mu_f(smoothing=None, terms=True).T

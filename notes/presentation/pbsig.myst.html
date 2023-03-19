@@ -13,7 +13,7 @@
   <meta name="generator" content="quarto-1.3.217">
 
   <meta name="author" content="Matt Piekenbrock\mathrm{}^\dagger &amp; Jose Perea\mathrm{}^\ddagger">
-  <title>Spectral relaxations of Persistence Invariants</title>
+  <title>Spectral relaxations of persistent rank invariants</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, minimal-ui">
@@ -52,6 +52,24 @@
     }
   </style>
   <link rel="stylesheet" href="pbsig.myst_files/libs/revealjs/dist/theme/quarto.css" id="theme">
+  <link rel="stylesheet" href="katex.min.css">
+  <link rel="stylesheet" href="styles.css">
+  <script defer="" src="/katex.min.js"></script>
+  <script>document.addEventListener("DOMContentLoaded", function () {
+ var mathElements = document.getElementsByClassName("math");
+ var macros = [];
+ for (var i = 0; i < mathElements.length; i++) {
+  var texText = mathElements[i].firstChild;
+  if (mathElements[i].tagName == "SPAN") {
+   katex.render(texText.data, mathElements[i], {
+    displayMode: mathElements[i].classList.contains('display'),
+    throwOnError: false,
+    macros: macros,
+    fleqn: false
+   });
+}}});
+  </script>
+  <link rel="stylesheet" href="/katex.min.css">
   <link href="pbsig.myst_files/libs/revealjs/plugin/quarto-line-highlight/line-highlight.css" rel="stylesheet">
   <link href="pbsig.myst_files/libs/revealjs/plugin/reveal-menu/menu.css" rel="stylesheet">
   <link href="pbsig.myst_files/libs/revealjs/plugin/reveal-menu/quarto-menu.css" rel="stylesheet">
@@ -346,19 +364,19 @@
     <div class="slides">
 
 <section id="title-slide" class="quarto-title-block center">
-  <h1 class="title">Spectral relaxations of Persistence Invariants</h1>
-  <p class="subtitle">Relaxing the rank invariant for parameterized settings</p>
+  <h1 class="title">Spectral relaxations of persistent rank invariants</h1>
+  <p class="subtitle">With a focus on <em>parameterized</em> settings</p>
 
 <div class="quarto-title-authors">
 <div class="quarto-title-author">
 <div class="quarto-title-author-name">
-Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jose Perea<span class="math inline">\(\mathrm{}^\ddagger\)</span> 
+Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Perea<span class="math inline">\mathrm{}^\ddagger</span> 
 </div>
         <p class="quarto-title-affiliation">
-            <span class="math inline">\(\dagger\)</span> Khoury College of Computer Sciences, Northeastern University
+            <span class="math inline">\dagger</span> Khoury College of Computer Sciences, Northeastern University
           </p>
         <p class="quarto-title-affiliation">
-            <span class="math inline">\(\ddagger\)</span>. Department of Mathematics and Khoury College of Computer Sciences, Northeastern University
+            <span class="math inline">\ddagger</span>. Department of Mathematics and Khoury College of Computer Sciences, Northeastern University
           </p>
     </div>
 </div>
@@ -366,88 +384,170 @@ Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jos
 </section>
 <section id="vectorizing-diagrams" class="slide level2">
 <h2>Vectorizing diagrams</h2>
-<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
+<p>There are many mappings from <span class="math inline">\mathrm{dgm}</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
 <div class="fragment fade-in" style="text-align: left">
 <ul>
 <li>Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span></li>
 </ul>
 </div>
-<div class="fragment fade-in-then-out" style="text-align: left">
-<p><img data-src="pers_landscape.png" style="width:35.0%"></p>
-<p><span class="math display">\[ \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} \]</span></p>
+<div class="fragment fade-in-then-out" style="text-align: center">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="pers_landscape_def.png" style="width:40.0%"></p>
+</figure>
+</div>
+<p><span class="math display"> \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} </span></p>
 </div>
 </section>
 <section id="vectorizing-diagrams-1" class="slide level2">
 <h2>Vectorizing diagrams</h2>
-<p>There are many mappings from <span class="math inline">\(\mathrm{dgm}\)</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
-<div style="color: rgb(127,127,127);">
+<p>There are many mappings from <span class="math inline">\mathrm{dgm}</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
 <ul>
-<li>Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span></li>
+<li>Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span> + Learning applications <span class="citation" data-cites="kim2020pllay">(<a href="#/references" role="doc-biblioref" onclick="">Kim et al. 2020</a>)</span></li>
 </ul>
+
+<img data-src="pers_landscape_app.png" style="width:40.0%" class="r-stretch quarto-figure-center"><p><span class="math display"> \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} </span></p>
+</section>
+<section id="vectorizing-diagrams-2" class="slide level2">
+<h2>Vectorizing diagrams</h2>
+<p>There are many mappings from <span class="math inline">\mathrm{dgm}</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
+<ul>
+<div style="color: rgb(127,127,127);">
+<li>
+Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span> + Learning applications <span class="citation" data-cites="kim2020pllay">(<a href="#/references" role="doc-biblioref" onclick="">Kim et al. 2020</a>)</span>
+</li>
 </div>
 <div class="fragment fade-in" style="text-align: left">
+<li>
+Persistence Images <span class="citation" data-cites="adams2017persistence">(<a href="#/references" role="doc-biblioref" onclick="">Adams et al. 2017</a>)</span>
+</li>
+</div>
 <ul>
-<li>Persistence Images <span class="citation" data-cites="adams2017persistence">(<a href="#/references" role="doc-biblioref" onclick="">Adams et al. 2017</a>)</span></li>
-</ul>
-</div>
 <div class="fragment fade-in-then-out" style="text-align: center">
-<p><img data-src="pers_image.png" style="width:35.0%"></p>
-<p><span class="math display">\[ \mathbb{R} \]</span></p>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="pers_image_def.png" style="height:50.0%"></p>
+</figure>
 </div>
-</section>
-<section id="optimizing-persistence" class="slide level2">
-<h2>Optimizing persistence</h2>
-<p>There’s also been much work on optimizing persistence quantities</p>
-</section>
+<p><span class="math display"> \rho(f, \phi) = \sum\limits_{(i,j) \in \mathrm{dgm}} f(i,j) \phi(\lvert j - i \rvert)</span></p>
+</div>
+</ul></ul></section>
+<section id="vectorizing-diagrams-3" class="slide level2">
+<h2>Vectorizing diagrams</h2>
+<p>There are many mappings from <span class="math inline">\mathrm{dgm}</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
+<ul>
+<div style="color: rgb(127,127,127);">
+<li>
+Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span> + Learning applications <span class="citation" data-cites="kim2020pllay">(<a href="#/references" role="doc-biblioref" onclick="">Kim et al. 2020</a>)</span>
+</li>
+</div>
+<li>
+Persistence Images <span class="citation" data-cites="adams2017persistence">(<a href="#/references" role="doc-biblioref" onclick="">Adams et al. 2017</a>)</span> + Learning applications <span class="citation" data-cites="som2020pi">(<a href="#/references" role="doc-biblioref" onclick="">Som et al. 2020</a>)</span>
+</li>
+<ul>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="pers_image_app.png" style="height:50.0%"></p>
+</figure>
+</div>
+<p><span class="math display"> \rho(f, \phi) = \sum\limits_{(i,j) \in \mathrm{dgm}} f(i,j) \phi(\lvert j - i \rvert)</span></p>
+</ul></ul></section>
+<section id="vectorizing-diagrams-4" class="slide level2">
+<h2>Vectorizing diagrams</h2>
+<p>There are many mappings from <span class="math inline">\mathrm{dgm}</span>’s to function spaces (e.g.&nbsp;Hilbert spaces)</p>
+<ul>
+<div style="color: rgb(127,127,127);">
+<li>
+Persistence Landscapes <span class="citation" data-cites="bubenik2020persistence">(<a href="#/references" role="doc-biblioref" onclick="">Bubenik 2020</a>)</span> + Learning applications <span class="citation" data-cites="kim2020pllay">(<a href="#/references" role="doc-biblioref" onclick="">Kim et al. 2020</a>)</span>
+</li>
+</div>
+<div style="color: rgb(127,127,127);">
+<li>
+Persistence Images <span class="citation" data-cites="adams2017persistence">(<a href="#/references" role="doc-biblioref" onclick="">Adams et al. 2017</a>)</span> + Learning applications <span class="citation" data-cites="som2020pi">(<a href="#/references" role="doc-biblioref" onclick="">Som et al. 2020</a>)</span>
+</li>
+</div>
+<div class="fragment fade-in">
+<li>
+A few others…<span class="math inline">^1</span>
+</li>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="vec1.png" style="width:80.0%;height:100.0%"></p>
+</figure>
+</div>
+</div>
+</ul>
+
+<aside><div>
+<p>See</p>
+</div></aside></section>
 <section id="what-if-we-could-have-it-all" class="slide level2">
 <h2>What if we could have it all…</h2>
 <div class="fragment">
+<div class="columns">
+<div class="column" data-layout-align="left" style="margin-left: 2em;">
 <ul>
-<li class="fragment">Vectorize persistence information</li>
-<li class="fragment">Optimize persistence invariants</li>
-<li class="fragment">Make persistence viable in ML contexts</li>
+<li>Vectorize persistence information</li>
+<li>Optimize persistence invariants</li>
+<li>Scale computations to real-world sizes</li>
+<li>Connected to other areas of math</li>
 </ul>
+</div><div class="column" data-layout-align="left" style="width:40%;">
+<div class="r-stack">
+<p><img data-src="pers_image.png" class="fragment" data-fragment-index="1" width="200" height="200"></p>
+<p><img data-src="pers_image.png" class="fragment" data-fragment-index="2" width="200" height="200"></p>
+<p><img data-src="pers_image.png" class="fragment" data-fragment-index="3" width="200" height="200"></p>
+</div>
+</div>
+</div>
+</div>
 <div class="fragment" style="text-align: center">
 <!-- -->
 <h3 id="and-avoid-computing-diagrams">… and avoid computing diagrams?</h3>
 </div>
-</div>
 <p><br></p>
+</section>
+<section id="this-talk" class="slide level2">
+<h2>This Talk</h2>
 <div>
 <div class="fragment fade-in" style="text-align: left">
-<p>In <strong>this talk</strong> we introduce a <em>spectral-relaxation</em> of the <em>rank invariant</em> that:</p>
+<p>In <strong>this talk</strong> we introduce a <em>spectral-relaxation</em> of the rank invariant that:</p>
 <div style="margin-left:2.5em;">
 <ol type="1">
-<li class="fragment">is smooth + differentiable on <span class="math inline">\(\mathbf{S}_+\)</span> and semismooth on <span class="math inline">\(\mathbb{R}^{n \times n}\)</span></li>
-<li class="fragment"><span class="math inline">\((1{\textstyle -}\epsilon)\)</span> approximates <span class="math inline">\(\beta_p^{i,j}\)</span> for any <span class="math inline">\(\epsilon &gt; 0\)</span></li>
-<li class="fragment">Vectorizes the non-harmonic spectra of Laplacian operators</li>
-<li class="fragment">Is computable <em>solely</em> from matrix-vector products</li>
+<li class="fragment">is smooth + differentiable on <span class="math inline">\mathbf{S}_+</span></li>
+<li class="fragment"><span class="math inline">(1{\textstyle -}\epsilon)</span> approximates <span class="math inline">\beta_p^{i,j}</span> for any <span class="math inline">\epsilon &gt; 0</span></li>
+<li class="fragment">Vectorizes non-harmonic spectra of Laplacian operators</li>
+<li class="fragment">Is computable in a “matrix-free” fashion ( <span class="math inline">O(n)</span> memory! )</li>
 </ol>
 </div>
 </div>
 </div>
 </section>
-<section id="application-parameterized-families" class="slide level2">
-<h2>Application: parameterized families</h2>
-<p>Consider a 1-parameter family of simplicial complexes:</p>
-<p><span class="math display">\[\{ \; \mu_p^R(K, \, f_\alpha) \triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) : \alpha \in \mathcal{A} \; \}\]</span></p>
+<section id="application-optimizing-filtrations" class="slide level2">
+<h2>Application: optimizing filtrations</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="codensity_dgm_ex.png" style="width:68.0%;height:100.0%"></p>
+</figure>
+</div>
+<p><span class="math display"> \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) </span></p>
 </section>
 <section id="why-not-use-diagrams" class="slide level2">
 <h2>Why <em>not use</em> diagrams?</h2>
+<div style="text-align: center;">
 <p><strong>Pro:</strong> Diagrams are stable, well-studied, and information rich.</p>
-<p><strong>Con:</strong> Only competitive algorithm to produce a diagram is <em>reduction</em> algorithm:</p>
-<p><span class="math display">\[ \partial(K_\bullet) \mapsto R = \partial V \]</span></p>
+</div>
 <!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
 <div class="columns">
-<div class="column" style="width:33%;">
+<div class="column" data-layout-align="right" style="width:45%;">
 <p><img data-src="vineyard.gif" style="width:90.0%"></p>
-</div><div class="column" height="1em" style="width:33%;">
-<p><img data-src="complex_vine.gif" style="width:90.0%"></p>
-</div><div class="column" style="width:33%;">
-<p><img data-src="spy_matrices.gif" style="width:90.0%"></p>
+</div><div class="column" height="1em" data-layout-align="left" style="width:45%;">
+<p><img data-src="complex_plain.gif" style="width:90.0%"></p>
 </div>
 </div>
-<p>Maintaining the <span class="math inline">\(R = \partial V\)</span> decomposition “across time” <span class="math inline">\(\implies\)</span> huge memory bottleneck</p>
+<div style="text-align: center;">
+<p>Obtaining <span class="math inline">\mathrm{dgm}</span> via <em>reduction</em> algorithm <span class="math inline">\partial(K_\bullet) \mapsto R = \partial V</span> can be fast</p>
+</div>
 <aside class="notes">
 <p>Reduction algorithm is a restricted form of gaussian elimination.</p>
 <style type="text/css">
@@ -464,20 +564,21 @@ Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jos
 </section>
 <section id="why-not-use-diagrams-1" class="slide level2">
 <h2>Why <em>not use</em> diagrams?</h2>
-<p><strong>Pro:</strong> Diagrams are stable, well-studied, and information rich.</p>
-<p><strong>Con:</strong> Only competitive algorithm to produce a diagram is <em>reduction</em> algorithm:</p>
-<p><span class="math display">\[ \partial(K_\bullet) \mapsto R = \partial V \]</span></p>
-<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
+<div style="text-align: center;">
+<p><strong>Con:</strong> Extending the <span class="math inline">R = \partial V</span> to parameterized settings is highly non-trivial</p>
+</div>
 <div class="columns">
 <div class="column" style="width:33%;">
 <p><img data-src="vineyard.gif" style="width:90.0%"></p>
-</div><div class="column" style="width:33%;">
-<p><img data-src="complex_vine.gif" style="width:90.0%"></p>
+</div><div class="column" height="1em" style="width:33%;">
+<p><img data-src="complex_updated.gif" style="width:90.0%"></p>
 </div><div class="column" style="width:33%;">
 <p><img data-src="spy_matrices.gif" style="width:90.0%"></p>
 </div>
 </div>
-<p>Maintaining the <span class="math inline">\(R = \partial V\)</span> decomposition “across time” <span class="math inline">\(\implies\)</span> huge memory bottleneck</p>
+<div style="text-align: center;">
+<p>Maintaining the <span class="math inline">R = \partial V</span> decomposition “across time” <span class="math inline">\implies</span> huge memory bottleneck</p>
+</div>
 <aside class="notes">
 <p>Reduction algorithm is a restricted form of gaussian elimination.</p>
 <style type="text/css">
@@ -495,73 +596,183 @@ Matt Piekenbrock<span class="math inline">\(\mathrm{}^\dagger\)</span> &amp; Jos
 <section id="why-prefer-the-rank-invariant" class="slide level2">
 <h2>Why <em>prefer</em> the rank invariant?</h2>
 <p>There is a duality between diagrams its associated rank function:</p>
-<p><span class="math display">\[ \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta \]</span></p>
-<p><span class="math display">\[\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad \]</span></p>
-<p><em>“Fundamental Lemma of Persistent Homology”</em> shows diagrams characterize their ranks <span class="math display">\[\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}\]</span></p>
+<p><span class="math display"> \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta </span></p>
+<p><span class="math display">\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad </span></p>
+<p><em>Fundamental Lemma of Persistent Homology</em> shows diagrams characterize their ranks <span class="math display">\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}</span></p>
 <ul>
-<li><em>Persistence measures</em> <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span> extend (1,2) naturally when <span class="math inline">\(\mathbb{F} = \mathbb{R}\)</span></li>
+<li><em>Persistence measures</em> <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span> extend (1,2) naturally when <span class="math inline">\mathbb{F} = \mathbb{R}</span></li>
 <li>Stability in context of multidimensional persistence <span class="citation" data-cites="cerri2013betti">(<a href="#/references" role="doc-biblioref" onclick="">Cerri et al. 2013</a>)</span></li>
-<li>Mobius inversions[], etc.</li>
+<li>Generalizations of rank invariant via Möbius inversion <span class="citation" data-cites="mccleary2022edit">(<a href="#/references" role="doc-biblioref" onclick="">McCleary and Patel 2022</a>)</span> and via zigzag persistence<span class="citation" data-cites="dey2021computing">(<a href="#/references" role="doc-biblioref" onclick="">Tamal K. Dey, Kim, and Mémoli 2021</a>)</span></li>
 </ul>
 </section>
 <section id="overview" class="slide level2">
 <h2>Overview</h2>
 <ul>
-<li>Introduction &amp; Motivation<br>
-</li>
-<li>Deriving the relaxation</li>
-<li></li>
+<li>Introduction &amp; Motivation
+<ul>
+<li>Diagram vectorization and optimization</li>
+<li>The need to avoid computing diagrams</li>
+<li>Duality between rank function and diagrams</li>
+</ul></li>
+<li>Derivation of relaxation
+<ul>
+<li>Rank approximation w/ Dirac delta</li>
+<li>Spectral connection via Löwner operators</li>
+<li>Laplacian connection via inner products</li>
+</ul></li>
+<li>Experiments
+<ul>
+<li>Codensity example</li>
+<li>Shape signature example</li>
+</ul></li>
+<li>Conclusion &amp; Future Work</li>
 </ul>
 </section>
 <section id="revisiting-the-ph-rank-computation" class="slide level2">
 <h2>Revisiting the PH rank computation</h2>
-<p><span class="math display">\[ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))\]</span></p>
-<hr>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-right">
+<figure>
+<p><img data-src="dgm_pbn.png" width="400"></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="dgm_mu.png" width="400"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<p><span class="math display"> \beta_p^{i,j}(K)</span></p>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<p><span class="math inline">\mu_p^R(K)</span></p>
+</div>
+</div>
+</div>
+</section>
+<section id="revisiting-the-rank-computation" class="slide level2">
+<h2>Revisiting the rank computation</h2>
+<p><span class="math display"> \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))</span></p>
+<!-- <hr style="margin: 0; padding: 0;">  -->
 <div style="list-style-type: none;align=center;">
 <div class="fragment fade-in-then-semi-out" style="text-align: left">
-<p><span class="math inline">\(\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )\)</span></p>
+<p><span class="math inline">\;\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )</span></p>
 </div>
 <!-- <li style="text-align: left" class="fragment fade-in-then-semi-out">
 $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
 </li> -->
 <div class="fragment fade-in-then-semi-out" style="text-align: left">
 <!-- <li style="text-align: left" class="fragment fade-in-then-semi-out"> -->
-<p><span class="math inline">\(\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )\)</span></p>
+<p><span class="math inline">\;\quad\quad\quad\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )</span></p>
 </div>
 <div class="fragment fade-in-then-semi-out" style="text-align: left">
-<p><span class="math inline">\(\color{blue}{\quad\quad\quad\quad\hphantom{\beta_p^{i,j} }=\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i)) \; \big)}\)</span> <span class="math inline">\(-\)</span> <span class="math inline">\(\color{red}{\mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)}\)</span></p>
+<p><span class="math inline">\;\quad\quad\quad\hphantom{\beta_p^{i,j}}=\color{blue}{\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i)) \; \big)} \; \color{black}{-} \; \color{red}{\mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)}</span></p>
 </div>
 </div>
 <!-- <br>  -->
 <div class="fragment fade-in-then-semi-out">
-<p>Rank-nullity yields the <span style="color: blue">left term</span>: <span class="math display">\[
+<p>Rank-nullity yields the <span style="color: blue">left term</span>: <span class="math display">
 \mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
-\]</span></p>
+</span></p>
 </div>
 <div class="fragment fade-in-then-semi-out">
 <p>Computing the <span style="color: red">right term</span> more nuanced:</p>
 </div>
-<div style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em;">
+<div style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em; margin: 0; padding: 0;">
 <ul>
-<li class="fragment">Gaussian elimination[^1], pseudo-inverse[^2], projectors[^3], etc.</li>
-<li class="fragment">Reduction algorithm[^4], Persistent Laplacian Schur complement[^5]</li>
+<li class="fragment">Pseudo-inverse<span class="math inline">^1</span>, projectors<span class="math inline">^2</span>, Neumann’s inequality<span class="math inline">^3</span>, etc.</li>
+<li class="fragment">PID algorithm<span class="math inline">^4</span>, Reduction algorithm<span class="math inline">^5</span>, Persistent Laplacian<span class="math inline">^6</span></li>
 </ul>
 </div>
-</section>
+
+<aside><div>
+<p><span class="citation" data-cites="anderson1969series">Anderson Jr and Duffin (<a href="#/references" role="doc-biblioref" onclick="">1969</a>)</span>, <span class="citation" data-cites="ben1967geometry">Ben-Israel (<a href="#/references" role="doc-biblioref" onclick="">1967</a>)</span>, <span class="citation" data-cites="ben2015projectors">Ben-Israel (<a href="#/references" role="doc-biblioref" onclick="">2015</a>)</span>, <span class="citation" data-cites="zomorodian2004computing">Zomorodian and Carlsson (<a href="#/references" role="doc-biblioref" onclick="">2004</a>)</span>, <span class="citation" data-cites="edelsbrunner2000topological">Edelsbrunner, Letscher, and Zomorodian (<a href="#/references" role="doc-biblioref" onclick="">2000</a>)</span>, <span class="citation" data-cites="memoli2022persistent">Mémoli, Wan, and Wang (<a href="#/references" role="doc-biblioref" onclick="">2022</a>)</span></p>
+</div></aside></section>
 <section id="key-observation" class="slide level2">
 <h2>Key Observation</h2>
-<p>The structure theorem asserts 1-parameter persistence modules decompose in an <em>essentially unique</em> way into indecomposables, which can be used to show:</p>
-<p><span class="math display">\[ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 \]</span> <span class="math display">\[
-\begin{equation}
-\implies \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
-\end{equation}
-\]</span></p>
-<p>Often used to show correctness of reduction, but far more general, as it implies:</p>
-<p><span class="math display">\[ \beta_p^{i,j}(K_\bullet) = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) \]</span></p>
-<p><span class="math display">\[ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  \]</span></p>
-<div style="margin-top: 0.01em; margin-bottom: 0.01em; border: 1px solid black; ">
-<p><strong>Corollary <span class="citation" data-cites="bauer2022keeping">(<a href="#/references" role="doc-biblioref" onclick="">Bauer et al. 2022</a>)</span></strong>: Any algorithm that preserves the ranks of the submatrices <span class="math inline">\(\partial^{i,j}\)</span> for all <span class="math inline">\(i,j \in \{ 1, \dots, n \}\)</span> is a valid barcode algorithm.</p>
+<p>Structure theorem for persistence modules can be used to show:</p>
+<div class="fragment">
+<p><span class="math display">
+(i,j) \in \mathrm{dgm}(K_\bullet)
+</span></p>
 </div>
+<div class="fragment">
+<p><span class="math display">
+\Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0
+</span></p>
+</div>
+<div class="fragment" style="margin: 0; padding: 0;">
+<div class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;">
+<figure>
+<p><img data-src="rank_ll.png" style="height:100.0%" width="575"></p>
+</figure>
+</div>
+</div>
+<div class="fragment">
+<p><span class="math display">
+\Rightarrow \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})
+</span></p>
+</div>
+</section>
+<section id="key-observation-1" class="slide level2">
+<h2>Key Observation</h2>
+<div class="fragment">
+<p><span class="math display">
+\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})
+</span></p>
+</div>
+<div class="fragment" style="margin: 0; padding: 0;">
+<div class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;">
+<figure>
+<p><img data-src="rv_ll.png" style="height:100.0%" width="950"></p>
+</figure>
+</div>
+</div>
+<div class="fragment" style="text-align: center">
+<p><strong>Take-a-way:</strong> Can deduce the <span class="math inline">\mathrm{dgm}</span> from ranks of “lower-left” submatrices of <span class="math inline">\partial_p(K_\bullet)</span></p>
+</div>
+</section>
+<section id="key-observation-2" class="slide level2">
+<h2>Key Observation</h2>
+<!-- $$ \mathrm{sgn}_+(R[i,j]) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) $$ -->
+<p><span class="math display">
+\begin{equation}
+\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
+\end{equation}
+</span></p>
+<hr>
+<div class="fragment">
+<p><span class="math inline">(1)</span> often used to show correctness of reduction, but far more general, as it implies:</p>
+</div>
+<div class="fragment">
+<div style="padding-left: 1em; border: 1px solid black; margin: 2em; ">
+<p><strong>Corollary <span class="citation" data-cites="bauer2022keeping">(<a href="#/references" role="doc-biblioref" onclick="">Bauer et al. 2022</a>)</span></strong>: Any algorithm that preserves the ranks of the submatrices <span class="math inline">\partial^{i,j}</span> for all <span class="math inline">i,j \in \{ 1, \dots, n \}</span> is a valid barcode algorithm.</p>
+</div>
+</div>
+<div class="fragment">
+<p><span class="math display">
+\begin{equation}
+(1) \Rightarrow \beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} )
+\end{equation}
+</span></p>
+</div>
+<div class="fragment">
+<p><span class="math display">
+\begin{equation}
+(2) \Rightarrow \mu_p^{R} = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  
+\end{equation}
+</span></p>
+</div>
+
 <aside class="notes">
 <p>shows 1-parameter persistence modules decompose in essentially unique way The result about lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.&nbsp;The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. The corollary by Bauer et al.&nbsp;is now being studied in the context of reducing the sparsity of the matrices used in the reduction algorithm.</p>
 <style type="text/css">
@@ -575,150 +786,222 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
-</section>
+<aside><div>
+<p><span class="citation" data-cites="edelsbrunner2000topological">Edelsbrunner, Letscher, and Zomorodian (<a href="#/references" role="doc-biblioref" onclick="">2000</a>)</span> noted (1) in passing showing correctness of reduction; <span class="citation" data-cites="dey2022computational">Tamal Krishna Dey and Wang (<a href="#/references" role="doc-biblioref" onclick="">2022</a>)</span> explicitly prove (2); (3) was used by <span class="citation" data-cites="chen2011output">Chen and Kerber (<a href="#/references" role="doc-biblioref" onclick="">2011</a>)</span>.</p>
+</div></aside></section>
 <section id="example" class="slide level2">
 <h2>Example:</h2>
 
 <img data-src="bowtie.svg" style="width:50.0%" class="r-stretch"></section>
 <section id="example-1" class="slide level2">
 <h2>Example:</h2>
-<div class="columns">
-<p><img data-src="ex_dgm.svg" style="width:50.0%"></p>
-</div>
-<p><span class="math display">\[\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})\]</span></p>
-</section>
-<section id="a-spectral-relaxation" class="slide level2">
-<h2>A spectral relaxation</h2>
-<p>We can express both <span class="math inline">\(\beta_p^{i,j}(K_\bullet)\)</span> and <span class="math inline">\(\mu_p^{R}(K_\bullet)\)</span> with <em>ranks</em> of <em>unfactored matrices</em> <span class="math display">\[ \mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  \]</span> <!-- $$ R = [i,j] \times [k,l] \subset \Delta_+ $$ --></p>
-<hr>
-<!-- __Spectral Idea:__ The rank of a linear operator can also be defined as: -->
-<p><span class="math display">\[ \begin{align}
-\mathrm{rank}(X) &amp;= \lVert \mathbf{\sigma} \rVert_0, \quad \quad &amp; X = U \mathrm{Diag}(\mathbf{\sigma})V^T \\
-&amp; = {\textstyle \sum_{i=1}^{n}} \, \mathrm{sgn}_+(\sigma_i), \quad \quad &amp;\mathrm{sgn}_{+}(x) = \begin{cases}
-        1 &amp; \text{if } x &gt; 0 \\
-        0 &amp; \text{otherwise}
-    \end{cases}  \\
-  &amp; \approx {\textstyle \sum_{i=1}^n} \, \phi(\sigma_i, \epsilon), \quad \quad &amp;\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz \\
-  &amp;= \lVert \Phi_\epsilon(X) \rVert_\ast, \quad \quad &amp;\Phi_\epsilon(X): \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}
-\end{align}
-\]</span></p>
-<p>where <span class="math inline">\(\Phi_\epsilon(X)\)</span> is a Löwner operator when <span class="math inline">\(\phi\)</span> is <em>operator monotone</em></p>
-</section>
-<section id="a-spectral-relaxation-intuition" class="slide level2">
-<h2>A spectral relaxation: intuition</h2>
 
-<img data-src="cont_relax.png" class="r-stretch"></section>
-<section id="a-spectral-relaxation-intuition-1" class="slide level2">
-<h2>A spectral relaxation: intuition</h2>
-<p><span class="math display">\[ \begin{align}
-\mu_p^{R}(K_\bullet) &amp;= \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{i + 1, l}) \\
-&amp;\approx \lVert \Phi_\epsilon(\partial_{p+1}^{j + 1, k}) \rVert_\ast - \, \dots \, + \Phi_\epsilon(\partial_{p+1}^{i + 1, l})
-\end{align}
-\]</span></p>
-<p><span class="citation" data-cites="bi2013approximation">(<a href="#/references" role="doc-biblioref" onclick="">Bi, Han, and Pan 2013</a>)</span> show that for any smoothed Dirac delta function<sup>1</sup> <span class="math inline">\(\hat{\delta}\)</span> and differentiable <em>operator monotone</em> function <span class="math inline">\(\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+\)</span>, we have:</p>
-<div style="text-align: left; margin-left: 2.5em; ">
-<ul>
-<li class="fragment">(<span class="math inline">\(\epsilon\)</span>-close) <span class="math inline">\(\quad\quad\)</span> <span class="math inline">\(0 \leq \mathrm{rank}(X) - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(\hat{\delta})\)</span></li>
-<li class="fragment">(Monotonicity) <span class="math inline">\(\quad\quad\)</span> <span class="math inline">\(\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast\)</span> for any <span class="math inline">\(\epsilon \leq \epsilon'\)</span></li>
-<li class="fragment">(Smooth) <span class="math inline">\(\quad\quad\)</span> <span class="math inline">\(\lVert \Phi_\epsilon(X) \rVert_\ast\)</span> Lipshitz continuous, semismooth on <span class="math inline">\(\mathbb{R}^{n \times m}\)</span></li>
-<li class="fragment">(Differentiable) Continuously differentiable on <span class="math inline">\(\mathbf{S}_+\)</span></li>
-<li class="fragment">(Computable) Differential <span class="math inline">\(\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast\)</span> has a closed-form solution</li>
-</ul>
+<img data-src="ex_dgm.svg" style="width:50.0%" class="r-stretch"><p><span class="math display">\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})</span></p>
+</section>
+<section id="the-implication-rank-invariances" class="slide level2">
+<h2>The Implication: Rank Invariances</h2>
+<div class="fragment fade-in" style="text-align: left">
+<p>    </p>
+<p><span class="math inline">\hspace{10em} \mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))</span></p>
 </div>
-<!-- $\lVert \Phi_\epsilon(X) \rVert_\ast$ also have a variety of other benefits: -->
-<p>Generalizes many rank relaxations used in compressed sensing and <span class="math inline">\(\ell_1\)</span> minimization</p>
-<aside><ol class="aside-footnotes"><li id="fn1"><p><span class="math inline">\(\delta\)</span> has to </p></li></ol></aside></section>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A^T) \quad \quad \quad \text{(adjoint)}</span></p>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A^T A) \quad \quad \; \text{(inner product)}</span></p>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A A^T) \quad \quad \; \text{(outer product)}</span></p>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(S^{-1}AS) \quad \; \text{(change of basis)}</span></p>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(P^T A P) \quad \; \text{(permutation)}</span></p>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<p><span class="math inline">\hspace{10em} \hphantom{\mathrm{rank}(A)} \equiv \dots \quad \quad \quad \quad \quad \quad \! \! \text{(many others)}</span></p>
+</div>
+<p><br></p>
+<div class="fragment fade-in" style="text-align: left">
+<div style="text-align: center; font-size: 35px;">
+<p><strong>Question: Can we exploit some of these?</strong></p>
+</div>
+</div>
+</section>
 <section id="alpha-parameterized-boundary-matrices" class="slide level2">
-<h2><span class="math inline">\(\alpha\)</span>-parameterized boundary matrices</h2>
-<p>Suppose we have an <span class="math inline">\(\alpha\)</span>-parameterized filtration <span class="math inline">\((K, f_\alpha)\)</span> where <span class="math inline">\(f_\alpha : K \to \mathbb{R}_+\)</span> satisfies: <span class="math display">\[ \begin{align}
+<h2><span class="math inline">\alpha</span>-parameterized boundary matrices</h2>
+<p>Suppose we have an <span class="math inline">\alpha</span>-parameterized filtration <span class="math inline">(K, f_\alpha)</span> where <span class="math inline">f_\alpha : K \to \mathbb{R}_+</span> satisfies:</p>
+<p><span class="math display">
 f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K
-\end{align}
-\]</span></p>
-<p>We turn <img data-src="boundary_relax.png"></p>
-<!-- (\, \forall \, z \geq 0, \epsilon > 0  \,)   -->
-<!-- Or equivalently, as the $\ell_0$ norm^[Technically a pseudo-norm] of the singular values a given linear operator $X$... -->
-<!-- % & =  & 
-% \phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \quad  & 
-% \hat{\delta}(z, \epsilon) = \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) &&  -->
+</span></p>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-right">
+<figure>
+<p><img data-src="family.gif"></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="complex_plain.gif"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
 </section>
-<section id="rank-invariances" class="slide level2">
-<h2>Rank Invariances</h2>
-<p><span class="math inline">\(\mathrm{rank}\)</span> is invariant to many things:</p>
-<p><span class="math display">\[
-\begin{align}
-  \mathrm{rank}(A) &amp;\triangleq \mathrm{dim}(\mathrm{Im}(A)) &amp; \\
-  &amp;\equiv \mathrm{rank}(A^T) &amp; \text{(adjoint)} \\
-  &amp;\equiv \mathrm{rank}(A^T A) &amp; \text{(inner product)} \\
-  &amp;\equiv \mathrm{rank}(A A^T) &amp; \text{(outer product)} \\
-  &amp;\equiv \mathrm{rank}(S^{-1}AS) &amp; \text{(change of basis)} \\
-  &amp;\equiv \mathrm{rank}(O^T A O) &amp; \text{(rotations)} \\
-  &amp;\equiv \mathrm{rank}(P^T A P) &amp; \text{(permutation)} \\
-  &amp;\equiv \dots &amp; \text{etc.}
-\end{align}
-\]</span></p>
-<p><em>Q</em>: Can we exploit some of these?</p>
+<section id="alpha-parameterized-boundary-matrices-1" class="slide level2">
+<h2><span class="math inline">\alpha</span>-parameterized boundary matrices</h2>
+<div class="fragment" style="text-align: center;">
+<p><strong>Idea #1</strong>: Parameterize <span class="math inline">p</span>-chains <span class="math inline">c \in C_p(K; \mathbb{R})</span> with <span class="math inline">f_\alpha : K \to \mathbb{R}_+</span></p>
+<p><span class="math display"> \partial_p(\alpha) = D_p(f_\alpha) \circ \partial_p(K) \circ D_{p+1}(f_\alpha) </span></p>
+</div>
+<div class="fragment" style="text-align: center;">
+<p><span class="math inline">\partial_p</span> now varies continuously with <span class="math inline">\alpha \in \mathbb{R}</span>, but has fixed rank</p>
+</div>
+<div class="fragment" style="text-align: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="smoothstep.png" style="width:88.0%;height:100.0%"></p>
+</figure>
+</div>
+<p><span class="math display"> \partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) </span></p>
+</div>
 </section>
-<section id="rank-test-2" class="slide level2">
-<h2>Rank test 2</h2>
-<!-- https://revealjs.com/auto-animate/ -->
-<section data-auto-animate="">
-<h2>
-<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))\]</span>
-</h2>
+<section id="spectral-functions" class="slide level2">
+<h2>Spectral functions</h2>
+<!-- Both $\beta_p^{i,j}(K_\bullet)$ and $\mu_p^{R}(K_\bullet)$ expressible with _ranks_ of _unfactored matrices_ -->
+<div style="text-align: center">
+<p><strong>Idea #2</strong>: Approximate <span class="math inline">\mathrm{rank}</span> with <em>spectral functions</em> <span class="citation" data-cites="bhatia2013matrix">(<a href="#/references" role="doc-biblioref" onclick="">Bhatia 2013</a>)</span></p>
+</div>
+<div style="list-style-type: none; align=center;">
+<div class="columns">
+<div class="column" style="width:50%;">
+<div class="fragment fade-in-then-semi-out" data-fragment-index="1" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="2" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="3" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="4" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast</span></p>
+</div>
+</div><div class="column">
+<div class="fragment fade-in-then-semi-out" data-fragment-index="1" style="text-align: right">
+<p><span class="math inline">X = U \mathrm{Diag}(\mathbf{\sigma})V^T</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="2" style="text-align: right">
+<p><span class="math inline">\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x &gt; 0)</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="3" style="text-align: right">
+<p><span class="math inline">\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="4" style="text-align: right">
+<p><span class="math inline">\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T</span></p>
+</div>
+</div>
+</div>
+<div class="fragment fade-in" style="text-align: center">
+<p><span class="math inline">\Phi_\epsilon(X)</span> is a <em>Löwner operator</em> when <span class="math inline">\phi</span> is <em>operator monotone</em> <span class="citation" data-cites="jiang2018unified">(<a href="#/references" role="doc-biblioref" onclick="">Jiang and Sendov 2018</a>)</span></p>
+<p><span class="math display"> A \succeq B \implies \Phi_\epsilon(A) \succeq \Phi_\epsilon(B) </span></p>
+</div>
+<div class="fragment" style="text-align: center">
+<p>Used in convex analysis + nonexpansive mappings <span class="citation" data-cites="bauschke2011convex">(<a href="#/references" role="doc-biblioref" onclick="">Bauschke, Combettes, et al. 2011</a>)</span></p>
+</div>
+</div>
+<div class="footer">
+<p>Spectral approximations to rank</p>
+</div>
 </section>
-<section data-auto-animate="">
-<h2>
-<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))\]</span>
-</h2>
-<h2>
-<span class="math display">\[\mathrm{rank}(A) \triangleq \mathrm{rank}(\mathrm{Im}(A))\]</span>
-</h2>
-</section>
-</section>
-<section id="permutation-invariance" class="slide level2">
-<h2>Permutation Invariance</h2>
-<p>Consider the setting where <span class="math inline">\(f_\alpha : \mathbb{R} \to \mathbb{R}^N\)</span> is an <span class="math inline">\(\alpha\)</span>-parameterized filter function:</p>
-<p><span class="math display">\[ \mu_p^R(\, f_\alpha \, ) = \{ \mu_p^R(K_\bullet^\alpha) : \alpha \in \mathbb{R} \}\]</span></p>
-<p>Difficult to compute <span class="math inline">\(R_\alpha = \partial_\alpha V_\alpha\)</span> for all <span class="math inline">\(\alpha\)</span> as <span class="math inline">\(K_\bullet = (K, f_\alpha)\)</span> is changing constantly…</p>
-<!-- #\mathrm{rank}(\partial_p(K_\bullet( \, f_\alpha \,))) -->
-<!-- On the other hand... -->
-<p><span class="math display">\[ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(P^T \partial_p(K) P) \]</span> <span class="math display">\[ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(W \mathrm{sgn}(\partial_p(K)) W) \]</span></p>
-<p>Thus we may decouple <span class="math inline">\(f_\alpha\)</span> and <span class="math inline">\(K\)</span> in the computation:</p>
-<p><span class="math display">\[
-\begin{align*}
-\mu_p^{R}(K,f_\alpha) &amp;\triangleq \mathrm{rank}\big(\,\hat{\partial}_{q}^{j + \delta, k}\,\big) - \; \dots \; + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i + \delta, l}\,\big)  \\
-&amp;\equiv \mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) - \; \dots \; + \mathrm{rank}\big(\,V_p^{i+\delta} \circ \partial_{q} \circ W_q^l \,\big)
-\end{align*}
-\]</span></p>
-<p>where the entries of <span class="math inline">\(V\)</span>, <span class="math inline">\(W\)</span> change continuously w/ <span class="math inline">\(\alpha\)</span>, while <span class="math inline">\(\partial_q\)</span> remains <em>fixed</em>…</p>
-</section>
+<section id="lowner-operators" class="slide level2">
+<h2>Lowner Operators</h2>
+<p><span class="citation" data-cites="bi2013approximation">(<a href="#/references" role="doc-biblioref" onclick="">Bi, Han, and Pan 2013</a>)</span> show that for any smoothed Dirac delta function<sup>1</sup> <span class="math inline">\hat{\delta}</span> and differentiable <em>operator monotone</em> function <span class="math inline">\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+</span>, we have:</p>
+<!-- <div class="columns" style="margin-left: 2.5em; "> -->
+<div style="list-style-type: none !important;">
+<div class="columns">
+<!-- :::{layout="[[50,50]]""} --><div class="column" style="width:30%;">
+<div class="fragment fade-in no_bullet" data-fragment-index="1">
+<p>(<span class="math inline">\epsilon</span>-close)</p>
+</div>
+<div class="fragment fade-in" data-fragment-index="2">
+<p>(Monotonicity)</p>
+</div>
+<div class="fragment fade-in" data-fragment-index="3">
+<p>(Smooth)</p>
+</div>
+<div class="fragment fade-in" data-fragment-index="4">
+<p>(Computable)</p>
+</div>
+<div class="fragment fade-in" data-fragment-index="5">
+<p>(Differentiable)</p>
+</div>
+</div><div class="column" data-layout-align="right" style="width:70%;">
+<div class="fragment fade-in" data-fragment-index="1">
+<p><span class="math inline">0 \leq \mathrm{rank}(X) - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(\hat{\delta})</span></p>
+</div>
+<div class="fragment fade-in" data-fragment-index="2">
+<p><span class="math inline">\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast</span> for any <span class="math inline">\epsilon \leq \epsilon'</span></p>
+</div>
+<div class="fragment fade-in" data-fragment-index="3">
+<p>Lipshitz + semismooth<sup>2</sup> on <span class="math inline">\mathbb{R}^{n \times m}</span></p>
+</div>
+<div class="fragment fade-in" data-fragment-index="4">
+<p>Closed-form soln. to differential <span class="math inline">\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast</span></p>
+</div>
+<div class="fragment fade-in" data-fragment-index="5">
+<p>Continuously differentiable on <span class="math inline">\mathbf{S}_+^m</span></p>
+</div>
+</div>
+</div>
+<div class="fragment" style="text-align: center; margin-top: 1em; ">
+<p>Small issue: <span class="math inline">\quad \partial_p^\ast(\alpha) \in \mathbb{R^{n \times m}}</span> (not in <span class="math inline">\mathbf{S}_+^m</span>)</p>
+</div>
+<!-- 
+Easy fix: $\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)$  -->
+<div class="fragment" style="text-align: center">
+<p>Easy fix: <span class="math inline">\quad</span> <span class="math inline">\Phi_\epsilon(\partial_p \circ \partial_p^T)(\alpha)</span> <span class="math inline">\quad</span> or <span class="math inline">\quad</span> <span class="math inline">\Phi_\epsilon(\partial_p^T \circ \partial_p)(\alpha)</span></p>
+</div>
+</div>
+<aside><ol class="aside-footnotes"><li id="fn1"><p>Any <span class="math inline">\hat{\delta}</span> of the form <span class="math inline">\nu(1/\epsilon) p (z \cdot \nu (1/\epsilon))</span> where <span class="math inline">p</span> is a density function and <span class="math inline">\nu</span> positive and increasing is sufficient.</p></li><li id="fn2"><p>Here <em>semismooth</em> refers the existence of directional derivatives</p></li></ol></aside></section>
 <section id="combinatorial-laplacian" class="slide level2">
 <h2>Combinatorial Laplacian</h2>
-<p>Recall <span class="math inline">\(\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)\)</span></p>
-<p>For boundary matrices, these matrices translate into up- and down- <em>Laplacians</em>:</p>
-<p><span class="math display">\[ \Delta_p = \partial_{p+1} \partial_{p+1}^T  + \partial_{p}^T \partial_{p+1} \]</span></p>
-<p>Thus: <span class="math display">\[\begin{align}
-\mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) \\
-= \mathrm{rank}(L_{\ast, p}^{j,k}) + \dots - \mathrm{rank}(L_{\ast, p}^{j,k})
-\end{align}
-\]</span></p>
-<p>“weight function” is 1-to-1 with scalar product on cochain groups <span class="math inline">\(C^p(K, \mathbb{R})\)</span></p>
-<p><strong>Summary:</strong> We can obtain <span class="math inline">\(\mu_p^R(K, f_\alpha)\)</span> for varying <span class="math inline">\(\alpha\)</span> by using thresholded versions of <span class="math inline">\(f_\alpha\)</span> as scalar-products</p>
+<p><strong>3rd idea:</strong> parameterize using <em>combinatorial Laplacians</em> <span class="citation" data-cites="horak2013spectra">(<a href="#/references" role="doc-biblioref" onclick="">Horak and Jost 2013</a>)</span>:</p>
+<p><span class="math display"> \Delta_p = \underbrace{\partial_{p+1} \partial_{p+1}^T}_{L_p^{\mathrm{up}}}  + \underbrace{\partial_{p}^T \partial_{p}}_{L_p^{\mathrm{dn}}} </span></p>
+<p><span class="math inline">f_\alpha</span> is 1-to-1 correspondence with inner products on cochain groups <span class="math inline">C^p(K, \mathbb{R})</span></p>
+<p><span class="math display">L_p^{i,j}(\alpha) \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)</span></p>
+<p>Has closed-form linear and quadratic forms, e.g.: <span class="math display">
+L_p^{\text{up}}(\tau, \tau')= \begin{cases}
+         \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) &amp; \text{ if } \tau = \tau' \\
+%       \mathrm{deg}(\tau_i) &amp; \text{ if } i = j \\
+        s_{\tau, \tau'} \cdot  f^{+/2}(\tau) \cdot f(\sigma) \cdot f^{+/2}(\tau') &amp; \text{ if } \tau \overset{\sigma}{\sim} \tau' \\
+        0 &amp; \text{ otherwise}
+    \end{cases}
+</span></p>
+<div class="fragment">
+<p><span class="math inline">\implies</span> can represent operator in “matrix-free” fashion</p>
+</div>
+<!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
 </section>
 <section id="summary-of-relaxation" class="slide level2">
 <h2>Summary of relaxation</h2>
-<p>Our relaxation can be summarized as follows:</p>
-<p><span class="math display">\[
-\begin{align}
-\mu_p^R(K, \, f_\alpha) &amp;\triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) \\
-&amp;\equiv \mathrm{rank}(\partial_{p+1}^{\ast}) - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{\ast}) \\
-&amp;= \mathrm{rank}(\partial_{p+1}^{\ast} \circ (\partial_{p+1}^{\ast})^T) - \, \dots \, + \mathrm{rank}(\partial_{p+1}^{\ast}) \\
-&amp;= \mathrm{rank}(L_p^{\ast}(f_\alpha^\ast)) - \, \dots \, + \mathrm{rank}(L_p^{\ast}(f_\alpha^\ast)) \\
-&amp;\approx \lVert \Phi_{\epsilon}(L_p^{\ast}(f_\alpha^\ast)) \rVert_\ast \\
+<p><span class="math display">
+\begin{align*}
+\mu_p^R(K_\bullet, f) &amp;\triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) \\
+&amp;= \mathrm{rank}(\partial_{p+1}^{j+1,k}) + \dots \\
+\hat{\mu}_p^R(K, f_\alpha) &amp;= \mathrm{rank}(\hat{\partial}_{p+1}^{j+1, k}(\alpha)) + \dots  \\
+&amp;\approx \lVert \Phi_{\epsilon}(\hat{\partial}_{p+1}^{j+1, k}(\alpha)) \rVert_\ast + \dots \\
+&amp;= \lVert \Phi_{\epsilon}(L_p^\ast(\alpha)) \rVert_\ast \\
 &amp; \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)
-\end{align}
-\]</span></p>
-<p>That is,</p>
+\end{align*}
+</span></p>
+<p>By construction, <span class="math inline">\hat{\mu}_p^R(K, f_\alpha)</span> is not only continuous, but varying <span class="math inline">\alpha \in \mathbb{R}</span> traces out a curve in <span class="math inline">\mathbf{S}_+</span></p>
 </section>
 <section id="overview-1" class="slide level2">
 <h2>Overview</h2>
@@ -743,14 +1026,77 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <li>Conclusion &amp; Future Work</li>
 </ul>
 </section>
+<section id="experiment-1" class="slide level2">
+<h2>Experiment #1</h2>
+
+<img data-src="codensity_mult.png" class="r-stretch"></section>
+<section id="experiment-1-1" class="slide level2">
+<h2>Experiment #1</h2>
+<p><img data-src="smoothed_mu.png" style="width:55.0%;height:100.0%"> <img data-src="optimal_codensity_complex.png" style="width:35.0%;height:100.0%"></p>
+</section>
+<section id="experiment-2-pht" class="slide level2">
+<h2>Experiment #2: PHT</h2>
+</section>
+<section id="experiment-2-pht-1" class="slide level2">
+<h2>Experiment #2: PHT</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="shape_signatures.png" style="width:80.0%;height:100.0%"></p>
+</figure>
+</div>
+<aside class="notes">
+<p>Luis mentioned modding out rotations and translations adn scale to compare shapes. We can handle rotations via phase alignment.</p>
+<p>Sarah mentioned handling orientation.</p>
+<style type="text/css">
+        span.MJX_Assistive_MathML {
+          position:absolute!important;
+          clip: rect(1px, 1px, 1px, 1px);
+          padding: 1px 0 0 0!important;
+          border: 0!important;
+          height: 1px!important;
+          width: 1px!important;
+          overflow: hidden!important;
+          display:block!important;
+      }</style></aside>
+</section>
+<section id="time-permitting-computation" class="slide level2">
+<h2>Time permitting: Computation</h2>
+<div style="padding-left: 1em; border: 1px solid black; margin: 2em; ">
+<p><strong>Theorem <span class="citation" data-cites="simon1984analysis">(<a href="#/references" role="doc-biblioref" onclick="">Simon 1984</a>)</span></strong>: Given a symmetric rank-<span class="math inline">r</span> matrix <span class="math inline">A \in \mathbb{R}^{n \times n}</span> whose matrix-vector operator <span class="math inline">A \mapsto A x</span> requires <span class="math inline">O(\eta)</span> time and <span class="math inline">O(\nu)</span> space, the Lanczos iteration computes <span class="math inline">\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}</span> in <span class="math inline">O(\max\{\eta, n\}\cdot r)</span> time and <span class="math inline">O(\max\{\nu, n\})</span> space, when computation is done in exact arithmetic.</p>
+</div>
+<p>Spectra of Symmetric Diagonally Dominant (SDD) operators well-studied:</p>
+<ul>
+<li>Laplacian Inexact arithmetic</li>
+<li>Efficient preconditioning methods known<span class="citation" data-cites="jambulapati2021ultrasparse">(<a href="#/references" role="doc-biblioref" onclick="">Jambulapati and Sidford 2021</a>)</span></li>
+<li>Nearly optimal algorithms known <span class="citation" data-cites="stathopoulos2007nearly">(<a href="#/references" role="doc-biblioref" onclick="">Stathopoulos and McCombs 2007</a>)</span></li>
+</ul>
+</section>
+<section id="time-permitting-computation-1" class="slide level2">
+<h2>Time permitting: Computation</h2>
+</section>
 <section id="references" class="slide level2 smaller scrollable">
 <h2>References</h2>
 <div id="refs" class="references csl-bib-body hanging-indent" role="doc-bibliography">
 <div id="ref-adams2017persistence" class="csl-entry" role="doc-biblioentry">
 Adams, Henry, Tegan Emerson, Michael Kirby, Rachel Neville, Chris Peterson, Patrick Shipman, Sofya Chepushtanova, Eric Hanson, Francis Motta, and Lori Ziegelmeier. 2017. <span>“Persistence Images: A Stable Vector Representation of Persistent Homology.”</span> <em>Journal of Machine Learning Research</em> 18.
 </div>
+<div id="ref-anderson1969series" class="csl-entry" role="doc-biblioentry">
+Anderson Jr, William N, and Richard James Duffin. 1969. <span>“Series and Parallel Addition of Matrices.”</span> <em>Journal of Mathematical Analysis and Applications</em> 26 (3): 576–94.
+</div>
 <div id="ref-bauer2022keeping" class="csl-entry" role="doc-biblioentry">
 Bauer, Ulrich, Talha Bin Masood, Barbara Giunti, Guillaume Houry, Michael Kerber, and Abhishek Rathod. 2022. <span>“Keeping It Sparse: Computing Persistent Homology Revised.”</span> <em>arXiv Preprint arXiv:2211.09075</em>.
+</div>
+<div id="ref-bauschke2011convex" class="csl-entry" role="doc-biblioentry">
+Bauschke, Heinz H, Patrick L Combettes, et al. 2011. <em>Convex Analysis and Monotone Operator Theory in Hilbert Spaces</em>. Vol. 408. Springer.
+</div>
+<div id="ref-ben1967geometry" class="csl-entry" role="doc-biblioentry">
+Ben-Israel, Adi. 1967. <span>“On the Geometry of Subspaces in Euclidean n-Spaces.”</span> <em>SIAM Journal on Applied Mathematics</em> 15 (5): 1184–98.
+</div>
+<div id="ref-ben2015projectors" class="csl-entry" role="doc-biblioentry">
+———. 2015. <span>“Projectors on Intersection of Subspaces.”</span> <em>Contemporary Mathematics</em> 636: 41–50.
+</div>
+<div id="ref-bhatia2013matrix" class="csl-entry" role="doc-biblioentry">
+Bhatia, Rajendra. 2013. <em>Matrix Analysis</em>. Vol. 169. Springer Science &amp; Business Media.
 </div>
 <div id="ref-bi2013approximation" class="csl-entry" role="doc-biblioentry">
 Bi, Shujun, Le Han, and Shaohua Pan. 2013. <span>“Approximation of Rank Function and Its Application to the Nearest Low-Rank Correlation Matrix.”</span> <em>Journal of Global Optimization</em> 57 (4): 1113–37.
@@ -764,6 +1110,48 @@ Cerri, Andrea, Barbara Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia La
 <div id="ref-chazal2016structure" class="csl-entry" role="doc-biblioentry">
 Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. <em>The Structure and Stability of Persistence Modules</em>. Vol. 10. Springer.
 </div>
+<div id="ref-chen2011output" class="csl-entry" role="doc-biblioentry">
+Chen, Chao, and Michael Kerber. 2011. <span>“An Output-Sensitive Algorithm for Persistent Homology.”</span> In <em>Proceedings of the Twenty-Seventh Annual Symposium on Computational Geometry</em>, 207–16.
+</div>
+<div id="ref-dey2021computing" class="csl-entry" role="doc-biblioentry">
+Dey, Tamal K, Woojin Kim, and Facundo Mémoli. 2021. <span>“Computing Generalized Rank Invariant for 2-Parameter Persistence Modules via Zigzag Persistence and Its Applications.”</span> <em>arXiv Preprint arXiv:2111.15058</em>.
+</div>
+<div id="ref-dey2022computational" class="csl-entry" role="doc-biblioentry">
+Dey, Tamal Krishna, and Yusu Wang. 2022. <em>Computational Topology for Data Analysis</em>. Cambridge University Press.
+</div>
+<div id="ref-edelsbrunner2000topological" class="csl-entry" role="doc-biblioentry">
+Edelsbrunner, Herbert, David Letscher, and Afra Zomorodian. 2000. <span>“Topological Persistence and Simplification.”</span> In <em>Proceedings 41st Annual Symposium on Foundations of Computer Science</em>, 454–63. IEEE.
+</div>
+<div id="ref-horak2013spectra" class="csl-entry" role="doc-biblioentry">
+Horak, Danijela, and Jürgen Jost. 2013. <span>“Spectra of Combinatorial Laplace Operators on Simplicial Complexes.”</span> <em>Advances in Mathematics</em> 244: 303–36.
+</div>
+<div id="ref-jambulapati2021ultrasparse" class="csl-entry" role="doc-biblioentry">
+Jambulapati, Arun, and Aaron Sidford. 2021. <span>“Ultrasparse Ultrasparsifiers and Faster Laplacian System Solvers.”</span> In <em>Proceedings of the 2021 ACM-SIAM Symposium on Discrete Algorithms (SODA)</em>, 540–59. SIAM.
+</div>
+<div id="ref-jiang2018unified" class="csl-entry" role="doc-biblioentry">
+Jiang, Tianpei, and Hristo Sendov. 2018. <span>“A Unified Approach to Operator Monotone Functions.”</span> <em>Linear Algebra and Its Applications</em> 541: 185–210.
+</div>
+<div id="ref-kim2020pllay" class="csl-entry" role="doc-biblioentry">
+Kim, Kwangho, Jisu Kim, Manzil Zaheer, Joon Kim, Frédéric Chazal, and Larry Wasserman. 2020. <span>“Pllay: Efficient Topological Layer Based on Persistent Landscapes.”</span> <em>Advances in Neural Information Processing Systems</em> 33: 15965–77.
+</div>
+<div id="ref-mccleary2022edit" class="csl-entry" role="doc-biblioentry">
+McCleary, Alexander, and Amit Patel. 2022. <span>“Edit Distance and Persistence Diagrams over Lattices.”</span> <em>SIAM Journal on Applied Algebra and Geometry</em> 6 (2): 134–55.
+</div>
+<div id="ref-memoli2022persistent" class="csl-entry" role="doc-biblioentry">
+Mémoli, Facundo, Zhengchao Wan, and Yusu Wang. 2022. <span>“Persistent Laplacians: Properties, Algorithms and Implications.”</span> <em>SIAM Journal on Mathematics of Data Science</em> 4 (2): 858–84.
+</div>
+<div id="ref-simon1984analysis" class="csl-entry" role="doc-biblioentry">
+Simon, Horst D. 1984. <span>“Analysis of the Symmetric Lanczos Algorithm with Reorthogonalization Methods.”</span> <em>Linear Algebra and Its Applications</em> 61: 101–31.
+</div>
+<div id="ref-som2020pi" class="csl-entry" role="doc-biblioentry">
+Som, Anirudh, Hongjun Choi, Karthikeyan Natesan Ramamurthy, Matthew P Buman, and Pavan Turaga. 2020. <span>“Pi-Net: A Deep Learning Approach to Extract Topological Persistence Images.”</span> In <em>Proceedings of the IEEE/CVF Conference on Computer Vision and Pattern Recognition Workshops</em>, 834–35.
+</div>
+<div id="ref-stathopoulos2007nearly" class="csl-entry" role="doc-biblioentry">
+Stathopoulos, Andreas, and James R McCombs. 2007. <span>“Nearly Optimal Preconditioned Methods for Hermitian Eigenproblems Under Limited Memory. Part II: Seeking Many Eigenvalues.”</span> <em>SIAM Journal on Scientific Computing</em> 29 (5): 2162–88.
+</div>
+<div id="ref-zomorodian2004computing" class="csl-entry" role="doc-biblioentry">
+Zomorodian, Afra, and Gunnar Carlsson. 2004. <span>“Computing Persistent Homology.”</span> In <em>Proceedings of the Twentieth Annual Symposium on Computational Geometry</em>, 347–56.
+</div>
 </div>
 <script>
   window.WebFontConfig = {
@@ -772,10 +1160,10 @@ Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. <em>The St
     },
   };
 </script>
-<div class="footer footer-default">
-<p>Spectral relaxations of persistent rank invariants</p>
-</div>
 </section>
+
+
+
 
     </div>
   </div>
@@ -794,7 +1182,6 @@ Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. <em>The St
   <script src="pbsig.myst_files/libs/revealjs/plugin/notes/notes.js"></script>
   <script src="pbsig.myst_files/libs/revealjs/plugin/search/search.js"></script>
   <script src="pbsig.myst_files/libs/revealjs/plugin/zoom/zoom.js"></script>
-  <script src="pbsig.myst_files/libs/revealjs/plugin/math/math.js"></script>
   <script>window.define = window.backupDefine; window.backupDefine = undefined;</script>
 
   <script>
@@ -963,27 +1350,9 @@ Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. <em>The St
         // Factor of the display size that should remain empty around the content
         margin: 7.5e-2,
 
-        math: {
-          mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
-          config: 'TeX-AMS_HTML-full',
-          tex2jax: {
-            inlineMath: [['\\(','\\)']],
-            displayMath: [['\\[','\\]']],
-            balanceBraces: true,
-            processEscapes: false,
-            processRefs: true,
-            processEnvironments: true,
-            preview: 'TeX',
-            skipTags: ['script','noscript','style','textarea','pre','code'],
-            ignoreClass: 'tex2jax_ignore',
-            processClass: 'tex2jax_process'
-          },
-        },
-
         // reveal.js plugins
         plugins: [QuartoLineHighlight, PdfExport, RevealMenu, RevealSpotlight, QuartoSupport,
 
-          RevealMath,
           RevealNotes,
           RevealSearch,
           RevealZoom

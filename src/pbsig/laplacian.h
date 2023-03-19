@@ -6,7 +6,7 @@
 #include <cmath>	 // round, sqrt, floor
 #include <numeric> // midpoint, accumulate
 #include <unordered_map> 
-
+#include <concepts>
 #include "combinatorial.h"
 
 using namespace combinatorial;
@@ -18,6 +18,55 @@ using std::array;
 using std::unordered_map;
 using uint_32 = uint_fast32_t;
 using uint_64 = uint_fast64_t;
+
+#include <array>
+#include <iterator>
+#include <ranges>
+
+template<typename T, std::size_t N >
+concept ArrayIterator = requires(std::iterator_traits<T> it) {
+  { *it } -> std::same_as<std::array<typename std::iterator_traits<T>::value_type, N>>;
+  { ++it } -> std::same_as<T&>;
+  { it++ } -> std::same_as<T>;
+};
+
+template <typename T, std::size_t N>
+class SimplexIterator {
+public:
+    using iterator_category = std::input_iterator_tag;
+    using value_type = std::array<T, N>;
+    using difference_type = std::ptrdiff_t;
+    using pointer = value_type*;
+    using reference = value_type&;
+
+    SimplexIterator(pointer ptr) : ptr_(ptr) {}
+
+    reference operator*() const { return *ptr_; }
+    pointer operator->() const { return ptr_; }
+
+    SimplexIterator& operator++() {
+      ++ptr_;
+      return *this;
+    }
+
+    SimplexIterator operator++(int) {
+      ArrayIterator temp(*this);
+      ++(*this);
+      return temp;
+    }
+
+    friend bool operator==(const SimplexIterator& lhs, const SimplexIterator& rhs) {
+      return lhs.ptr_ == rhs.ptr_;
+    }
+
+    friend bool operator!=(const SimplexIterator& lhs, const SimplexIterator& rhs) {
+      return !(lhs == rhs);
+    }
+
+private:
+    pointer ptr_;
+};
+
 
 // Given codimension-1 ranks, determines the ranks of the corresponding faces
 // p := simplex dimension of given ranks 

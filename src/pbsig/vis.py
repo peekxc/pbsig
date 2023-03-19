@@ -167,8 +167,6 @@ def figure_complex(
     # x_range=x_rng, 
     # y_range=y_rng,  
     tooltips=TOOLTIPS,
-    width=300, 
-    height=300,
     **kwargs
   )
   p.axis.visible = use_grid_lines

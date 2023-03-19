@@ -1,0 +1,15 @@
+.katex { font-size: 1.1em !important; }
+
+
+.no_bullet {
+  list-style-type: none !important;
+}
+
+
+aside {
+	bottom: 5 !important;
+}
+
+h1 .title {
+  font-size: 2.0em;
+}
