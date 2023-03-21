@@ -7,7 +7,13 @@
 #include <numeric> // midpoint, accumulate
 #include <unordered_map> 
 #include <concepts>
+#include <array>
+#include <iterator>
+#include <ranges>
+#include <concepts> 
+#include <span> 
 #include "combinatorial.h"
+
 
 using namespace combinatorial;
 
@@ -19,53 +25,133 @@ using std::unordered_map;
 using uint_32 = uint_fast32_t;
 using uint_64 = uint_fast64_t;
 
-#include <array>
-#include <iterator>
-#include <ranges>
 
-template<typename T, std::size_t N >
-concept ArrayIterator = requires(std::iterator_traits<T> it) {
-  { *it } -> std::same_as<std::array<typename std::iterator_traits<T>::value_type, N>>;
-  { ++it } -> std::same_as<T&>;
-  { it++ } -> std::same_as<T>;
-};
+// template< typename T >
+// concept LabelIterator = requires(T v){
+//   { v.advance() }; 
+//   { v.equals() };
+//   { v.dereference() };
+// };
 
-template <typename T, std::size_t N>
-class SimplexIterator {
-public:
-    using iterator_category = std::input_iterator_tag;
-    using value_type = std::array<T, N>;
-    using difference_type = std::ptrdiff_t;
-    using pointer = value_type*;
-    using reference = value_type&;
 
-    SimplexIterator(pointer ptr) : ptr_(ptr) {}
+// template < uint8_t d, std::input_or_output_iterator Iter >
+// struct SimplexLabelIterator : public iterator_facade< SimplexLabelIterator<Iter>, std::contiguous_iterator<Iter> > {
+//   using value_type = std::iter_value_t<Iter>;
+//   using reference = std::iter_reference_t<Iter>;
+//   using difference_type = std::iter_difference_t<Iter>;
+//   template <std::input_or_output_iterator> friend class SimplexLabelIterator;
+  
+//   const std::vector< uint16_t > labels; // the full complex of simplices 
+//   // std::array< uint16_t, d > cs;   // current simplex
+//   Iter iter_;
+    
+//   constexpr SimplexLabelIterator(std::vector< uint16_t > _labels) noexcept(std::is_nothrow_constructible_v<Iter>) : labels(_labels) {};
+//   constexpr SimplexLabelIterator(Iter iter) noexcept(std::is_nothrow_move_constructible_v<Iter>) : iter_(std::move(iter)) {}
+//   template <class U>
+//     requires(std::constructible_from<Iter, U> && !std::same_as<Iter, U>)
+//     constexpr SimplexLabelIterator(SimplexLabelIterator<U> const& other) noexcept(std::is_nothrow_constructible_v<Iter, U>)
+//       : iter_(other.iter_) 
+//     {}
 
-    reference operator*() const { return *ptr_; }
-    pointer operator->() const { return ptr_; }
+//   // Required:
+//   [[nodiscard]] constexpr auto dereference() const noexcept(nothrow_dereference<Iter>) -> reference { return *iter_; }
+//   constexpr void increment() noexcept(nothrow_increment<Iter>) { 
+//     iter_ += (d+1); 
+//   }
 
-    SimplexIterator& operator++() {
-      ++ptr_;
-      return *this;
-    }
+//   // For forward iterators:
+//   template <std::sentinel_for<Iter> S>
+//   [[nodiscard]] constexpr auto equals(SimplexLabelIterator<S> const& sentinel) const noexcept(nothrow_equals<Iter, S>)
+//     -> bool requires std::forward_iterator<Iter> {
+//     return iter_ == sentinel.iter_;
+//   }
 
-    SimplexIterator operator++(int) {
-      ArrayIterator temp(*this);
-      ++(*this);
-      return temp;
-    }
+//   // For bidirectional iterators:
+//   constexpr void decrement() noexcept(nothrow_decrement<Iter>) requires std::bidirectional_iterator<Iter> { --iter_; }
 
-    friend bool operator==(const SimplexIterator& lhs, const SimplexIterator& rhs) {
-      return lhs.ptr_ == rhs.ptr_;
-    }
+//   // For random access iterators:
+//   constexpr void advance(difference_type n) noexcept(nothrow_advance<Iter>) requires std::random_access_iterator<Iter> {
+//     iter_ += n;
+//   }
 
-    friend bool operator!=(const SimplexIterator& lhs, const SimplexIterator& rhs) {
-      return !(lhs == rhs);
-    }
+//   template < std::sized_sentinel_for<Iter> S >
+//   [[nodiscard]] constexpr auto distance_to(SimplexLabelIterator<S> const& sentinel) const noexcept(nothrow_distance_to<Iter, S>)
+//       -> difference_type requires std::random_access_iterator<Iter> {
+//       return sentinel.iter_ - iter_;
+//   }
+// };
 
-private:
-    pointer ptr_;
-};
+
+// template< uint8_t dim > 
+// struct RankLabelIterator {
+//   const size_t n; 
+//   const vector< uint_fast64_t > ranks;
+//   std::array< uint16_t, dim + 1 > labels;
+//   vector< uint_fast64_t >::iterator _it; 
+
+//   RankLabelIterator(vector< uint_fast64_t > _ranks) : ranks(_ranks){
+//     _it = ranks.begin();
+//   };
+  
+//   const uint16_t* operator->() const {
+// 	  lex_unrank_k(*_it, n, dim+1, &labels[0]); 
+//     return labels.data();
+//   }
+//   void operator++() {
+//     ++_it;
+//   }
+//   bool operator==(RankLabelIterator o) const {
+//     return _it == o._it;
+//   }
+// }
+
+//static_assert(std::forward_iterator<RankLabelIterator>);
+
+// template<typename T, std::size_t N >
+// concept ArrayIterator = requires(std::iterator_traits<T> it) {
+//   { *it } -> std::same_as<std::array<typename std::iterator_traits<T>::value_type, N>>;
+//   { ++it } -> std::same_as<T&>;
+//   { it++ } -> std::same_as<T>;
+// };
+
+// template <typename T, std::size_t N>
+// class SimplexIterator {
+// public:
+//     using iterator_category = std::input_iterator_tag;
+//     using value_type = std::array<T, N>;
+//     using difference_type = std::ptrdiff_t;
+//     using pointer = value_type*;
+//     using reference = value_type&;
+
+//     SimplexIterator(pointer ptr) : ptr_(ptr) {}
+
+//     reference operator*() const { return *ptr_; }
+//     pointer operator->() const { return ptr_; }
+
+//     SimplexIterator& operator++() {
+//       ++ptr_;
+//       return *this;
+//     }
+
+//     SimplexIterator operator++(int) {
+//       ArrayIterator temp(*this);
+//       ++(*this);
+//       return temp;
+//     }
+
+//     friend bool operator==(const SimplexIterator& lhs, const SimplexIterator& rhs) {
+//       return lhs.ptr_ == rhs.ptr_;
+//     }
+
+//     friend bool operator!=(const SimplexIterator& lhs, const SimplexIterator& rhs) {
+//       return !(lhs == rhs);
+//     }
+
+// private:
+//     pointer ptr_;
+// };
+
+
 
 
 // Given codimension-1 ranks, determines the ranks of the corresponding faces
@@ -132,6 +218,26 @@ struct UpLaplacian {
     }
   };
 
+  // Takes as input a range [b, e) representing the face labels, return their index 
+  template< typename It > 
+  auto index(It b, const It e) -> size_t {
+    // auto face_rank = std::array< uint16_t, 1 >();
+    uint16_t face_rank = 0; 
+    lex_rank(b, e, nv, dim+1, &face_rank);
+    return index_map[face_rank];
+  }
+
+  // Takes as input a range [b,e) of labels of a q-simplex, returns a (d+1) tuple of 
+  // of indices (i,j,k,...) representing the indexes of the faces in its boundary
+  template< std::input_iterator It, std::sentinel_for< It > Sen, typename OutputIt >
+  auto boundary_indices(It b, Sen e, OutputIt out) -> std::tuple {        
+    for_each_combination(b, b+2, e, [&](auto pb, auto pe){
+      *out = index(pb, pe);
+      ++out;
+      return false; 
+    });
+  }
+
   // Internal matvec; outputs y = L @ x
   inline void __matvec(F* x) const noexcept { 
     // Start with the degree computation
@@ -140,6 +246,7 @@ struct UpLaplacian {
     // The matvec
     size_t q_ind = 0;
     auto p_ranks = array< uint64_t, dim+2 >();
+    auto p_ind = array< uint32_t, dim+2 >();
 
     // #pragma omp simd
     for (auto qi: qr){
@@ -150,10 +257,14 @@ struct UpLaplacian {
         y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
         y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
       } else if constexpr (p == 1) { // inject the sign @ compile time
-        boundary(qi, nv, p+2, begin(p_ranks));
-        const auto ii = index_map[p_ranks[0]];
-        const auto jj = index_map[p_ranks[1]];
-        const auto kk = index_map[p_ranks[2]];
+        // boundary(qi, nv, p+2, begin(p_ranks));
+        
+        auto q = lex_unrank(qi, nv, p+2);
+        boundary_indices(q.begin(), q.end(), p_ind.begin());
+
+        const auto ii = p_ind[0]; // index_map[p_ranks[0]];
+        const auto jj = p_ind[1]; // index_map[p_ranks[1]];
+        const auto kk = p_ind[2]; // index_map[p_ranks[2]];
         y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj];
         y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
         y[ii] += x[kk] * fpl[ii] * fq[q_ind] * fpr[kk]; 
@@ -177,3 +288,4 @@ struct UpLaplacian {
     }
   }
 }; // UpLaplacian
+

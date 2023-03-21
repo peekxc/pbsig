@@ -189,3 +189,4 @@ PYBIND11_MODULE(_laplacian, m) {
   m.def("decompress_faces", &decompress_faces, "Decompresses ranks");
   m.def("boundary_ranks", &boundary_ranks, "Gets boundary ranks from a given rank");
 }
+

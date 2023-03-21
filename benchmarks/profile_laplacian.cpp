@@ -1,6 +1,7 @@
 
 
-#include "../src/pbsig/laplacian.h"
+#include "splex_ranges.h"
+#include "laplacian.h"
 
 #include <iostream>
 #include <fstream>
