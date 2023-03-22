@@ -10,11 +10,51 @@
 #include <queue>
 #include <sstream>
 #include <unordered_map>
-
+#include "combinatorial.h"
 
 typedef float value_t;
 typedef int64_t index_t;
 using std::vector; 
+using combinatorial::lex_unrank_k;
+
+template< uint8_t dim > 
+struct RankRange {
+  const size_t n; 
+  const vector< uint_fast64_t > ranks;
+
+  RankRange() = default;
+
+  struct RankLabelIterator {
+    const size_t _n;
+    std::array< uint16_t, dim + 1 > labels;
+    vector< uint_fast64_t >::const_iterator _it; 
+
+    RankLabelIterator(const size_t __n, vector< uint_fast64_t >::const_iterator it) : _n(__n), _it(it){};
+    
+    const uint16_t* operator*() const {
+      lex_unrank_k(*_it, _n, dim+1, (uint16_t*) &labels[0]); 
+      return labels.data();
+    }
+    void operator++() {
+      ++_it;
+    }
+    bool operator==(RankLabelIterator o) const {
+      return _it == o._it;
+    }
+    bool operator!=(RankLabelIterator o) const {
+      return _it != o._it;
+    }
+  };
+
+  auto begin(){
+    return RankLabelIterator(n, ranks.begin());
+  }
+  auto end(){
+    return RankLabelIterator(n, ranks.end());
+  }
+};
+
+
 
 struct binomial_coeff_table {
   std::vector<std::vector<index_t>> B;
@@ -43,8 +83,9 @@ index_t get_max(index_t top, const index_t bottom, const Predicate pred) {
       if (!pred(mid)) {
         top = mid - 1;
         count -= step + 1;
-      } else
+      } else {
         count = step;
+      }
     }
   }
   return top;

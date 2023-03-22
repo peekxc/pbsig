@@ -1,6 +1,16 @@
 #include "splex_ranges.h"
 #include <iostream>
 
+
+void test_rank_it1(vector< uint64_t >& er, vector< uint64_t >& tr){
+  auto R = RankRange< 2 >(500, tr);
+  // R.ranks = tr;
+  // R.n = 500; 
+  for (auto r: R){
+    std::cout << r[0] << ", " << r[1] << ", " << r[2] << std::endl;
+  }
+}
+
 void test(){
 
   const index_t n = 10; 

@@ -18,6 +18,91 @@ def test_generate():
   assert isinstance(X, np.ndarray)
   assert isinstance(K, SimplicialComplex)
 
+def test_matvec_gradient():
+  from pbsig.interpolate import interpolate_family
+  S = simplicial_complex([[0,1,2],[2,3,4]])
+  x_dom = np.linspace(0, 1, 15)
+  F = [lower_star_weight(np.random.uniform(low=0, high=1, size=card(S,0))) for i in range(len(x_dom))]
+  filter_family = [[f(s) for s in S] for f in F]
+  # interpolate_family(filter_family)
+  from scipy.interpolate import CubicSpline, UnivariateSpline
+  from pbsig.betti import weighted_degree
+
+  fs = { s : CubicSpline(x_dom, [f[i] for f in filter_family]) for i, s in enumerate(S)}
+  fs[Simplex([0,1])].derivative
+  
+  D1 = boundary_matrix(S, p=1)
+  L = D1 @ D1.T
+  w0 = np.array([F[0](v) for v in faces(S, 0)])
+  w1 = np.array([F[0](v) for v in faces(S, 1)])
+  WL = np.diag(np.sqrt(w0)) @ D1 @ np.diag(w1) @ D1.T @ np.diag(np.sqrt(w0))
+  
+  ## check the weighted degree computation holds for W^{1/2} D1 W D1.T W^{1/2}
+  deg_v = weighted_degree(S, 0, weights=filter_family[0])
+  weight_v = np.array([F[0](v) for v in faces(S, 0)])
+  weight_e = np.array([F[0](e) for e in faces(S, 1)])
+  assert np.allclose(weight_v*deg_v, WL.diagonal())
+
+  from itertools import product
+  vertices = list(faces(S,0))
+  edges = list(faces(S,1))
+  for v0, v1 in product(faces(S,0), faces(S,0)):
+    if v0 == v1:
+      i = vertices.index(v0)
+      assert np.isclose(deg_v[i]*weight_v[i], WL[i,i])
+    else:
+      i,j = vertices.index(v0), vertices.index(v1)
+      if [v0,v1] in S:
+        k = edges.index(Simplex([v0,v1]))
+        assert np.isclose(WL[i,j],  np.sign(WL[i,j])*np.sqrt(weight_v[i])*weight_e[k]*np.sqrt(weight_v[j]))
+      else:
+        assert np.allclose(WL[i,j], 0)
+
+  ## Check gradient 
+  alpha = 0.50
+  def param_laplacian(alpha):
+    w0 = np.array([fs[s](alpha).item() for s in faces(S, 0)])
+    w1 = np.array([fs[s](alpha).item() for s in faces(S, 1)])
+    WL = np.diag(np.sqrt(w0)) @ D1 @ np.diag(w1) @ D1.T @ np.diag(np.sqrt(w0))
+    return WL 
+  import numdifftools as nd
+  
+  ## Jacobian
+  J = nd.Derivative(param_laplacian, full_output=True)(0.50)
+  i = 0
+  w = np.array([fs[s](0.50) for s in S])
+  w0 = np.array([fs[s](0.50) for s in faces(S,0)])
+  w1 = np.array([fs[s](0.50) for s in faces(S,0)])
+  deg_v = weighted_degree(S, 0, weights=w)
+
+  ## gradients for the diagonal 
+  alpha = 0.50
+  weighted_degree(S, 0, weights=np.array([fs[s](alpha) for s in S]))
+  grad_vertices = []
+  for i,v in enumerate(faces(S, 0)):
+    sigma = list(faces(list(S.cofaces(v)), 1))
+    dv = sum([fs[s].derivative()(alpha) for s in sigma])*fs[v](alpha) + deg_v[i]*fs[v].derivative()(alpha)
+    grad_vertices.append(dv)
+
+  print(grad_vertices)
+  print(J.diagonal())
+
+  from findiff import FinDiff 
+  d_dx = FinDiff(0, 0.0001)
+  d_dx(np.array([param_laplacian(a)[0,0] for a in np.linspace(0.50-1e-8, 0.50+1e-8, 10)]))
+
+  fs[Simplex([0])].derivative()(0.50)
+  # up_laplacian(S, p=0, weight=F[0], normed=False).todense()
+
+  
+  ## matvec 
+  x = np.random.uniform(size=L.shape[0], low=-1, high=1)
+  L @ x
+
+  up_laplacian(S, p=0, weight=F[0], normed=True).todense()
+  
+  pass
+
 def test_can_import():
   from pbsig.linalg import laplacian
   assert str(type(laplacian)) == "<class 'module'>"

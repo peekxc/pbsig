@@ -81,30 +81,6 @@ using uint_64 = uint_fast64_t;
 //   }
 // };
 
-
-// template< uint8_t dim > 
-// struct RankLabelIterator {
-//   const size_t n; 
-//   const vector< uint_fast64_t > ranks;
-//   std::array< uint16_t, dim + 1 > labels;
-//   vector< uint_fast64_t >::iterator _it; 
-
-//   RankLabelIterator(vector< uint_fast64_t > _ranks) : ranks(_ranks){
-//     _it = ranks.begin();
-//   };
-  
-//   const uint16_t* operator->() const {
-// 	  lex_unrank_k(*_it, n, dim+1, &labels[0]); 
-//     return labels.data();
-//   }
-//   void operator++() {
-//     ++_it;
-//   }
-//   bool operator==(RankLabelIterator o) const {
-//     return _it == o._it;
-//   }
-// }
-
 //static_assert(std::forward_iterator<RankLabelIterator>);
 
 // template<typename T, std::size_t N >
@@ -220,19 +196,20 @@ struct UpLaplacian {
 
   // Takes as input a range [b, e) representing the face labels, return their index 
   template< typename It > 
-  auto index(It b, const It e) -> size_t {
+  size_t index(It b, const It e) const {
     // auto face_rank = std::array< uint16_t, 1 >();
     uint16_t face_rank = 0; 
     lex_rank(b, e, nv, dim+1, &face_rank);
     return index_map[face_rank];
-  }
+  };
 
   // Takes as input a range [b,e) of labels of a q-simplex, returns a (d+1) tuple of 
   // of indices (i,j,k,...) representing the indexes of the faces in its boundary
   template< std::input_iterator It, std::sentinel_for< It > Sen, typename OutputIt >
-  auto boundary_indices(It b, Sen e, OutputIt out) -> std::tuple {        
-    for_each_combination(b, b+2, e, [&](auto pb, auto pe){
-      *out = index(pb, pe);
+  void boundary_indices(It b, Sen e, OutputIt out) const {     
+    const size_t d = std::distance(b, e)-1;   
+    for_each_combination(b, b+d, e, [&](auto pb, auto pe){
+      *out = this->index(pb, pe);
       ++out;
       return false; 
     });

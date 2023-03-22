@@ -3,6 +3,7 @@ from .meta import *
 from scipy.interpolate import CubicSpline, UnivariateSpline
 from more_itertools import pairwise, triplewise, chunked, peekable, spy
 # from scipy.interpolate import splrep, insert
+from splex import *
 from splex.predicates import is_repeatable
 
 def interpolate_family(S: ComplexLike, x: ArrayLike, y: Iterable[ArrayLike], bs: int = 1, method: str = "cubic", **kwargs):
