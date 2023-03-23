@@ -68,10 +68,13 @@ void test_lex_unranking(){
   }
 }
 
+
+	//return std::ceil(m * exp(log(r)/m + log(2*pi*m)/2*m + 1/(12*m*m) - 1/(360*pow(m,4)) - 1) + (m-1)/2);
+
 int main(){
-  // test_colex_unranking();
+  test_colex_unranking();
   // test_lex_unranking();
-  benchmark_lex_unranking();
+  // benchmark_lex_unranking();
   // auto t_ranks = test_ranking_lex();
   // for (auto r: t_ranks){ std::cout << r << ", "; }; std::cout << std::endl; // should be in: [0, 100, 90]
   // // t_ranks = test_ranking_colex();

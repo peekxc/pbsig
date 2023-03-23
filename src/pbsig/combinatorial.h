@@ -15,6 +15,7 @@
 #include <vector>
 #include <functional>
 #include <iterator>
+#include <cassert>
 
 using std::begin;
 using std::end; 
@@ -140,7 +141,7 @@ namespace combinatorial {
 	// Requires O(k), uses very simple loop
 	[[nodiscard]]
 	inline size_t binomial_coeff_(const double n, const size_t k) noexcept {
-		std::cout << "here2";
+		// std::cout << "here2";
 	  double bc = n;
 	  for (size_t i = 2; i <= k; ++i){ bc *= (n+1-i)/i; }
 	  return(static_cast< size_t >(std::round(bc)));
@@ -380,10 +381,29 @@ namespace combinatorial {
 		return top;
 	}
 
+	// From: Kruchinin, Vladimir, et al. "Unranking Small Combinations of a Large Set in Co-Lexicographic Order." Algorithms 15.2 (2022): 36.
+	// return std::ceil(m * exp(log(r)/m + log(2*pi*m)/2*m + 1/(12*m*m) - 1/(360*pow(m,4)) - 1) + (m-1)/2);
+	[[nodiscard]]
+	constexpr auto find_k(index_t r, index_t m) noexcept -> int {
+		if (r == 0 || m == 0){ return m - 1; }
+		else if (m == 1){ return r - 1; }
+		else if (m == 2){ return std::ceil(std::sqrt(1 + 8*r)/2) - 1; }
+		else if (m == 3){ return std::ceil(std::pow(6*r, 1/3.)) - 1; }
+		else { 
+			return m - 1; 
+		}
+	}
+
 	template< bool safe = true > 
 	[[nodiscard]]
-	index_t get_max_vertex(const index_t idx, const index_t k, const index_t n) noexcept {
-		return get_max(n, k - 1, [&](index_t w) -> bool { return BinomialCoefficient< safe >(w, k) <= idx; });
+	index_t get_max_vertex(const index_t r, const index_t k, const index_t n) noexcept {
+		// Binary searches in the range [k-1, n] for the largest index _w_ satisfying r >= C(w,k)
+		return get_max(n, k-1, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); });
+		// const int lb = find_k(r,k);
+		// // assert(BinomialCoefficient(lb, k) <= r);
+		// return BinomialCoefficient< safe >(lb+1, k) > r ? 
+		// 	lb : 
+		// 	get_max(n, lb, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); });
 	}
 
 	template < bool safe = true, typename InputIt, typename OutputIt >
