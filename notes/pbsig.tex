@@ -85,8 +85,7 @@
 
 % Smooth Betti curves in dynamic settings \\ using persistent spectral theory
 \title{\vspace{-2.0em} 
-Spectral relaxations of persistence invariants \\
-in dynamic settings
+Matrix-free spectral relaxations of \\ persistence rank invariants
 \vspace{-0.5em}}
 
 \author{Matt Piekenbrock}
@@ -96,8 +95,8 @@ in dynamic settings
 \maketitle
 
 \begin{abstract}
-Using a duality result between persistence diagrams and persistence measures, we introduce a continuous relaxation of the persistent Betti number (PBN) for persistence modules indexed over the real line. Like the PBN, the relaxation obeys the additivity and inclusion-exclusion properties known to Betti numbers and is characterized via subspaces of certain simplicial boundary operators. 
-Unlike the PBN, the approximation satisfies a number of stability and continuity properties typically reserved for persistence diagrams. In particular, we show it is globally Lipshitz continuous, smooth over the positive semi-definite cone, and is equivalent to replacing certain boundary operators with continuously differentiable L{\"o}wner operators. 
+Using a duality result between persistence diagrams and persistence measures, we introduce a continuous relaxation of the persistent rank invariant for persistence modules indexed over the real line. Like the rank invariant, the relaxation satisfies inclusion-exclusion properties and is characterized with simplicial boundary operators. 
+Unlike the rank invariant, the approximation satisfies a number of stability and continuity properties typically reserved for persistence diagrams. In particular, we show it is globally Lipshitz continuous, smooth over the positive semi-definite cone, and is equivalent to replacing certain boundary operators with continuously differentiable L{\"o}wner operators. 
 %equipping the space of cochains over $\mathbb{R}$ with an inner product. 
 These operators manifest as combinatorial Laplacians that encode rich geometric information in their non-harmonic spectra, providing several avenues for geometric data analysis. 
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
@@ -116,14 +115,12 @@ Indeed, one can show that~\eqref{eq:multiplicity} implies an algorithm can recov
 
 %\subfile{intro_feature}
 %\subfile{overview} % Contributions, Main result overview, etc. 
-\subsection{Related work}\label{sec:related_work}
-Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; their subsequent Theorem 5.1 reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
-However, the standard homology computations require $O(N^2)$ space and $O(N^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
+%\subsection{Related work}\label{sec:related_work}
+%Zomorodian et al.~\cite{zomorodian2004computing} outline an algorithm to compute a basis for $Z_p(K_i) \cap B_p(K_j)$ via a sequence of boundary matrix reductions; their subsequent Theorem 5.1 reduces the complexity of computing PH groups with coefficients in any PID to that of computing homology groups. 
+%However, the standard homology computations require $O(N^2)$ space and $O(N^3)$ time to compute, implying either of these approaches to computing the PBN computation exhibits same complexity as the full persistence computation.
 % TODO: See seminar "Persistent Homology with Random Graph Laplacians"
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
-\\
-\\
 \noindent 
 \textbf{Contributions: }
 In this effort, we introduce an iterative $\epsilon$-approximation method for computing the \emph{the persistent counting invariants}---$\mu_p^{\ast}$ and $\beta_p^\ast$---in \emph{essentially} $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively. 
@@ -134,6 +131,30 @@ One particular advantage of the method we propose is that, unlike the existing p
 Indeed, like other large sparse iterative methods known to numerical linear algebra, the spectral relaxation is \emph{matrix-free}---as the algorithm does not modify the boundary matrix $\partial(K)$, $\partial(K)$ need not necessarily be stored in memory at all.
 %We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
 Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing persistence diagrams (via~\cite{chen2011output}) that requires as its only input an implementation of a matrix-vector product $x \mapsto \partial x$. 
+
+\subsection*{The Relaxation}
+So as to not leave the reader in suspense, we informally describe the relaxation in full. The rest of the paper is devoted to discussing the theoretical and practical implications of these choices. 
+\begin{enumerate}
+	\item Let $X$ denote an input data set and $K$ denote a fixed simplicial complex constructed from $X$. Select a continuously-parameterized family of filtrations $(K, f_\alpha)$ satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ for all $\tau \subseteq \sigma \in K$ and all $\alpha \in \mathcal{A}$. Exemplary choices of $f_\alpha$ include filtrations geometrically realized from construction methods that themselves are have parameters (``hyper-parameters''), such as density-filtered filtrations or dynamic metric spaces parameterized by time.  
+	\item Choose any rectilinear \emph{template} $\mathcal{R}$ on the output space of diagrams $\Delta_+ = \{(i,j) \in \bar{\mathbb{R}}^2  \mid i < j \}$ within which $f_\alpha$ exhibits non-trivial topological behavior. This choice depends on the application and should be chosen either by a practitioner based on domain knowledge. Alternatively, randomly setting $\mathcal{R}$ via a sampling approach:
+	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_k, \quad \quad R_i \subset \Delta_+ $$ 
+	will be sufficient if the goal is featurization or one is in the exploratory setting where $\mathcal{R}$ is unknown.
+%	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
+	\item Choose a relaxation parameter $\epsilon > 0$ representing how closely the relaxation should model the topology of $f_\alpha$. Larger choices $\epsilon$ yield smoother relaxations that depend more on geometric and combinatorial structure of $K$, whereas smaller values of $\epsilon$ more accurately approximate the topology of $f_\alpha$ via the quantity: 
+	$$ \mathrm{card}(\mathcal{R}_\alpha) \triangleq \mathrm{card}(\mathcal{R} \cap \mathrm{dgm}(K, f_\alpha))$$
+	\item Construct a combinatorial Laplacian operator $L_p(K)$ for the homology dimension $p \geq 0$ of interest whose matrix vector product $x \mapsto L_p(K) x$ can be efficiently computed. The implementation of this operator computationally need not involve constructing the Laplacian $L_p$ itself nor does it necessarily require $K$ is available explicitly in memory. 
+%	\item All we require is 
+\end{enumerate}
+
+Given these choices, we propose the following applications:
+\begin{enumerate}
+	\item (Computation) One can recover $\mathrm{card}(\mathcal{R}_\alpha)$ in effectively $O(n^2)$ time and $O(n)$ memory 
+	\item (Optimization) The optimization problem 
+	\item (Featurization) Evaluating $\alpha \mapsto \mu_p(K, \mathcal{R}_\alpha)$ for all $\alpha \in \mathcal{A}$ yields an informative summary of $(K, f_\alpha)$.
+\end{enumerate}
+
+
+ 
 
 \subsection{Organization}
 Section~\ref{sec:background_notation} introduces the notation and background theory on which the rest of the paper depends. Included are some theoretical motivations for this work in subsection~\ref{sec:duality_pbn_dgm}, an illuminating derivation of the PBN in~\ref{sec:duality_pbn_dgm}, a time-varying parameterization of boundary matrix, and a brief recount of related work in persistence-related algorithms.
@@ -757,7 +778,7 @@ Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{
 where $A^{+/2} = (A^{1/2})^+$. Thus, in this way we think of our definition of a parameterized boundary matrix as corresponding to a choice of a \emph{non-negative scalar-product} on the vector space $C^p(K, \mathbb{R})$, which induces a (degenerate) inner product $\langle \cdot, \cdot \rangle : C^p(K, \mathbb{R}) \times C^p(K, \mathbb{R}) \to \mathbb{R}$ on $C^p(K, \mathbb{R})$. Equivalently, our choice of weight function induces an inner product on the quotient space $W = C^p(K, \mathbb{R}) / \{ b : \lvert b \rvert = 0 \}$.
 We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
 \begin{equation}\label{eq:param_normalized_up_lap}
-	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = (\widetilde{D}_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (\widetilde{D}_p^i)^{+/2} 
+	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = \mathcal{D}_p(\mathcal{S}_i \circ f_\alpha)^{+/2} \partial_p W_{p+1}(\mathcal{S}_j \circ f_\alpha) \circ \partial_p^T \circ (\mathcal{D}_p^i)^{+/2} 
 \end{equation}
 has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corresponds to the weighted degree matrix with entries $\{ \mathrm{deg}_w(\sigma) \}$. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. For now we conclude this section with a proposition. 
 \begin{proposition}[Extended from~\cite{}]
@@ -765,10 +786,10 @@ has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corre
 	$$ \langle f x, y \rangle_{\mathbb{R}^m}  = \langle x, f^\ast y \rangle_{\mathbb{R}^n} = x^T F^T H_m y = x^T H_n F^\ast y $$
 	where $F^\ast = H_n^+ F^T H_m$ is a matrix representative of the adjoint $f^\ast : (\mathbb{R}^m, H_m) \to (\mathbb{R}^n, H_n)$ of $f$. 
 \end{proposition}
-\begin{remark}
-~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
-Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation. 
-\end{remark}
+%\begin{remark}
+%~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
+%Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation. 
+%\end{remark}
 
 %In this effort, we consider a very general kind of combinatorial Laplacian. GHere, we define the combinatorial $p$-th weighted up-Laplacian of the triple $(w_{p}^l, w_{p+1}, w_{p}^r)$ by: 
 %\begin{equation}\label{eq:weighted_up_laplace}

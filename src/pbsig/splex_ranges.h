@@ -15,14 +15,15 @@
 typedef float value_t;
 typedef int64_t index_t;
 using std::vector; 
-using combinatorial::lex_unrank_k;
+using combinatorial::unrank_colex;
+using combinatorial::unrank_lex;
 
-template< uint8_t dim > 
+template< bool colex = false, uint8_t dim > 
 struct RankRange {
   const size_t n; 
   const vector< uint_fast64_t > ranks;
 
-  RankRange() = default;
+  RankRange(const size_t _n, const vector< uint_fast64_t >& _ranks) : n(_n), ranks(_ranks){}
 
   struct RankLabelIterator {
     const size_t _n;
@@ -32,7 +33,11 @@ struct RankRange {
     RankLabelIterator(const size_t __n, vector< uint_fast64_t >::const_iterator it) : _n(__n), _it(it){};
     
     const uint16_t* operator*() const {
-      lex_unrank_k(*_it, _n, dim+1, (uint16_t*) &labels[0]); 
+      if constexpr (colex){
+        unrank_colex(_it, _it+dim+1, _n, dim+1, (uint16_t*) &labels[0]);
+      } else {
+        unrank_lex(_it, _it+dim+1, _n, dim+1, (uint16_t*) &labels[0]); 
+      }
       return labels.data();
     }
     void operator++() {
