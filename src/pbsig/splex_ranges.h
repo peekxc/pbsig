@@ -14,48 +14,55 @@
 
 typedef float value_t;
 typedef int64_t index_t;
-using std::vector; 
+using std::vector;
+using std::array; 
 using combinatorial::unrank_colex;
 using combinatorial::unrank_lex;
 
-template< bool colex = false, uint8_t dim > 
+template< uint8_t dim, bool colex = true, typename index_t = uint_fast64_t > 
 struct RankRange {
+  static_assert(std::is_integral< index_t >::value, "Must be integral");
   const size_t n; 
-  const vector< uint_fast64_t > ranks;
+  const vector< index_t > ranks;
+  mutable array< uint16_t, dim + 1 > labels; // intermediate storage
+  
+  using iterator = typename vector< index_t >::iterator;
+  using const_iterator = typename vector< index_t >::const_iterator;
 
-  RankRange(const size_t _n, const vector< uint_fast64_t >& _ranks) : n(_n), ranks(_ranks){}
+  RankRange(const size_t _n, const vector< index_t > _ranks) : n(_n), ranks(_ranks){
+    combinatorial::BC.precompute(_n, dim+1);
+  }
+  ~RankRange(){
+    combinatorial::BC.BT.clear();
+    combinatorial::BC.BT.shrink_to_fit();
+    combinatorial::BC.pre_n = 0;
+    combinatorial::BC.pre_k = 0;
+  }
 
   struct RankLabelIterator {
-    const size_t _n;
-    std::array< uint16_t, dim + 1 > labels;
-    vector< uint_fast64_t >::const_iterator _it; 
 
-    RankLabelIterator(const size_t __n, vector< uint_fast64_t >::const_iterator it) : _n(__n), _it(it){};
-    
+    const size_t _n; 
+    const_iterator _it; 
+    array< uint16_t, dim + 1 >& _labels; 
+    RankLabelIterator(const size_t __n, const_iterator it, array< uint16_t, dim + 1 >& labels) : _n(__n), _it(it), _labels(labels){};
+
     const uint16_t* operator*() const {
       if constexpr (colex){
-        unrank_colex(_it, _it+dim+1, _n, dim+1, (uint16_t*) &labels[0]);
+        unrank_colex< false >(_it, _it+1, _n, dim+1, (uint16_t*) &_labels[0]);
       } else {
-        unrank_lex(_it, _it+dim+1, _n, dim+1, (uint16_t*) &labels[0]); 
+        unrank_lex< true, false >(_it, _it+1, _n, dim+1, (uint16_t*) &_labels[0]); 
       }
-      return labels.data();
+      return _labels.data();
     }
-    void operator++() {
-      ++_it;
-    }
-    bool operator==(RankLabelIterator o) const {
-      return _it == o._it;
-    }
-    bool operator!=(RankLabelIterator o) const {
-      return _it != o._it;
-    }
+    void operator++() { _it++; }
+    bool operator!=(RankLabelIterator o) const { return _it != o._it; }
   };
 
-  auto begin(){
-    return RankLabelIterator(n, ranks.begin());
+  auto begin() {
+    return RankLabelIterator(n, ranks.begin(), labels);
   }
-  auto end(){
-    return RankLabelIterator(n, ranks.end());
+  auto end() {
+    return RankLabelIterator(n, ranks.end(), labels);
   }
 };
 

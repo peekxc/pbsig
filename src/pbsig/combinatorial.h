@@ -22,7 +22,7 @@ using std::vector;
 using std::size_t;
 
 namespace combinatorial {
-	using I = uint_fast64_t;
+	using index_t = uint_fast64_t;
 
 	template<typename T>
 	using it_diff_t = typename std::iterator_traits<T>::difference_type;
@@ -140,16 +140,21 @@ namespace combinatorial {
 	// Requires O(k), uses very simple loop
 	[[nodiscard]]
 	inline size_t binomial_coeff_(const double n, const size_t k) noexcept {
+		std::cout << "here2";
 	  double bc = n;
 	  for (size_t i = 2; i <= k; ++i){ bc *= (n+1-i)/i; }
 	  return(static_cast< size_t >(std::round(bc)));
 	}
 
 	// Table to cache low values of the binomial coefficient
-	template< size_t max_n, size_t max_k, typename value_t = size_t >
+	template< size_t max_n, size_t max_k, typename value_t = index_t >
 	struct BinomialCoefficientTable {
-	  value_t combinations[max_k][max_n+1];
-	  constexpr BinomialCoefficientTable() : combinations() {
+	  size_t pre_n = 0;
+		size_t pre_k = 0; 
+		value_t combinations[max_k][max_n+1];
+	  vector< vector< value_t > > BT;
+
+		constexpr BinomialCoefficientTable() : combinations() {
 			auto n_dispatcher = make_index_dispatcher< max_n+1 >();
 			auto k_dispatcher = make_index_dispatcher< max_k >();
 			n_dispatcher([&](auto i) {
@@ -160,22 +165,52 @@ namespace combinatorial {
 	  }
 
 		// Evaluate general binomial coefficient, using cached table if possible 
-		value_t operator()(const value_t n, const value_t k) const {
+		value_t operator()(const index_t n, const index_t k) const {
+			// std::cout << "INFO: " << pre_n << ", " << n <<  ":" << pre_k << ", " << k << " : " << BT.size() << std::endl; 
+			if (n < max_n && k < max_k){ return combinations[k][n]; } // compile-time computed table
+			if (n <= pre_n && k <= pre_k){ return BT[k][n]; } // runtime computed extension table
 			if (k == 0 || n == k){ return 1; }
 			if (n < k){ return 0; }
 			if (k == 2){ return static_cast< value_t >((n*(n-1))/2); }
 			if (k == 1){ return n; }
 			// return binom(n, k);
 			// return binomial_coeff_(n,std::min(k,n-k));
-			return (n < max_n && k < max_k) ? combinations[k][n] : binomial_coeff_(n,std::min(k,n-k));
+			return static_cast< value_t >(binomial_coeff_(n,std::min(k,n-k)));
 		}
-	};
+
+		void precompute(index_t n, index_t k){
+			// std::cout << "here" << std::endl;
+			pre_n = n;
+			pre_k = k;
+			BT = vector< vector< index_t > >(k + 1, vector< index_t >(n + 1, 0));
+			for (index_t i = 0; i <= n; ++i) {
+				BT[0][i] = 1;
+				for (index_t j = 1; j < std::min(i, k + 1); ++j){
+					BT[j][i] = BT[j - 1][i - 1] + BT[j][i - 1];
+				}
+				if (i <= k) { BT[i][i] = 1; };
+			}
+		}
+
+		// Fast but unsafe access to a precompute table
+		[[nodiscard]]
+		constexpr auto at(index_t n, index_t k) noexcept -> index_t {
+			return BT[k][n];
+		}
+
+	}; // BinomialCoefficientTable
+
 	// Build the cached table
-	static constexpr auto BC = BinomialCoefficientTable< 64, 3 >();
+	static auto BC = BinomialCoefficientTable< 64, 3 >();
 	
 	// Wrapper to choose between cached and non-cached version of the Binomial Coefficient
+	template< bool safe = true >
 	constexpr size_t BinomialCoefficient(const size_t n, const size_t k){
-	  return BC(n,k);
+		if constexpr(safe){
+			return BC(n,k);
+		} else {
+			return BC.at(n,k);
+		}
 	}
 	
 	#if __cplusplus >= 202002L
@@ -212,57 +247,52 @@ namespace combinatorial {
 	}
 	
 	// ----- Combinatorial Number System functions -----
-	
-	[[nodiscard]]
-	constexpr auto rank_colex_2(I i, I j) noexcept {
-		return BinomialCoefficient(i, 2) + BinomialCoefficient(j, 1);
-	}
 
 	// Lexicographically rank 2-subsets
 	[[nodiscard]]
-	constexpr auto rank_lex_2(I i, I j, const I n) noexcept {
+	constexpr auto rank_lex_2(index_t i, index_t j, const index_t n) noexcept {
 	  if (j < i){ std::swap(i,j); }
-	  return I(n*i - i*(i+1)/2 + j - i - 1);
+	  return index_t(n*i - i*(i+1)/2 + j - i - 1);
 	}
 
-	#include <iostream> 
+	// #include <iostream> 
 	// Lexicographically rank k-subsets
-	template< typename InputIter >
+	template< bool safe = true, typename InputIter >
 	[[nodiscard]]
-	inline I rank_lex_k(InputIter s, const size_t n, const size_t k, const I N){
-		I i = k; 
+	inline index_t rank_lex_k(InputIter s, const size_t n, const size_t k, const index_t N){
+		index_t i = k; 
 		// std::cout << std::endl; 
-	  const I index = std::accumulate(s, s+k, 0, [n, &i](I val, I num){ 
+	  const index_t index = std::accumulate(s, s+k, 0, [n, &i](index_t val, index_t num){ 
 			// std::cout << BinomialCoefficient((n-1) - num, i) << ", ";
-		  return val + BinomialCoefficient((n-1) - num, i--); 
+		  return val + BinomialCoefficient< safe >((n-1) - num, i--); 
 		});
-		std::cout << std::endl; 
-	  const I combinadic = (N-1) - index; // Apply the dual index mapping
+		// std::cout << std::endl; 
+	  const index_t combinadic = (N-1) - index; // Apply the dual index mapping
 	  return combinadic;
 	}
 
 	// Colexicographically rank k-subsets
 	// assumes each k tuple of s is in colex order! 
-	template< bool colex = true, typename InputIter >
+	template< bool colex = true, bool safe = true, typename InputIter >
 	[[nodiscard]]
 	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
 		if constexpr(colex){
-			I i = k; 
-			const I index = std::accumulate(s, s+k, 0, [&i](I val, I num){ 
-				return val + BinomialCoefficient(num, i--); 
+			index_t i = k; 
+			const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+				return val + BinomialCoefficient< safe >(num, i--); 
 			});
 			return index; 
 		} else {
-			I i = 1; 
-			const I index = std::accumulate(s, s+k, 0, [&i](I val, I num){ 
-				return val + BinomialCoefficient(num, i++); 
+			index_t i = 1; 
+			const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+				return val + BinomialCoefficient< safe >(num, i++); 
 			});
 			return index; 
 		}
 	}
 
 	// Rank a stream of integers (lexicographically)
-	template< typename InputIt, typename OutputIt >
+	template< bool safe = true, typename InputIt, typename OutputIt >
 	inline void rank_lex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
 		switch (k){
 			case 2:{
@@ -272,9 +302,9 @@ namespace combinatorial {
 				break;
 			}
 			default: {
-				const I N = BinomialCoefficient(n, k); 
+				const index_t N = BinomialCoefficient< safe >(n, k); 
 				for (; s != e; s += k){
-					*out++ = rank_lex_k(s, n, k, N);
+					*out++ = rank_lex_k< safe >(s, n, k, N);
 				}
 				break;
 			}
@@ -282,40 +312,40 @@ namespace combinatorial {
 	}
 
 	// Rank a stream of integers (colexicographically)
-	template< bool colex = true, typename InputIt, typename OutputIt >
+	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt >
 	inline void rank_colex(InputIt s, const InputIt e, const size_t k, OutputIt out){
 		for (; s != e; s += k){
-			*out++ = rank_colex_k< colex >(s, k);
+			*out++ = rank_colex_k< colex, safe >(s, k);
 		}
 	}
 
 	// Lexicographically unrank 2-subsets
 	template< typename OutputIt  >
-	inline auto unrank_lex_2(const I r, const I n, OutputIt out) noexcept  {
-		auto i = static_cast< I >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
-		auto j = static_cast< I >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
+	inline auto unrank_lex_2(const index_t r, const index_t n, OutputIt out) noexcept  {
+		auto i = static_cast< index_t >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
+		auto j = static_cast< index_t >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
 		*out++ = i; // equivalent to *out = i; ++i;
 		*out++ = j; // equivalent to *out = j; ++j;
 	}
 	
 	// Lexicographically unrank k-subsets [ O(log n) version ]
-	template< typename OutputIterator > 
-	inline void unrank_lex_k(I r, const size_t n, const size_t k, OutputIterator out) noexcept {
-		const size_t N = combinatorial::BinomialCoefficient(n, k);
+	template< bool safe = true, typename OutputIterator > 
+	inline void unrank_lex_k(index_t r, const size_t n, const size_t k, OutputIterator out) noexcept {
+		const size_t N = combinatorial::BinomialCoefficient< safe >(n, k);
 		r = (N-1) - r; 
 		// auto S = std::vector< size_t >(k);
 		for (size_t ki = k; ki > 0; --ki){
 			int offset = binary_search(r, n, [ki](const auto& key, int index) -> int {
-				auto c = combinatorial::BinomialCoefficient(index, ki);
+				auto c = combinatorial::BinomialCoefficient< safe >(index, ki);
 				return(key == c ? 0 : (key < c ? -1 : 1));
 			});
-			r -= combinatorial::BinomialCoefficient(offset, ki); 
+			r -= combinatorial::BinomialCoefficient< safe >(offset, ki); 
 			*out++ = (n-1) - offset;
 		}
 	}
 
 	// Lexicographically unrank subsets wrapper
-	template< bool lex = true, typename InputIt, typename OutputIt >
+	template< bool lex = true, bool safe = true, typename InputIt, typename OutputIt >
 	inline void unrank_lex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
 		switch(k){
 			case 2: 
@@ -325,7 +355,7 @@ namespace combinatorial {
 				break;
 			default:
 				for (; s != e; ++s){
-					unrank_lex_k(*s, n, k, out);
+					unrank_lex_k< safe >(*s, n, k, out);
 				}
 				break;
 		}
@@ -333,11 +363,12 @@ namespace combinatorial {
 
 
 	template <class Predicate>
-	I get_max(I top, const I bottom, const Predicate pred) {
+	[[nodiscard]]
+	index_t get_max(index_t top, const index_t bottom, const Predicate pred) noexcept {
 		if (!pred(top)) {
-			I count = top - bottom;
+			index_t count = top - bottom;
 			while (count > 0) {
-				I step = count >> 1, mid = top - step;
+				index_t step = count >> 1, mid = top - step;
 				if (!pred(mid)) {
 					top = mid - 1;
 					count -= step + 1;
@@ -349,19 +380,21 @@ namespace combinatorial {
 		return top;
 	}
 
-	I get_max_vertex(const I idx, const I k, const I n) {
-		return get_max(n, k - 1, [&](I w) -> bool { return BinomialCoefficient(w, k) <= idx; });
+	template< bool safe = true > 
+	[[nodiscard]]
+	index_t get_max_vertex(const index_t idx, const index_t k, const index_t n) noexcept {
+		return get_max(n, k - 1, [&](index_t w) -> bool { return BinomialCoefficient< safe >(w, k) <= idx; });
 	}
 
-	template < typename InputIt, typename OutputIt >
-	void unrank_colex(InputIt s, const InputIt e, const I k, const I n, OutputIt out) {
-		for (I N = n - 1; s != e; ++s, N = n - 1){
-			I r = *s; 
-			for (I d = k; d > 1; --d) {
-				N = get_max_vertex(r, d, N);
-				std::cout << "r: " << r << ", d: " << d << ", N: " << N << std::endl;
+	template < bool safe = true, typename InputIt, typename OutputIt >
+	void unrank_colex(InputIt s, const InputIt e, const index_t n, const index_t k, OutputIt out) {
+		for (index_t N = n - 1; s != e; ++s, N = n - 1){
+			index_t r = *s; 
+			for (index_t d = k; d > 1; --d) {
+				N = get_max_vertex< safe >(r, d, N);
+				// std::cout << "r: " << r << ", d: " << d << ", N: " << N << std::endl;
 				*out++ = N;
-				r -= BinomialCoefficient(N, d);
+				r -= BinomialCoefficient< safe >(N, d);
 			}
 			*out++ = r;
 		}
@@ -418,20 +451,20 @@ namespace combinatorial {
 
 	
 // 	[[nodiscard]]
-// 	inline auto lex_unrank_2_array(const I r, const I n) noexcept -> std::array< I, 2 > {
-// 		auto i = static_cast< I >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
-// 		auto j = static_cast< I >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
+// 	inline auto lex_unrank_2_array(const index_t r, const index_t n) noexcept -> std::array< I, 2 > {
+// 		auto i = static_cast< index_t >( (n - 2 - floor(sqrt(-8*r + 4*n*(n-1)-7)/2.0 - 0.5)) );
+// 		auto j = static_cast< index_t >( r + i + 1 - n*(n-1)/2 + (n-i)*((n-i)-1)/2 );
 // 		return(std::array< I, 2 >{ i, j });
 // 	}
 	
 // 	[[nodiscard]]
-// 	inline auto lex_unrank(const size_t rank, const size_t n, const size_t k) -> std::vector< I > {
+// 	inline auto lex_unrank(const size_t rank, const size_t n, const size_t k) -> std::vector< index_t > {
 // 		if (k == 2){
 // 			auto a = lex_unrank_2_array(rank, n);
-// 			std::vector< I > out(a.begin(), a.end());
+// 			std::vector< index_t > out(a.begin(), a.end());
 // 			return(out);
 // 		} else {
-// 			std::vector< I > out; 
+// 			std::vector< index_t > out; 
 // 			out.reserve(k);
 // 			lex_unrank_k(rank, n, k, std::back_inserter(out));
 // 			return(out);
@@ -451,7 +484,7 @@ namespace combinatorial {
 // 			}
 // 			case 2: {
 // 				auto p_vertices = std::array< I, 2 >();
-// 				lex_unrank_2(static_cast< I >(r), static_cast< I >(n), begin(p_vertices));
+// 				lex_unrank_2(static_cast< index_t >(r), static_cast< index_t >(n), begin(p_vertices));
 // 				f(p_vertices[0]);
 // 				f(p_vertices[1]);
 // 				return;
@@ -465,9 +498,9 @@ namespace combinatorial {
 // 				return; 
 // 			} 
 // 			default: {
-// 				auto p_vertices = std::vector< I >(0, k);
+// 				auto p_vertices = std::vector< index_t >(0, k);
 // 				lex_unrank_k(r, n, k, p_vertices.begin());
-// 				const I N = BinomialCoefficient(n, k); 
+// 				const index_t N = BinomialCoefficient(n, k); 
 // 				combinatorial::for_each_combination(begin(p_vertices), begin(p_vertices)+2, end(p_vertices), [&](auto a, auto b){
 // 					f(lex_rank_k(a, n, k, N));
 // 					return false; 
@@ -488,7 +521,7 @@ namespace combinatorial {
 
 	// // Lexicographically unrank k-subsets
 	// template< typename OutputIterator >
-	// inline void lex_unrank_k(I r, const size_t k, const size_t n, OutputIterator out){
+	// inline void lex_unrank_k(index_t r, const size_t k, const size_t n, OutputIterator out){
 	// 	auto subset = std::vector< size_t >(k); 
 	// 	size_t x = 1; 
 	// 	for (size_t i = 1; i <= k; ++i){

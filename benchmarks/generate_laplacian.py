@@ -1,6 +1,6 @@
 from splex import *
 
-# %% Large data set 
+# %% Large data set (colex)
 np.random.seed(1234)
 X = np.random.uniform(size=(500,2))
 R = rips_complex(X, radius=0.10)
@@ -11,7 +11,7 @@ np.savetxt(X=er, fname="/Users/mpiekenbrock/pbsig/data/edge_ranks_colex_500.txt"
 np.savetxt(X=tr, fname="/Users/mpiekenbrock/pbsig/data/triangle_ranks_colex_500.txt", fmt="%d")
 
 
-# %% Small data set 
+# %% Small data set (colex)
 np.random.seed(1234)
 X = np.random.uniform(size=(10,2))
 R = rips_complex(X, radius=0.20)
@@ -21,4 +21,12 @@ tr = rank_combs(faces(R, 2), n=X.shape[0], order="colex")
 np.savetxt(X=er, fname="/Users/mpiekenbrock/pbsig/data/edge_ranks_colex_10.txt", fmt="%d")
 np.savetxt(X=tr, fname="/Users/mpiekenbrock/pbsig/data/triangle_ranks_colex_10.txt", fmt="%d")
 
-rank_colex
+# %% Small data set (lex)
+np.random.seed(1234)
+X = np.random.uniform(size=(10,2))
+R = rips_complex(X, radius=0.20)
+R.expand(2)
+er = rank_combs(faces(R, 1), n=X.shape[0], order="lex")
+tr = rank_combs(faces(R, 2), n=X.shape[0], order="lex")
+np.savetxt(X=er, fname="/Users/mpiekenbrock/pbsig/data/edge_ranks_lex_10.txt", fmt="%d")
+np.savetxt(X=tr, fname="/Users/mpiekenbrock/pbsig/data/triangle_ranks_lex_10.txt", fmt="%d")
