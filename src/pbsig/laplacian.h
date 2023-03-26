@@ -10,7 +10,6 @@
 #include <array>
 #include <iterator>
 #include <ranges>
-#include <concepts> 
 #include <span> 
 #include "combinatorial.h"
 
@@ -25,110 +24,12 @@ using std::unordered_map;
 using uint_32 = uint_fast32_t;
 using uint_64 = uint_fast64_t;
 
-
-// template< typename T >
-// concept LabelIterator = requires(T v){
-//   { v.advance() }; 
-//   { v.equals() };
-//   { v.dereference() };
-// };
-
-
-// template < uint8_t d, std::input_or_output_iterator Iter >
-// struct SimplexLabelIterator : public iterator_facade< SimplexLabelIterator<Iter>, std::contiguous_iterator<Iter> > {
-//   using value_type = std::iter_value_t<Iter>;
-//   using reference = std::iter_reference_t<Iter>;
-//   using difference_type = std::iter_difference_t<Iter>;
-//   template <std::input_or_output_iterator> friend class SimplexLabelIterator;
-  
-//   const std::vector< uint16_t > labels; // the full complex of simplices 
-//   // std::array< uint16_t, d > cs;   // current simplex
-//   Iter iter_;
-    
-//   constexpr SimplexLabelIterator(std::vector< uint16_t > _labels) noexcept(std::is_nothrow_constructible_v<Iter>) : labels(_labels) {};
-//   constexpr SimplexLabelIterator(Iter iter) noexcept(std::is_nothrow_move_constructible_v<Iter>) : iter_(std::move(iter)) {}
-//   template <class U>
-//     requires(std::constructible_from<Iter, U> && !std::same_as<Iter, U>)
-//     constexpr SimplexLabelIterator(SimplexLabelIterator<U> const& other) noexcept(std::is_nothrow_constructible_v<Iter, U>)
-//       : iter_(other.iter_) 
-//     {}
-
-//   // Required:
-//   [[nodiscard]] constexpr auto dereference() const noexcept(nothrow_dereference<Iter>) -> reference { return *iter_; }
-//   constexpr void increment() noexcept(nothrow_increment<Iter>) { 
-//     iter_ += (d+1); 
-//   }
-
-//   // For forward iterators:
-//   template <std::sentinel_for<Iter> S>
-//   [[nodiscard]] constexpr auto equals(SimplexLabelIterator<S> const& sentinel) const noexcept(nothrow_equals<Iter, S>)
-//     -> bool requires std::forward_iterator<Iter> {
-//     return iter_ == sentinel.iter_;
-//   }
-
-//   // For bidirectional iterators:
-//   constexpr void decrement() noexcept(nothrow_decrement<Iter>) requires std::bidirectional_iterator<Iter> { --iter_; }
-
-//   // For random access iterators:
-//   constexpr void advance(difference_type n) noexcept(nothrow_advance<Iter>) requires std::random_access_iterator<Iter> {
-//     iter_ += n;
-//   }
-
-//   template < std::sized_sentinel_for<Iter> S >
-//   [[nodiscard]] constexpr auto distance_to(SimplexLabelIterator<S> const& sentinel) const noexcept(nothrow_distance_to<Iter, S>)
-//       -> difference_type requires std::random_access_iterator<Iter> {
-//       return sentinel.iter_ - iter_;
-//   }
-// };
+template< typename T >
+concept SimplexIterable = requires(T a){
+  { *a } -> std::convertible_to< uint16_t >;
+} && std::forward_iterator< T >;
 
 //static_assert(std::forward_iterator<RankLabelIterator>);
-
-// template<typename T, std::size_t N >
-// concept ArrayIterator = requires(std::iterator_traits<T> it) {
-//   { *it } -> std::same_as<std::array<typename std::iterator_traits<T>::value_type, N>>;
-//   { ++it } -> std::same_as<T&>;
-//   { it++ } -> std::same_as<T>;
-// };
-
-// template <typename T, std::size_t N>
-// class SimplexIterator {
-// public:
-//     using iterator_category = std::input_iterator_tag;
-//     using value_type = std::array<T, N>;
-//     using difference_type = std::ptrdiff_t;
-//     using pointer = value_type*;
-//     using reference = value_type&;
-
-//     SimplexIterator(pointer ptr) : ptr_(ptr) {}
-
-//     reference operator*() const { return *ptr_; }
-//     pointer operator->() const { return ptr_; }
-
-//     SimplexIterator& operator++() {
-//       ++ptr_;
-//       return *this;
-//     }
-
-//     SimplexIterator operator++(int) {
-//       ArrayIterator temp(*this);
-//       ++(*this);
-//       return temp;
-//     }
-
-//     friend bool operator==(const SimplexIterator& lhs, const SimplexIterator& rhs) {
-//       return lhs.ptr_ == rhs.ptr_;
-//     }
-
-//     friend bool operator!=(const SimplexIterator& lhs, const SimplexIterator& rhs) {
-//       return !(lhs == rhs);
-//     }
-
-// private:
-//     pointer ptr_;
-// };
-
-
-
 
 // Given codimension-1 ranks, determines the ranks of the corresponding faces
 // p := simplex dimension of given ranks 
@@ -146,7 +47,9 @@ auto decompress_faces(const vector< uint_64 >& cr, const size_t n, const size_t 
 };
 
 
-template< int p = 0, typename F = double, bool lex_order = true >
+
+
+template< int p = 0, typename F = double, SimplexIterable S >
 struct UpLaplacian {
   static constexpr int dim = p;
   using value_type = F; 
@@ -157,8 +60,9 @@ struct UpLaplacian {
   const size_t np;
   const size_t nq; 
   array< size_t, 2 > shape;               // TODO: figure out how to initialize in constructor
-  const vector< uint_64 > qr;             // p+1 ranks
-  const vector< uint_64 > pr;             // p ranks
+  // const vector< uint_64 > qr;             // p+1 ranks
+  // const vector< uint_64 > pr;             // p ranks
+  S qs_rng; // q simplex range
   mutable vector< F > y;                  // workspace
   mutable Map_t index_map;                // indexing function
   vector< F > fpl;                        // p-simplex left weights 
@@ -228,38 +132,38 @@ struct UpLaplacian {
     // #pragma omp simd
     for (auto qi: qr){
       if constexpr (p == 0){
-				lex_unrank_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
-        const auto ii = p_ranks[0]; // index_map[q_vertices[0]]; 
-        const auto jj = p_ranks[1];
-        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
-        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
+				// unrank_lex_2(static_cast< I >(qi), static_cast< I >(nv), begin(p_ranks));
+        // const auto ii = p_ranks[0]; // index_map[q_vertices[0]]; 
+        // const auto jj = p_ranks[1];
+        // y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
+        // y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
       } else if constexpr (p == 1) { // inject the sign @ compile time
         // boundary(qi, nv, p+2, begin(p_ranks));
         
-        auto q = lex_unrank(qi, nv, p+2);
-        boundary_indices(q.begin(), q.end(), p_ind.begin());
+        // auto q = unrank_lex(qi, nv, p+2);
+        // boundary_indices(q.begin(), q.end(), p_ind.begin());
 
-        const auto ii = p_ind[0]; // index_map[p_ranks[0]];
-        const auto jj = p_ind[1]; // index_map[p_ranks[1]];
-        const auto kk = p_ind[2]; // index_map[p_ranks[2]];
-        y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj];
-        y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
-        y[ii] += x[kk] * fpl[ii] * fq[q_ind] * fpr[kk]; 
-        y[kk] += x[ii] * fpl[kk] * fq[q_ind] * fpr[ii]; 
-        y[jj] -= x[kk] * fpl[jj] * fq[q_ind] * fpr[kk]; 
-        y[kk] -= x[jj] * fpl[kk] * fq[q_ind] * fpr[jj]; 
+        // const auto ii = p_ind[0]; // index_map[p_ranks[0]];
+        // const auto jj = p_ind[1]; // index_map[p_ranks[1]];
+        // const auto kk = p_ind[2]; // index_map[p_ranks[2]];
+        // y[ii] -= x[jj] * fpl[ii] * fq[q_ind] * fpr[jj];
+        // y[jj] -= x[ii] * fpl[jj] * fq[q_ind] * fpr[ii]; 
+        // y[ii] += x[kk] * fpl[ii] * fq[q_ind] * fpr[kk]; 
+        // y[kk] += x[ii] * fpl[kk] * fq[q_ind] * fpr[ii]; 
+        // y[jj] -= x[kk] * fpl[jj] * fq[q_ind] * fpr[kk]; 
+        // y[kk] -= x[jj] * fpl[kk] * fq[q_ind] * fpr[jj]; 
       } else {
-        boundary(qi, nv, p+2, begin(p_ranks));
-        size_t cc = 0;
-        const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
-				for_each_combination(begin(p_ranks), begin(p_ranks)+2, end(p_ranks), [&](auto a, auto b){
-          const auto ii = index_map[*a];
-          const auto jj = index_map[*(b-1)]; // to remove compiler warning
-					y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
-          y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii];
-          cc = (cc + 1) % 2;
-          return false; 
-        });
+        // boundary(qi, nv, p+2, begin(p_ranks));
+        // size_t cc = 0;
+        // const array< float, 2 > sgn_pattern = { -1.0, 1.0 };
+				// for_each_combination(begin(p_ranks), begin(p_ranks)+2, end(p_ranks), [&](auto a, auto b){
+        //   const auto ii = index_map[*a];
+        //   const auto jj = index_map[*(b-1)]; // to remove compiler warning
+				// 	y[ii] += sgn_pattern[cc] * x[jj] * fpl[ii] * fq[q_ind] * fpr[jj]; 
+        //   y[jj] += sgn_pattern[cc] * x[ii] * fpl[jj] * fq[q_ind] * fpr[ii];
+        //   cc = (cc + 1) % 2;
+        //   return false; 
+        // });
       }
       q_ind += 1;
     }

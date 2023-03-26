@@ -1,6 +1,14 @@
 #include "splex_ranges.h"
 #include <iostream>
 
+void read_dataset_labels(vector< uint16_t >& labels, std::string labels_fn){
+  std::ifstream label_file(labels_fn);
+  uint16_t label; 
+  while (label_file >> label){
+    labels.push_back(label);
+  }
+}
+
 void read_dataset(vector< uint64_t >& er, vector< uint64_t >& tr, std::string e_ranks_fn, std::string t_ranks_fn){
   std::ifstream edgefile(e_ranks_fn);
   uint64_t edge_rank; 
@@ -47,6 +55,20 @@ void benchmark_colex_unranking(){
     }
   }
 }
+
+void benchmark_simplex_range(vector< uint16_t >& triangles, const size_t n){
+  auto s_rng = SimplexRange< 2 >(triangles, n);
+  float sum = 0; 
+  for (size_t i = 0; i < 100; ++i){
+    size_t cc = 0; 
+    sum = 0;
+    for (auto s_it = s_rng.begin(); s_it != s_rng.end(); ++s_it){
+      s_it.boundary< true >([&](auto face_rank){ sum += std::pow(-1, cc++)*face_rank; });
+    }
+  }
+  std::cout << sum << std::endl;
+}
+
 // void test(){
 
 //   const index_t n = 10; 
@@ -101,7 +123,22 @@ void benchmark_colex_unranking(){
 // simplex_boundary_enumerator
 int main() {
   // benchmark_lex_unranking();
-  benchmark_colex_unranking();
+  // benchmark_colex_unranking();
+
+  vector< uint16_t > triangles = std::vector< uint16_t >();
+  read_dataset_labels(triangles, "/Users/mpiekenbrock/pbsig/data/triangle_labels_500.txt");
+  benchmark_simplex_range(triangles, 500);
+
+  // auto s_rng = SimplexRange< 2 >(triangles, 500);
+  // size_t i = 0; 
+  // for (auto s: s_rng){
+  //   std::cout << s[0] << "," << s[1] << "," << s[2] << std::endl;
+  //   i++;
+  //   if (i == 10){
+  //     break;
+  //   }
+  // }
+
   // vector< uint64_t > er, tr; 
   // read_dataset(er, tr);
   // std::cout << "num edges: " << er.size() << ", " << "num triangles: " << tr.size() << std::endl;

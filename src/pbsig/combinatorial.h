@@ -274,23 +274,21 @@ namespace combinatorial {
 
 	// Colexicographically rank k-subsets
 	// assumes each k tuple of s is in colex order! 
-	template< bool colex = true, bool safe = true, typename InputIter >
+	template< bool safe = true, typename InputIter >
 	[[nodiscard]]
 	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
-		if constexpr(colex){
-			index_t i = k; 
-			const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
-				return val + BinomialCoefficient< safe >(num, i--); 
-			});
-			return index; 
-		} else {
-			index_t i = 1; 
-			const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
-				return val + BinomialCoefficient< safe >(num, i++); 
-			});
-			return index; 
-		}
+		index_t i = k; 
+		const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+			return val + BinomialCoefficient< safe >(num, i--); 
+		});
+		return index; 
 	}
+	// colex bijection from a lexicographical order
+	// index_t i = 1; 
+	// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+	// 	return val + BinomialCoefficient< safe >(num, i++); 
+	// });
+	// return index; 
 
 	// Rank a stream of integers (lexicographically)
 	template< bool safe = true, typename InputIt, typename OutputIt >
@@ -313,12 +311,22 @@ namespace combinatorial {
 	}
 
 	// Rank a stream of integers (colexicographically)
-	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt >
+	template< bool safe = true, typename InputIt, typename OutputIt >
 	inline void rank_colex(InputIt s, const InputIt e, const size_t k, OutputIt out){
 		for (; s != e; s += k){
-			*out++ = rank_colex_k< colex, safe >(s, k);
+			*out++ = rank_colex_k< safe >(s, k);
 		}
 	}
+
+	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt > 
+	inline void rank_comb(InputIt s, const InputIt e, const size_t k, OutputIt out){
+		if constexpr(colex){
+			rank_colex< safe >(s,e,k,out);
+		} else {
+			rank_lex< safe >(s,e,k,out);
+		}
+	}
+
 
 	// Lexicographically unrank 2-subsets
 	template< typename OutputIt  >
@@ -398,12 +406,19 @@ namespace combinatorial {
 	[[nodiscard]]
 	index_t get_max_vertex(const index_t r, const index_t k, const index_t n) noexcept {
 		// Binary searches in the range [k-1, n] for the largest index _w_ satisfying r >= C(w,k)
-		return get_max(n, k-1, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); });
-		// const int lb = find_k(r,k);
-		// // assert(BinomialCoefficient(lb, k) <= r);
-		// return BinomialCoefficient< safe >(lb+1, k) > r ? 
-		// 	lb : 
-		// 	get_max(n, lb, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); });
+		// return get_max(n, k-1, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); });
+		
+		const int lb = find_k(r,k);
+		// assert(BinomialCoefficient(lb, k) <= r);
+		return BinomialCoefficient< safe >(lb+1, k) > r ? 
+			lb : 
+				( BinomialCoefficient< safe >(lb+2, k) > r ? 
+					lb + 1 : 
+						( BinomialCoefficient< safe >(lb+3, k) > r ? 
+							lb + 2 :  
+							get_max(n, lb+3, [&](index_t w) -> bool { return r >= BinomialCoefficient< safe >(w, k); })
+						)
+				);
 	}
 
 	template < bool safe = true, typename InputIt, typename OutputIt >

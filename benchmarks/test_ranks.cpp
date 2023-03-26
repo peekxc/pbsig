@@ -30,50 +30,68 @@ auto test_ranking_lex() -> std::vector< size_t > {
   return ranks; 
 }
 
-void test_colex_unranking(){
+template< bool colex = true >
+void test_unranking(){
   auto er = std::vector<uint64_t>();
   auto tr = std::vector<uint64_t>();
-  read_dataset(er, tr, "../data/edge_ranks_colex_10.txt", "../data/triangle_ranks_colex_10.txt");
+  if (colex){
+    read_dataset(er, tr, "../data/edge_ranks_colex_10.txt", "../data/triangle_ranks_colex_10.txt");
+  } else {
+    read_dataset(er, tr, "../data/edge_ranks_lex_10.txt", "../data/triangle_ranks_lex_10.txt");
+  }
   std::cout << "E: " << er.size() << ", T: " << tr.size() << std::endl;
 
   std::cout << "Edge Rank range: " << std::endl;
-  auto e_rng = RankRange< 1, true, uint64_t >(10, er);
-  for (auto e: e_rng){
-    std::cout << e[0] << ", " << e[1] << std::endl;
+  auto e_rng = RankRange< 1, colex, uint64_t >(10, er);
+  for (auto e = e_rng.begin(); e != e_rng.end(); ++e){
+    std::cout << (*e)[0] << ", " << (*e)[1];
+    std::cout << "  (BR): ";
+    // See: https://stackoverflow.com/questions/34696351/template-dependent-typename
+    // e.template boundary< true >([](auto face_rank){ std::cout << face_rank << ","; });
+    std::cout << std::endl;
   }
 
   std::cout << "Triangle Rank range: " << std::endl;
-  auto t_rng = RankRange< 2, true, uint64_t >(10, tr);
-  for (auto t: t_rng){
-    std::cout << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+  auto t_rng = RankRange< 2, colex, uint64_t >(10, tr);
+  for (auto t = t_rng.begin(); t != t_rng.end(); ++t) {
+    std::cout << (*t)[0] << ", " << (*t)[1] << ", " << (*t)[2]; 
+    std::cout << "  (BR): ";
+    t.template boundary< true >([](auto face_rank){ std::cout << face_rank << ","; });
+    std::cout << std::endl;
   }
 }
 
-void test_lex_unranking(){
-  auto er = std::vector<uint64_t>();
-  auto tr = std::vector<uint64_t>();
-  read_dataset(er, tr, "../data/edge_ranks_lex_10.txt", "../data/triangle_ranks_lex_10.txt");
-  std::cout << "E: " << er.size() << ", T: " << tr.size() << std::endl;
-
-  std::cout << "Edge Rank range: " << std::endl;
-  auto e_rng = RankRange< 1, false, uint64_t >(10, er);
-  for (auto e: e_rng){
-    std::cout << e[0] << ", " << e[1] << std::endl;
+void test_simplex_range(){
+  vector< uint16_t > E_lex = { 0,1,0,3,0,5,0,7,1,3,1,5,1,6,1,7,1,9,2,8,3,5,3,7,4,6,4,9,5,6,5,7,6,7,6,9 };
+  vector< uint16_t > T_lex = { 0,1,3,0,1,5,0,1,7,0,3,5,0,3,7,0,5,7,1,3,5,1,3,7,1,5,6,1,5,7,1,6,7,1,6,9,3,5,7,4,6,9,5,6,7 };
+  
+  auto SE = SimplexRange< 1, false >(E_lex, 10);
+  std::cout << "Edges: " << std::endl;
+  for (auto s_it = SE.begin(); s_it != SE.end(); ++s_it){
+    std::cout << (*s_it)[0] << "," << (*s_it)[1]; 
+    std::cout << "  (BR): ";
+    s_it.boundary< true >([](auto face_rank){ std::cout << face_rank << ","; });
+    std::cout << std::endl;
   }
-
-  std::cout << "Triangle Rank range: " << std::endl;
-  auto t_rng = RankRange< 2, false, uint64_t >(10, tr);
-  for (auto t: t_rng){
-    std::cout << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+  
+  auto ST = SimplexRange< 2, false >(T_lex, 10);
+  std::cout << "Triangles: " << std::endl;
+  for (auto s_it = ST.begin(); s_it != ST.end(); ++s_it){
+    std::cout << (*s_it)[0] << "," << (*s_it)[1] << "," << (*s_it)[2]; 
+    std::cout << "  (BR): ";
+    s_it.boundary< true >([](auto face_rank){ std::cout << face_rank << ","; });
+    std::cout << std::endl;
   }
 }
+
 
 
 	//return std::ceil(m * exp(log(r)/m + log(2*pi*m)/2*m + 1/(12*m*m) - 1/(360*pow(m,4)) - 1) + (m-1)/2);
 
 int main(){
-  test_colex_unranking();
-  // test_lex_unranking();
+  // test_colex_unranking();
+  test_unranking< true >();
+  test_simplex_range();
   // benchmark_lex_unranking();
   // auto t_ranks = test_ranking_lex();
   // for (auto r: t_ranks){ std::cout << r << ", "; }; std::cout << std::endl; // should be in: [0, 100, 90]

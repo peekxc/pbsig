@@ -10,6 +10,9 @@ laplacian:
 iterators: 
 	$(CXX) profile_iter.cpp -O2 -std=c++20 -g -o profile_iter -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/src/pbsig/
 
+test_pmh: test_pmh.cpp
+	$(CXX) test_pmh.cpp -O2 -std=c++20 -g -o test_pmh -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/src/pbsig/
+
 profile_laplacian: 
 	LD_PRELOAD=/usr/local/lib/libprofiler.dylib CPUPROFILE=main.prof CPUPROFILE_FREQUENCY=100000 ./profile_laplacian
 
