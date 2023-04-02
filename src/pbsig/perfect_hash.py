@@ -38,7 +38,7 @@ def random_hash_function(m: int, primes: Union[int, Iterable] = 100):
   Returns: 
     a random LCG hash function (x, params) which hashes integer inputs. Supply params=True to see the parameters.
   """
-  np.random.seed()  
+  # np.random.seed()  
   primes = gen_primes_above(m, primes) if isinstance(primes, Number) else primes      ## Randomize seed
   p = np.random.choice(primes)                                                        ## Random prime from first |c| primes after m 
   a,b = np.random.choice(range(1, p)), np.random.choice(range(p))                     ## Multiplier/increment (a,b) 
@@ -123,7 +123,7 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
     return g, expr
   else: 
     raise ValueError("Unknown output type")
-  
+
 
 ## Modified from: https://github.com/toymachine/chdb/blob/3e258c34832acf98cac9c8e2b5d75421cb4add12/perfect_hash.py and https://github.com/ilanschnell/perfect-hash
 ## Copyright (c) 2019 - 2021, Ilan Schnell
@@ -131,9 +131,15 @@ class Graph():
   def __init__(self):
     self.adj = defaultdict(list)
 
-  def connect(self, v0: int, v1: int, weight: float = 0):
-    self.adj[v0].append((v1, weight))
-    self.adj[v1].append((v0, weight))
+  def reset(self):
+    self.adj = defaultdict(list)
+
+  ## Connect vertices using hash function with edge w/ weight = (0, 1, ..., N-1)
+  def connect_all(self, keys: Iterable, f1: Callable, f2: Callable):
+    for hashval, key in enumerate(keys):
+      v0, v1 = f1(key), f2(key)
+      self.adj[v0].append((v1, hashval))
+      self.adj[v1].append((v0, hashval))
 
   def assign_values(self, N: int) -> bool:
     """
@@ -165,29 +171,29 @@ class Graph():
           to_visit.append((vertex, neighbor))
 
           ## Assignment step: set vertex value to the desired edge value, minus the value of the vertex we came here from.
+          ## HERE: its not right -3 % 6 should equal 3 
+          print(f"Assigning: g[{neighbor}] = ({edge_value} - g[{vertex}]) % {N}  == {(edge_value - self.vertex_values[vertex]) % N}")
           self.vertex_values[neighbor] = (edge_value - self.vertex_values[vertex]) % N
     
     return True # success: graph is acyclic so all values are now assigned.
 
 from collections import defaultdict
-def perfect_hash_dag(keys: Iterable[int], output: str = "function", mult_max: float = 2.0, n_tries: int = 100, n_prime: int = 100):
+def perfect_hash_dag(keys: Iterable[int], output: str = "function", mult_max: float = 2.0, n_tries: int = 100, n_prime: int = 100, progress: bool = False):
   N = len(keys)
   G = Graph()
   n_attempts = 0 
   success = False 
   step_sz = (np.ceil(mult_max*N)-N)/n_tries
   primes = gen_primes_above(N, n_prime)
-  for i in range(n_tries):
+  it = progressbar(range(n_tries), count=n_tries) if progress else range(n_tries)
+  for i in it:
     NG = int(N + i*step_sz)
     f1 = random_hash_function(NG, primes) 
     f2 = random_hash_function(NG, primes)
 
-    ## Connect vertices using hash function with edge w/ weight = (0, 1, ..., N-1)
-    G.adj = defaultdict(list)
-    for hashval, key in enumerate(keys):
-      G.connect(f1(key), f2(key), hashval)
-  
-    ## Check to see valid assignments
+    ## Connect vertices using hash function then check for valid assignments
+    G.reset()
+    G.connect_all(keys, f1, f2)
     if G.assign_values(NG):
       success = True 
       break
@@ -199,11 +205,11 @@ def perfect_hash_dag(keys: Iterable[int], output: str = "function", mult_max: fl
     assert all([hashval == int((g[f1(key)]+g[f2(key)]) % NG) for hashval, key in enumerate(keys)])
     if output == "expression":
       expr = '(' + '+'.join(["g[(({0}*x+{1})%{2})%{3}]".format(*h(0, True)) for h in [f1,f2]]) + ')' + f"%{NG}"
-      return g, expr
+      return g, expr, G
     else:
       def _perfect_hash(x: int) -> int:
         return int(sum([g[h(x)] for h in [f1,f2]]) % NG)
-      return _perfect_hash
+      return _perfect_hash, G
   else: 
     g = G.vertex_values.astype(int)
     n_fails = sum([hashval != int((g[f1(key)]+g[f2(key)]) % NG) for hashval, key in enumerate(keys)])

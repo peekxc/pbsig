@@ -19,9 +19,9 @@ from pbsig.linalg import eigsh_family
 
 ## Data set 
 G = nx.watts_strogatz_graph(n=500, k=10, p=0.15)
-# S = SimplicialComplex(G.edges())
+S = simplicial_complex(G.edges())
 k = int(np.ceil(np.log2(124749)))
-er = rank_combs(S.faces(1), k=2, n=500)
+er = rank_combs(S.faces(1), n=500)
 
 number = 1337
 with open('complex.txt', 'w') as f:

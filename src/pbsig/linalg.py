@@ -25,9 +25,11 @@ from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree, connected_components, floyd_warshall
 
 def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
-  ''' 
-  Computes classical MDS (cmds) 
-    D := squared distance matrix
+  '''Classical Multidimensional Scaling (CMDS).
+
+  Parameters:  
+    D: squared distance matrix
+    coords: whether to produce a coordinitization of 'D' or just return the  
   '''
   n = D.shape[0]
   H = np.eye(n) - (1.0/n)*np.ones(shape=(n,n)) # centering matrix
@@ -46,7 +48,8 @@ def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
     return(np.flip(evals), np.fliplr(evecs))
 
 def pca(x: ArrayLike, d: int = 2, center: bool = False, coords: bool = True) -> ArrayLike:
-	''' PCA embedding '''
+	'''Principal Component Analysis (PCA).
+  '''
 	if is_pairwise_distances(x) or is_distance_matrix(x):
 		return(cmds(x, d))
 	assert is_point_cloud(x), "Input should be a point cloud, not a distance matrix."

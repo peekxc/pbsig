@@ -41,24 +41,25 @@
 \newlabel{eq:hom_map}{{2.4}{4}{Background \& Notation}{equation.2.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}The duality between PBNs and Diagrams}{4}{subsection.2.1}\protected@file@percent }
 \newlabel{sec:duality_pbn_dgm}{{2.1}{4}{The duality between PBNs and Diagrams}{subsection.2.1}{}}
+\newlabel{eq:dgm}{{2.6}{4}{The duality between PBNs and Diagrams}{equation.2.6}{}}
 \citation{edelsbrunner2022computational}
 \citation{chazal2016structure}
 \citation{cerri2013betti}
 \citation{cerri2013betti}
-\newlabel{eq:dgm}{{2.6}{5}{The duality between PBNs and Diagrams}{equation.2.6}{}}
 \newlabel{eq:multiplicity}{{2.7}{5}{The duality between PBNs and Diagrams}{equation.2.7}{}}
 \newlabel{eq:betti_mult}{{2.8}{5}{The duality between PBNs and Diagrams}{equation.2.8}{}}
 \newlabel{eq:measure}{{2.9}{5}{The duality between PBNs and Diagrams}{equation.2.9}{}}
 \newlabel{eq:pbn_cont}{{2.10}{5}{The duality between PBNs and Diagrams}{equation.2.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Motivating Derivation}{5}{subsection.2.2}\protected@file@percent }
 \newlabel{sec:betti_derivation}{{2.2}{5}{Motivating Derivation}{subsection.2.2}{}}
+\newlabel{eq:boundary_matrix}{{2.11}{5}{Motivating Derivation}{equation.2.11}{}}
 \citation{zomorodian2004computing}
 \citation{edelsbrunner2000topological}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{6}{figure.1}\protected@file@percent }
 \newlabel{fig:mult}{{1}{6}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.1}{}}
-\newlabel{eq:boundary_matrix}{{2.11}{6}{Motivating Derivation}{equation.2.11}{}}
 \newlabel{eq:pbn}{{{2.12}}{6}{Motivating Derivation}{AMS.2}{}}
 \newlabel{eq:pbn_simple}{{2.13}{6}{Motivating Derivation}{equation.2.13}{}}
+\newlabel{eq:uniq_pivot}{{2.14}{6}{Motivating Derivation}{equation.2.14}{}}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
 \citation{dey2022computational}
@@ -68,7 +69,6 @@
 \citation{chen2011output}
 \citation{edelsbrunner2022computational}
 \citation{zomorodian2004computing}
-\newlabel{eq:uniq_pivot}{{2.14}{7}{Motivating Derivation}{equation.2.14}{}}
 \newlabel{lemma:rank}{{1}{7}{}{lemma.1}{}}
 \newlabel{eq:lower_left_rank}{{2.15}{7}{}{equation.2.15}{}}
 \newlabel{prop:rank_reduction}{{1}{7}{Dey \& Wang~\cite {dey2022computational}}{proposition.1}{}}
@@ -78,9 +78,9 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}A Parameterized Boundary Matrix Relaxation}{8}{subsection.2.3}\protected@file@percent }
 \newlabel{def:time_boundary_matrix}{{1}{8}{Parameterized $\hat {\partial }_p^{i,j}$}{definition.1}{}}
 \newlabel{eq:param_boundary_matrix}{{2.18}{8}{Parameterized $\hat {\partial }_p^{i,j}$}{equation.2.18}{}}
+\newlabel{prop:mu_betti_1}{{3}{8}{}{proposition.3}{}}
 \citation{cohen2006vines}
 \citation{bi2013approximation}
-\newlabel{prop:mu_betti_1}{{3}{9}{}{proposition.3}{}}
 \newlabel{eq:pbn_parameterized}{{{2.19}}{9}{}{AMS.4}{}}
 \newlabel{eq:mu_parameterized}{{{2.20}}{9}{}{AMS.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Spectral relaxation and its implications}{9}{section.3}\protected@file@percent }
@@ -89,10 +89,10 @@
 \citation{ding2018spectral}
 \citation{ding2018spectral}
 \citation{bi2013approximation}
+\citation{bi2013approximation}
 \newlabel{eq:phi}{{3.2}{10}{Spectral relaxation and its implications}{equation.3.2}{}}
 \newlabel{eq:lowner}{{{3.3}}{10}{Spectral relaxation and its implications}{AMS.8}{}}
 \newlabel{def:cont_rank}{{3.4}{10}{Continuous Rank Approximation}{equation.3.4}{}}
-\citation{bi2013approximation}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde  {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt  {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition\nobreakspace  {}\ref  {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal  {S}_i^{\omega }$ from\nobreakspace  {}\textup  {\hbox {\mathsurround \z@ \normalfont  (\ignorespaces \ref  {eq:smoothstep}\unskip \@@italiccorr )}}. }}{11}{figure.2}\protected@file@percent }
 \newlabel{fig:smoothstep}{{2}{11}{From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition~\ref {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal {S}_i^{\omega }$ from~\eqref {eq:smoothstep}}{figure.2}{}}
 \newlabel{eq:smoothstep}{{3.5}{11}{Spectral relaxation and its implications}{equation.3.5}{}}
@@ -101,16 +101,17 @@
 \newlabel{eq:mu_cont}{{{3.7}}{12}{Smoothed Betti/Multiplicity}{AMS.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Combinatorial Laplacians}{13}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:laplacian_theory}{{3.1}{13}{Combinatorial Laplacians}{subsection.3.1}{}}
-\newlabel{eq:laplace_hom}{{3.13}{13}{Combinatorial Laplacians}{equation.3.13}{}}
-\newlabel{eq:weighted_up_laplace}{{3.17}{14}{Combinatorial Laplacians}{equation.3.17}{}}
-\newlabel{eq:l_up}{{3.18}{14}{Combinatorial Laplacians}{equation.3.18}{}}
-\newlabel{eq:param_up_lap}{{{3.19}}{15}{Combinatorial Laplacians}{AMS.12}{}}
-\newlabel{eq:param_normalized_up_lap}{{3.20}{15}{Combinatorial Laplacians}{equation.3.20}{}}
+\newlabel{eq:laplace_hom}{{3.12}{14}{Combinatorial Laplacians}{equation.3.12}{}}
+\newlabel{eq:weighted_up_laplace}{{3.16}{14}{Combinatorial Laplacians}{equation.3.16}{}}
+\newlabel{eq:l_up}{{3.17}{15}{Combinatorial Laplacians}{equation.3.17}{}}
+\newlabel{eq:param_up_lap}{{{3.18}}{15}{Combinatorial Laplacians}{AMS.12}{}}
+\newlabel{eq:param_normalized_up_lap}{{3.19}{15}{Combinatorial Laplacians}{equation.3.19}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Computational Implications}{15}{section.4}\protected@file@percent }
 \newlabel{sec:methodology}{{4}{15}{Computational Implications}{section.4}{}}
 \citation{gu1995divide}
 \citation{lanczos1950iteration}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.1}The Lanczos iteration}{16}{subsection.4.1}\protected@file@percent }
+\newlabel{sec:lanczos_it}{{4.1}{16}{The Lanczos iteration}{subsection.4.1}{}}
 \newlabel{eq:eigen_decomp}{{4.1}{16}{The Lanczos iteration}{equation.4.1}{}}
 \citation{golub2013matrix}
 \citation{parlett1994we}
@@ -119,44 +120,58 @@
 \newlabel{eq:three_term_rec}{{4.6}{17}{The Lanczos iteration}{equation.4.6}{}}
 \citation{parlett1994we}
 \citation{golub2013matrix}
-\newlabel{lemma:exact_arith_lanczos}{{6}{18}{\cite {parlett1994we, simon1984analysis}}{proposition.6}{}}
+\citation{golub2013matrix}
+\citation{chung1997spectral}
+\newlabel{lemma:exact_arith_lanczos}{{7}{18}{\cite {parlett1994we, simon1984analysis}}{proposition.7}{}}
 \newlabel{cor:finite_arith_lanczos}{{1}{18}{}{corollary.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}The efficiency of the Laplacian \texttt  {matvec}}{18}{subsection.4.2}\protected@file@percent }
-\newlabel{sec:comb_lap}{{4.2}{18}{The efficiency of the Laplacian \texttt {matvec}}{subsection.4.2}{}}
-\newlabel{eq:lap_quad_from}{{4.7}{18}{The efficiency of the Laplacian \texttt {matvec}}{equation.4.7}{}}
-\newlabel{eq:up_laplace_theory}{{4.8}{19}{The efficiency of the Laplacian \texttt {matvec}}{equation.4.8}{}}
-\newlabel{eq:l_up_matvec}{{4.9}{19}{The efficiency of the Laplacian \texttt {matvec}}{equation.4.9}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Effective Resistance \& The Laplacian Paradigm}{20}{subsection.4.3}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.2}The combinatorial Laplacian \texttt  {matvec}}{18}{subsection.4.2}\protected@file@percent }
+\newlabel{sec:comb_lap}{{4.2}{18}{The combinatorial Laplacian \texttt {matvec}}{subsection.4.2}{}}
+\newlabel{eq:lap_quad_from}{{4.7}{18}{The combinatorial Laplacian \texttt {matvec}}{equation.4.7}{}}
+\citation{goldberg2002combinatorial}
+\citation{goldberg2002combinatorial}
+\newlabel{eq:up_laplace_theory}{{4.8}{19}{The combinatorial Laplacian \texttt {matvec}}{equation.4.8}{}}
+\newlabel{eq:l_up_matvec}{{4.9}{19}{The combinatorial Laplacian \texttt {matvec}}{equation.4.9}{}}
+\citation{chen2011output}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Applications}{21}{section.5}\protected@file@percent }
 \newlabel{sec:applications}{{5}{21}{Applications}{section.5}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Example 1: Letters}{21}{subsection.5.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Example 2: Shapes}{21}{subsection.5.2}\protected@file@percent }
-\newlabel{eq:pht}{{{5.2}}{22}{}{AMS.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Matrix-free persistence computation}{21}{subsection.5.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Random Watts-Strogatz ``Small world'' graph example}}{21}{figure.3}\protected@file@percent }
+\newlabel{fig:watts_strogatz}{{3}{21}{Random Watts-Strogatz ``Small world'' graph example}{figure.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Shape comparison}{22}{subsection.5.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Filtration optimization}{22}{subsection.5.3}\protected@file@percent }
+\citation{cohen2006vines}
+\newlabel{eq:mult_opt}{{5.1}{23}{Filtration optimization}{equation.5.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. }}{24}{figure.4}\protected@file@percent }
+\newlabel{fig:codensity}{{4}{24}{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle}{figure.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Appendix}{24}{appendix.A}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces (Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure\nobreakspace  {}\ref  {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm  {e}{-3}$.}}{25}{figure.5}\protected@file@percent }
+\newlabel{fig:vineyard_codensity}{{5}{25}{(Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure~\ref {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm {e}{-3}$}{figure.5}{}}
 \citation{edelsbrunner2000topological}
 \citation{edelsbrunner2000topological}
 \citation{bauer2020persistence}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
+\newlabel{eq:pht}{{{A.2}}{26}{}{AMS.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Complexity of Persistence \& Related work}{26}{subsection.A.1}\protected@file@percent }
 \citation{dey2022computational}
 \citation{dey2022computational}
 \citation{bauer2020persistence}
 \citation{bauer2020persistence}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Appendix}{23}{appendix.A}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Complexity of Persistence \& Related work}{23}{subsection.A.1}\protected@file@percent }
 \citation{dey2022computational}
 \citation{parlett1994we}
 \citation{golub2013matrix}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Finite-precision arithmetic}{28}{subsection.A.2}\protected@file@percent }
+\newlabel{subsec:rounding}{{A.2}{28}{Finite-precision arithmetic}{subsection.A.2}{}}
 \citation{newman2001laplacian}
 \citation{newman2001laplacian}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Finite-precision arithmetic}{25}{subsection.A.2}\protected@file@percent }
-\newlabel{subsec:rounding}{{A.2}{25}{Finite-precision arithmetic}{subsection.A.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Laplacian Interpretation}{25}{subsection.A.3}\protected@file@percent }
-\newlabel{ex:laplacian}{{A.1}{25}{Adapted from~\cite {newman2001laplacian}}{example.A.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Laplacian Interpretation}{29}{subsection.A.3}\protected@file@percent }
+\newlabel{ex:laplacian}{{A.1}{29}{Adapted from~\cite {newman2001laplacian}}{example.A.1}{}}
 \citation{golub2013matrix}
 \citation{dey2022computational}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Proofs}{28}{subsection.A.4}\protected@file@percent }
-\newlabel{eq:s1}{{A.5}{28}{}{equation.A.5}{}}
-\newlabel{eq:s2}{{A.6}{28}{}{equation.A.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Proofs}{32}{subsection.A.4}\protected@file@percent }
+\newlabel{eq:s1}{{A.7}{32}{}{equation.A.7}{}}
+\newlabel{eq:s2}{{A.8}{32}{}{equation.A.8}{}}
+\newlabel{eq:s3}{{A.9}{32}{}{equation.A.9}{}}
 \bibdata{pbsig_bib}
 \bibcite{bauer2021ripser}{1}
 \bibcite{bauer2020persistence}{2}
@@ -168,25 +183,24 @@
 \bibcite{cohen2005stability}{8}
 \bibcite{cohen2006vines}{9}
 \bibcite{dey2022computational}{10}
-\newlabel{eq:s3}{{A.7}{29}{}{equation.A.7}{}}
 \bibcite{ding2018spectral}{11}
 \bibcite{edelsbrunner2022computational}{12}
 \bibcite{edelsbrunner2000topological}{13}
-\bibcite{golub2013matrix}{14}
-\bibcite{gu1995divide}{15}
-\bibcite{lanczos1950iteration}{16}
-\bibcite{newman2001laplacian}{17}
-\bibcite{parlett1994we}{18}
-\bibcite{simon1984analysis}{19}
-\bibcite{zomorodian2004computing}{20}
+\bibcite{goldberg2002combinatorial}{14}
+\bibcite{golub2013matrix}{15}
+\bibcite{gu1995divide}{16}
+\bibcite{lanczos1950iteration}{17}
+\bibcite{newman2001laplacian}{18}
+\bibcite{parlett1994we}{19}
+\bibcite{simon1984analysis}{20}
+\bibcite{zomorodian2004computing}{21}
 \bibstyle{plain}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{30}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{34}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{34}{appendix.B}\protected@file@percent }
 \citation{chung1997spectral}
-\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{31}{appendix.B}\protected@file@percent }
-\newlabel{eq:lap_rayleigh}{{B.2}{31}{Laplacian facts}{equation.B.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{31}{appendix.C}\protected@file@percent }
-\newlabel{sec:up_laplace_matvec}{{C}{31}{Laplacian \texttt {matvec} products}{appendix.C}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {C.1}Extra}{31}{subsection.C.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{31}{appendix.D}\protected@file@percent }
-\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} operator for weighted $p$ up-Laplacians in $O(m(p+1)^2) \approx O(m)$ time for any $p \geq 0$}}{32}{algorithm.1}\protected@file@percent }
-\gdef \@abspage@last{33}
+\newlabel{eq:lap_rayleigh}{{B.2}{35}{Laplacian facts}{equation.B.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{35}{appendix.C}\protected@file@percent }
+\newlabel{sec:up_laplace_matvec}{{C}{35}{Laplacian \texttt {matvec} products}{appendix.C}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{36}{algorithm.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{36}{appendix.D}\protected@file@percent }
+\gdef \@abspage@last{37}

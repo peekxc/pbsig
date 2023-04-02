@@ -75,6 +75,11 @@ Herbert Edelsbrunner, David Letscher, and Afra Zomorodian.
 \newblock In {\em Proceedings 41st annual symposium on foundations of computer
   science}, pages 454--463. IEEE, 2000.
 
+\bibitem{goldberg2002combinatorial}
+Timothy~E Goldberg.
+\newblock Combinatorial laplacians of simplicial complexes.
+\newblock {\em Senior Thesis, Bard College}, 6, 2002.
+
 \bibitem{golub2013matrix}
 Gene~H Golub and Charles~F Van~Loan.
 \newblock {\em Matrix computations}.

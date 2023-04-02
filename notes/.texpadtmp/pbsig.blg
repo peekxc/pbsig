@@ -5,45 +5,45 @@ The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
 Warning--empty journal in lanczos1950iteration
 Warning--empty school in newman2001laplacian
-You've used 20 entries,
+You've used 21 entries,
             2118 wiz_defined-function locations,
-            619 strings with 7320 characters,
-and the built_in function-call counts, 6949 in all, are:
-= -- 696
-> -- 279
+            625 strings with 7444 characters,
+and the built_in function-call counts, 7157 in all, are:
+= -- 717
+> -- 286
 < -- 8
-+ -- 115
-- -- 90
-* -- 443
-:= -- 1110
-add.period$ -- 62
-call.type$ -- 20
-change.case$ -- 100
++ -- 118
+- -- 92
+* -- 452
+:= -- 1150
+add.period$ -- 65
+call.type$ -- 21
+change.case$ -- 104
 chr.to.int$ -- 0
-cite$ -- 22
-duplicate$ -- 292
-empty$ -- 575
-format.name$ -- 90
-if$ -- 1490
+cite$ -- 23
+duplicate$ -- 302
+empty$ -- 592
+format.name$ -- 92
+if$ -- 1532
 int.to.chr$ -- 0
-int.to.str$ -- 20
-missing$ -- 24
-newline$ -- 103
-num.names$ -- 40
-pop$ -- 129
+int.to.str$ -- 21
+missing$ -- 25
+newline$ -- 108
+num.names$ -- 42
+pop$ -- 131
 preamble$ -- 1
-purify$ -- 85
+purify$ -- 88
 quote$ -- 0
-skip$ -- 213
+skip$ -- 221
 stack$ -- 0
-substring$ -- 473
-swap$ -- 77
+substring$ -- 478
+swap$ -- 78
 text.length$ -- 8
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 70
+type$ -- 74
 warning$ -- 2
-while$ -- 72
-width$ -- 22
-write$ -- 218
+while$ -- 74
+width$ -- 23
+write$ -- 229
 (There were 2 warnings)
