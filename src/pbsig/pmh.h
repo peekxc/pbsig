@@ -32,7 +32,8 @@ bool is_prime(int n){
 }
 
 // Generate n primes above m
-void gen_primes_above(int m, const size_t n, vector< uint32_t >& primes){
+void gen_primes_above(int m, const size_t n, vector< uint64_t >& primes){
+  primes.reserve(n);
   while(primes.size() < n){
     // Bertrand's postulate
     for (uint32_t p = m; p < 2*m - 2; ++p){
@@ -47,82 +48,87 @@ void gen_primes_above(int m, const size_t n, vector< uint32_t >& primes){
 // ## Universal Hash Function (Linear Congruential Generator)
 // ## https://en.wikipedia.org/wiki/Linear_congruential_generator
 struct LCG {
-  mutable uint32_t a;  
-  mutable uint32_t b;  
-  mutable uint32_t p;   
+  mutable uint64_t a;  
+  mutable uint64_t b;  
+  mutable uint64_t p;   
   mutable uint32_t m;  
-  // LCG() : a(0), b(0), p(0), m(0){ }
+  const vector< uint64_t >& primes;
+
+  LCG(const vector< uint64_t >& p) : a(0), b(0), p(0), m(0), primes(p) { }
   
-  void randomize(uint32_t _m, const vector< uint32_t >& primes){
+  void randomize(uint32_t _m){
     m = _m; 
     p = primes[rand() % primes.size()];
-    a = std::max(uint32_t(1), uint32_t(rand() % p)); 
+    a = std::max(uint64_t(1), uint64_t(rand() % p)); 
     b = rand() % p; 
   }
 
-  constexpr uint32_t operator()(uint32_t x) const {
+  uint32_t operator()(uint32_t x) const {
     // if (x == 0){
     //   std::cout << "a*x" << a*x << ", a*x + b = " << a*x + b << ", ((a*x + b) \% p) = " << ((a*x + b) % p) << ", ((a*x + b) \% p) \% m = " << ((a*x + b) % p) % m << std::endl;
     //   std::cout << "a: " << a << ", b: " << b << ", p: " << p << ", m: " << m << std::endl;
     // }
-    return ((a*x + b) % p) % m;
+    uint64_t r = a*x;
+    if (a != 0 && r / a != x) { throw std::overflow_error("Detected overflow in generated LCG. Please try using a smaller set of primes."); }
+    return ((r + b) % p) % m;
+    
   }
-  void print(){
-    // std::cout << "a*x" << a*x << ", a*x + b = " << a*x + b << ", ((a*x + b) \% p) = " << ((a*x + b) % p) << ", ((a*x + b) \% p) \% m = " << ((a*x + b) % p) % m << std::endl;
+  void print(uint32_t x){
     std::cout << "a: " << a << ", b: " << b << ", p: " << p << ", m: " << m << std::endl;
-  }
-};
-
-
-// TODO: make a compile-time perfect that parameterizes everything with templates 
-// Hashtable comprised of perfect minimal hash functions built from linear congruential generators 
-template< typename K, typename V = K, typename F = float > 
-struct LCG_PMF { 
-  using key_type = K; 
-  const uint32_t m;        // table size 
-  const uint16_t k;        // number of hash functions
-  const vector< F > g;     // table terms 
-  const vector< int > mul; // multiplier terms
-  const vector< int > add; // additions terms
-  const vector< int > mod; // modulo terms
-  
-  LCG_PMF(const uint32_t _m, const uint16_t _k, vector< F > G, vector< int > M, vector< int > A, vector< int > U) 
-    : m(_m), k(_k), g(G), mul(M), add(A), mod(U) { }
-
-  // Example expansion: 'g[((170*x+140)%433)%350]+g[((427*x+593)%673)%350]+g[((584*x+331)%593)%350]+g[((322*x+376)%503)%350]+g[((89*x+32)%367)%350]'
-  auto operator[](K x) -> uint32_t {
-    F v = 0; 
-    for (uint16_t i = 0; i < k; ++i){
-      v += g[((mul[i]*x + add[i]) % mod[i]) % m];
-    }
-    return uint32_t(v);
+    std::cout << "x = " << x << ", a*x = " << a*x << ", a*x + b = " << a*x + b << ", ((a*x + b) \% p) = " << ((a*x + b) % p) << ", ((a*x + b) \% p) \% m = " << ((a*x + b) % p) % m << std::endl;
   }
 };
 
 template< std::integral K >
 struct LcgDagHash {
-  const array< uint32_t, 2 > a;  
-  const array< uint32_t, 2 > b;  
-  const array< uint32_t, 2 > p;   
   const uint32_t m;  // table size 
+  const array< uint64_t, 2 > a;  
+  const array< uint64_t, 2 > b;  
+  const array< uint64_t, 2 > p;   
   const vector< uint32_t > g; 
   // LcgDagHash(){};  
-  LcgDagHash(vector< uint32_t > _g,
-    uint32_t _a1, uint32_t _a2, 
-    uint32_t _b1, uint32_t _b2, 
-    uint32_t _p1, uint32_t _p2,
+  LcgDagHash(const vector< uint32_t >& _g,
+    uint64_t _a1, uint64_t _a2, 
+    uint64_t _b1, uint64_t _b2, 
+    uint64_t _p1, uint64_t _p2,
     uint32_t _m
-  ) : g(_g), a{_a1, _a2}, b{_b1, _b2}, p{_p1, _p2}, m(_m)
-  { }
+  ) : g(_g.begin(), _g.end()), a{_a1, _a2}, b{_b1, _b2}, p{_p1, _p2}, m(_m)
+  { 
+  
+  }
+
+  void print(){
+    std::cout << "f1 :=  a: " << a[0] << ", b: " << b[0] << ", p: " << p[0] << ", m: " << m << std::endl;
+    std::cout << "f2 :=  a: " << a[1] << ", b: " << b[1] << ", p: " << p[1] << ", m: " << m << std::endl;
+  }
+ 
+  constexpr uint32_t f1(K x) const noexcept {
+    return (((a[0]*x + b[0]) % p[0]) % m);
+  }
+  constexpr uint32_t f2(K x) const noexcept {
+    return (((a[1]*x + b[1]) % p[1]) % m);
+  }
   
   [[nodiscard]]
-  constexpr uint32_t operator()(K x) const noexcept {
-    // return 0; 
-    // return (((a*x + b) % p) % m) + (((a*x + b) % p) % m) % m;
-    return (g[(((a[0]*x + b[0]) % p[0]) % m)] + g[(((a[1]*x + b[1]) % p[1]) % m)]) % m;
+  constexpr uint32_t operator()(K x, bool verbose = false) const noexcept {
+    if (!verbose){
+      return (g[f1(x)] + g[f2(x)]) % m;
+    } else {
+      std::cout << "x = " << x << std::endl;
+      std::cout << "[f1] (((a[0]*x + b[0]) \% p[0]) \% m): " << f1(x) << std::endl;
+      std::cout << "[f2] (((a[1]*x + b[1]) \% p[1]) \% m): " << f2(x) << std::endl;
+      std::cout << "g[f1(x)]: " << g[f1(x)] << std::endl; 
+      std::cout << "g[f2(x)]: " << g[f2(x)] << std::endl; 
+      uint32_t r = g[f1(x)] + g[f2(x)];
+      std::cout << "r = " << r << std::endl;
+      std::cout << "r \% m = " << r % m << std::endl;
+      return r % m;
+    }
+    
   }
 };
 
+// Modulo that works with negative integers. Matches python's % operation, differs from C's bitwise %. 
 constexpr uint32_t mod(int32_t n, int32_t m){
   return ((n % m) + m) % m;
 }
@@ -134,7 +140,7 @@ struct PerfectHashDAG {
   vector< uint32_t > vertex_values; 
   
   PerfectHashDAG(){
-    srand(1234);
+    // srand(1234);
     adj = vector< vector< node_t > >();
     // g[((42*x+246)%397)%13]+g[((83*x+137)%353)%13])%13
   }
@@ -146,9 +152,8 @@ struct PerfectHashDAG {
     adj.resize(N);
   }
 
-  template< typename InputIt, typename H > 
-  requires IntegerHashFunction< H, K >
-  void connect_all(InputIt k_it, const InputIt k_end, H f1, H f2){
+  template< typename InputIt, IntegerHashFunction< uint64_t > H1, IntegerHashFunction< uint64_t > H2 > 
+  void connect_all(InputIt k_it, const InputIt k_end, H1 f1, H2 f2){
     const uint32_t N = std::distance(k_it, k_end);
     for (uint32_t i = 0; k_it != k_end; ++k_it, ++i){
       uint32_t v0 = f1(*k_it);
@@ -199,58 +204,34 @@ struct PerfectHashDAG {
           to_visit.push_back(std::make_pair(vertex, neighbor));
           // std::cout << "Assigning: g[" << neighbor << "] = (" << edge_value << "- g[" << vertex << "]) % " << N << " == " << uint32_t((int32_t(edge_value) - int32_t(vertex_values.at(vertex))) % N) << std::endl;
           // vertex_values.at(neighbor) = uint32_t((int32_t(edge_value) - int32_t(vertex_values.at(vertex))) % N);  // Assignment step
-          vertex_values.at(neighbor) = mod(int32_t(edge_value) - int32_t(vertex_values.at(vertex)), N);
+          vertex_values.at(neighbor) = static_cast< uint32_t >(mod(int32_t(edge_value) - int32_t(vertex_values.at(vertex)), N));
         }
       }
     }
     return true; // success
   }
 
-  template< typename InputIt >
-  auto build_hash(InputIt k_it, const InputIt k_end, float mult_max, size_t n_tries, size_t n_prime, bool verbose = true) -> std::optional< LcgDagHash< K > > {
+  template< typename InputIt, IntegerHashFunction< uint64_t > H1,  IntegerHashFunction< uint64_t > H2 >
+  // requires IntegerHashFunction< H1, uint64_t >
+  auto build_hash(InputIt k_it, const InputIt k_end, float mult_max, size_t n_tries, H1 f1, H2 f2, bool verbose = true) -> bool {
     const uint32_t N = std::distance(k_it, k_end);
+    if (N == 0){ return false;  }
     size_t n_attempts = 0; 
-    bool success = false; 
+    bool success = false;
     float step_sz = (ceil(mult_max*N)-N)/n_tries;
-    std::vector< uint32_t > primes; 
-    gen_primes_above(N, n_prime, primes);
-    // std::cout << "generated primes" << std::endl;
-
-    auto f1 = LCG(), f2 = LCG();
-    // std::cout << "Configured LCGs" << std::endl;
     for (size_t i = 0; i < n_tries; ++i){
       uint32_t NG = uint32_t(N + i*step_sz);
       
-      f1.randomize(NG, primes);
-      f2.randomize(NG, primes);
-      // std::cout << "Randomized" << std::endl;
+      f1.randomize(NG);
+      f2.randomize(NG);
       reset();
       resize(NG);
-      // std::cout << "Connecting (" << std::distance(k_it, k_end) << ")" << std::endl;
       connect_all(k_it, k_end, f1, f2);
-
-      // std::cout << "Assigning" << std::endl;
       if ((success = assign_values(NG))){
-        if (verbose){
-          std::cout << "Success @ iteration " << i << "w/ size " << NG << std::flush << std::endl;
-          f1.print();
-          f2.print();
-        }
-        // std::cout << "g[ "; for (auto ge: g){ std::cout << ge << ", ";}; std::cout << "]" << std::flush << std::endl;
+        if (verbose){ std::cout << "Success @ iteration " << i << " w/ size " << NG << std::flush << std::endl; }
         break; 
       }
     }
-
-    // std::cout << "Success? " << success << std::endl;
-    if (success){  
-      for (uint32_t i = 0; k_it != k_end; ++k_it, ++i){
-        auto key = *k_it;
-        // std::cout << "h[" << key << "] -> " << ((g[f1(key)] + g[f2(key)]) % NG) << std::endl;
-        assert(i == ((g[f1(key)] + g[f2(key)]) % NG));
-      }
-      return std::make_optional(LcgDagHash< K >(vertex_values, f1.a, f2.a, f1.b, f2.b, f1.p, f2.p, f1.m));
-    } else {
-      return std::nullopt;
-    }
+    return success; 
   }
 };

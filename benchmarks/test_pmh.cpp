@@ -42,21 +42,93 @@ void read_g(vector< uint32_t >& g){
   while (g_file >> i){ g.push_back(i); }
 }
 
+// Thomas Wang hash: http://burtleburtle.net/bob/hash/integer.html
+template< std::integral K >
+struct WangHash{
+  uint32_t m; 
+  void randomize(uint32_t _m){ m = _m; }
+  uint32_t operator()(K key){
+    key -= (key<<6);
+    key ^= (key>>17);
+    key -= (key<<9);
+    key ^= (key<<4);
+    key -= (key<<3);
+    key ^= (key<<10);
+    key ^= (key>>15);
+    return key % m;
+  }
+};
+  
+template< std::integral K >
+struct JavaHash {
+  uint32_t m; 
+  void randomize(uint32_t _m){ m = _m; }
+  uint32_t operator()(K key){
+    key ^= (key >> 20) ^ (key >> 12);
+    return (key ^ (key >> 7) ^ (key >> 4)) % m;
+  }
+};
+
+// def hash2(x):
+
+template< std::integral K >
+struct BurtleBeeHash  {
+  uint32_t m; 
+  void randomize(uint32_t _m){ m = _m; }
+  uint32_t operator()(K key){
+    key = (key+0x7ed55d16) + (key<<12);
+    key = (key^0xc761c23c) ^ (key>>19);
+    key = (key+0x165667b1) + (key<<5);
+    key = (key+0xd3a2646c) ^ (key<<9);
+    key = (key+0xfd7046c5) + (key<<3);
+    key = (key^0xb55a4f09) ^ (key>>16);
+    return key % m;
+  }
+};
+
 
 template< std::integral K > 
 void test_pmh(vector< K > keys){
   auto pmh = PerfectHashDAG< K >();
-  std::cout << "building hash..." << std::endl;
-  auto h_opt = pmh.build_hash(keys.begin(), keys.end(), 3.5, 10000, 1000);
-  if (h_opt.has_value()){
-    auto h = *h_opt; 
-    size_t c = 0; 
-    for (auto k: keys){
-      std::cout << k << " -> " << h(k) << std::endl;
-      c++;
-      if (c > 15){ break; }
-    }
-  }
+  std::cout << "building hash ..." << std::endl;
+  std::sort(keys.begin(), keys.end());
+  const size_t M = keys.back();
+
+  // Choose a family of universal hash functions
+  const size_t n_prime = 1500; 
+  std::vector< uint64_t > primes; 
+  gen_primes_above(M, n_prime, primes);
+  //auto f1 = LCG(primes);
+  // auto f2 = LCG(primes);
+  auto f1 = WangHash< uint64_t >();
+  // auto f2 = JavaHash< uint64_t >();
+  auto f2 = BurtleBeeHash<uint64_t >();
+
+  bool success = pmh.build_hash(keys.begin(), keys.end(), 3.5, 10000, f1, f2);
+
+  // // std::cout << "Success? " << success << std::endl;
+  // if (success){  
+  //   auto h = LcgDagHash< K >(vertex_values, f1.a, f2.a, f1.b, f2.b, f1.p, f2.p, f1.m);
+  //   auto g = vertex_values; 
+  //   for (uint32_t i = 0; k_it != k_end; ++k_it, ++i){
+  //     auto key = *k_it; 
+  //     // assert(i == ((g[f1(key)] + g[f2(key)]) % g.size()))
+  //     assert( i == h(key) );
+  //   }
+  //   return std::make_optional(h);
+  // } else {
+  //   return std::nullopt;
+  // }
+  
+  // if (h_opt.has_value()){
+  //   auto h = *h_opt; 
+  //   size_t c = 0; 
+  //   for (auto k: keys){
+  //     std::cout << k << " -> " << h(k) << std::endl;
+  //     c++;
+  //     if (c > 15){ break; }
+  //   }
+  // }
 }
 
 
@@ -68,7 +140,7 @@ int main(){
   auto tr = std::vector< uint64_t >();
   read_dataset(er, tr, "../data/edge_ranks_colex_500.txt", "../data/triangle_ranks_colex_500.txt");
   std::cout << "E: " << er.size() << ", T: " << tr.size() << std::endl;
-  test_pmh< uint64_t >(er);
+  test_pmh< uint64_t >(tr);
   // auto t_rng = RankRange< 2, true, uint64_t >(tr, 500);
 
   // auto key_values = vector< std::pair< uint64_t, size_t > >();
