@@ -39,17 +39,17 @@
 \citation{cohen2005stability}
 \newlabel{eq:alt_sum}{{2.3}{4}{Background \& Notation}{equation.2.3}{}}
 \newlabel{eq:hom_map}{{2.4}{4}{Background \& Notation}{equation.2.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}The duality between PBNs and Diagrams}{4}{subsection.2.1}\protected@file@percent }
-\newlabel{sec:duality_pbn_dgm}{{2.1}{4}{The duality between PBNs and Diagrams}{subsection.2.1}{}}
-\newlabel{eq:dgm}{{2.6}{4}{The duality between PBNs and Diagrams}{equation.2.6}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Duality between ranks and diagrams}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:duality_pbn_dgm}{{2.1}{4}{Duality between ranks and diagrams}{subsection.2.1}{}}
+\newlabel{eq:dgm}{{2.6}{4}{Duality between ranks and diagrams}{equation.2.6}{}}
 \citation{edelsbrunner2022computational}
 \citation{chazal2016structure}
 \citation{cerri2013betti}
 \citation{cerri2013betti}
-\newlabel{eq:multiplicity}{{2.7}{5}{The duality between PBNs and Diagrams}{equation.2.7}{}}
-\newlabel{eq:betti_mult}{{2.8}{5}{The duality between PBNs and Diagrams}{equation.2.8}{}}
-\newlabel{eq:measure}{{2.9}{5}{The duality between PBNs and Diagrams}{equation.2.9}{}}
-\newlabel{eq:pbn_cont}{{2.10}{5}{The duality between PBNs and Diagrams}{equation.2.10}{}}
+\newlabel{eq:multiplicity}{{2.7}{5}{Duality between ranks and diagrams}{equation.2.7}{}}
+\newlabel{eq:betti_mult}{{2.8}{5}{Duality between ranks and diagrams}{equation.2.8}{}}
+\newlabel{eq:measure}{{2.9}{5}{Duality between ranks and diagrams}{equation.2.9}{}}
+\newlabel{eq:pbn_cont}{{2.10}{5}{Duality between ranks and diagrams}{equation.2.10}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.2}Motivating Derivation}{5}{subsection.2.2}\protected@file@percent }
 \newlabel{sec:betti_derivation}{{2.2}{5}{Motivating Derivation}{subsection.2.2}{}}
 \newlabel{eq:boundary_matrix}{{2.11}{5}{Motivating Derivation}{equation.2.11}{}}
@@ -67,6 +67,7 @@
 \citation{chen2011output}
 \citation{chen2011output}
 \citation{chen2011output}
+\citation{bauer2022keeping}
 \citation{edelsbrunner2022computational}
 \citation{zomorodian2004computing}
 \newlabel{lemma:rank}{{1}{7}{}{lemma.1}{}}
@@ -78,34 +79,38 @@
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.3}A Parameterized Boundary Matrix Relaxation}{8}{subsection.2.3}\protected@file@percent }
 \newlabel{def:time_boundary_matrix}{{1}{8}{Parameterized $\hat {\partial }_p^{i,j}$}{definition.1}{}}
 \newlabel{eq:param_boundary_matrix}{{2.18}{8}{Parameterized $\hat {\partial }_p^{i,j}$}{equation.2.18}{}}
-\newlabel{prop:mu_betti_1}{{3}{8}{}{proposition.3}{}}
+\newlabel{prop:mu_betti_1}{{4}{8}{}{proposition.4}{}}
 \citation{cohen2006vines}
 \citation{bi2013approximation}
+\citation{mangasarian1994class}
 \newlabel{eq:pbn_parameterized}{{{2.19}}{9}{}{AMS.4}{}}
 \newlabel{eq:mu_parameterized}{{{2.20}}{9}{}{AMS.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Spectral relaxation and its implications}{9}{section.3}\protected@file@percent }
 \newlabel{eq:rank_def}{{3.1}{9}{Spectral relaxation and its implications}{equation.3.1}{}}
-\citation{bi2013approximation}
+\newlabel{eq:phi}{{3.2}{9}{Spectral relaxation and its implications}{equation.3.2}{}}
 \citation{ding2018spectral}
-\citation{ding2018spectral}
 \citation{bi2013approximation}
 \citation{bi2013approximation}
-\newlabel{eq:phi}{{3.2}{10}{Spectral relaxation and its implications}{equation.3.2}{}}
-\newlabel{eq:lowner}{{{3.3}}{10}{Spectral relaxation and its implications}{AMS.8}{}}
-\newlabel{def:cont_rank}{{3.4}{10}{Continuous Rank Approximation}{equation.3.4}{}}
+\citation{bhatia2013matrix}
+\citation{bi2013approximation}
+\newlabel{eq:phi2}{{3.3}{10}{Spectral relaxation and its implications}{equation.3.3}{}}
+\newlabel{eq:lowner}{{{3.4}}{10}{Spectral relaxation and its implications}{AMS.8}{}}
+\newlabel{def:cont_rank}{{3.5}{10}{Spectral Rank Approximation}{equation.3.5}{}}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde  {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt  {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition\nobreakspace  {}\ref  {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal  {S}_i^{\omega }$ from\nobreakspace  {}\textup  {\hbox {\mathsurround \z@ \normalfont  (\ignorespaces \ref  {eq:smoothstep}\unskip \@@italiccorr )}}. }}{11}{figure.2}\protected@file@percent }
 \newlabel{fig:smoothstep}{{2}{11}{From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition~\ref {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal {S}_i^{\omega }$ from~\eqref {eq:smoothstep}}{figure.2}{}}
-\newlabel{eq:smoothstep}{{3.5}{11}{Spectral relaxation and its implications}{equation.3.5}{}}
-\newlabel{def:smooth_mu}{{3}{11}{Smoothed Betti/Multiplicity}{definition.3}{}}
-\newlabel{eq:bett_cont}{{{3.6}}{12}{Smoothed Betti/Multiplicity}{AMS.9}{}}
-\newlabel{eq:mu_cont}{{{3.7}}{12}{Smoothed Betti/Multiplicity}{AMS.10}{}}
+\newlabel{eq:smoothstep}{{3.6}{11}{Spectral relaxation and its implications}{equation.3.6}{}}
+\newlabel{def:smooth_mu}{{3}{11}{Spectral Rank}{definition.3}{}}
+\newlabel{eq:bett_cont}{{{3.7}}{11}{Spectral Rank}{AMS.9}{}}
+\newlabel{eq:mu_cont}{{{3.8}}{11}{Spectral Rank}{AMS.10}{}}
+\newlabel{eq:tikhonov_1}{{3.12}{12}{}{equation.3.12}{}}
+\citation{bhatia2013matrix}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Combinatorial Laplacians}{13}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:laplacian_theory}{{3.1}{13}{Combinatorial Laplacians}{subsection.3.1}{}}
-\newlabel{eq:laplace_hom}{{3.12}{14}{Combinatorial Laplacians}{equation.3.12}{}}
-\newlabel{eq:weighted_up_laplace}{{3.16}{14}{Combinatorial Laplacians}{equation.3.16}{}}
-\newlabel{eq:l_up}{{3.17}{15}{Combinatorial Laplacians}{equation.3.17}{}}
-\newlabel{eq:param_up_lap}{{{3.18}}{15}{Combinatorial Laplacians}{AMS.12}{}}
-\newlabel{eq:param_normalized_up_lap}{{3.19}{15}{Combinatorial Laplacians}{equation.3.19}{}}
+\newlabel{eq:laplace_hom}{{3.16}{14}{Combinatorial Laplacians}{equation.3.16}{}}
+\newlabel{eq:weighted_up_laplace}{{3.20}{14}{Combinatorial Laplacians}{equation.3.20}{}}
+\newlabel{eq:l_up}{{3.21}{15}{Combinatorial Laplacians}{equation.3.21}{}}
+\newlabel{eq:param_up_lap}{{{3.22}}{15}{Combinatorial Laplacians}{AMS.12}{}}
+\newlabel{eq:param_normalized_up_lap}{{3.23}{15}{Combinatorial Laplacians}{equation.3.23}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {4}Computational Implications}{15}{section.4}\protected@file@percent }
 \newlabel{sec:methodology}{{4}{15}{Computational Implications}{section.4}{}}
 \citation{gu1995divide}
@@ -122,7 +127,7 @@
 \citation{golub2013matrix}
 \citation{golub2013matrix}
 \citation{chung1997spectral}
-\newlabel{lemma:exact_arith_lanczos}{{7}{18}{\cite {parlett1994we, simon1984analysis}}{proposition.7}{}}
+\newlabel{lemma:exact_arith_lanczos}{{8}{18}{\cite {parlett1994we, simon1984analysis}}{proposition.8}{}}
 \newlabel{cor:finite_arith_lanczos}{{1}{18}{}{corollary.1}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {4.2}The combinatorial Laplacian \texttt  {matvec}}{18}{subsection.4.2}\protected@file@percent }
 \newlabel{sec:comb_lap}{{4.2}{18}{The combinatorial Laplacian \texttt {matvec}}{subsection.4.2}{}}
@@ -175,29 +180,32 @@
 \bibdata{pbsig_bib}
 \bibcite{bauer2021ripser}{1}
 \bibcite{bauer2020persistence}{2}
-\bibcite{bi2013approximation}{3}
-\bibcite{cerri2013betti}{4}
-\bibcite{chazal2016structure}{5}
-\bibcite{chen2011output}{6}
-\bibcite{chung1997spectral}{7}
-\bibcite{cohen2005stability}{8}
-\bibcite{cohen2006vines}{9}
-\bibcite{dey2022computational}{10}
-\bibcite{ding2018spectral}{11}
-\bibcite{edelsbrunner2022computational}{12}
-\bibcite{edelsbrunner2000topological}{13}
-\bibcite{goldberg2002combinatorial}{14}
-\bibcite{golub2013matrix}{15}
-\bibcite{gu1995divide}{16}
-\bibcite{lanczos1950iteration}{17}
-\bibcite{newman2001laplacian}{18}
-\bibcite{parlett1994we}{19}
-\bibcite{simon1984analysis}{20}
-\bibcite{zomorodian2004computing}{21}
+\bibcite{bauer2022keeping}{3}
+\bibcite{bhatia2013matrix}{4}
+\bibcite{bi2013approximation}{5}
+\bibcite{cerri2013betti}{6}
+\bibcite{chazal2016structure}{7}
+\bibcite{chen2011output}{8}
+\bibcite{chung1997spectral}{9}
+\bibcite{cohen2005stability}{10}
+\bibcite{cohen2006vines}{11}
+\bibcite{dey2022computational}{12}
+\bibcite{ding2018spectral}{13}
+\bibcite{edelsbrunner2022computational}{14}
+\bibcite{edelsbrunner2000topological}{15}
+\bibcite{goldberg2002combinatorial}{16}
+\bibcite{golub2013matrix}{17}
+\bibcite{gu1995divide}{18}
+\bibcite{lanczos1950iteration}{19}
+\bibcite{mangasarian1994class}{20}
+\bibcite{newman2001laplacian}{21}
+\bibcite{parlett1994we}{22}
+\bibcite{simon1984analysis}{23}
+\bibcite{zomorodian2004computing}{24}
 \bibstyle{plain}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{34}{appendix.A}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{34}{appendix.B}\protected@file@percent }
 \citation{chung1997spectral}
+\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{35}{appendix.B}\protected@file@percent }
 \newlabel{eq:lap_rayleigh}{{B.2}{35}{Laplacian facts}{equation.B.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{35}{appendix.C}\protected@file@percent }
 \newlabel{sec:up_laplace_matvec}{{C}{35}{Laplacian \texttt {matvec} products}{appendix.C}{}}

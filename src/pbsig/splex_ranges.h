@@ -135,13 +135,15 @@ struct SimplexRange {
     void boundary(Lambda&& f){
       uint16_t* labels = this->operator*();
       if constexpr (ranks){
+        // if constexpr (dim == 1){
+        //   f(combinatorial::rank_colex_k< false >(labels,dim));
+        //   f(combinatorial::rank_colex_k< false >(labels+1,dim));
+        // } else if constexpr (dim == 2)(
+        //   f(combinatorial::rank_colex_k< false >(labels,dim));  
+        //   f(combinatorial::rank_colex_k< false >(labels+1,dim));
+        // )
         combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){
-          if constexpr(colex){
-            f(combinatorial::rank_colex_k< false >(b,dim));
-          } else {
-            // const index_t N = combinatorial::BinomialCoefficient< false >(_n, dim); 
-            f(combinatorial::rank_lex_k< false >(b,_n,dim,_N));
-          }
+          f(combinatorial::rank_comb< colex, false >(b,n,dim));
           return false; 
         });
       } else {

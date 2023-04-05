@@ -4,46 +4,47 @@ The top-level auxiliary file: /Users/mpiekenbrock/pbsig/notes/.texpadtmp/pbsig.a
 The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
 Warning--empty journal in lanczos1950iteration
+Warning--empty institution in mangasarian1994class
 Warning--empty school in newman2001laplacian
-You've used 21 entries,
+You've used 24 entries,
             2118 wiz_defined-function locations,
-            625 strings with 7444 characters,
-and the built_in function-call counts, 7157 in all, are:
-= -- 717
-> -- 286
-< -- 8
-+ -- 118
-- -- 92
-* -- 452
-:= -- 1150
-add.period$ -- 65
-call.type$ -- 21
-change.case$ -- 104
+            637 strings with 7882 characters,
+and the built_in function-call counts, 7982 in all, are:
+= -- 791
+> -- 339
+< -- 9
++ -- 140
+- -- 110
+* -- 505
+:= -- 1303
+add.period$ -- 74
+call.type$ -- 24
+change.case$ -- 122
 chr.to.int$ -- 0
-cite$ -- 23
-duplicate$ -- 302
-empty$ -- 592
-format.name$ -- 92
-if$ -- 1532
+cite$ -- 27
+duplicate$ -- 332
+empty$ -- 646
+format.name$ -- 110
+if$ -- 1693
 int.to.chr$ -- 0
-int.to.str$ -- 21
-missing$ -- 25
-newline$ -- 108
-num.names$ -- 42
-pop$ -- 131
+int.to.str$ -- 24
+missing$ -- 28
+newline$ -- 123
+num.names$ -- 48
+pop$ -- 152
 preamble$ -- 1
-purify$ -- 88
+purify$ -- 103
 quote$ -- 0
-skip$ -- 221
+skip$ -- 241
 stack$ -- 0
-substring$ -- 478
-swap$ -- 78
-text.length$ -- 8
+substring$ -- 494
+swap$ -- 81
+text.length$ -- 9
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 74
-warning$ -- 2
-while$ -- 74
-width$ -- 23
-write$ -- 229
-(There were 2 warnings)
+type$ -- 84
+warning$ -- 3
+while$ -- 80
+width$ -- 26
+write$ -- 260
+(There were 3 warnings)

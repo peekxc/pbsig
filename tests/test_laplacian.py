@@ -18,6 +18,41 @@ def test_generate():
   assert isinstance(X, np.ndarray)
   assert isinstance(K, SimplicialComplex)
 
+def test_():
+  X, K = generate_dataset(5, d=2)
+  eps = 0.001
+  fv = np.random.uniform(size=card(K,0), low=0.0, high=5.0)
+  fv2 = fv + np.random.uniform(size=len(fv), low=-eps, high=eps)
+  actual_delta = max(abs(fv - fv2))
+  L = up_laplacian(K, p = 0, weight=lower_star_weight(fv))
+  L2 = up_laplacian(K, p = 0, weight=lower_star_weight(fv2))
+  
+  ev = np.array([lower_star_weight(fv)(e) for e in faces(K, 1)])
+  D1 = boundary_matrix(K, p=1)
+  L = np.diag(1/np.sqrt(fv)) @ D1 @ np.diag(ev) @ D1.T @ np.diag(1/np.sqrt(fv))
+  L2 = np.diag(1/np.sqrt(fv-0.001)) @ D1 @ np.diag(ev+0.001) @ D1.T @ np.diag(1/np.sqrt(fv-0.001))
+
+  L[0,0] - L2[0,0]
+
+  (max(fv[[0,1]]) + max(fv[[0,2]]) + max(fv[[0,4]]))*(1/fv[0])
+
+  max_entry_diff = np.max(abs(L.todense() - L2.todense()))
+  print(f"Max entry diff: {max_entry_diff:.5f}")
+
+  max_diag_diff = max(abs(L.diagonal() - L2.diagonal()))
+  print(f"Max diagonal diff: {max_diag_diff:.5f}")
+
+  delta = 2*eps
+  max_deg = max([sum([len(c) == len(f)+1 for c in K.cofaces(f)]) for f in list(faces(K,1))])
+
+  9*delta
+
+  max_diff = max(abs(np.linalg.eigvalsh(L.todense()) - np.linalg.eigvalsh(L2.todense())))
+  max_diff <= max_deg*delta**2
+
+
+  
+
 def test_matvec_gradient():
   from pbsig.interpolate import interpolate_family
   S = simplicial_complex([[0,1,2],[2,3,4]])

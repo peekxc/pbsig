@@ -283,6 +283,18 @@ namespace combinatorial {
 		});
 		return index; 
 	}
+
+	template< bool safe = true >
+	[[nodiscard]]
+	constexpr auto rank_colex_2(index_t i, index_t j) noexcept {
+		// index_t i = k; 
+		return BinomialCoefficient< safe >(j, 2) + + BinomialCoefficient< safe >(i, 1);
+		// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+		// 	return val + BinomialCoefficient< safe >(num, i--); 
+		// });
+		// return index; 
+	}
+
 	// colex bijection from a lexicographical order
 	// index_t i = 1; 
 	// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
@@ -310,22 +322,30 @@ namespace combinatorial {
 		}
 	}
 
-	// Rank a stream of integers (colexicographically)
-	template< bool safe = true, typename InputIt, typename OutputIt >
-	inline void rank_colex(InputIt s, const InputIt e, const size_t k, OutputIt out){
-		for (; s != e; s += k){
-			*out++ = rank_colex_k< safe >(s, k);
+	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt > 
+	inline auto rank_comb(InputIt s, const size_t n, const size_t k){
+		if constexpr(colex){
+			return rank_colex_k< safe >(s, k);
+		} else {
+			const index_t N = BinomialCoefficient< safe >(n, k); 
+			return rank_lex_k< safe >(s, n, k, N);
 		}
 	}
 
 	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt > 
-	inline void rank_comb(InputIt s, const InputIt e, const size_t k, OutputIt out){
+	inline void rank_combs(InputIt s, const InputIt e, const size_t k, OutputIt out){
 		if constexpr(colex){
-			rank_colex< safe >(s,e,k,out);
+			for (; s != e; s += k){
+				*out++ = rank_colex_k< safe >(s, k);
+			}
 		} else {
-			rank_lex< safe >(s,e,k,out);
+			const index_t N = BinomialCoefficient< safe >(n, k); 
+			for (; s != e; s += k){
+				*out++ = rank_lex_k< safe >(s, n, k, N);
+			}
 		}
 	}
+
 
 
 	// Lexicographically unrank 2-subsets

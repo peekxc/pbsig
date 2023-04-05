@@ -190,7 +190,7 @@ Some technical details, illustrative examples, and pseudocode are relegated to t
 \section{Background \& Notation}\label{sec:background_notation}
 \subfile{background}
 
-\subsection{The duality between PBNs and Diagrams}\label{sec:duality_pbn_dgm}
+\subsection{Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
 
 % --- Counting measure multiplicity interpretation --- 
 \subfile{counting_measure}
@@ -253,11 +253,11 @@ R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt
 %	r_R(i,j) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1})
 %\end{equation}
 where $R^{i, j}$ denotes the lower-left submatrix defined by the first $j$ columns and the last $m - i + 1$ rows (rows $i$ through $m$, inclusive). 
-In other words, the existence of non-zero ``pivot'' entries in $R$ may be inferred from the ranks of its submatrices.   
+In other words, the existence of non-zero ``pivot'' entries in $R$ may be inferred entirely from the ranks of certain submatrices of $R$.   
 This is a remarkable fact, as although $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. 
 To signal the generality of this, we record a lemma. 
 \begin{lemma}\label{lemma:rank}
-For any filtration $K_\bullet$ of size $N = \lvert K \rvert$, let $R = \partial V$ denote the decomposition of the filtered boundary matrix $\partial \in \mathbb{F}^{N \times N}$ given in equation~\ref{eq:boundary_matrix}. Then, for any pair $(i,j)$ satisfying $1 \leq i < j \leq N$, we have:
+For any filtration $K_\bullet$ of size $N = \lvert K \rvert$, let $R = \partial V$ denote the decomposition of the filtered boundary matrix $\partial \in \mathbb{F}^{N \times N}$ given in equation~\eqref{eq:boundary_matrix}. Then, for any pair $(i,j)$ satisfying $1 \leq i < j \leq N$, we have:
 	\begin{equation}\label{eq:lower_left_rank}
 		\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i, j})
 	\end{equation}
@@ -289,8 +289,14 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size 
 \end{proposition}
 \noindent Computationally, the relevance of Propositions~\ref{prop:rank_reduction} and~\ref{prop:mu_reduction} is they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$, which was in fact the core observation used by Chen et al in their rank-based persistence algorithm~\cite{chen2011output}.
 %~\ref{eq:measure}
+Collecting these results, we summarize the duality between diagrams and their ranks with the following proposition.
+\begin{proposition}[Bauer et al.~\cite{bauer2022keeping}]
+	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
+\end{proposition}
 The primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have compared to classical methods in~\cite{edelsbrunner2022computational, zomorodian2004computing} is that their computations are performed directly on \emph{unfactored} boundary (sub)matrices. 
 % TODO: maybe rephrase for better emphasis on a different perspective?
+%In theory, one need not represent these operators with matrices explicitly, a trick 
+%Moreover, the rank function over 
 A natural question arises when we restrict the field $\mathbb{F}$ of to $\mathbb{R}$: computationally, how do expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} relate to their measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure}?
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
 We dedicate the rest of the paper to exploring this question. 
@@ -536,7 +542,7 @@ We begin with a spectral characterization of the rank function. Given a matrix $
 	\end{cases}
 \end{equation}
 where $\Sigma = \mathrm{diag}(\{\sigma_1, \sigma_2, \dots, \sigma_n \})$ are the singular values  and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
-Like the betti numbers, the unstable nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. 
+Like betti numbers, the unstable nature of the rank function is due to its inherently combinatorial properties. In particular, the discontinuity in~\eqref{eq:rank_def} manifests due to the one-sided sign function. 
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 %\begin{flalign}\label{eq:rank_sgn}
@@ -547,25 +553,25 @@ Like the betti numbers, the unstable nature of the rank function is due to its i
 %\end{equation}
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
-Originally proposed for the purpose of rank minimization, Bi et al.~\cite{bi2013approximation} present a framework for constructing smooth rank function approximations via relaxations of the $\mathrm{sgn}_+$ function. 
-%, each of which--- when composed with the singular value function---yield continuous functions that approximates the rank function to any pre-prescribed accuracy.
-The idea of their approach is to replace the $\mathrm{sgn}_+$ function in~\eqref{eq:rank_def} with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}_+$ relaxations $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, where $\epsilon > 0$ controls the accuracy of the relaxation. 
-These relaxations approximate the $\mathrm{sgn}_+$ function by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
-%an integral $\mathrm{sgn}_+(x) = \int_{-\infty}^x \delta(z) dz$, where the $\delta$ is a Dirac delta function satisfying $\int\limits_{-\infty}^\infty \delta(z) dz = 1$. In particular, for any $\epsilon > 0$, we define $\phi(\cdot, \epsilon)$ as:
+We follow the framework presented by Bi et al.~\cite{bi2013approximation} for constructing a smooth rank function approximations via relaxations of the $\mathrm{sgn}_+$ function. 
+Building off the seminal work of Chen \& Mangasarian~\cite{mangasarian1994class}, 
+their approach is to approximate the $\mathrm{sgn}_+$ function in~\eqref{eq:rank_def} by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \epsilon > 0  \,)  & & \quad\quad\quad
 \phi(x, \epsilon) := \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz, \quad \quad  & 
 \hat{\delta}(z, \epsilon) = \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) && 
-%(\forall \, z \geq 0, \epsilon > 0 ) & & \quad \quad \quad 
-%\begin{equation}\label{eq:phi}
-%\end{equation}
 \end{flalign}
 where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
-In contrast to the $\mathrm{sgn}_+$ function, it was shown in~\cite{bi2013approximation} that if $p$ is continuous on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is continuously differentiable on $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
-By substituting $\mathrm{sgn}_+ \mapsto \phi$ in~\eqref{eq:rank_def}, several of these  properties naturally extend to the rank function. 
-In particular, if $X \in \mathbb{R}^{n \times m}$ admits a singular value decomposition $X = U\Sigma V^T$ and is paired with a scalar-valued $\phi$ continuously differentiable at every $\sigma \in \Sigma$, then for any $\epsilon > 0$ the corresponding \emph{Löwner operator} $\Phi_\epsilon$
-%$\Phi_\epsilon : \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$
-from~\cite{ding2018spectral}: 
+In contrast to the $\mathrm{sgn}_+$ function, if $p$ is continuous on $\mathbb{R}_+$ then $\phi(\cdot, \epsilon)$ is continuously differentiable on $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
+Moreover, note that $\phi(0, \epsilon) = 0$ and: 
+\begin{flalign}\label{eq:phi2}
+(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
+\end{flalign}
+for any choice of $(p, \nu)$ satisfying the assumptions above. 
+Varying the relaxation parameter $\epsilon > 0$ in~\eqref{eq:phi} yields an $\epsilon$-parameterized family of continuous $\mathrm{sgn}_+$ relaxations $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, where $\epsilon > 0$ controls the accuracy of the relaxation. 
+
+Many of the properties of~\eqref{eq:phi} extend naturally to the rank function when the sign function is substituted appropriately in~\eqref{eq:rank_def}.
+In particular, if $X \in \mathbb{R}^{n \times m}$ admits a singular value decomposition $X = U\Sigma V^T$ and is paired with a scalar-valued $\phi$ continuously differentiable at every $\sigma \in \Sigma$, then for any $\epsilon > 0$ the corresponding \emph{Löwner operator} $\Phi_\epsilon$ given by: 
 % $f$ is continuous differentiable at every eigenvalue of $X$
 %This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
 %$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
@@ -579,24 +585,24 @@ from~\cite{ding2018spectral}:
 %\end{align*}
 is a continuously differentiable operator in $\mathbb{R}^{n \times m}$. 
 %The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
-In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then operator~\eqref{eq:lowner} is also twice continuously differentiable~\cite{ding2018spectral} at $X$. 
-Before summarizing the additional properties this operator has and its relationship with the rank function, we given a definition:
-\begin{definition}[Continuous Rank Approximation]
-	Given $X \in \mathbb{R}^{n \times m}$ admitting a singular value decomposition $X = U \Sigma V^T$ where $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$, a fixed approximation parameter $\epsilon > 0$, and a choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, we define the \emph{continuous rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ as: 
+In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then~\eqref{eq:lowner} is also twice continuously differentiable~\cite{ding2018spectral} at $X$. 
+Before summarizing the additional properties this operator has and its relationship with the rank function, we give a definition:
+\begin{definition}[Spectral Rank Approximation]
+	Given $X \in \mathbb{R}^{n \times m}$ with singular value decomposition $X = U \Sigma V^T$ where $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$ and a fixed $\epsilon > 0$, any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi} defines a \emph{spectral rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ via: 
 	\begin{equation}\label{def:cont_rank}
 		\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \epsilon)
 	\end{equation}
 \end{definition}
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
 \noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability.
-A few such properties are given below. 
+A few such properties are recorded below. 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
 		$$ 0 \leq r - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c $$
 		where $c$ is a positive constant that depends only on $r$, $\nu$, and $p$. 
-		\item $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{The notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{} for more details.} on $\mathbb{R}^{n \times m}$.
+		\item $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{The notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{bi2013approximation, bhatia2013matrix} for more details.} on $\mathbb{R}^{n \times m}$.
 %		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
 %		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
@@ -605,8 +611,8 @@ A few such properties are given below.
 \noindent Note that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$. However, as we will discuss in section~\ref{sec:laplacian_theory}, this is sufficient for our purposes here. 
 \\
 \\
-\noindent To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{H}$. 
-Fortunately, this requires a simple augmentation to the step function from the one in definition~\ref{def:time_boundary_matrix}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with continuous \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
+\noindent To adapt these relaxations to the counting functions defined in equations~\eqref{eq:betti_mult} and~\eqref{eq:mu_four}, we need to modify the expression of the boundary chains~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$. 
+Fortunately, this requires a simple augmentation to the step function from the one in definition~\ref{def:time_boundary_matrix}. In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
@@ -618,7 +624,7 @@ Fortunately, this requires a simple augmentation to the step function from the o
 	}
 	\label{fig:smoothstep}
 \end{figure}
-These are clamped ``S-curve'' functions which interpolate the discontinuous step portion of $S$ along fixed bounds $(a,a+\omega)$, which are given by:  
+These are clamped ``S-curve'' functions which interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$, which are given by:  
 \begin{equation}\label{eq:smoothstep}
 \mathcal{S}_a^{\omega} (x) = \begin{cases}
 	0 & x \leq a \\
@@ -632,65 +638,40 @@ where $S_n: [0,1] \to [0,1]$ is a generic $n$-th order polynomial whose coeffici
 %S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
 %\end{equation} 
 Due to their efficiency in evaluation and simple configuration, such functions have found applications computer graphics and machine learning applications~\cite{}. 
-Our motivation to use them here is based on the observations shown in Figure~\ref{fig:smoothstep}: by substituting $\mathcal{S}_n^{\omega}$ for the step functions 	in~\eqref{eq:param_boundary_matrix} and adding a small translation, we may replace the step functions in the parameterized boundary matrix with entries varies continuously in $\mathcal{H}$ but have the same sign. 
-%We include a short definition:
-%\begin{definition}[Continuously Parameterized boundary matrix]\label{def:time_boundary_matrix2}
-%Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of filter functions that varies continuously in $\mathcal{H}$. Assume both respect the same conditions outlined in definition~\ref{def:time_boundary_matrix}. 
-%For fixed $(i,j) \in \Delta_{+}$, define the $\mathcal{H}$-\emph{parameterized} $p$\emph{-th boundary matrix} $\tilde{\partial}_p^{i, j}(h)$ \emph{at scale} $(i,j)$ as the matrix whose entries $(k,l)$ satisfy:
-%\begin{equation}\label{eq:param_boundary_matrix_cont}
-%	\tilde{\partial}_p^{i,j}(h)[k,l] = \begin{cases}
-%	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
-%	\pm \, (\mathcal{S}^\omega_{i} \circ f_h)(\sigma_k)) \cdot (\tilde{\mathcal{S}}^\omega_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
-%	%, \text{ where } \epsilon = f(\sigma_l) \\
-%	0 & \text{otherwise}
-%\end{cases}
-%\end{equation}
-%where $\mathcal{S}_{i}^\omega : \mathbb{R} \to \{0, 1\}$ is a \emph{smoothstep} function satisfying~\eqref{eq:smoothstep} and $\tilde{\mathcal{S}}_{i}^\omega = 1 -\mathcal{S}_{i}^\omega$, and $f_h(\sigma) = f(\sigma, h)$.
-%\end{definition}
-%We summarize the previous 
-Moreover, by composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
-\begin{definition}[Smoothed Betti/Multiplicity]\label{def:smooth_mu}
-Let $K$ denote a fixed simplicial complex and $f: K \times \mathcal{H} \to \mathbb{R}$ a parameterized family of functions which vary continuously in $\mathcal{H}$. For some fixed $R = [i,j] \times [k,l] \subset \Delta_+$ and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{H}$-parameterized \emph{smooth persistent betti number} and \emph{smooth multiplicity} as:
+Our motivation to use them here is based on the observations shown in Figure~\ref{fig:smoothstep}: by substituting $\mathcal{S}_n^{\omega}$ for the step functions 	in~\eqref{eq:param_boundary_matrix} and adding a small translation, we may replace the step functions in the parameterized boundary matrix with entries varies continuously in $\mathcal{A}$ and retain the correct sign. 
+By composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ for some $\epsilon > 0$, we obtain $\epsilon$-approximate, continuously-varying multiplicity function. 
+\begin{definition}[Spectral Rank]\label{def:smooth_mu}
+Let $K$ denote a simplicial complex and $f: K \times \mathcal{A} \to \mathbb{R}$ a parameterized family of functions which vary continuously in $\mathcal{A}$. For some fixed $R = [i,j] \times [k,l] \subset \Delta_+$ and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized \emph{spectral persistent betti number} and \emph{spectral multiplicity} as:
 	\begin{equation}\label{eq:bett_cont}
-\hat{\beta}_p^{i,j}(h) = 
-\lVert \Phi_\epsilon^h(\,\hat{I}_{p}^i\,)\rVert_\ast -
-\lVert \Phi_\epsilon^h(\hat{\partial}_{p}^{1, i}) \rVert_\ast - 
-\lVert \Phi_\epsilon^h(\hat{\partial}_{p+1}^{1, j}) \rVert_\ast + 
-\lVert \Phi_\epsilon^h(\hat{\partial}_{p+1}^{i\+\delta, j}) \rVert_\ast \numberthis
+\hat{\beta}_p^{i,j}(\alpha) = 
+\lVert \Phi_\epsilon^\alpha(\,\hat{I}_{p}^i\,)\rVert_\ast -
+\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p}^{1, i}) \rVert_\ast - 
+\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{1, j}) \rVert_\ast + 
+\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{i\+\delta, j}) \rVert_\ast \numberthis
 	\end{equation}
 	\begin{equation}\label{eq:mu_cont}
-	\hat{\mu}_{p,\epsilon}^R(h) = 
-		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
-		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
-		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
-		 \lVert \Phi_\epsilon^h(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
+	\hat{\mu}_{p,\epsilon}^R(\alpha) = 
+		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
+		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
+		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
+		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
-where $\Phi_\epsilon^h(\partial) = (\Phi_\epsilon \circ \partial)(h)$ for any $h \in \mathcal{H}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(\tau_1), \mathcal{S}_i^\omega(\tau_2), \dots, \mathcal{S}_i^\omega(\tau_n) \})$, and $\hat{\partial}_p$ is $\mathcal{H}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
+where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(\tau_1), \mathcal{S}_i^\omega(\tau_2), \dots, \mathcal{S}_i^\omega(\tau_n) \})$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
 \end{definition}
-\noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify that $\hat{\mu}_p^R$ is Lipshitz continuous by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
+\noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
 %
 %Basic properties of $\hat{\mu}$. % pseudo-monotonicity, additivity 
 
 \subsubsection*{Stability}
-One disadvantage in working with rank-type functions restricted to portions of real-plane is that they are integer-valued and not smooth. 
-Namely, if $(K, f_h)$ is an $\mathcal{H}$-parameterized filtration, one may easily construct examples where $\lVert \mu_h^R - \mu_{h + \delta}^R \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small perturbation $\delta > 0$. 
-Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. 
-Relaxing $\mu_p^R \mapsto \hat{\mu}_p^R$ fixes this instability when $\epsilon > 0$, though the Lipshitz constant may be arbitrarily high. In what follows, we investigate the effect of $\epsilon$ has on the smoothness of $f_\alpha$ and towards stabilizing the constitutive terms in $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^{\ast}$. 
+One disadvantage of rank functions restricted to subsets of the real-plane is that they are integer-valued and unstable. One may easily construct examples of $\mathcal{A}$-parameterized filtrations 
+$(K, f_\alpha)$ where $\lVert \mu_p^R(\alpha) - \mu_{p}^R(\alpha + \delta) \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small $\delta > 0$, as there may be up to $O( \lvert K_p \rvert)$ points in $\mathrm{dgm}_p(K)$.
+%Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. 
+%Relaxing $\mu_p^R \mapsto \hat{\mu}_p^R$ fixes this instability when $\epsilon > 0$, though the Lipshitz constant may be arbitrarily high.
+In what follows, we investigate the smoothness of $f_\alpha$ and towards stabilizing the constitutive terms in $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^{\ast}$. 
 
-Consider a filtration $(K, f)$ indexed over the real line $f : K \to \mathbb{R}$ whose filter function $f$ is perturbed by some positive amount $\delta > 0$. We would like to show stability of $\hat{\mu}_{p,\epsilon}^R$ with respect to small perturbations to entries in $\hat{\partial}_p$.
-% Lipshitz stability 
-% partition of unity + output-sensitive mention.
-To be more precise, we require a more specific choice of $\phi$ in ~\eqref{eq:phi}. For illustrative purposes\footnote{A similar expression may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}, 
-observe that setting $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$ the composition of the singular value function with~\eqref{def:cont_rank} reduces to the rank approximation studied in~\cite{},  given explicitly by: 
-\begin{equation*}
-	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X X^T + \epsilon \, I_n)^{-1} X X^T \right] 
-\end{equation*}
-Thus, one interpretation of the relaxation parameter $\epsilon$ is as a regularized pseudo-inverse of $X$, where the regularization parameter $\epsilon$ controls the strength of the regularization and determines the degree to which the inverse is biased towards smaller singular values.
-Larger values of $\epsilon$ smooth out $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\epsilon$ lead to a more faithful approximation of the rank. 
-Indeed, adding larger $\epsilon$ amount of mass to the diagonal is a common approach to improve the conditioning of a matrix, as it not only guarantees a singular matrix full rank, but it also guarantees the smallest eigenvalue of is at least $\epsilon$.
-That is, for $M = X X^T$ a given positive definite matrix, its \emph{condition number} $\kappa(M)$ is defined as: 
+A common way of quantifying the sensitivity of the spectrum of a given linear operator $M$ is through its condition number. For $M = X X^T$ a given positive definite matrix, its \emph{condition number} $\kappa(M)$ is defined as: 
 \begin{equation}
 	\kappa(M) = \lVert M^{-1} \rVert \lVert M \rVert = \lvert \lambda_1(M) \rvert \; / \; \lvert \lambda_n(M) \rvert
 \end{equation}
@@ -700,15 +681,44 @@ In particular, if $E \in \mathbb{R}^{n \times n}$ represents a small perturbatio
 \begin{equation}
 \frac{\lVert (M + E)^{-1}  - M^{-1} \rVert}{\lVert M^{-1} \rVert} \leq \kappa(M) \frac{\lVert E \rVert}{ \lVert M \rVert }
 \end{equation}
-Thus, the effect of adding $\epsilon I_n$ to a given matrix can be interpreted as a means of reducing $\kappa$ arbitrarily---at the expense of accuracy---to stabilize the pseudo-inverse. This, in turn, yields the following proposition: 
+Thus, the effect of adding $\epsilon I_n$ to a given matrix can be interpreted as a means of reducing $\kappa$ arbitrarily---at the expense of accuracy---to stabilize the pseudo-inverse. 
+For operators $\Phi_\epsilon(\cdot)$ in the form above, we can quantify this stabilization using perturbation analysis. 
 \begin{proposition}
 	TODO stability statement
 \end{proposition}  
 
+
+%Consider a filtration $(K, f)$ indexed over the real line $f : K \to \mathbb{R}$ whose filter function $f$ is perturbed by some positive amount $\delta > 0$, such that $f' = f + \delta$.
+%\begin{equation}
+%	\lVert f - f' \rVert_{\infty} \leq \delta 
+%\end{equation} 
+
+\noindent
+\textbf{Regularization:} Another approach to stabilizing the rank function in the context of large-scale sparse inverse problems is to regularize the solution. To be more precise, we require a more specific choice of $\phi$ in~\eqref{eq:phi}. For illustrative purposes\footnote{Similar expressions may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}, consider setting $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$. By~\eqref{eq:phi}, one obtains:
+\begin{equation}
+	\phi(x, \epsilon) = \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz = \frac{x^2}{x^2 + \epsilon}
+\end{equation}
+By substituting $\mathrm{sgn}_+ \mapsto \phi$, composing with the singular value function~\eqref{def:cont_rank}, and applying the cyclic trace property, the corresponding spectral rank approximation reduces to:
+\begin{equation}\label{eq:tikhonov_1}
+	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X X^T + \epsilon \, I_n)^{-1} X X^T \right] 
+\end{equation}
+Observe the expression on the right hand side of~\eqref{eq:tikhonov_1} contains an $\epsilon$-regularized variant of the pseudoinverse used in large-scale sparse inverse problems. 
+Indeed, evaluating the trace function above reduces to solving $n$ least-squares problems regularized by the \emph{Tikhonov regularization} (TR). Setting $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy: 
+\begin{equation}
+	x_\epsilon^\ast = \mathrm{argmin}_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2
+\end{equation}
+Thus, one interpretation of the relaxation parameter $\epsilon$ is as a regularized pseudo-inverse of $X$, where the regularization parameter $\epsilon$ controls the strength of the regularization and determines the degree to which the inverse is biased towards smaller singular values.
+Larger values of $\epsilon$ smooth out $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\epsilon$ lead to a more faithful approximation of the rank.
+
+
+ 
+%Indeed, adding larger $\epsilon$ amount of mass to the diagonal is a common approach to improve the conditioning of a matrix, as it not only guarantees a singular matrix full rank, but it also guarantees the smallest eigenvalue of is at least $\epsilon$.
+
+
 %Moreover, since operator norm determines the Lipshitz constant of a given function, $\epsilon$ not only plays the role of an accuracy parameter, but as a \emph{smoothing parameter}. 
-One shortcoming of the stability result shown above is that the Lipshitz constant depends explicitly on the magnitude of $f_\alpha$, which in-turn affects the stability of the proposed relaxation. We address this issue in the following section.  
-
-
+One shortcoming of the stability result shown above is that the Lipshitz constant depends explicitly on the magnitude of $f_\alpha$, which in-turn affects the stability of the proposed relaxation if $f_\alpha$ is scaled poorly, i.e. $\lambda \cdot f_\alpha$. 
+Moreover, the continuous differentiability of $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ only applies to linear operators over the positive semi-definite cone, and the explicit form of the differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ depends on the domain of its corresponding spectral function $\phi(\cdot)$ being bounded to some interval $(a,b)$~\cite{bhatia2013matrix}. 
+We address all of these issue in the following section.  
 
 
 %Moreover, by the cyclic property of the trace operator, since $X = \partial_1$ here and $L = \partial_1 \partial_1^T = [l_1, l_2, \dots, l_n]$ we have: 
@@ -720,9 +730,10 @@ One shortcoming of the stability result shown above is that the Lipshitz constan
 %
 
 \subsection{Combinatorial Laplacians}\label{sec:laplacian_theory}
-To better understand the interpretation of the smoothed relaxations of the counting invariants from definition~\ref{def:smooth_mu}, it is imperative to understand what the spectral information  constitutive terms encodes. 
-It is well known that the square roots of the non-zero eigenvalues of either $\partial \partial^T$ or $\partial^T \partial$ yield the singular values of $\partial$. 
-Moreover, since $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we may consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators. 
+%To better understand the interpretation of the smoothed relaxations of the counting invariants from definition~\ref{def:smooth_mu}, it is imperative to understand what the spectral information  constitutive terms encodes. 
+Like the identities $\mathrm{rank}(A) = \mathrm{rank}(A A^T) = \mathrm{rank}(A^T A)$, it is well known that the square roots of the non-zero eigenvalues of either $AA^T$ or $A^T A$ yield the singular values of $A$. 
+By expressing the rank invariants solely in terms of boundary operators $\partial_p$, we may exploit the fact that $L = \partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}. 
+More generally, we may consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators, the central quantities of study thus far. 
 %Towards revealing  
 % "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
 
@@ -977,7 +988,7 @@ Now, observe that since $K$ is a simplicial complex, if $\mathrm{co}(\tau) \cap 
 Thus, given two distinct $p$-simplices $\tau \neq \tau'$ in $K^p$ we may use the notation $\tau \overset{\sigma}{\sim} \tau'$ to denote this cofacet relation and now the operator from~\eqref{eq:l_up} can now be written element-wise as: 
 \begin{align}\label{eq:up_laplace_theory}
 	 \hat{L}_p^{\text{up}}(\tau, \tau')= \begin{cases}
-		 \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) & \text{ if } \tau = \tau' \\ 
+		 \mathrm{deg}_f(\tau) \cdot f^{+}(\tau) & \text{ if } \tau = \tau' \\ 
 %		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
 		s_{\tau, \tau'} \cdot  f^{+/2}(\tau) \cdot f(\sigma) \cdot f^{+/2}(\tau') & \text{ if } \tau \overset{\sigma}{\sim} \tau' \\
 		0 & \text{ otherwise} 
@@ -996,9 +1007,10 @@ However, observe that the sign of their product is in fact invariant in the orie
 Thus, if we fixed the orientation of the simplices of $K^p$, the sign pattern $s_{\tau, \tau'}$ for every $\tau \overset{\sigma}{\sim} \tau'$ can be precomputed and stored ahead of time, reducing the evaluation $s_{\tau, \tau'}$ in $O(1)$ time and $O(n)$ storage. 
 Alternatively, if the labels of the $p+1$ simplices $\sigma K^{p+1}$ are consistently enumerated in a fixed order---for example according to the poset order on $K$ inherited from the total order on $V$---then we can remove the storage requirement entirely and simply alternate the sign during the computation as appropriate.
 
-A subtle but important aspect of algorithmically evaluating~\eqref{eq:l_up_matvec} is the choice of indexing function $h: K^p \to [n]$. This map is necessary to deduce the contributions of the components $x_\ast$ during the operation. While one may use any standard associative array to generate this map, typical implementations using e.g. universal hashing can only guarantee $O(1)$ time lookup in expectation (as opposed to deterministic). 
+A subtle but important aspect of algorithmically evaluating~\eqref{eq:l_up_matvec} is the choice of indexing function $h: K^p \to [n]$. This map is necessary to deduce the contributions of the components $x_\ast$ during the operation. While one may use any standard associative array to generate this map, typical implementations must rely on collision-resolution schemes such as open addressing or chaining to obtain a constant expected lookup time.
+%Preliminary benchmarks suggest 
 Taking advantage again of the fact that our simplicial complex $K$ is fixed, we note that one can build a hash function $h$ with deterministic $O(1)$ access by building a \emph{minimal perfect hash function} (PMHF) on the simplices $\tau \in K^p$.
-Unlike typical hash table implementations which rely on collision-resolution schemes like open addressing and chaining (and have $O(n)$ worst-case complexity), it is known how to build PMHF's over fixed input sets fo size $n$ in $O(n)$ time and $O(n \log m)$ bits~\cite{}. Note that this process happens only once for a fixed simplicial complex $K$: once $h$ has been built, it is fixed for every $\mathtt{matvec}$ operation. 
+It is known how to build PMHF's over fixed input sets of size $n$ in $O(n)$ time and $O(n \log m)$ bits~\cite{}. Note that this process happens only once for a fixed simplicial complex $K$: once $h$ has been built, it is fixed for every $\mathtt{matvec}$ operation. 
 
 
 %Since we are free to choose the permutation of $\hat{L}_P^{\text{up}}$ ahead of time, we may order the $p+1$ simplices $\{\sigma\}$ in such a way as to minimize the latency associated with memory access to $K^{p+1}$.

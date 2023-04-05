@@ -1,0 +1,1119 @@
+Total: 109.25ms
+ROUTINE ======================== ProfileHandler::SignalHandler in ??
+         0     9.25ms (flat, cum)  8.47% of Total
+ Error: Could not find file ?? on path /Users/mpiekenbrock/pbsig/benchmarks
+ROUTINE ======================== SimplexRange::SimplexLabelIterator::boundary in /Users/mpiekenbrock/pbsig/src/pbsig/splex_ranges.h
+     250us    42.50ms (flat, cum) 38.90% of Total
+         .          .    132:    constexpr bool operator!=(SimplexLabelIterator o) const noexcept { return _it != o._it; }
+         .          .    133:    
+         .          .    134:    template< bool ranks = false, typename Lambda > 
+         .          .    135:    void boundary(Lambda&& f){
+         .          .    136:      uint16_t* labels = this->operator*();
+     250us    42.50ms    137:      if constexpr (ranks){
+         .          .    138:        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){
+         .          .    139:          if constexpr(colex){
+         .          .    140:            f(combinatorial::rank_colex_k< false >(b,dim));
+         .          .    141:          } else {
+         .          .    142:            // const index_t N = combinatorial::BinomialCoefficient< false >(_n, dim); 
+ROUTINE ======================== _ZN13combinatorial11bound_rangeIRZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS5_9allocatorItEEEEmE3$_0EEvOT0_EUlT_SC_E_PtEC1ESG_SH_SH_ in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+         0      500us (flat, cum)  0.46% of Total
+         .          .     89:
+         .          .     90:	template < typename Lambda, typename It > 
+         .          .     91:	struct bound_range { 
+         .          .     92:		Lambda f_;
+         .          .     93:		It first_, last_;
+         .      500us     94:		bound_range(Lambda& f, It first, It last) : f_(f), first_(first), last_(last) {}
+         .          .     95:		bool operator()(){ return f_(first_, last_); } 
+         .          .     96:		bool operator()(It, It) { return f_(first_, last_); }
+         .          .     97:	};
+         .          .     98:
+         .          .     99:	template <class It, class Function>
+ROUTINE ======================== _ZN13combinatorial11bound_rangeIRZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS5_9allocatorItEEEEmE3$_0EEvOT0_EUlT_SC_E_PtEC2ESG_SH_SH_ in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+     500us      500us (flat, cum)  0.46% of Total
+         .          .     89:
+         .          .     90:	template < typename Lambda, typename It > 
+         .          .     91:	struct bound_range { 
+         .          .     92:		Lambda f_;
+         .          .     93:		It first_, last_;
+     500us      500us     94:		bound_range(Lambda& f, It first, It last) : f_(f), first_(first), last_(last) {}
+         .          .     95:		bool operator()(){ return f_(first_, last_); } 
+         .          .     96:		bool operator()(It, It) { return f_(first_, last_); }
+         .          .     97:	};
+         .          .     98:
+         .          .     99:	template <class It, class Function>
+ROUTINE ======================== _ZN13combinatorial11bound_rangeIRZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS5_9allocatorItEEEEmE3$_0EEvOT0_EUlT_SC_E_PtEclEv in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+         0    12.75ms (flat, cum) 11.67% of Total
+         .          .     90:	template < typename Lambda, typename It > 
+         .          .     91:	struct bound_range { 
+         .          .     92:		Lambda f_;
+         .          .     93:		It first_, last_;
+         .          .     94:		bound_range(Lambda& f, It first, It last) : f_(f), first_(first), last_(last) {}
+         .    12.75ms     95:		bool operator()(){ return f_(first_, last_); } 
+         .          .     96:		bool operator()(It, It) { return f_(first_, last_); }
+         .          .     97:	};
+         .          .     98:
+         .          .     99:	template <class It, class Function>
+         .          .    100:	Function for_each_combination(It first, It mid, It last, Function&& f) {
+ROUTINE ======================== _ZN13combinatorial20for_each_combinationIPtZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS6_9allocatorItEEEEmE3$_0EEvOT0_EUlT_SD_E_EESD_SF_SF_SF_SE_ in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+       2ms    42.25ms (flat, cum) 38.67% of Total
+         .          .     96:		bool operator()(It, It) { return f_(first_, last_); }
+         .          .     97:	};
+         .          .     98:
+         .          .     99:	template <class It, class Function>
+         .          .    100:	Function for_each_combination(It first, It mid, It last, Function&& f) {
+         .      500us    101:		bound_range<Function&, It> wfunc(f, first, mid);
+       2ms    41.75ms    102:		combine_discontinuous(first, mid, std::distance(first, mid),
+         .          .    103:													mid, last, std::distance(mid, last),
+         .          .    104:													wfunc);
+         .          .    105:		return std::move(f);
+         .          .    106:	}
+         .          .    107:
+ROUTINE ======================== _ZN13combinatorial21combine_discontinuousIPtRNS_11bound_rangeIRZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS7_9allocatorItEEEEmE3$_0EEvOT0_EUlT_SE_E_S1_EEEEbSG_SG_NS7_15iterator_traitsISG_E15difference_typeESG_SG_SN_SF_SN_ in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+       8ms    43.50ms (flat, cum) 39.82% of Total
+         .          .      1:// combinatorial.h 
+         .          .      2:// Contains routines for combinatorics-related tasks 
+         .          .      3:// The combinations and permutations generation code is copyright Howard Hinnant, taken from: https://github.com/HowardHinnant/combinations/blob/master/combinations.h
+         .          .      4:#ifndef COMBINATORIAL_H
+         .          .      5:#define COMBINATORIAL_H 
+         .          .      6:
+         .          .      7:#include <cstdint>		// uint_fast64_t
+         .          .      8:#include <array>
+         .          .      9:// #include <span> 		 	// span (C++20)
+         .          .     10:#include <cmath>	 	 	// round, sqrt
+         .          .     11:#include <numeric>   	// midpoint, accumulate
+         .          .     12:#include <vector> 	 	// vector  
+         .          .     13:#include <algorithm> 
+         .          .     14:#include <type_traits>
+         .          .     15:#include <vector>
+         .          .     16:#include <functional>
+         .          .     17:#include <iterator>
+         .          .     18:#include <cassert>
+         .          .     19:
+         .          .     20:using std::begin;
+         .          .     21:using std::end; 
+         .          .     22:using std::vector; 
+         .          .     23:using std::size_t;
+         .          .     24:
+         .          .     25:namespace combinatorial {
+         .          .     26:	using index_t = uint_fast64_t;
+         .          .     27:
+         .          .     28:	template<typename T>
+         .          .     29:	using it_diff_t = typename std::iterator_traits<T>::difference_type;
+         .          .     30:
+         .          .     31:	// Rotates two discontinuous ranges to put *first2 where *first1 is.
+         .          .     32:	//     If last1 == first2 this would be equivalent to rotate(first1, first2, last2),
+         .          .     33:	//     but instead the rotate "jumps" over the discontinuity [last1, first2) -
+         .          .     34:	//     which need not be a valid range.
+         .          .     35:	//     In order to make it faster, the length of [first1, last1) is passed in as d1,
+         .          .     36:	//     and d2 must be the length of [first2, last2).
+         .          .     37:	//  In a perfect world the d1 > d2 case would have used swap_ranges and
+         .          .     38:	//     reverse_iterator, but reverse_iterator is too inefficient.
+         .          .     39:	template <class It>
+         .          .     40:	void rotate_discontinuous(
+         .          .     41:		It first1, It last1, it_diff_t< It > d1,
+         .          .     42:		It first2, It last2, it_diff_t< It > d2)
+         .          .     43:	{
+         .          .     44:		using std::swap;
+         .          .     45:		if (d1 <= d2){ std::rotate(first2, std::swap_ranges(first1, last1, first2), last2); }
+         .          .     46:		else {
+         .          .     47:			It i1 = last1;
+         .          .     48:			while (first2 != last2)
+         .          .     49:				swap(*--i1, *--last2);
+         .          .     50:			std::rotate(first1, i1, last1);
+         .          .     51:		}
+         .          .     52:	}
+         .          .     53:
+         .          .     54:	// Call f() for each combination of the elements [first1, last1) + [first2, last2)
+         .          .     55:	//    swapped/rotated into the range [first1, last1).  As long as f() returns
+         .          .     56:	//    false, continue for every combination and then return [first1, last1) and
+         .          .     57:	//    [first2, last2) to their original state.  If f() returns true, return
+         .          .     58:	//    immediately.
+         .          .     59:	//  Does the absolute mininum amount of swapping to accomplish its task.
+         .          .     60:	//  If f() always returns false it will be called (d1+d2)!/(d1!*d2!) times.
+         .          .     61:	template < typename It, typename Lambda >
+         .          .     62:	bool combine_discontinuous(
+         .          .     63:		It first1, It last1, it_diff_t< It > d1,  
+         .          .     64:		It first2, It last2, it_diff_t< It > d2,
+         .          .     65:		Lambda&& f, it_diff_t< It > d = 0)
+       2ms        2ms     66:	{
+         .          .     67:		using D = it_diff_t< It >;
+         .          .     68:		using std::swap;
+         .          .     69:		if (d1 == 0 || d2 == 0){ return f(); }
+     250us      250us     70:		if (d1 == 1) {
+     750us      750us     71:			for (It i2 = first2; i2 != last2; ++i2) {
+         .        4ms     72:				if (f()){ return true; }
+         .      250us     73:				swap(*first1, *i2);
+         .          .     74:			}
+         .          .     75:		}
+         .          .     76:		else {
+         .          .     77:			It f1p = std::next(first1), i2 = first2;
+     250us      250us     78:			for (D d22 = d2; i2 != last2; ++i2, --d22){
+     250us    19.25ms     79:				if (combine_discontinuous(f1p, last1, d1-1, i2, last2, d22, f, d+1))
+         .          .     80:					return true;
+         .      250us     81:				swap(*first1, *i2);
+         .          .     82:			}
+         .          .     83:		}
+         .     9.75ms     84:		if (f()){ return true; }
+       1ms     1.50ms     85:		if (d != 0){ rotate_discontinuous(first1, last1, d1, std::next(first2), last2, d2-1); }
+         .     1.25ms     86:		else { rotate_discontinuous(first1, last1, d1, first2, last2, d2); }
+         .          .     87:		return false;
+         .          .     88:	}
+         .          .     89:
+         .          .     90:	template < typename Lambda, typename It > 
+         .          .     91:	struct bound_range { 
+ROUTINE ======================== _ZNSt3__16vectorItNS_9allocatorItEEED1B6v15007Ev in /usr/local/opt/llvm/include/c++/v1/vector
+         0      250us (flat, cum)  0.23% of Total
+         .          .    444:    private:
+         .          .    445:      vector& __vec_;
+         .          .    446:  };
+         .          .    447:
+         .          .    448:public:
+         .      250us    449:  _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_HIDE_FROM_ABI ~vector() { __destroy_vector(*this)(); }
+         .          .    450:
+         .          .    451:    _LIBCPP_CONSTEXPR_AFTER_CXX17 vector(const vector& __x);
+         .          .    452:    _LIBCPP_CONSTEXPR_AFTER_CXX17 vector(const vector& __x, const __type_identity_t<allocator_type>& __a);
+         .          .    453:    _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_INLINE_VISIBILITY
+         .          .    454:    vector& operator=(const vector& __x);
+ROUTINE ======================== _ZNSt3__16vectorItNS_9allocatorItEEED2B6v15007Ev in /usr/local/opt/llvm/include/c++/v1/vector
+         0      250us (flat, cum)  0.23% of Total
+         .          .    444:    private:
+         .          .    445:      vector& __vec_;
+         .          .    446:  };
+         .          .    447:
+         .          .    448:public:
+         .      250us    449:  _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_HIDE_FROM_ABI ~vector() { __destroy_vector(*this)(); }
+         .          .    450:
+         .          .    451:    _LIBCPP_CONSTEXPR_AFTER_CXX17 vector(const vector& __x);
+         .          .    452:    _LIBCPP_CONSTEXPR_AFTER_CXX17 vector(const vector& __x, const __type_identity_t<allocator_type>& __a);
+         .          .    453:    _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_INLINE_VISIBILITY
+         .          .    454:    vector& operator=(const vector& __x);
+ROUTINE ======================== _ZZN12SimplexRangeILh2ELb1EtE20SimplexLabelIterator8boundaryILb1EZ23benchmark_simplex_rangeRNSt3__16vectorItNS3_9allocatorItEEEEmE3$_0EEvOT0_ENKUlT_SA_E_clIPtSF_EEDaSC_SA_ in /Users/mpiekenbrock/pbsig/src/pbsig/splex_ranges.h
+     500us    12.75ms (flat, cum) 11.67% of Total
+         .          .    134:    template< bool ranks = false, typename Lambda > 
+         .          .    135:    void boundary(Lambda&& f){
+         .          .    136:      uint16_t* labels = this->operator*();
+         .          .    137:      if constexpr (ranks){
+         .          .    138:        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){
+     500us    12.75ms    139:          if constexpr(colex){
+         .          .    140:            f(combinatorial::rank_colex_k< false >(b,dim));
+         .          .    141:          } else {
+         .          .    142:            // const index_t N = combinatorial::BinomialCoefficient< false >(_n, dim); 
+         .          .    143:            f(combinatorial::rank_lex_k< false >(b,_n,dim,_N));
+         .          .    144:          }
+ROUTINE ======================== auto combinatorial::rank_colex_k(unsigned short*, unsigned long)::{lambda(unsigned long long, unsigned long long)#1}::operator() in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+         0      500us (flat, cum)  0.46% of Total
+         .          .    277:	template< bool safe = true, typename InputIter >
+         .          .    278:	[[nodiscard]]
+         .          .    279:	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
+         .          .    280:		index_t i = k; 
+         .          .    281:		const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+         .      500us    282:			return val + BinomialCoefficient< safe >(num, i--); 
+         .          .    283:		});
+         .          .    284:		return index; 
+         .          .    285:	}
+         .          .    286:	// colex bijection from a lexicographical order
+         .          .    287:	// index_t i = 1; 
+ROUTINE ======================== benchmark_simplex_range in /Users/mpiekenbrock/pbsig/benchmarks/profile_iter.cpp
+         0    43.25ms (flat, cum) 39.59% of Total
+         .          .     55:    }
+         .          .     56:  }
+         .          .     57:}
+         .          .     58:
+         .          .     59:void benchmark_simplex_range(vector< uint16_t >& triangles, const size_t n){
+         .      500us     60:  auto s_rng = SimplexRange< 2 >(triangles, n);
+         .          .     61:  float sum = 0; 
+         .          .     62:  for (size_t i = 0; i < 100; ++i){
+         .          .     63:    size_t cc = 0; 
+         .          .     64:    sum = 0;
+         .          .     65:    for (auto s_it = s_rng.begin(); s_it != s_rng.end(); ++s_it){
+         .    42.50ms     66:      s_it.boundary< true >([&](auto face_rank){ sum += std::pow(-1, cc++)*face_rank; });
+         .          .     67:    }
+         .          .     68:  }
+         .      250us     69:  std::cout << sum << std::endl;
+         .          .     70:}
+         .          .     71:
+         .          .     72:// void test(){
+         .          .     73:
+         .          .     74://   const index_t n = 10; 
+ROUTINE ======================== benchmark_simplex_range(std::__1::vector&, unsigned long)::$_0::operator() in /Users/mpiekenbrock/pbsig/benchmarks/profile_iter.cpp
+    6.75ms       11ms (flat, cum) 10.07% of Total
+         .          .      1:#include "splex_ranges.h"
+         .          .      2:#include <iostream>
+         .          .      3:
+         .          .      4:void read_dataset_labels(vector< uint16_t >& labels, std::string labels_fn){
+         .          .      5:  std::ifstream label_file(labels_fn);
+         .          .      6:  uint16_t label; 
+         .          .      7:  while (label_file >> label){
+         .          .      8:    labels.push_back(label);
+         .          .      9:  }
+         .          .     10:}
+         .          .     11:
+         .          .     12:void read_dataset(vector< uint64_t >& er, vector< uint64_t >& tr, std::string e_ranks_fn, std::string t_ranks_fn){
+         .          .     13:  std::ifstream edgefile(e_ranks_fn);
+         .          .     14:  uint64_t edge_rank; 
+         .          .     15:  while (edgefile >> edge_rank){
+         .          .     16:    er.push_back(edge_rank);
+         .          .     17:  }
+         .          .     18:  std::ifstream trianglefile(t_ranks_fn);
+         .          .     19:  uint64_t triangle_rank; 
+         .          .     20:  while (trianglefile >> triangle_rank){
+         .          .     21:    tr.push_back(triangle_rank);
+         .          .     22:  }
+         .          .     23:}
+         .          .     24:
+         .          .     25:void benchmark_lex_unranking(){
+         .          .     26:  auto er = std::vector<uint64_t>();
+         .          .     27:  auto tr = std::vector<uint64_t>();
+         .          .     28:  read_dataset(er, tr, "../data/edge_ranks_lex_500.txt", "../data/triangle_ranks_lex_500.txt");
+         .          .     29:  std::cout << "E: " << er.size() << ", T: " << tr.size() << std::endl;
+         .          .     30:
+         .          .     31:  for (size_t i = 0; i < 100; ++i){
+         .          .     32:    float c = 0;
+         .          .     33:    size_t cc = 0;
+         .          .     34:    auto t_rng = RankRange< 2, false, uint64_t >(500, tr);
+         .          .     35:    for (auto t: t_rng){
+         .          .     36:      // std::cout << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+         .          .     37:      c += std::pow(-1, cc++)*(t[0]+t[1]+t[2]);
+         .          .     38:    }
+         .          .     39:  }
+         .          .     40:}
+         .          .     41:
+         .          .     42:void benchmark_colex_unranking(){
+         .          .     43:  auto er = std::vector<uint64_t>();
+         .          .     44:  auto tr = std::vector<uint64_t>();
+         .          .     45:  read_dataset(er, tr, "../data/edge_ranks_colex_500.txt", "../data/triangle_ranks_colex_500.txt");
+         .          .     46:  std::cout << "E: " << er.size() << ", T: " << tr.size() << std::endl;
+         .          .     47:
+         .          .     48:  auto t_rng = RankRange< 2, true, uint64_t >(500, tr);
+         .          .     49:  for (size_t i = 0; i < 100; ++i){
+         .          .     50:    float c = 0;
+         .          .     51:    size_t cc = 0;
+         .          .     52:    for (auto t: t_rng){
+         .          .     53:      // std::cout << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+         .          .     54:      c += std::pow(-1, cc++)*(t[0]+t[1]+t[2]);
+         .          .     55:    }
+         .          .     56:  }
+         .          .     57:}
+         .          .     58:
+         .          .     59:void benchmark_simplex_range(vector< uint16_t >& triangles, const size_t n){
+         .          .     60:  auto s_rng = SimplexRange< 2 >(triangles, n);
+         .          .     61:  float sum = 0; 
+         .          .     62:  for (size_t i = 0; i < 100; ++i){
+         .          .     63:    size_t cc = 0; 
+         .          .     64:    sum = 0;
+         .          .     65:    for (auto s_it = s_rng.begin(); s_it != s_rng.end(); ++s_it){
+    6.25ms       10ms     66:      s_it.boundary< true >([&](auto face_rank){ sum += std::pow(-1, cc++)*face_rank; });
+         .          .     67:    }
+         .          .     68:  }
+         .          .     69:  std::cout << sum << std::endl;
+         .          .     70:}
+         .          .     71:
+ROUTINE ======================== combinatorial::BinomialCoefficient in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+         0      500us (flat, cum)  0.46% of Total
+         .          .    208:	template< bool safe = true >
+         .          .    209:	constexpr size_t BinomialCoefficient(const size_t n, const size_t k){
+         .          .    210:		if constexpr(safe){
+         .          .    211:			return BC(n,k);
+         .          .    212:		} else {
+         .      500us    213:			return BC.at(n,k);
+         .          .    214:		}
+         .          .    215:	}
+         .          .    216:	
+         .          .    217:	#if __cplusplus >= 202002L
+         .          .    218:    // C++20 (and later) code
+ROUTINE ======================== combinatorial::BinomialCoefficientTable::at in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+         0      500us (flat, cum)  0.46% of Total
+         .          .    194:		}
+         .          .    195:
+         .          .    196:		// Fast but unsafe access to a precompute table
+         .          .    197:		[[nodiscard]]
+         .          .    198:		constexpr auto at(index_t n, index_t k) noexcept -> index_t {
+         .      500us    199:			return BT[k][n];
+         .          .    200:		}
+         .          .    201:
+         .          .    202:	}; // BinomialCoefficientTable
+         .          .    203:
+         .          .    204:	// Build the cached table
+ROUTINE ======================== combinatorial::rank_colex_k in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+     250us     1.75ms (flat, cum)  1.60% of Total
+         .          .    276:	// assumes each k tuple of s is in colex order! 
+         .          .    277:	template< bool safe = true, typename InputIter >
+         .          .    278:	[[nodiscard]]
+         .          .    279:	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
+         .          .    280:		index_t i = k; 
+     250us     1.75ms    281:		const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+         .          .    282:			return val + BinomialCoefficient< safe >(num, i--); 
+         .          .    283:		});
+         .          .    284:		return index; 
+         .          .    285:	}
+         .          .    286:	// colex bijection from a lexicographical order
+ROUTINE ======================== combinatorial::rotate_discontinuous in /Users/mpiekenbrock/pbsig/src/pbsig/combinatorial.h
+     750us     1.50ms (flat, cum)  1.37% of Total
+         .          .      1:// combinatorial.h 
+         .          .      2:// Contains routines for combinatorics-related tasks 
+         .          .      3:// The combinations and permutations generation code is copyright Howard Hinnant, taken from: https://github.com/HowardHinnant/combinations/blob/master/combinations.h
+         .          .      4:#ifndef COMBINATORIAL_H
+         .          .      5:#define COMBINATORIAL_H 
+         .          .      6:
+         .          .      7:#include <cstdint>		// uint_fast64_t
+         .          .      8:#include <array>
+         .          .      9:// #include <span> 		 	// span (C++20)
+         .          .     10:#include <cmath>	 	 	// round, sqrt
+         .          .     11:#include <numeric>   	// midpoint, accumulate
+         .          .     12:#include <vector> 	 	// vector  
+         .          .     13:#include <algorithm> 
+         .          .     14:#include <type_traits>
+         .          .     15:#include <vector>
+         .          .     16:#include <functional>
+         .          .     17:#include <iterator>
+         .          .     18:#include <cassert>
+         .          .     19:
+         .          .     20:using std::begin;
+         .          .     21:using std::end; 
+         .          .     22:using std::vector; 
+         .          .     23:using std::size_t;
+         .          .     24:
+         .          .     25:namespace combinatorial {
+         .          .     26:	using index_t = uint_fast64_t;
+         .          .     27:
+         .          .     28:	template<typename T>
+         .          .     29:	using it_diff_t = typename std::iterator_traits<T>::difference_type;
+         .          .     30:
+         .          .     31:	// Rotates two discontinuous ranges to put *first2 where *first1 is.
+         .          .     32:	//     If last1 == first2 this would be equivalent to rotate(first1, first2, last2),
+         .          .     33:	//     but instead the rotate "jumps" over the discontinuity [last1, first2) -
+         .          .     34:	//     which need not be a valid range.
+         .          .     35:	//     In order to make it faster, the length of [first1, last1) is passed in as d1,
+         .          .     36:	//     and d2 must be the length of [first2, last2).
+         .          .     37:	//  In a perfect world the d1 > d2 case would have used swap_ranges and
+         .          .     38:	//     reverse_iterator, but reverse_iterator is too inefficient.
+         .          .     39:	template <class It>
+         .          .     40:	void rotate_discontinuous(
+         .          .     41:		It first1, It last1, it_diff_t< It > d1,
+         .          .     42:		It first2, It last2, it_diff_t< It > d2)
+         .          .     43:	{
+         .          .     44:		using std::swap;
+         .          .     45:		if (d1 <= d2){ std::rotate(first2, std::swap_ranges(first1, last1, first2), last2); }
+         .          .     46:		else {
+         .          .     47:			It i1 = last1;
+         .      250us     48:			while (first2 != last2)
+     250us      750us     49:				swap(*--i1, *--last2);
+         .          .     50:			std::rotate(first1, i1, last1);
+         .          .     51:		}
+         .          .     52:	}
+         .          .     53:
+         .          .     54:	// Call f() for each combination of the elements [first1, last1) + [first2, last2)
+ROUTINE ======================== main in /Users/mpiekenbrock/pbsig/benchmarks/profile_iter.cpp
+         0    99.75ms (flat, cum) 91.30% of Total
+         .          .    124:int main() {
+         .          .    125:  // benchmark_lex_unranking();
+         .          .    126:  // benchmark_colex_unranking();
+         .          .    127:
+         .          .    128:  vector< uint16_t > triangles = std::vector< uint16_t >();
+         .       57ms    129:  read_dataset_labels(triangles, "/Users/mpiekenbrock/pbsig/data/triangle_labels_500.txt");
+         .    42.75ms    130:  benchmark_simplex_range(triangles, 500);
+         .          .    131:
+         .          .    132:  // auto s_rng = SimplexRange< 2 >(triangles, 500);
+         .          .    133:  // size_t i = 0; 
+         .          .    134:  // for (auto s: s_rng){
+         .          .    135:  //   std::cout << s[0] << "," << s[1] << "," << s[2] << std::endl;
+ROUTINE ======================== pow[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/math.h
+       1ms     1.25ms (flat, cum)  1.14% of Total
+         .          .   1014:pow(_A1 __lcpp_x, _A2 __lcpp_y) _NOEXCEPT
+         .          .   1015:{
+         .          .   1016:    typedef typename std::__promote<_A1, _A2>::type __result_type;
+         .          .   1017:    static_assert((!(std::_IsSame<_A1, __result_type>::value &&
+         .          .   1018:                     std::_IsSame<_A2, __result_type>::value)), "");
+       1ms     1.25ms   1019:    return ::pow((__result_type)__lcpp_x, (__result_type)__lcpp_y);
+         .          .   1020:}
+         .          .   1021:
+         .          .   1022:// sin
+         .          .   1023:
+         .          .   1024:#    if !defined(__sun__)
+ROUTINE ======================== read_dataset_labels in /Users/mpiekenbrock/pbsig/benchmarks/profile_iter.cpp
+         0       61ms (flat, cum) 55.84% of Total
+         .          .      2:#include <iostream>
+         .          .      3:
+         .          .      4:void read_dataset_labels(vector< uint16_t >& labels, std::string labels_fn){
+         .          .      5:  std::ifstream label_file(labels_fn);
+         .          .      6:  uint16_t label; 
+         .    50.50ms      7:  while (label_file >> label){
+         .    10.25ms      8:    labels.push_back(label);
+         .          .      9:  }
+         .      250us     10:}
+         .          .     11:
+         .          .     12:void read_dataset(vector< uint64_t >& er, vector< uint64_t >& tr, std::string e_ranks_fn, std::string t_ranks_fn){
+         .          .     13:  std::ifstream edgefile(e_ranks_fn);
+         .          .     14:  uint64_t edge_rank; 
+         .          .     15:  while (edgefile >> edge_rank){
+ROUTINE ======================== std::__1::_IterOps::next[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__algorithm/iterator_operations.h
+         0      500us (flat, cum)  0.46% of Total
+         .          .    147:
+         .          .    148:  template <class _Iter>
+         .          .    149:  _LIBCPP_HIDE_FROM_ABI static _LIBCPP_CONSTEXPR_AFTER_CXX11
+         .          .    150:  __uncvref_t<_Iter> next(_Iter&& __it,
+         .          .    151:                          typename iterator_traits<__uncvref_t<_Iter> >::difference_type __n = 1) {
+         .      500us    152:    return std::next(std::forward<_Iter>(__it), __n);
+         .          .    153:  }
+         .          .    154:
+         .          .    155:  // prev
+         .          .    156:  template <class _Iter>
+         .          .    157:  _LIBCPP_HIDE_FROM_ABI static _LIBCPP_CONSTEXPR_AFTER_CXX11
+ROUTINE ======================== std::__1::__advance[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__iterator/advance.h
+     750us      750us (flat, cum)  0.69% of Total
+         .          .      1:// -*- C++ -*-
+         .          .      2://===----------------------------------------------------------------------===//
+         .          .      3://
+         .          .      4:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+         .          .      5:// See https://llvm.org/LICENSE.txt for license information.
+         .          .      6:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+         .          .      7://
+         .          .      8://===----------------------------------------------------------------------===//
+         .          .      9:
+         .          .     10:#ifndef _LIBCPP___ITERATOR_ADVANCE_H
+         .          .     11:#define _LIBCPP___ITERATOR_ADVANCE_H
+         .          .     12:
+         .          .     13:#include <__assert>
+         .          .     14:#include <__config>
+         .          .     15:#include <__iterator/concepts.h>
+         .          .     16:#include <__iterator/incrementable_traits.h>
+         .          .     17:#include <__iterator/iterator_traits.h>
+         .          .     18:#include <__utility/move.h>
+         .          .     19:#include <__utility/unreachable.h>
+         .          .     20:#include <concepts>
+         .          .     21:#include <cstdlib>
+         .          .     22:#include <limits>
+         .          .     23:#include <type_traits>
+         .          .     24:
+         .          .     25:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+         .          .     26:#  pragma GCC system_header
+         .          .     27:#endif
+         .          .     28:
+         .          .     29:_LIBCPP_BEGIN_NAMESPACE_STD
+         .          .     30:
+         .          .     31:template <class _InputIter>
+         .          .     32:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_AFTER_CXX14
+         .          .     33:void __advance(_InputIter& __i, typename iterator_traits<_InputIter>::difference_type __n, input_iterator_tag) {
+         .          .     34:  for (; __n > 0; --__n)
+         .          .     35:    ++__i;
+         .          .     36:}
+         .          .     37:
+         .          .     38:template <class _BiDirIter>
+         .          .     39:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_AFTER_CXX14
+         .          .     40:void __advance(_BiDirIter& __i, typename iterator_traits<_BiDirIter>::difference_type __n, bidirectional_iterator_tag) {
+         .          .     41:  if (__n >= 0)
+         .          .     42:    for (; __n > 0; --__n)
+         .          .     43:      ++__i;
+         .          .     44:  else
+         .          .     45:    for (; __n < 0; ++__n)
+         .          .     46:      --__i;
+         .          .     47:}
+         .          .     48:
+         .          .     49:template <class _RandIter>
+         .          .     50:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_AFTER_CXX14
+         .          .     51:void __advance(_RandIter& __i, typename iterator_traits<_RandIter>::difference_type __n, random_access_iterator_tag) {
+     500us      500us     52:  __i += __n;
+         .          .     53:}
+         .          .     54:
+         .          .     55:template <
+         .          .     56:    class _InputIter, class _Distance,
+         .          .     57:    class _IntegralDistance = decltype(_VSTD::__convert_to_integral(declval<_Distance>())),
+ROUTINE ======================== std::__1::__do_deallocate_handle_size[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/new
+         0      250us (flat, cum)  0.23% of Total
+         .          .    275:template <class ..._Args>
+         .          .    276:_LIBCPP_INLINE_VISIBILITY
+         .          .    277:void __do_deallocate_handle_size(void *__ptr, size_t __size, _Args ...__args) {
+         .          .    278:#ifdef _LIBCPP_HAS_NO_SIZED_DEALLOCATION
+         .          .    279:  (void)__size;
+         .      250us    280:  return __libcpp_operator_delete(__ptr, __args...);
+         .          .    281:#else
+         .          .    282:  return __libcpp_operator_delete(__ptr, __size, __args...);
+         .          .    283:#endif
+         .          .    284:}
+         .          .    285:
+ROUTINE ======================== std::__1::__libcpp_deallocate[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/new
+         0      250us (flat, cum)  0.23% of Total
+         .          .    291:#else
+         .          .    292:    if (__is_overaligned_for_new(__align)) {
+         .          .    293:      const align_val_t __align_val = static_cast<align_val_t>(__align);
+         .          .    294:      return __do_deallocate_handle_size(__ptr, __size, __align_val);
+         .          .    295:    } else {
+         .      250us    296:      return __do_deallocate_handle_size(__ptr, __size);
+         .          .    297:    }
+         .          .    298:#endif
+         .          .    299:}
+         .          .    300:
+         .          .    301:inline _LIBCPP_INLINE_VISIBILITY void __libcpp_deallocate_unsized(void* __ptr, size_t __align) {
+ROUTINE ======================== std::__1::__libcpp_operator_delete[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/new
+         0      250us (flat, cum)  0.23% of Total
+         .          .    251:
+         .          .    252:template <class ..._Args>
+         .          .    253:_LIBCPP_INLINE_VISIBILITY
+         .          .    254:void __libcpp_operator_delete(_Args ...__args) {
+         .          .    255:#if __has_builtin(__builtin_operator_new) && __has_builtin(__builtin_operator_delete)
+         .      250us    256:  __builtin_operator_delete(__args...);
+         .          .    257:#else
+         .          .    258:  ::operator delete(__args...);
+         .          .    259:#endif
+         .          .    260:}
+         .          .    261:
+ROUTINE ======================== std::__1::__move[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__algorithm/move.h
+         0     1.75ms (flat, cum)  1.60% of Total
+         .          .     92:inline _LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_AFTER_CXX11
+         .          .     93:__enable_if_t<is_copy_constructible<_InIter>::value
+         .          .     94:           && is_copy_constructible<_Sent>::value
+         .          .     95:           && is_copy_constructible<_OutIter>::value, pair<_InIter, _OutIter> >
+         .          .     96:__move(_InIter __first, _Sent __last, _OutIter __result) {
+         .     1.75ms     97:  auto __ret = std::__move_impl<_AlgPolicy>(
+         .          .     98:      std::__unwrap_iter(__first), std::__unwrap_iter(__last), std::__unwrap_iter(__result));
+         .          .     99:  return std::make_pair(std::__rewrap_iter(__first, __ret.first), std::__rewrap_iter(__result, __ret.second));
+         .          .    100:}
+         .          .    101:
+         .          .    102:template <class _AlgPolicy, class _InIter, class _Sent, class _OutIter>
+ROUTINE ======================== std::__1::__move_impl[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__algorithm/move.h
+     250us     1.75ms (flat, cum)  1.60% of Total
+         .          .     50:#ifndef _LIBCPP_COMPILER_GCC
+         .          .     51:   && !is_trivially_copyable<_InType>::value
+         .          .     52:#endif
+         .          .     53:     )
+         .          .     54:    return std::__move_impl<_AlgPolicy, _InType*, _InType*, _OutType*>(__first, __last, __result);
+     250us      250us     55:  const size_t __n = static_cast<size_t>(__last - __first);
+         .     1.50ms     56:  ::__builtin_memmove(__result, __first, __n * sizeof(_OutType));
+         .          .     57:  return std::make_pair(__first + __n, __result + __n);
+         .          .     58:}
+         .          .     59:
+         .          .     60:template <class>
+         .          .     61:struct __is_trivially_move_assignable_unwrapped_impl : false_type {};
+ROUTINE ======================== std::__1::__rotate[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__algorithm/rotate.h
+    3.25ms     6.25ms (flat, cum)  5.72% of Total
+         .          .      1://===----------------------------------------------------------------------===//
+         .          .      2://
+         .          .      3:// Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
+         .          .      4:// See https://llvm.org/LICENSE.txt for license information.
+         .          .      5:// SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+         .          .      6://
+         .          .      7://===----------------------------------------------------------------------===//
+         .          .      8:
+         .          .      9:#ifndef _LIBCPP___ALGORITHM_ROTATE_H
+         .          .     10:#define _LIBCPP___ALGORITHM_ROTATE_H
+         .          .     11:
+         .          .     12:#include <__algorithm/iterator_operations.h>
+         .          .     13:#include <__algorithm/move.h>
+         .          .     14:#include <__algorithm/move_backward.h>
+         .          .     15:#include <__algorithm/swap_ranges.h>
+         .          .     16:#include <__config>
+         .          .     17:#include <__iterator/iterator_traits.h>
+         .          .     18:#include <__utility/move.h>
+         .          .     19:#include <__utility/pair.h>
+         .          .     20:#include <type_traits>
+         .          .     21:
+         .          .     22:#if !defined(_LIBCPP_HAS_NO_PRAGMA_SYSTEM_HEADER)
+         .          .     23:#  pragma GCC system_header
+         .          .     24:#endif
+         .          .     25:
+         .          .     26:_LIBCPP_BEGIN_NAMESPACE_STD
+         .          .     27:
+         .          .     28:template <class _AlgPolicy, class _ForwardIterator>
+         .          .     29:_LIBCPP_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+         .          .     30:__rotate_left(_ForwardIterator __first, _ForwardIterator __last)
+         .          .     31:{
+         .          .     32:    typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
+         .          .     33:    using _Ops = _IterOps<_AlgPolicy>;
+         .          .     34:
+         .          .     35:    value_type __tmp = _Ops::__iter_move(__first);
+         .          .     36:    _ForwardIterator __lm1 = std::__move<_AlgPolicy>(
+         .          .     37:        _Ops::next(__first), __last, __first).second;
+         .          .     38:    *__lm1 = _VSTD::move(__tmp);
+         .          .     39:    return __lm1;
+         .          .     40:}
+         .          .     41:
+         .          .     42:template <class _AlgPolicy, class _BidirectionalIterator>
+         .          .     43:_LIBCPP_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator
+         .          .     44:__rotate_right(_BidirectionalIterator __first, _BidirectionalIterator __last)
+         .          .     45:{
+         .          .     46:    typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
+         .          .     47:    using _Ops = _IterOps<_AlgPolicy>;
+         .          .     48:
+         .          .     49:    _BidirectionalIterator __lm1 = _Ops::prev(__last);
+         .          .     50:    value_type __tmp = _Ops::__iter_move(__lm1);
+         .          .     51:    _BidirectionalIterator __fp1 = std::__move_backward<_AlgPolicy>(__first, __lm1, std::move(__last));
+         .          .     52:    *__first = _VSTD::move(__tmp);
+         .          .     53:    return __fp1;
+         .          .     54:}
+         .          .     55:
+         .          .     56:template <class _AlgPolicy, class _ForwardIterator>
+         .          .     57:_LIBCPP_CONSTEXPR_AFTER_CXX14 _ForwardIterator
+         .          .     58:__rotate_forward(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
+         .          .     59:{
+         .          .     60:    _ForwardIterator __i = __middle;
+         .          .     61:    while (true)
+         .          .     62:    {
+         .          .     63:        _IterOps<_AlgPolicy>::iter_swap(__first, __i);
+         .          .     64:        ++__first;
+         .          .     65:        if (++__i == __last)
+         .          .     66:            break;
+         .          .     67:        if (__first == __middle)
+         .          .     68:            __middle = __i;
+         .          .     69:    }
+         .          .     70:    _ForwardIterator __r = __first;
+         .          .     71:    if (__first != __middle)
+         .          .     72:    {
+         .          .     73:        __i = __middle;
+         .          .     74:        while (true)
+         .          .     75:        {
+         .          .     76:            _IterOps<_AlgPolicy>::iter_swap(__first, __i);
+         .          .     77:            ++__first;
+         .          .     78:            if (++__i == __last)
+         .          .     79:            {
+         .          .     80:                if (__first == __middle)
+         .          .     81:                    break;
+         .          .     82:                __i = __middle;
+         .          .     83:            }
+         .          .     84:            else if (__first == __middle)
+         .          .     85:                __middle = __i;
+         .          .     86:        }
+         .          .     87:    }
+         .          .     88:    return __r;
+         .          .     89:}
+         .          .     90:
+         .          .     91:template<typename _Integral>
+         .          .     92:inline _LIBCPP_INLINE_VISIBILITY
+         .          .     93:_LIBCPP_CONSTEXPR_AFTER_CXX14 _Integral
+         .          .     94:__algo_gcd(_Integral __x, _Integral __y)
+         .          .     95:{
+         .          .     96:    do
+         .          .     97:    {
+         .          .     98:        _Integral __t = __x % __y;
+         .          .     99:        __x = __y;
+         .          .    100:        __y = __t;
+         .          .    101:    } while (__y);
+         .          .    102:    return __x;
+         .          .    103:}
+         .          .    104:
+         .          .    105:template <class _AlgPolicy, typename _RandomAccessIterator>
+         .          .    106:_LIBCPP_CONSTEXPR_AFTER_CXX14 _RandomAccessIterator
+         .          .    107:__rotate_gcd(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last)
+         .          .    108:{
+         .          .    109:    typedef typename iterator_traits<_RandomAccessIterator>::difference_type difference_type;
+         .          .    110:    typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+         .          .    111:    using _Ops = _IterOps<_AlgPolicy>;
+         .          .    112:
+         .          .    113:    const difference_type __m1 = __middle - __first;
+         .          .    114:    const difference_type __m2 = _Ops::distance(__middle, __last);
+         .          .    115:    if (__m1 == __m2)
+         .          .    116:    {
+         .          .    117:        std::__swap_ranges<_AlgPolicy>(__first, __middle, __middle, __last);
+         .          .    118:        return __middle;
+         .          .    119:    }
+         .          .    120:    const difference_type __g = _VSTD::__algo_gcd(__m1, __m2);
+         .          .    121:    for (_RandomAccessIterator __p = __first + __g; __p != __first;)
+         .          .    122:    {
+         .          .    123:        value_type __t(_Ops::__iter_move(--__p));
+         .          .    124:        _RandomAccessIterator __p1 = __p;
+         .          .    125:        _RandomAccessIterator __p2 = __p1 + __m1;
+         .          .    126:        do
+         .          .    127:        {
+         .          .    128:            *__p1 = _Ops::__iter_move(__p2);
+         .          .    129:            __p1 = __p2;
+         .          .    130:            const difference_type __d = _Ops::distance(__p2, __last);
+         .          .    131:            if (__m1 < __d)
+         .          .    132:                __p2 += __m1;
+         .          .    133:            else
+         .          .    134:                __p2 = __first + (__m1 - __d);
+         .          .    135:        } while (__p2 != __p);
+         .          .    136:        *__p1 = _VSTD::move(__t);
+         .          .    137:    }
+         .          .    138:    return __first + __m2;
+         .          .    139:}
+         .          .    140:
+         .          .    141:template <class _AlgPolicy, class _ForwardIterator>
+         .          .    142:inline _LIBCPP_INLINE_VISIBILITY
+         .          .    143:_LIBCPP_CONSTEXPR_AFTER_CXX11 _ForwardIterator
+         .          .    144:__rotate_impl(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last,
+         .          .    145:         _VSTD::forward_iterator_tag)
+         .          .    146:{
+         .          .    147:    typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
+         .          .    148:    if (is_trivially_move_assignable<value_type>::value)
+         .          .    149:    {
+         .          .    150:        if (_IterOps<_AlgPolicy>::next(__first) == __middle)
+         .          .    151:            return std::__rotate_left<_AlgPolicy>(__first, __last);
+         .          .    152:    }
+         .          .    153:    return std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+         .          .    154:}
+         .          .    155:
+         .          .    156:template <class _AlgPolicy, class _BidirectionalIterator>
+         .          .    157:inline _LIBCPP_INLINE_VISIBILITY
+         .          .    158:_LIBCPP_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator
+         .          .    159:__rotate_impl(_BidirectionalIterator __first, _BidirectionalIterator __middle, _BidirectionalIterator __last,
+         .          .    160:         bidirectional_iterator_tag)
+         .          .    161:{
+         .          .    162:    typedef typename iterator_traits<_BidirectionalIterator>::value_type value_type;
+         .          .    163:    if (is_trivially_move_assignable<value_type>::value)
+         .          .    164:    {
+         .          .    165:        if (_IterOps<_AlgPolicy>::next(__first) == __middle)
+         .          .    166:            return std::__rotate_left<_AlgPolicy>(__first, __last);
+         .          .    167:        if (_IterOps<_AlgPolicy>::next(__middle) == __last)
+         .          .    168:            return std::__rotate_right<_AlgPolicy>(__first, __last);
+         .          .    169:    }
+         .          .    170:    return std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+         .          .    171:}
+         .          .    172:
+         .          .    173:template <class _AlgPolicy, class _RandomAccessIterator>
+         .          .    174:inline _LIBCPP_INLINE_VISIBILITY
+         .          .    175:_LIBCPP_CONSTEXPR_AFTER_CXX11 _RandomAccessIterator
+         .          .    176:__rotate_impl(_RandomAccessIterator __first, _RandomAccessIterator __middle, _RandomAccessIterator __last,
+         .          .    177:         random_access_iterator_tag)
+         .          .    178:{
+         .          .    179:    typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+         .          .    180:    if (is_trivially_move_assignable<value_type>::value)
+         .          .    181:    {
+         .          .    182:        if (_IterOps<_AlgPolicy>::next(__first) == __middle)
+         .          .    183:            return std::__rotate_left<_AlgPolicy>(__first, __last);
+         .          .    184:        if (_IterOps<_AlgPolicy>::next(__middle) == __last)
+         .          .    185:            return std::__rotate_right<_AlgPolicy>(__first, __last);
+         .          .    186:        return std::__rotate_gcd<_AlgPolicy>(__first, __middle, __last);
+         .          .    187:    }
+         .          .    188:    return std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+         .          .    189:}
+         .          .    190:
+         .          .    191:template <class _AlgPolicy, class _Iterator, class _Sentinel>
+         .          .    192:_LIBCPP_HIDE_FROM_ABI _LIBCPP_CONSTEXPR_AFTER_CXX11
+         .          .    193:pair<_Iterator, _Iterator>
+       2ms        2ms    194:__rotate(_Iterator __first, _Iterator __middle, _Sentinel __last) {
+         .          .    195:  using _Ret = pair<_Iterator, _Iterator>;
+         .          .    196:  _Iterator __last_iter = _IterOps<_AlgPolicy>::next(__middle, __last);
+         .          .    197:
+         .          .    198:  if (__first == __middle)
+         .          .    199:      return _Ret(__last_iter, __last_iter);
+         .          .    200:  if (__middle == __last)
+         .          .    201:      return _Ret(std::move(__first), std::move(__last_iter));
+         .          .    202:
+         .          .    203:  using _IterCategory = typename _IterOps<_AlgPolicy>::template __iterator_category<_Iterator>;
+         .        3ms    204:  auto __result = std::__rotate_impl<_AlgPolicy>(
+         .          .    205:      std::move(__first), std::move(__middle), __last_iter, _IterCategory());
+         .          .    206:
+         .          .    207:  return _Ret(std::move(__result), std::move(__last_iter));
+       1ms        1ms    208:}
+         .          .    209:
+         .          .    210:template <class _ForwardIterator>
+         .          .    211:inline _LIBCPP_INLINE_VISIBILITY
+         .          .    212:_LIBCPP_CONSTEXPR_AFTER_CXX17 _ForwardIterator
+         .          .    213:rotate(_ForwardIterator __first, _ForwardIterator __middle, _ForwardIterator __last)
+ROUTINE ======================== std::__1::__rotate_impl[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__algorithm/rotate.h
+         0        3ms (flat, cum)  2.75% of Total
+         .          .    177:         random_access_iterator_tag)
+         .          .    178:{
+         .          .    179:    typedef typename iterator_traits<_RandomAccessIterator>::value_type value_type;
+         .          .    180:    if (is_trivially_move_assignable<value_type>::value)
+         .          .    181:    {
+         .      500us    182:        if (_IterOps<_AlgPolicy>::next(__first) == __middle)
+         .     2.50ms    183:            return std::__rotate_left<_AlgPolicy>(__first, __last);
+         .          .    184:        if (_IterOps<_AlgPolicy>::next(__middle) == __last)
+         .          .    185:            return std::__rotate_right<_AlgPolicy>(__first, __last);
+         .          .    186:        return std::__rotate_gcd<_AlgPolicy>(__first, __middle, __last);
+         .          .    187:    }
+         .          .    188:    return std::__rotate_forward<_AlgPolicy>(__first, __middle, __last);
+ROUTINE ======================== std::__1::__rotate_left in /usr/local/opt/llvm/include/c++/v1/__algorithm/rotate.h
+     750us     2.50ms (flat, cum)  2.29% of Total
+         .          .     31:{
+         .          .     32:    typedef typename iterator_traits<_ForwardIterator>::value_type value_type;
+         .          .     33:    using _Ops = _IterOps<_AlgPolicy>;
+         .          .     34:
+         .          .     35:    value_type __tmp = _Ops::__iter_move(__first);
+         .     1.75ms     36:    _ForwardIterator __lm1 = std::__move<_AlgPolicy>(
+         .          .     37:        _Ops::next(__first), __last, __first).second;
+     750us      750us     38:    *__lm1 = _VSTD::move(__tmp);
+         .          .     39:    return __lm1;
+         .          .     40:}
+         .          .     41:
+         .          .     42:template <class _AlgPolicy, class _BidirectionalIterator>
+         .          .     43:_LIBCPP_CONSTEXPR_AFTER_CXX11 _BidirectionalIterator
+ROUTINE ======================== std::__1::__uninitialized_allocator_copy[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__memory/uninitialized_algorithms.h
+         0      250us (flat, cum)  0.23% of Total
+         .          .    533:#ifndef _LIBCPP_NO_EXCEPTIONS
+         .          .    534:  auto __destruct_first = __first2;
+         .          .    535:  try {
+         .          .    536:#endif
+         .          .    537:  while (__first1 != __last1) {
+         .      250us    538:    allocator_traits<_Alloc>::construct(__alloc, std::__to_address(__first2), *__first1);
+         .          .    539:    ++__first1;
+         .          .    540:    ++__first2;
+         .          .    541:  }
+         .          .    542:#ifndef _LIBCPP_NO_EXCEPTIONS
+         .          .    543:  } catch (...) {
+ROUTINE ======================== std::__1::accumulate[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__numeric/accumulate.h
+     500us        1ms (flat, cum)  0.92% of Total
+         .          .     38:_Tp
+         .          .     39:accumulate(_InputIterator __first, _InputIterator __last, _Tp __init, _BinaryOperation __binary_op)
+         .          .     40:{
+         .          .     41:    for (; __first != __last; ++__first)
+         .          .     42:#if _LIBCPP_STD_VER > 17
+     500us        1ms     43:        __init = __binary_op(_VSTD::move(__init), *__first);
+         .          .     44:#else
+         .          .     45:        __init = __binary_op(__init, *__first);
+         .          .     46:#endif
+         .          .     47:    return __init;
+         .          .     48:}
+ROUTINE ======================== std::__1::advance[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__iterator/advance.h
+         0      750us (flat, cum)  0.69% of Total
+         .          .     60:void advance(_InputIter& __i, _Distance __orig_n) {
+         .          .     61:  typedef typename iterator_traits<_InputIter>::difference_type _Difference;
+         .          .     62:  _Difference __n = static_cast<_Difference>(_VSTD::__convert_to_integral(__orig_n));
+         .          .     63:  _LIBCPP_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+         .          .     64:                 "Attempt to advance(it, n) with negative n on a non-bidirectional iterator");
+         .      750us     65:  _VSTD::__advance(__i, __n, typename iterator_traits<_InputIter>::iterator_category());
+         .          .     66:}
+         .          .     67:
+         .          .     68:#if _LIBCPP_STD_VER > 17 && !defined(_LIBCPP_HAS_NO_INCOMPLETE_RANGES)
+         .          .     69:
+         .          .     70:// [range.iter.op.advance]
+ROUTINE ======================== std::__1::allocator::deallocate[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__memory/allocator.h
+         0      250us (flat, cum)  0.23% of Total
+         .          .    123:    _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .    124:    void deallocate(_Tp* __p, size_t __n) _NOEXCEPT {
+         .          .    125:        if (__libcpp_is_constant_evaluated()) {
+         .          .    126:            ::operator delete(__p);
+         .          .    127:        } else {
+         .      250us    128:            _VSTD::__libcpp_deallocate((void*)__p, __n * sizeof(_Tp), _LIBCPP_ALIGNOF(_Tp));
+         .          .    129:        }
+         .          .    130:    }
+         .          .    131:
+         .          .    132:    // C++20 Removed members
+         .          .    133:#if _LIBCPP_STD_VER <= 17 || defined(_LIBCPP_ENABLE_CXX20_REMOVED_ALLOCATOR_MEMBERS)
+ROUTINE ======================== std::__1::allocator_traits::construct[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__memory/allocator_traits.h
+         0    10.50ms (flat, cum)  9.61% of Total
+         .          .    293:    template <class _Tp, class... _Args, class = void, class =
+         .          .    294:        __enable_if_t<!__has_construct<allocator_type, _Tp*, _Args...>::value> >
+         .          .    295:    _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .    296:    static void construct(allocator_type&, _Tp* __p, _Args&&... __args) {
+         .          .    297:#if _LIBCPP_STD_VER > 17
+         .    10.50ms    298:        _VSTD::construct_at(__p, _VSTD::forward<_Args>(__args)...);
+         .          .    299:#else
+         .          .    300:        ::new ((void*)__p) _Tp(_VSTD::forward<_Args>(__args)...);
+         .          .    301:#endif
+         .          .    302:    }
+         .          .    303:
+ROUTINE ======================== std::__1::allocator_traits::deallocate[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__memory/allocator_traits.h
+         0      250us (flat, cum)  0.23% of Total
+         .          .    277:        return __a.allocate(__n);
+         .          .    278:    }
+         .          .    279:
+         .          .    280:    _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .    281:    static void deallocate(allocator_type& __a, pointer __p, size_type __n) _NOEXCEPT {
+         .      250us    282:        __a.deallocate(__p, __n);
+         .          .    283:    }
+         .          .    284:
+         .          .    285:    template <class _Tp, class... _Args, class =
+         .          .    286:        __enable_if_t<__has_construct<allocator_type, _Tp*, _Args...>::value> >
+         .          .    287:    _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17
+ROUTINE ======================== std::__1::basic_filebuf::close in /usr/local/opt/llvm/include/c++/v1/fstream
+         0      250us (flat, cum)  0.23% of Total
+         .          .    709:    basic_filebuf<_CharT, _Traits>* __rt = nullptr;
+         .          .    710:    if (__file_)
+         .          .    711:    {
+         .          .    712:        __rt = this;
+         .          .    713:        unique_ptr<FILE, int(*)(FILE*)> __h(__file_, fclose);
+         .      250us    714:        if (sync())
+         .          .    715:            __rt = nullptr;
+         .          .    716:        if (fclose(__h.release()))
+         .          .    717:            __rt = nullptr;
+         .          .    718:        __file_ = nullptr;
+         .          .    719:        setbuf(0, 0);
+ROUTINE ======================== std::__1::basic_filebuf::sync in /usr/local/opt/llvm/include/c++/v1/fstream
+         0      250us (flat, cum)  0.23% of Total
+         .          .   1043:        }
+         .          .   1044:#if defined(_LIBCPP_HAS_NO_OFF_T_FUNCTIONS)
+         .          .   1045:        if (fseek(__file_, -__c, SEEK_CUR))
+         .          .   1046:            return -1;
+         .          .   1047:#else
+         .      250us   1048:        if (fseeko(__file_, -__c, SEEK_CUR))
+         .          .   1049:            return -1;
+         .          .   1050:#endif
+         .          .   1051:        if (__update_st)
+         .          .   1052:            __st_ = __state;
+         .          .   1053:        __extbufnext_ = __extbufend_ = __extbuf_;
+ROUTINE ======================== std::__1::basic_filebuf::underflow in /usr/local/opt/llvm/include/c++/v1/fstream
+         0    47.75ms (flat, cum) 43.71% of Total
+         .          .    737:    {
+         .          .    738:        _VSTD::memmove(this->eback(), this->egptr() - __unget_sz, __unget_sz * sizeof(char_type));
+         .          .    739:        if (__always_noconv_)
+         .          .    740:        {
+         .          .    741:            size_t __nmemb = static_cast<size_t>(this->egptr() - this->eback() - __unget_sz);
+         .    47.75ms    742:            __nmemb = fread(this->eback() + __unget_sz, 1, __nmemb, __file_);
+         .          .    743:            if (__nmemb != 0)
+         .          .    744:            {
+         .          .    745:                this->setg(this->eback(),
+         .          .    746:                           this->eback() + __unget_sz,
+         .          .    747:                           this->eback() + __unget_sz + __nmemb);
+ROUTINE ======================== std::__1::basic_filebuf::~basic_filebuf in /usr/local/opt/llvm/include/c++/v1/fstream
+         0      500us (flat, cum)  0.46% of Total
+         .          .    392:    return *this;
+         .          .    393:}
+         .          .    394:
+         .          .    395:template <class _CharT, class _Traits>
+         .          .    396:basic_filebuf<_CharT, _Traits>::~basic_filebuf()
+         .      250us    397:{
+         .          .    398:#ifndef _LIBCPP_NO_EXCEPTIONS
+         .          .    399:    try
+         .          .    400:    {
+         .          .    401:#endif // _LIBCPP_NO_EXCEPTIONS
+         .      250us    402:        close();
+         .          .    403:#ifndef _LIBCPP_NO_EXCEPTIONS
+         .          .    404:    }
+         .          .    405:    catch (...)
+         .          .    406:    {
+         .          .    407:    }
+ROUTINE ======================== std::__1::basic_ifstream::~basic_ifstream in /usr/local/opt/llvm/include/c++/v1/iosfwd
+         0      250us (flat, cum)  0.23% of Total
+         .          .    146:    class _LIBCPP_TEMPLATE_VIS basic_stringstream;
+         .          .    147:
+         .          .    148:template <class _CharT, class _Traits = char_traits<_CharT> >
+         .          .    149:    class _LIBCPP_TEMPLATE_VIS basic_filebuf;
+         .          .    150:template <class _CharT, class _Traits = char_traits<_CharT> >
+         .      250us    151:    class _LIBCPP_TEMPLATE_VIS basic_ifstream;
+         .          .    152:template <class _CharT, class _Traits = char_traits<_CharT> >
+         .          .    153:    class _LIBCPP_TEMPLATE_VIS basic_ofstream;
+         .          .    154:template <class _CharT, class _Traits = char_traits<_CharT> >
+         .          .    155:    class _LIBCPP_TEMPLATE_VIS basic_fstream;
+         .          .    156:
+ROUTINE ======================== std::__1::construct_at[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__memory/construct_at.h
+   10.50ms    10.50ms (flat, cum)  9.61% of Total
+         .          .     30:#if _LIBCPP_STD_VER > 17
+         .          .     31:
+         .          .     32:template <class _Tp, class... _Args, class = decltype(::new(declval<void*>()) _Tp(declval<_Args>()...))>
+         .          .     33:_LIBCPP_HIDE_FROM_ABI constexpr _Tp* construct_at(_Tp* __location, _Args&&... __args) {
+         .          .     34:  _LIBCPP_ASSERT(__location != nullptr, "null pointer given to construct_at");
+   10.50ms    10.50ms     35:  return ::new (_VSTD::__voidify(*__location)) _Tp(_VSTD::forward<_Args>(__args)...);
+         .          .     36:}
+         .          .     37:
+         .          .     38:#endif
+         .          .     39:
+         .          .     40:template <class _Tp, class... _Args, class = decltype(::new(declval<void*>()) _Tp(declval<_Args>()...))>
+ROUTINE ======================== std::__1::next[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__iterator/next.h
+         0      750us (flat, cum)  0.69% of Total
+         .          .     29:    typename enable_if<__is_cpp17_input_iterator<_InputIter>::value, _InputIter>::type
+         .          .     30:    next(_InputIter __x, typename iterator_traits<_InputIter>::difference_type __n = 1) {
+         .          .     31:  _LIBCPP_ASSERT(__n >= 0 || __is_cpp17_bidirectional_iterator<_InputIter>::value,
+         .          .     32:                 "Attempt to next(it, n) with negative n on a non-bidirectional iterator");
+         .          .     33:
+         .      750us     34:  _VSTD::advance(__x, __n);
+         .          .     35:  return __x;
+         .          .     36:}
+         .          .     37:
+         .          .     38:#if _LIBCPP_STD_VER > 17 && !defined(_LIBCPP_HAS_NO_INCOMPLETE_RANGES)
+         .          .     39:
+ROUTINE ======================== std::__1::swap[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/__utility/swap.h
+       1ms        1ms (flat, cum)  0.92% of Total
+         .          .     30:#endif
+         .          .     31:
+         .          .     32:template <class _Tp>
+         .          .     33:inline _LIBCPP_INLINE_VISIBILITY __swap_result_t<_Tp> _LIBCPP_CONSTEXPR_AFTER_CXX17 swap(_Tp& __x, _Tp& __y)
+         .          .     34:    _NOEXCEPT_(is_nothrow_move_constructible<_Tp>::value&& is_nothrow_move_assignable<_Tp>::value) {
+     750us      750us     35:  _Tp __t(_VSTD::move(__x));
+     250us      250us     36:  __x = _VSTD::move(__y);
+         .          .     37:  __y = _VSTD::move(__t);
+         .          .     38:}
+         .          .     39:
+         .          .     40:template <class _Tp, size_t _Np>
+         .          .     41:inline _LIBCPP_INLINE_VISIBILITY _LIBCPP_CONSTEXPR_AFTER_CXX17 typename enable_if<__is_swappable<_Tp>::value>::type
+ROUTINE ======================== std::__1::vector::__construct_at_end in /usr/local/opt/llvm/include/c++/v1/vector
+         0      250us (flat, cum)  0.23% of Total
+         .          .   1036:    void
+         .          .   1037:>::type
+         .          .   1038:vector<_Tp, _Allocator>::__construct_at_end(_ForwardIterator __first, _ForwardIterator __last, size_type __n)
+         .          .   1039:{
+         .          .   1040:  _ConstructTransaction __tx(*this, __n);
+         .      250us   1041:  __tx.__pos_ = std::__uninitialized_allocator_copy(__alloc(), __first, __last, __tx.__pos_);
+         .          .   1042:}
+         .          .   1043:
+         .          .   1044://  Default constructs __n objects starting at __end_
+         .          .   1045://  throws if construction throws
+         .          .   1046://  Postcondition:  size() == size() + __n
+ROUTINE ======================== std::__1::vector::__construct_one_at_end[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/vector
+         0     9.75ms (flat, cum)  8.92% of Total
+         .          .    813:
+         .          .    814:  template <class ..._Args>
+         .          .    815:  _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_INLINE_VISIBILITY
+         .          .    816:  void __construct_one_at_end(_Args&& ...__args) {
+         .          .    817:    _ConstructTransaction __tx(*this, 1);
+         .     9.75ms    818:    __alloc_traits::construct(this->__alloc(), _VSTD::__to_address(__tx.__pos_),
+         .          .    819:        _VSTD::forward<_Args>(__args)...);
+         .          .    820:    ++__tx.__pos_;
+         .          .    821:  }
+         .          .    822:
+         .          .    823:  _LIBCPP_CONSTEXPR_AFTER_CXX17 _LIBCPP_INLINE_VISIBILITY
+ROUTINE ======================== std::__1::vector::__destroy_vector::operator()[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/vector
+         0      250us (flat, cum)  0.23% of Total
+         .          .    435:          __vec_.__annotate_delete();
+         .          .    436:          std::__debug_db_erase_c(std::addressof(__vec_));
+         .          .    437:
+         .          .    438:          if (__vec_.__begin_ != nullptr) {
+         .          .    439:            __vec_.__clear();
+         .      250us    440:            __alloc_traits::deallocate(__vec_.__alloc(), __vec_.__begin_, __vec_.capacity());
+         .          .    441:          }
+         .          .    442:      }
+         .          .    443:
+         .          .    444:    private:
+         .          .    445:      vector& __vec_;
+ROUTINE ======================== std::__1::vector::__push_back_slow_path in /usr/local/opt/llvm/include/c++/v1/vector
+         0      500us (flat, cum)  0.46% of Total
+         .          .   1566:vector<_Tp, _Allocator>::__push_back_slow_path(_Up&& __x)
+         .          .   1567:{
+         .          .   1568:    allocator_type& __a = this->__alloc();
+         .          .   1569:    __split_buffer<value_type, allocator_type&> __v(__recommend(size() + 1), size(), __a);
+         .          .   1570:    // __v.push_back(_VSTD::forward<_Up>(__x));
+         .      500us   1571:    __alloc_traits::construct(__a, _VSTD::__to_address(__v.__end_), _VSTD::forward<_Up>(__x));
+         .          .   1572:    __v.__end_++;
+         .          .   1573:    __swap_out_circular_buffer(__v);
+         .          .   1574:}
+         .          .   1575:
+         .          .   1576:template <class _Tp, class _Allocator>
+ROUTINE ======================== std::__1::vector::operator[][abi:v15007] in /usr/local/opt/llvm/include/c++/v1/vector
+     500us      500us (flat, cum)  0.46% of Total
+         .          .   1486:inline _LIBCPP_INLINE_VISIBILITY
+         .          .   1487:typename vector<_Tp, _Allocator>::reference
+         .          .   1488:vector<_Tp, _Allocator>::operator[](size_type __n) _NOEXCEPT
+         .          .   1489:{
+         .          .   1490:    _LIBCPP_ASSERT(__n < size(), "vector[] index out of bounds");
+     500us      500us   1491:    return this->__begin_[__n];
+         .          .   1492:}
+         .          .   1493:
+         .          .   1494:template <class _Tp, class _Allocator>
+         .          .   1495:_LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .   1496:inline _LIBCPP_INLINE_VISIBILITY
+ROUTINE ======================== std::__1::vector::push_back[abi:v15007] in /usr/local/opt/llvm/include/c++/v1/vector
+         0    10.25ms (flat, cum)  9.38% of Total
+         .          .   1579:void
+         .          .   1580:vector<_Tp, _Allocator>::push_back(const_reference __x)
+         .          .   1581:{
+         .          .   1582:    if (this->__end_ != this->__end_cap())
+         .          .   1583:    {
+         .     9.75ms   1584:        __construct_one_at_end(__x);
+         .          .   1585:    }
+         .          .   1586:    else
+         .      500us   1587:        __push_back_slow_path(__x);
+         .          .   1588:}
+         .          .   1589:
+         .          .   1590:template <class _Tp, class _Allocator>
+         .          .   1591:_LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .   1592:inline _LIBCPP_INLINE_VISIBILITY
+ROUTINE ======================== std::__1::vector::vector in /usr/local/opt/llvm/include/c++/v1/vector
+         0      500us (flat, cum)  0.46% of Total
+         .          .   1204:
+         .          .   1205:template <class _Tp, class _Allocator>
+         .          .   1206:_LIBCPP_CONSTEXPR_AFTER_CXX17
+         .          .   1207:vector<_Tp, _Allocator>::vector(const vector& __x)
+         .          .   1208:    : __end_cap_(nullptr, __alloc_traits::select_on_container_copy_construction(__x.__alloc()))
+         .      250us   1209:{
+         .          .   1210:    auto __guard = std::__make_transaction(__destroy_vector(*this));
+         .          .   1211:    std::__debug_db_insert_c(this);
+         .          .   1212:    size_type __n = __x.size();
+         .          .   1213:    if (__n > 0)
+         .          .   1214:    {
+         .          .   1215:        __vallocate(__n);
+         .      250us   1216:        __construct_at_end(__x.__begin_, __x.__end_, __n);
+         .          .   1217:    }
+         .          .   1218:    __guard.__complete();
+         .          .   1219:}
+         .          .   1220:
+         .          .   1221:template <class _Tp, class _Allocator>

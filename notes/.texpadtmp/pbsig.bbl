@@ -12,6 +12,17 @@ Ulrich Bauer and Michael Lesnick.
   theorem.
 \newblock In {\em Topological Data Analysis}, pages 67--96. Springer, 2020.
 
+\bibitem{bauer2022keeping}
+Ulrich Bauer, Talha~Bin Masood, Barbara Giunti, Guillaume Houry, Michael
+  Kerber, and Abhishek Rathod.
+\newblock Keeping it sparse: Computing persistent homology revised.
+\newblock {\em arXiv preprint arXiv:2211.09075}, 2022.
+
+\bibitem{bhatia2013matrix}
+Rajendra Bhatia.
+\newblock {\em Matrix analysis}, volume 169.
+\newblock Springer Science \& Business Media, 2013.
+
 \bibitem{bi2013approximation}
 Shujun Bi, Le~Han, and Shaohua Pan.
 \newblock Approximation of rank function and its application to the nearest
@@ -97,6 +108,12 @@ Cornelius Lanczos.
 \newblock An iteration method for the solution of the eigenvalue problem of
   linear differential and integral operators.
 \newblock 1950.
+
+\bibitem{mangasarian1994class}
+Olvi Mangasarian and Chunhui Chen.
+\newblock A class of smoothing functions for nonlinear and mixed
+  complementarity problems.
+\newblock Technical report, 1994.
 
 \bibitem{newman2001laplacian}
 Michael~William Newman.

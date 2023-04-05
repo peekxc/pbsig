@@ -59,7 +59,7 @@ void benchmark_colex_unranking(){
 void benchmark_simplex_range(vector< uint16_t >& triangles, const size_t n){
   auto s_rng = SimplexRange< 2 >(triangles, n);
   float sum = 0; 
-  for (size_t i = 0; i < 100; ++i){
+  for (size_t i = 0; i < 1500; ++i){
     size_t cc = 0; 
     sum = 0;
     for (auto s_it = s_rng.begin(); s_it != s_rng.end(); ++s_it){
