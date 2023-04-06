@@ -28,7 +28,7 @@ def gen_primes_above(m: int, n: int):
 ## https://en.wikipedia.org/wiki/Linear_congruential_generator
 ## NOTE: If c = 1, then the prime will be fixed which isn't good for hashing as multiple hash functions
 ## will be be more likely to be linearly independent.  
-def random_hash_function(m: int, primes: Union[int, Iterable] = 100):
+class LCG:
   """Produces a (random) Universal Hash Function. 
   
   Parameters: 
@@ -38,13 +38,33 @@ def random_hash_function(m: int, primes: Union[int, Iterable] = 100):
   Returns: 
     a random LCG hash function (x, params) which hashes integer inputs. Supply params=True to see the parameters.
   """
-  # np.random.seed()  
-  primes = gen_primes_above(m, primes) if isinstance(primes, Number) else primes      ## Randomize seed
-  p = np.random.choice(primes)                                                        ## Random prime from first |c| primes after m 
-  a,b = np.random.choice(range(1, p)), np.random.choice(range(p))                     ## Multiplier/increment (a,b) 
-  def __hash_fun__(x: int, params: bool = False):
-    return ((a*x + b) % p) % m if not params else (a,b,p,m)
-  return __hash_fun__
+  def __init__(self, primes: Iterable):
+    self.primes = np.fromiter(iter(primes), dtype=np.int64)
+
+  def randomize(self, m: int):
+    self.m = m
+    self.p = np.random.choice(self.primes)      ## Random prime from first |c| primes after m 
+    self.a = max([1,np.random.choice(self.p)])
+    self.b = np.random.choice(self.p)         ## Multiplier/increment (a,b) 
+  
+  def __call__(self, x: int, params: bool = False):
+    return ((self.a*x + self.b) % self.p) % self.m if not params else (self.a,self.b,self.p,self.m)
+
+import random
+class IntSaltHash:
+  def __init__(self):
+    self.salt = []
+
+  def randomize(self, m: int):
+    self.m = m
+    self.salt = []
+
+  def __call__(self, key: str):
+    key = str(key)
+    while len(self.salt) < len(key): # add more salt as necessary
+      self.salt.append(random.randint(1, self.m - 1))
+    return sum(self.salt[i] * ord(c) for i, c in enumerate(key)) % self.m
+
 
 def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linprog", k_min: int = 2, k_max: int = 15, n_tries: int = 100, n_prime: int = 100):
   """Defines a perfect minimal hash.
@@ -61,14 +81,16 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
   """
   assert k_min <= k_max
   assert solver == "linprog" or solver == "spsolve"
-  S = np.fromiter(iter(S), dtype=np.int32)
+  S = np.fromiter(iter(S), dtype=np.uint64)
   N = len(S)
   b = max(1, int(np.ceil(n_tries/(max(1, abs(k_max-k_min)))))) # attempts per iteration
   success = False 
   n_solves = 0
   n_attempts = 0
   H = None
-  primes = gen_primes_above(N, n_prime)
+  primes = gen_primes_above(max(S), n_prime)
+  f = LCG(primes)
+  from copy import deepcopy
 
   #print(f"k_min: {k_min}, k_max:{k_max}, block size: {b}")
   for k, _ in progressbar(product(range(k_min, k_max+1), range(b)), n_tries):
@@ -171,25 +193,30 @@ class Graph():
           to_visit.append((vertex, neighbor))
 
           ## Assignment step: set vertex value to the desired edge value, minus the value of the vertex we came here from.
-          ## HERE: its not right -3 % 6 should equal 3 
-          print(f"Assigning: g[{neighbor}] = ({edge_value} - g[{vertex}]) % {N}  == {(edge_value - self.vertex_values[vertex]) % N}")
+          # print(f"Assigning: g[{neighbor}] = ({edge_value} - g[{vertex}]) % {N}  == {(edge_value - self.vertex_values[vertex]) % N}")
           self.vertex_values[neighbor] = (edge_value - self.vertex_values[vertex]) % N
     
     return True # success: graph is acyclic so all values are now assigned.
 
 from collections import defaultdict
-def perfect_hash_dag(keys: Iterable[int], output: str = "function", mult_max: float = 2.0, n_tries: int = 100, n_prime: int = 100, progress: bool = False):
+def perfect_hash_dag(keys: Iterable[int], output: str = "function", use_lcg: bool = True, mult_max: float = 2.0, n_tries: int = 100, n_prime: int = 100, progress: bool = False):
   N = len(keys)
   G = Graph()
   n_attempts = 0 
   success = False 
   step_sz = (np.ceil(mult_max*N)-N)/n_tries
-  primes = gen_primes_above(N, n_prime)
+  if use_lcg:
+    primes = gen_primes_above(max(keys), n_prime)
+    f1 = LCG(primes)
+    f2 = LCG(primes)
+  else: 
+    f1 = IntSaltHash()
+    f2 = IntSaltHash()
   it = progressbar(range(n_tries), count=n_tries) if progress else range(n_tries)
   for i in it:
     NG = int(N + i*step_sz)
-    f1 = random_hash_function(NG, primes) 
-    f2 = random_hash_function(NG, primes)
+    f1.randomize(NG)
+    f2.randomize(NG)
 
     ## Connect vertices using hash function then check for valid assignments
     G.reset()

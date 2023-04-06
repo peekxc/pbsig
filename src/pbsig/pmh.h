@@ -79,6 +79,35 @@ struct LCG {
   }
 };
 
+template< uint16_t d >
+struct LCG_k {
+  mutable array< uint64_t, d > a;  
+  mutable uint64_t p;   
+  mutable uint32_t m;  
+  const vector< uint64_t >& primes;
+
+  LCG_k(const vector< uint64_t >& p) : p(0), m(0), primes(p) { }
+  
+  void randomize(uint32_t _m){
+    m = _m; 
+    p = primes[rand() % primes.size()];
+    for (size_t i = 0; i < d; ++i){
+      a[i] = std::max(uint64_t(1), uint64_t(rand() % p)); 
+    }
+  }
+
+  uint32_t operator()(uint32_t x) const {
+    uint32_t w = 1; 
+    uint64_t r = 0; 
+    for (size_t i = 0; i < d; ++i){
+      r += (a[i]*w) % p;
+      w *= x;
+    }
+    return r % m;
+  }
+};
+
+
 template< std::integral K >
 struct LcgDagHash {
   const uint32_t m;  // table size 
@@ -132,6 +161,30 @@ struct LcgDagHash {
 constexpr uint32_t mod(int32_t n, int32_t m){
   return ((n % m) + m) % m;
 }
+
+struct IntSaltHash {
+  mutable vector< uint64_t > salt;
+  uint64_t m;
+  IntSaltHash() : salt{} {}
+  void randomize(uint64_t m) {
+    this->m = m;
+    salt.clear();
+  }
+  uint64_t operator()(uint64_t key) const {
+    uint64_t hash = 0;
+    size_t i = 0;
+    while (key != 0) {
+      uint64_t digit = key % 10;
+      key /= 10;
+      if (i >= salt.size()) {
+        salt.push_back(std::rand() % (m - 1) + 1);
+      }
+      hash += salt[i] * digit;
+      i++;
+    } 
+    return hash % m;
+  }
+};
 
 template< std::integral K >
 struct PerfectHashDAG {
@@ -210,6 +263,8 @@ struct PerfectHashDAG {
     }
     return true; // success
   }
+
+
 
   template< typename InputIt, IntegerHashFunction< uint64_t > H1,  IntegerHashFunction< uint64_t > H2 >
   // requires IntegerHashFunction< H1, uint64_t >

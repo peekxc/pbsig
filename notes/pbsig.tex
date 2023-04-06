@@ -994,6 +994,16 @@ Thus, given two distinct $p$-simplices $\tau \neq \tau'$ in $K^p$ we may use the
 		0 & \text{ otherwise} 
 	\end{cases}
 \end{align}
+
+\begin{align}\label{eq:up_laplace_theory}
+	 \hat{L}_p^{\text{up}}(\tau, \tau')= \begin{cases}
+		 \mathrm{deg}_f(\tau) \cdot \mathrm{deg}_f^{+}(\tau) & \text{ if } \tau = \tau' \\ 
+%		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
+		s_{\tau, \tau'} \cdot  \mathrm{deg}_f(\tau)^{+/2} \cdot f(\sigma) \cdot \mathrm{deg}_f(\tau')^{+/2} & \text{ if } \tau \overset{\sigma}{\sim} \tau' \\
+		0 & \text{ otherwise} 
+	\end{cases}
+\end{align}
+
 where $s_{\tau, \tau'} = \mathrm{sgn}([\tau], \partial[\sigma]) \, \cdot \, \mathrm{sgn}([\tau], \partial[\sigma])$. Ordering the $p$-faces $\tau \in K^p$ along a total order and choosing an indexing function $h : K^p \to [n]$ enables explicit computation of the corresponding matrix-vector product: 
 \begin{equation}\label{eq:l_up_matvec}
 	(L_p^{\textrm{up}} \, x)_i =  \mathrm{deg}_f(\tau) \cdot f(\tau) \cdot x_i + \sum\limits_{\tau \overset{\sigma}{\sim} \tau'} s_{\tau, \tau'} \cdot x_{h(\tau')} \cdot  f^{+/2}(\tau) \cdot f(\sigma) \cdot f^{+/2}(\tau') 

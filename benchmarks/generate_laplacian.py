@@ -5,14 +5,14 @@ from more_itertools import collapse
 # %% 
 from pbsig.perfect_hash import perfect_hash, perfect_hash_dag
 # perfect_hash(er, output = "expression", solver = "linprog", k_min = 3, k_max = 15, n_tries = 100, n_prime = 1000)
-  
+perfect_hash_dag(er, mult_max=2.5, use_lcg = True, n_tries=2500, n_prime=15000, progress=True) 
+
 g, expr = perfect_hash_dag(er, output = "expression", mult_max = 2.5, n_tries = 1500, n_prime = 1000)
 # all([eval(expr, None, dict(x=r))==i for i,r in enumerate(er)])
 # sum(g != 0)
 
 # np.savetxt(X=g, fname="/Users/mpiekenbrock/pbsig/data/er_g_colex_500.txt", fmt="%d")
 # (g[((5618*x+9597)%11699)%6139]+g[((3170*x+7593)%8627)%6139])%6139
-
 
 np.random.seed(1234)
 g, expr, G = perfect_hash_dag([0, 5, 13, 45, 82], mult_max = 1.5, output="expression")
@@ -29,10 +29,19 @@ print(expr)
 f1 = lambda x: ((362*x+409)%449)%5
 f2 = lambda x: ((307*x+110)%359)%5
 
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(perfect_hash_dag)
+profile.enable_by_count()
+perfect_hash_dag(tr, mult_max=1.5, n_tries=100, n_prime=15, progress=True)
+profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+
+
 
 # %% Large data set (colex)
 np.random.seed(1234)
-X = np.random.uniform(size=(250,2))
+X = np.random.uniform(size=(500,2))
 R = rips_complex(X, radius=0.10)
 R.expand(2)
 er = rank_combs(faces(R, 1), n=X.shape[0], order="colex")

@@ -333,7 +333,7 @@ namespace combinatorial {
 	}
 
 	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt > 
-	inline void rank_combs(InputIt s, const InputIt e, const size_t k, OutputIt out){
+	inline void rank_combs(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
 		if constexpr(colex){
 			for (; s != e; s += k){
 				*out++ = rank_colex_k< safe >(s, k);

@@ -143,7 +143,7 @@ struct SimplexRange {
         //   f(combinatorial::rank_colex_k< false >(labels+1,dim));
         // )
         combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){
-          f(combinatorial::rank_comb< colex, false >(b,n,dim));
+          f(combinatorial::rank_comb< colex, false >(b,_n,dim));
           return false; 
         });
       } else {

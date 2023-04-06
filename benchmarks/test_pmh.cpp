@@ -98,15 +98,20 @@ void test_pmh(vector< K > keys){
   const size_t n_prime = 1500; 
   std::vector< uint64_t > primes; 
   gen_primes_above(M, n_prime, primes);
-  //auto f1 = LCG(primes);
+
+  // auto f1 = LCG(primes);
+  // auto f1 = LCG_k< 10 >(primes);
+  // auto f2 = LCG_k< 10 >(primes);
   // auto f2 = LCG(primes);
-  auto f1 = WangHash< uint64_t >();
+  auto f1 = IntSaltHash();
+  auto f2 = IntSaltHash();
+  // auto f1 = WangHash< uint64_t >();
   // auto f2 = JavaHash< uint64_t >();
-  auto f2 = BurtleBeeHash<uint64_t >();
+  // auto f2 = BurtleBeeHash<uint64_t >();
 
-  bool success = pmh.build_hash(keys.begin(), keys.end(), 3.5, 10000, f1, f2);
+  bool success = pmh.build_hash(keys.begin(), keys.end(), 2.5, 10000, f1, f2);
 
-  // // std::cout << "Success? " << success << std::endl;
+  std::cout << "Success? " << success << std::endl;
   // if (success){  
   //   auto h = LcgDagHash< K >(vertex_values, f1.a, f2.a, f1.b, f2.b, f1.p, f2.p, f1.m);
   //   auto g = vertex_values; 
