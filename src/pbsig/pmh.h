@@ -17,7 +17,7 @@ concept IntegerHashFunction = std::regular_invocable<F, T> && std::convertible_t
 
 template < typename Table, typename Key = typename Table::key_type >
 concept IntegralHashTable = requires(Table h, Key k) {
-  { h.operator[](k) } -> std::integral;
+  { h.operator[](k) } -> std::convertible_to< uint32_t >;
 };
 
 // Miller-Rabin primality test
@@ -36,8 +36,8 @@ void gen_primes_above(int m, const size_t n, vector< uint64_t >& primes){
   primes.reserve(n);
   while(primes.size() < n){
     // Bertrand's postulate
-    for (uint32_t p = m; p < 2*m - 2; ++p){
-      if (is_prime(p)){ primes.push_back(p); }
+    for (int p = m; p < 2*m - 2; ++p){
+      if (is_prime(p)){ primes.push_back(static_cast< uint64_t >(p)); }
       if (primes.size() >= n){ break; }
     }
     m = primes.back() + 1; 
@@ -207,7 +207,7 @@ struct PerfectHashDAG {
 
   template< typename InputIt, IntegerHashFunction< uint64_t > H1, IntegerHashFunction< uint64_t > H2 > 
   void connect_all(InputIt k_it, const InputIt k_end, H1 f1, H2 f2){
-    const uint32_t N = std::distance(k_it, k_end);
+    // const uint32_t N = std::distance(k_it, k_end);
     for (uint32_t i = 0; k_it != k_end; ++k_it, ++i){
       uint32_t v0 = f1(*k_it);
       uint32_t v1 = f2(*k_it);
@@ -271,7 +271,6 @@ struct PerfectHashDAG {
   auto build_hash(InputIt k_it, const InputIt k_end, float mult_max, size_t n_tries, H1 f1, H2 f2, bool verbose = true) -> bool {
     const uint32_t N = std::distance(k_it, k_end);
     if (N == 0){ return false;  }
-    size_t n_attempts = 0; 
     bool success = false;
     float step_sz = (ceil(mult_max*N)-N)/n_tries;
     for (size_t i = 0; i < n_tries; ++i){

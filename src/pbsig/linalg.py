@@ -1026,11 +1026,11 @@ class UpLaplacianBase(LinearOperator):
   #   raise ValueError("Laplacian extension modules has not been compiled for p > 2.")
   # self.m = _lap_cls(q_ranks, nv, _np)
 
-  def __init__(S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], dtype = None):
+  def __init__(S: Iterable['SimplexLike'], n: int, dtype = None):
     ## Ensure S is repeatable and faces 'F' is indexable
-    assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
-    assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
-    p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
+    # assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
+    # assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
+    # p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
     assert p == 0 or p == 1 or p == 2, "Only p in {0,1} supported for now"
     assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
     # super().__init__(*args, **kwargs)
@@ -1077,58 +1077,56 @@ class UpLaplacianBase(LinearOperator):
     return self 
 
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
+  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+    UpLaplacianBase.__init__(S, b)
     laplacian.UpLaplacian0D.__init__(self, q_ranks, nv, _np)
     #self.compute_indexes()
     self.precompute_degree()
 
-class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
-    laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
-    self.precompute_degree()
+# class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
+#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+#     _np = len(F)
+#     q_ranks = rank_combs(S, n=nv, order="lex")
+#     UpLaplacianBase.__init__(S, F)
+#     laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
+#     #self.compute_indexes()
+#     self.precompute_degree()
 
-class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
-    laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
-    self.precompute_degree()
+# class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
+#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+#     _np = len(F)
+#     q_ranks = rank_combs(S, n=nv, order="lex")
+#     UpLaplacianBase.__init__(S, F)
+#     laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
+#     #self.compute_indexes()
+#     self.precompute_degree()
 
-class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
-    laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
-    self.precompute_degree()
+# class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
+#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+#     _np = len(F)
+#     q_ranks = rank_combs(S, n=nv, order="lex")
+#     UpLaplacianBase.__init__(S, F)
+#     laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
+#     #self.compute_indexes()
+#     self.precompute_degree()
     
-class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
-    laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
-    self.precompute_degree()
+# class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
+#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+#     _np = len(F)
+#     q_ranks = rank_combs(S, n=nv, order="lex")
+#     UpLaplacianBase.__init__(S, F)
+#     laplacian.UpLaplacian1D.__init__(self, q_ranks, nv, _np)
+#     #self.compute_indexes()
+#     self.precompute_degree()
 
-class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-    _np = len(F)
-    q_ranks = rank_combs(S, n=nv, order="lex")
-    UpLaplacianBase.__init__(S, F)
-    laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
-    self.precompute_degree()
+# class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
+#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
+#     _np = len(F)
+#     q_ranks = rank_combs(S, n=nv, order="lex")
+#     UpLaplacianBase.__init__(S, F)
+#     laplacian.UpLaplacian1F.__init__(self, q_ranks, nv, _np)
+#     #self.compute_indexes()
+#     self.precompute_degree()
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py
 def is_symmetric(A) -> bool:

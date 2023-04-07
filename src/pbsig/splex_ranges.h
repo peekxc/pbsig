@@ -16,8 +16,7 @@ typedef float value_t;
 typedef int64_t index_t;
 using std::vector;
 using std::array; 
-using combinatorial::unrank_colex;
-using combinatorial::unrank_lex;
+using namespace combinatorial;
 
 template< uint8_t dim, bool colex = true, typename index_t = uint_fast64_t > 
 struct RankRange {
@@ -62,7 +61,7 @@ struct RankRange {
     void boundary(Lambda&& f){
       if constexpr (!ranks){
         uint16_t* c_labels = this->operator*();
-        combinatorial::for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, auto e){
+        combinatorial::for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
           f(b, e); 
           return false; 
         });
@@ -82,7 +81,7 @@ struct RankRange {
       } else {
         uint16_t* c_labels = this->operator*();
         const index_t N = combinatorial::BinomialCoefficient< false >(_n, dim); 
-        combinatorial::for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, auto e){
+        combinatorial::for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
           f(combinatorial::rank_lex_k< false >(b, _n, dim, N)); 
           return false; 
         });
@@ -116,41 +115,72 @@ struct SimplexRange {
   }
 
   ~SimplexRange(){
-    combinatorial::BC.BT.clear();
-    combinatorial::BC.BT.shrink_to_fit();
-    combinatorial::BC.pre_n = 0;
-    combinatorial::BC.pre_k = 0;
+    if (!combinatorial::keep_table_alive){
+      combinatorial::BC.BT.clear();
+      combinatorial::BC.BT.shrink_to_fit();
+      combinatorial::BC.pre_n = 0;
+      combinatorial::BC.pre_k = 0;
+    }
   }
 
   struct SimplexLabelIterator {
+    typedef std::forward_iterator_tag iterator_category;
+    typedef std::ptrdiff_t difference_type;
+    typedef uint16_t value_type;
+    typedef uint16_t* pointer;
+    typedef uint16_t& reference;
+
     const index_t _n; 
     const index_t _N; 
     const_iterator _it;
-    SimplexLabelIterator(const_iterator it, const index_t __n) : _it(it), _n(__n), _N(combinatorial::BinomialCoefficient< true >(_n, dim)) {};
+    SimplexLabelIterator(const_iterator it, const index_t __n) : _n(__n), _N(combinatorial::BinomialCoefficient< true >(_n, dim)), _it(it) {};
     uint16_t* operator*() noexcept { return (uint16_t*) &(*_it); }
     constexpr void operator++() noexcept { _it += (dim+1); }
     constexpr bool operator!=(SimplexLabelIterator o) const noexcept { return _it != o._it; }
     
-    template< bool ranks = false, typename Lambda > 
-    void boundary(Lambda&& f){
+    template< typename Lambda > 
+    void boundary_labels(Lambda&& f){
       uint16_t* labels = this->operator*();
-      if constexpr (ranks){
-        // if constexpr (dim == 1){
-        //   f(combinatorial::rank_colex_k< false >(labels,dim));
-        //   f(combinatorial::rank_colex_k< false >(labels+1,dim));
-        // } else if constexpr (dim == 2)(
-        //   f(combinatorial::rank_colex_k< false >(labels,dim));  
-        //   f(combinatorial::rank_colex_k< false >(labels+1,dim));
-        // )
-        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){
-          f(combinatorial::rank_comb< colex, false >(b,_n,dim));
-          return false; 
-        });
+      combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&f](auto b, auto e){ 
+        f(b,e);
+        return false; 
+      });
+    }
+
+    // boundary ranks (lambda version)
+    template< typename Lambda > 
+    void boundary_ranks(Lambda&& f){
+      uint16_t* labels = this->operator*();
+      if constexpr (dim == 1){ // labels size == 2
+        f(labels[0]);
+        f(labels[1]);
+      } else if constexpr (dim == 2){
+        f(combinatorial::rank_colex_2(labels[0], labels[1]));
+        f(combinatorial::rank_colex_2(labels[0], labels[2]));
+        f(combinatorial::rank_colex_2(labels[1], labels[2]));
       } else {
-        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, auto e){ 
-          f(b,e);
+        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
+          f(combinatorial::rank_colex_k< false >(b,dim));
+          return false; 
+        });    
+      }
+    } // boundary_ranks 
+
+    // boundary ranks (tuple version)
+    auto boundary_ranks() -> tuple_of< uint64_t, dim+1 >{
+      uint16_t* labels = this->operator*();
+      if constexpr (dim == 1){ 
+        return std::make_tuple(labels[0], labels[1]);
+      } else if constexpr(dim == 2){
+        return std::make_tuple(rank_colex_2(labels[0], labels[1]), rank_colex_2(labels[0], labels[2]), rank_colex_2(labels[1], labels[2]));
+      } else {
+        std::array< uint64_t, dim > a; 
+        size_t i = 0; 
+        for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
+          a[i++] = rank_colex_k< false >(b,dim);
           return false; 
         });
+        return std::tuple_cat(a);
       }
     }
   };

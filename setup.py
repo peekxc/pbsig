@@ -23,37 +23,37 @@ compile_args += ["-std=c++20", "-Wall", "-Wextra", "-O0"]
 
 ## Configure the native extension modules
 ext_modules = [
-  Pybind11Extension(
-    '_boundary', 
-    sources = ['src/pbsig/boundary.cpp'], 
-    # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
-    extra_compile_args=compile_args,
-    language='c++17', 
-    cxx_std=1
-  ), 
-  Pybind11Extension(
-    '_lanczos', 
-    sources = ['src/pbsig/lanczos_spectra.cpp'], 
-    include_dirs=[
-      '/Users/mpiekenbrock/pbsig/extern/eigen',
-      '/Users/mpiekenbrock/pbsig/extern/pybind11/include',
-      '/Users/mpiekenbrock/pbsig/extern/spectra/include'
-    ], 
-    extra_compile_args=compile_args,
-    language='c++17', 
-    cxx_std=1
-  ),
+  # Pybind11Extension(
+  #   '_boundary', 
+  #   sources = ['src/pbsig/boundary.cpp'], 
+  #   # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
+  #   extra_compile_args=compile_args,
+  #   language='c++17', 
+  #   cxx_std=1
+  # ), 
+  # Pybind11Extension(
+  #   '_lanczos', 
+  #   sources = ['src/pbsig/lanczos_spectra.cpp'], 
+  #   include_dirs=[
+  #     '/Users/mpiekenbrock/pbsig/extern/eigen',
+  #     '/Users/mpiekenbrock/pbsig/extern/pybind11/include',
+  #     '/Users/mpiekenbrock/pbsig/extern/spectra/include'
+  #   ], 
+  #   extra_compile_args=compile_args,
+  #   language='c++17', 
+  #   cxx_std=1
+  # ),
   Pybind11Extension(
     '_laplacian', 
     sources = ['src/pbsig/laplacian.cpp'], 
     include_dirs=[
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include', 
-      '/Users/mpiekenbrock/pbsig/extern/pthash/include',
-      '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
+      # '/Users/mpiekenbrock/pbsig/extern/pthash/include',
+      # '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
       '/Users/mpiekenbrock/pbsig/src/pbsig/'
     ], 
     extra_compile_args=compile_args,
-    language='c++17', 
+    language='c++20', 
     cxx_std=1
   ), 
   Pybind11Extension(
@@ -63,16 +63,16 @@ ext_modules = [
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
     ], 
     extra_compile_args=compile_args,
-    language='c++17', 
+    language='c++20', 
     cxx_std=1
   ),
-  Pybind11Extension(
-    '_pbn', 
-    sources = ['src/pbsig/pbn.cpp'], 
-    extra_compile_args=compile_args,
-    language='c++17', 
-    cxx_std=1
-  ), 
+  # Pybind11Extension(
+  #   '_pbn', 
+  #   sources = ['src/pbsig/pbn.cpp'], 
+  #   extra_compile_args=compile_args,
+  #   language='c++17', 
+  #   cxx_std=1
+  # ), 
   Pybind11Extension(
     '_persistence', 
     sources = ['src/pbsig/persistence.cpp'], 
@@ -90,7 +90,7 @@ setup(
   name="pbsig",
   author="Matt Piekenbrock",
   author_email="matt.piekenbrock@gmail.com",
-  description="Persistent Betti Signatures",
+  description="Spectral Rank Invariant",
   long_description="",
   ext_modules=ext_modules,
   cmdclass={'build_ext': build_ext},

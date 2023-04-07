@@ -116,15 +116,12 @@ As exemplary applications, we study its utility in capturing topological behavio
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
-\subsection*{Motivation} TODO 
-
-Like persistence diagrams, the stability of PBN functions justifies their use and study in continuously parameterized settings. Despite this, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{} rather than PBNs or multiplicities (notable exceptions include~\cite{cerri2013betti, chen2011output}). 
+Like persistence diagrams, the stability of the rank invariant justifies its use and study in continuously parameterized settings. Despite this, much of persistence-related research has concentrated on exploiting properties of the diagram itself~\cite{} rather than PBNs or multiplicities (notable exceptions include~\cite{cerri2013betti, chen2011output}). 
 To some extent, this matches intuition: whereas Betti numbers and multiplicities are simple counting invariants, a persistence diagram is a multiset of pairs containing strictly more information about the topology of the underlying space. 
 
 Nonetheless, the counting invariants have certain computational advantages over diagrams in terms in their computation: whereas the only competitive way of computing the latter is through the reduction algorithm~\cite{edelsbrunner2022computational}, the former is computable solely from rank computations~\cite{zomorodian2004computing}. 
 Moreover, such rank computations are \emph{localized} to subcomplexes of the filtration. 
 Indeed, one can show that~\eqref{eq:multiplicity} implies an algorithm can recover the diagram by computing at most $2n-1$ multiplicities via a divide-and-conquer like approach on the index-persistence plane~\cite{chen2011output}. The duality between PBNs and the persistence diagram suggests an alternative computational paradigm---distinct from the reduction family of algorithms---with which to approach persistence-related computations entirely. 
-
 %\subfile{intro_feature}
 %\subfile{overview} % Contributions, Main result overview, etc. 
 %\subsection{Related work}\label{sec:related_work}
@@ -133,6 +130,8 @@ Indeed, one can show that~\eqref{eq:multiplicity} implies an algorithm can recov
 % TODO: See seminar "Persistent Homology with Random Graph Laplacians"
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
+\\
+\\
 \noindent 
 \textbf{Contributions: }
 In this effort, we introduce an iterative $\epsilon$-approximation method for computing the \emph{the persistent counting invariants}---$\mu_p^{\ast}$ and $\beta_p^\ast$---in \emph{essentially} $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively. 
@@ -148,15 +147,20 @@ Interestingly, our results also imply the existence of an efficient output-sensi
 So as to not leave the reader in suspense, we informally describe the relaxation in full. The rest of the paper is devoted to discussing the theoretical and practical implications of these choices. 
 \begin{enumerate}
 	\item Let $X$ denote an input data set and $K$ denote a fixed simplicial complex constructed from $X$. Select a continuously-parameterized family of filtrations $(K, f_\alpha)$ satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ for all $\tau \subseteq \sigma \in K$ and all $\alpha \in \mathcal{A}$. Exemplary choices of $f_\alpha$ include filtrations geometrically realized from construction methods that themselves are have parameters (``hyper-parameters''), such as density-filtered filtrations or dynamic metric spaces parameterized by time.  
-	\item Choose any rectilinear \emph{template} $\mathcal{R}$ on the output space of diagrams $\Delta_+ = \{(i,j) \in \bar{\mathbb{R}}^2  \mid i < j \}$ within which $f_\alpha$ exhibits non-trivial topological behavior. This choice depends on the application and should be chosen either by a practitioner based on domain knowledge. Alternatively, randomly setting $\mathcal{R}$ via a sampling approach:
-	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_k, \quad \quad R_i \subset \Delta_+ $$ 
-	will be sufficient if the goal is featurization or one is in the exploratory setting where $\mathcal{R}$ is unknown.
+	\item Choose any rectilinear \emph{template} $\mathcal{R} \subset \Delta_+$ on the output space of diagrams $\Delta_+ = \{(i,j) \in \bar{\mathbb{R}}^2  \mid i < j \}$ within which $f_\alpha$ exhibits non-trivial topological behavior.
+	 This choice depends on the application and should be chosen either by a practitioner based on domain knowledge. Alternatively, randomly setting $\mathcal{R}$ via a sampling approach will be sufficient if the goal is featurization or one is in the exploratory setting where $\mathcal{R}$ is unknown.
+	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-	\item Choose a relaxation parameter $\epsilon > 0$ representing how closely the relaxation should model the topology of $f_\alpha$. Larger choices $\epsilon$ yield smoother relaxations that depend more on geometric and combinatorial structure of $K$, whereas smaller values of $\epsilon$ more accurately approximate the topology of $f_\alpha$ via the quantity: 
+	\item Choose a relaxation parameter $\epsilon > 0$ representing how closely the relaxation should model the quantity: 
 	$$ \mathrm{card}(\mathcal{R}_\alpha) \triangleq \mathrm{card}(\mathcal{R} \cap \mathrm{dgm}(K, f_\alpha))$$
-	\item Construct a combinatorial Laplacian operator $L_p(K)$ for the homology dimension $p \geq 0$ of interest, The choice of Laplacian operator depends on the application; we will in many cases generically use:
-	$$ L_p^{\mathrm{up}}(K, f_\alpha) = W_p \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p $$ 
-	whose matrix vector product $x \mapsto L_p(K) x$ can be efficiently computed. The implementation of this operator computationally need not involve constructing the Laplacian $L_p$ itself nor does it necessarily require $K$ is available explicitly in memory. 
+	Larger choices $\epsilon$ yield smoother relaxations that depend more on geometric and combinatorial structure of $K$, whereas smaller values of $\epsilon$ more accurately approximate the topology of $f_\alpha$. 
+	\item For any fixed homology dimension  of interest $p \geq 0$, construct a combinatorial Laplacian operator $L_{i,j}(K)$ at every ``corner point'' $(i,j) \in \mathcal{R}$.
+	$$ L_{i,j}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
+	The particular choice of Laplacian operator depends on the application; for stability reasons discussed in section~\ref{}, we will in this effort consider the symmetric normalized Laplacian.
+	\item For each points $(i,j) \in \mathcal{R}$, choose a vector $v \in \textbf{1}^\perp$ and expand the Krylov subspaces of $\mathcal{L} = L_{i,j}$:
+	$$\mathcal{K}_r(\mathcal{L}, v) := \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{r-1} \}$$
+	Until the $\mathcal{K}_r(\mathcal{L}, v)$ $\epsilon$-approximates an invariant subspace of $\mathcal{L}$. If enough memory is available, store...
+	\item For each $\alpha$
 %	\item All we require is 
 \end{enumerate}
 
@@ -169,6 +173,10 @@ So as to not leave the reader in suspense, we informally describe the relaxation
 %
 
  
+\subsection*{Motivation: Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
+
+% --- Counting measure multiplicity interpretation --- 
+\subfile{counting_measure}
 
 \subsection{Organization}
 Section~\ref{sec:background_notation} introduces the notation and background theory on which the rest of the paper depends. Included are some theoretical motivations for this work in subsection~\ref{sec:duality_pbn_dgm}, an illuminating derivation of the PBN in~\ref{sec:duality_pbn_dgm}, a time-varying parameterization of boundary matrix, and a brief recount of related work in persistence-related algorithms.
@@ -187,13 +195,8 @@ Some technical details, illustrative examples, and pseudocode are relegated to t
 %Moreover, we show our relaxation is \emph{interpetretable} as it satisfies certain basic ``Betti-like'' properties and we illicit its connections back to spectral graph theory. 
 
 % ---- Background & Notation ---- 
-\section{Background \& Notation}\label{sec:background_notation}
+\section{Notation \& Background}\label{sec:background_notation}
 \subfile{background}
-
-\subsection{Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
-
-% --- Counting measure multiplicity interpretation --- 
-\subfile{counting_measure}
 
 \subsection{Motivating Derivation}\label{sec:betti_derivation}
 %In what follows, we briefly outline the computation of the 
@@ -293,6 +296,7 @@ Collecting these results, we summarize the duality between diagrams and their ra
 \begin{proposition}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
 \end{proposition}
+\noindent
 The primary advantage the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} have compared to classical methods in~\cite{edelsbrunner2022computational, zomorodian2004computing} is that their computations are performed directly on \emph{unfactored} boundary (sub)matrices. 
 % TODO: maybe rephrase for better emphasis on a different perspective?
 %In theory, one need not represent these operators with matrices explicitly, a trick 
@@ -342,6 +346,9 @@ We dedicate the rest of the paper to exploring this question.
 %	%with $n < m$
 %\end{corollary} 
 
+% --- Generic Rank approximation via eigenvalues --- 
+\section{Spectral relaxation and its implications}
+
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{A Parameterized Boundary Matrix Relaxation}
 %As stated in section~\ref{sec:intro}, we are concerned with the computation of certain topological invariants in \emph{parameterized} settings, i.e. settings where the input data---geometrically realized as simplicial complexes---is thought to be generated from a parameterized family. Such families naturally arise in many applications, e.g. in Rips filtrations parameterized by dynamic metric spaces~\cite{} or in multi-parameter persistence settings~\cite{}.  
@@ -349,6 +356,16 @@ The counting invariant formulations via~\eqref{eq:betti_four} and~\eqref{eq:mu_f
 %Though the boundary matrices in~\eqref{eq:betti_four} are given in filtration order to preserve the inclusion relations between simplices in $K_\bullet$, the permutation invariance of the rank function suggests $\partial$ need not be ordered at all to be evaluated---so long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
 In what follows, we re-define the boundary matrix to exploit this permutation invariance. 
  
+ % Change index set
+All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $K_\bullet = (K, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
+In practice, it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, as the filter function $f$ is often a real-valued function derived from geometrical settings.
+For example, when $f : K \to \mathbb{R}$ satisfies $f(\sigma') \leq f(\sigma)$ for every $\sigma' \subseteq \sigma$, the subcomplexes $K_i = f^{-1}(-\infty, \hat\imath \,]$ of $K$ represent sublevel sets $f^{-1}(-\infty, \hat\imath \,]$ for every $\hat\imath \in \mathbb{R}$. 
+In this setting, each pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ is typically represented as the point $(\, \hat\imath, \hat\jmath \, )$ where $\hat\imath = f(\sigma_i)$ and $\hat\jmath = f(\sigma_j)$.
+% In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
+%Unless it is clear from the context, we alter our notation by re-defining $\beta_p^{\hat\imath,\hat\jmath}$ using pairs $(\,\hat\imath,\hat\jmath\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
+%Since this is equivalent to reindexing a given filter $f : K \to \mathbb{R}$ over the index set $[N]$, 
+Since the persistence diagrams of $K_\bullet$ are isomorphic under monotone transformations of the index set $g : [N] \to \mathbb{R}$, in what follows we use the notation $(\,i, j\,)$ to denote pairs $(\,i, j\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
+
 %% Another approach to tracking the PBNs in parameterized setting is to maintain a persistence diagram through the vineyards algorithm~\cite{cohen2006vines}. This, however, requires $O(m^2)$ memory and an $\approx O(m^2)$ preprocessing procedure to detect changes in the filtration order\footnote{The bound $O(m^2)$ assumes the homotopy changes each filtration value monotonically throughout the homotopy. Otherwise the number of order changes is clearly unbounded.} to simulate persistence across a homotopy, the canonical continuous parameterized setting. In contrast, as we show below, PBNs need no such preprocessing procedure and may be computed in effectively $O(m)$ memory, even in parameterized settings. 
 %Recall that the boundary operator $\partial_p$ for a filtration pair $(K_{\bullet}, f)$ of size $m = \lvert K \rvert$ is represented by an ordered $(m \times m)$ boundary matrix $\partial_p$ whose columns and rows corresponding to $q$-simplices and $(q-1)$-simplices are zero, for $q \neq p$.
 %After orienting $K$ in an arbitrary but consistent way, the entries of $\partial_p$ have the form: 
@@ -359,16 +376,6 @@ In what follows, we re-define the boundary matrix to exploit this permutation in
 %   \end{cases}
 %\end{equation}
 %where $c(\sigma_\ast) \in \mathbb{F}$ is an arbitrary constant satisfying $c(\sigma) = -c(\sigma')$ if $\sigma$ and $\sigma'$ are opposite orientations of the same simplex, typically set to $\pm 1$. In what follows, we assume a fixed orientation is given on $K$, and write $\pm c(\sigma)$ to indicate the sign of $c(\sigma)$ depends on the orientation of $\sigma$. Note that, for the reduction algorithm, the ordering of $\partial_p$ must respect the facet poset of $K_\bullet$: if $\tau, \sigma \in K_\bullet^{(p)}$ and $f(\tau) \leq f(\sigma)$, then the chain $\partial_p(\tau)$ must appear before $\partial_p(\sigma)$ in $\partial_p$. %such that the elementary left-to-right matrix operations. 
-
-% Change index set
-All of the notation given thus far have used integer indices $(i,j) \in \Delta_+^N$ to describe persistent quantities over a filtration $K_\bullet = (K, f)$ of size $\lvert K \rvert = N$. Equivalently, we have thus far implicitly assumed the range of the filter function $f : K \to I$ to be the typical index set $I = [N]$.
-In practice, it is more informative to interpret the persistence of a persistent-pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ as $f(\sigma_j) - f(\tau_i)$, rather than as $j - i$, as the filter function $f$ is often a real-valued function derived from geometrical settings.
-For example, when $f : K \to \mathbb{R}$ satisfies $f(\sigma') \leq f(\sigma)$ for every $\sigma' \subseteq \sigma$, the subcomplexes $K_i = f^{-1}(-\infty, \hat\imath \,]$ of $K$ represent sublevel sets $f^{-1}(-\infty, \hat\imath \,]$ for every $\hat\imath \in \mathbb{R}$. 
-In this setting, each pair $(\sigma_i, \sigma_j) \in \mathrm{dgm}(K_\bullet)$ is typically represented as the point $(\, \hat\imath, \hat\jmath \, )$ where $\hat\imath = f(\sigma_i)$ and $\hat\jmath = f(\sigma_j)$.
-% In theory, any function satisfying $f(\tau) \subseteq f(\sigma)$ for every face/coface pair $(\tau, \sigma)$ yields a well defined persistence diagram. 
-%Unless it is clear from the context, we alter our notation by re-defining $\beta_p^{\hat\imath,\hat\jmath}$ using pairs $(\,\hat\imath,\hat\jmath\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
-%Since this is equivalent to reindexing a given filter $f : K \to \mathbb{R}$ over the index set $[N]$, 
-Since the persistence diagrams of $K_\bullet$ are isomorphic under monotone transformations of the index set $g : [N] \to \mathbb{R}$, in what follows we use the notation $(\,i, j\,)$ to denote pairs $(\,i, j\,) \in \Delta_{+}$ from the upper-half plane $\Delta_{+} = \{ \, (x,y) \in \mathbb{R}^2 : y > x \, \} $ for the remainder of the paper.
 
 
 %such that $\mathrm{range}(f) = \mathbb{R}$, and it is often more informative to work with the pairs $(f(\tau_i), f(\sigma_j))$ stemming from the persistent-pairs $()$ persistence diagram 
@@ -506,8 +513,7 @@ where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matri
 %	%\sqrt{\epsilon\,\kappa\,(p+1)}$ where $\kappa = \max \sum\limits_{t \in T}\sum\limits_{\sigma \in K_t}\mathds{1}(\mathrm{diam}(\sigma) \leq \epsilon)$ %$C(n,k) = \binom{n}{k}$
 %\end{enumerate}
 
-% --- Generic Rank approximation via eigenvalues --- 
-\section{Spectral relaxation and its implications}
+
 %In the spirit of~\cite{chen1996class}, 
 % Computational results of being able to calculate/approximate rank quickly
 %\subfile{generic_rank}
@@ -531,7 +537,7 @@ where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matri
 %In the context of the Rank Minimization Problem (RMP), the nuclear norm is often used as a surrogate for the rank function due to the fact that it forms a convex envelope of the rank function in the space of all $n \times n$ matrices on the unit-ball in the operator norm~\cite{}. 
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
-%\subsection{Relaxation definition} 
+\subsection{Spectral rank relaxation} 
 Extending from the ideas outlined in the previous section, we now turn to the main results: a spectral relaxation of the counting invariants, and the resulting implications. 
 We begin with a spectral characterization of the rank function. Given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, define the \emph{rank} of $X$ as the composition:
 %of the one-sided sign function with the singular value function:

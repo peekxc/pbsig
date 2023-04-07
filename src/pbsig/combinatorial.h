@@ -114,6 +114,18 @@ namespace combinatorial {
 	constexpr auto make_index_dispatcher() {
 		return make_index_dispatcher(std::make_index_sequence< N >{});
 	};
+
+	template <typename T, size_t I > 
+	struct tuple_n{
+			template< typename...Args> using type = typename tuple_n<T, I-1>::template type<T, Args...>;
+	};
+
+	// Modified from: https://stackoverflow.com/questions/38885406/produce-stdtuple-of-same-type-in-compile-time-given-its-length-by-a-template-a
+	template <typename T> 
+	struct tuple_n<T, 0 > {
+			template<typename...Args> using type = std::tuple<Args...>;   
+	};
+	template < typename T, size_t I >  using tuple_of = typename tuple_n<T, I>::template type<>;
 	
 	// Constexpr binomial coefficient using recursive formulation
 	template < size_t n, size_t k >
@@ -203,7 +215,8 @@ namespace combinatorial {
 
 	// Build the cached table
 	static auto BC = BinomialCoefficientTable< 64, 3 >();
-	
+	static bool keep_table_alive = false; 
+
 	// Wrapper to choose between cached and non-cached version of the Binomial Coefficient
 	template< bool safe = true >
 	constexpr size_t BinomialCoefficient(const size_t n, const size_t k){
@@ -272,36 +285,6 @@ namespace combinatorial {
 	  return combinadic;
 	}
 
-	// Colexicographically rank k-subsets
-	// assumes each k tuple of s is in colex order! 
-	template< bool safe = true, typename InputIter >
-	[[nodiscard]]
-	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
-		index_t i = k; 
-		const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
-			return val + BinomialCoefficient< safe >(num, i--); 
-		});
-		return index; 
-	}
-
-	template< bool safe = true >
-	[[nodiscard]]
-	constexpr auto rank_colex_2(index_t i, index_t j) noexcept {
-		// index_t i = k; 
-		return BinomialCoefficient< safe >(j, 2) + + BinomialCoefficient< safe >(i, 1);
-		// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
-		// 	return val + BinomialCoefficient< safe >(num, i--); 
-		// });
-		// return index; 
-	}
-
-	// colex bijection from a lexicographical order
-	// index_t i = 1; 
-	// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
-	// 	return val + BinomialCoefficient< safe >(num, i++); 
-	// });
-	// return index; 
-
 	// Rank a stream of integers (lexicographically)
 	template< bool safe = true, typename InputIt, typename OutputIt >
 	inline void rank_lex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
@@ -322,7 +305,57 @@ namespace combinatorial {
 		}
 	}
 
-	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt > 
+	// should be in reverse colexicographical 
+	template< bool safe = true >
+	[[nodiscard]]
+	constexpr auto rank_colex_2(index_t i, index_t j) noexcept {
+		assert(i > j); // should be in colex order! 
+		// return BinomialCoefficient< safe >(j, 2) + i;
+		return j*(j-1)/2 + i;
+		// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+		// 	return val + BinomialCoefficient< safe >(num, i--); 
+		// });
+		// return index; 
+	}
+	
+	// Colexicographically rank k-subsets
+	// assumes each k tuple of s is in colex order! 
+	template< bool safe = true, typename InputIter >
+	[[nodiscard]]
+	constexpr auto rank_colex_k(InputIter s, const size_t k) noexcept {
+		index_t i = k; 
+		const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+			return val + BinomialCoefficient< safe >(num, i--); 
+		});
+		return index; 
+	}
+
+	template< bool safe = true, typename InputIt, typename OutputIt >
+	inline void rank_colex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
+		switch (k){
+			case 2:{
+				for (; s != e; s += k){
+					*out++ = rank_colex_2(*s, *(s+1));
+				}
+				break;
+			}
+			default: {
+				for (; s != e; s += k){
+					*out++ = rank_colex_k< safe >(s, k);
+				}
+				break;
+			}
+		}
+	}
+
+	// colex bijection from a lexicographical order
+	// index_t i = 1; 
+	// const index_t index = std::accumulate(s, s+k, 0, [&i](index_t val, index_t num){ 
+	// 	return val + BinomialCoefficient< safe >(num, i++); 
+	// });
+	// return index; 
+
+	template< bool colex = true, bool safe = true, typename InputIt > 
 	inline auto rank_comb(InputIt s, const size_t n, const size_t k){
 		if constexpr(colex){
 			return rank_colex_k< safe >(s, k);
@@ -345,8 +378,6 @@ namespace combinatorial {
 			}
 		}
 	}
-
-
 
 	// Lexicographically unrank 2-subsets
 	template< typename OutputIt  >
@@ -374,22 +405,17 @@ namespace combinatorial {
 	}
 
 	// Lexicographically unrank subsets wrapper
-	template< bool lex = true, bool safe = true, typename InputIt, typename OutputIt >
+	template< bool safe = true, typename InputIt, typename OutputIt >
 	inline void unrank_lex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
 		switch(k){
 			case 2: 
-				for (; s != e; ++s){
-					unrank_lex_2(*s, n, out);
-				}
+				for (; s != e; ++s){ unrank_lex_2(*s, n, out); }
 				break;
 			default:
-				for (; s != e; ++s){
-					unrank_lex_k< safe >(*s, n, k, out);
-				}
+				for (; s != e; ++s){ unrank_lex_k< safe >(*s, n, k, out); }
 				break;
 		}
 	}
-
 
 	template <class Predicate>
 	[[nodiscard]]
@@ -455,22 +481,15 @@ namespace combinatorial {
 		}
 	}
 
-	// Lexicographically unrank subsets wrapper
-	// template< bool colex = true, typename InputIt, typename OutputIt >
-	// inline void unrank_colex(InputIt s, const InputIt e, const size_t k, OutputIt out){
-	// 	switch(k){
-	// 		case 2: 
-	// 			for (; s != e; ++s){
-	// 				unrank_lex_2(*s, n, out);
-	// 			}
-	// 			break;
-	// 		default:
-	// 			for (; s != e; ++s){
-	// 				unrank_lex_k(*s, n, k, out);
-	// 			}
-	// 			break;
-	// 	}
-	// }
+	// Unrank subsets wrapper
+	template< bool colex = true, bool safe = true, typename InputIt, typename OutputIt >
+	inline void unrank_combs(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
+		if constexpr(colex){
+			unrank_colex< safe >(s, e, n, k, out);	
+		} else {
+			unrank_lex< safe >(s, e, n, k, out);
+		}
+	}
 
 } // namespace combinatorial
 

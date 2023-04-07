@@ -13,6 +13,14 @@ def generate_dataset(n: int = 15, d: int = 2):
   K = delaunay_complex(X) 
   return X, K
 
+def test_laplacian_basic():
+  L = laplacian.UpLaplacian0D([0,1,2,3,0,2],5)
+  L.simplices
+  L.precompute_degree()
+  L.faces
+  L._matvec(np.arange(L.shape[0]))
+  assert all(L._matvec(np.ones(L.shape[0])) == 0.0)
+
 def test_generate():
   X, K = generate_dataset(15)
   assert isinstance(X, np.ndarray)
