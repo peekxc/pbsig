@@ -6,27 +6,33 @@ from pbsig.persistence import boundary_matrix
 from pbsig.simplicial import *
 from pbsig.utility import *
 from pbsig.linalg import *
-from splex.combinatorial import rank_combs
+from splex import simplicial_complex
+from splex import ComplexLike
 
 def generate_dataset(n: int = 15, d: int = 2):
   X = np.random.uniform(size=(n,d))
   K = delaunay_complex(X) 
   return X, K
 
-def test_laplacian_basic():
-  L = laplacian.UpLaplacian0D([0,1,2,3,0,2],5)
-  L.simplices
-  L.precompute_degree()
-  L.faces
-  L._matvec(np.arange(L.shape[0]))
+def test_laplacian_op_0():
+  S = simplicial_complex([[0,1],[0,2],[2,3]])
+  L = up_laplacian(S, p=0, form='lo')
+  assert np.all(L.simplices == np.array([[0,1], [0,2], [2,3]], dtype=np.int32))
+  assert L.precompute_degree() is None
+  assert all(L.faces == np.c_[np.array([0,1,2,3])])
+  assert all(L._matvec(np.arange(L.shape[0])) == np.array([-3,1,1,1]))
   assert all(L._matvec(np.ones(L.shape[0])) == 0.0)
-  S = simplicial_complex([[0,1], [2,3], [0,2]])
-  up_laplacian(S, p=0, form='lo')
+  LM = up_laplacian(S, p=0, form='array')
+  assert isinstance(LM, np.ndarray)
+  assert LM.shape == tuple(L.shape)
+  x = np.random.uniform(size=L.shape[0])
+  assert np.allclose(LM @ x - L @ x, 0.0)
+
 
 def test_generate():
   X, K = generate_dataset(15)
   assert isinstance(X, np.ndarray)
-  assert isinstance(K, SimplicialComplex)
+  assert isinstance(K, ComplexLike)
 
 # def test_():
 #   X, K = generate_dataset(5, d=2)
