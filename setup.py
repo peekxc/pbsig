@@ -47,6 +47,7 @@ ext_modules = [
     '_laplacian', 
     sources = ['src/pbsig/laplacian.cpp'], 
     include_dirs=[
+      '/Users/mpiekenbrock/pbsig/include',
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include', 
       # '/Users/mpiekenbrock/pbsig/extern/pthash/include',
       # '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
@@ -60,6 +61,7 @@ ext_modules = [
     '_combinatorial', 
     sources = ['src/pbsig/combinatorial.cpp'], 
     include_dirs=[
+      '/Users/mpiekenbrock/pbsig/include', 
       '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
     ], 
     extra_compile_args=compile_args,
@@ -77,6 +79,7 @@ ext_modules = [
     '_persistence', 
     sources = ['src/pbsig/persistence.cpp'], 
     include_dirs=[
+      '/Users/mpiekenbrock/pbsig/include', 
       '/Users/mpiekenbrock/pbsig/extern/eigen'
     ], 
     extra_compile_args=compile_args,

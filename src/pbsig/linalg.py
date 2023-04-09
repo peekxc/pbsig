@@ -970,10 +970,10 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
         L = (diags(pseudo(np.sqrt(wpl))) @ L @ diags(pseudo(np.sqrt(wpr)))).tocoo()
       return (L, L.diagonal()) if return_diag else L
     elif form == 'lo':
-      p_faces = list(faces(S, p))        ## need to make a view 
+      # p_faces = list(faces(S, p))        ## need to make a view 
       p_simplices = list(faces(S, p+1))  ## need to make a view 
       _lap_cls = eval(f"UpLaplacian{int(p)}D")
-      lo = _lap_cls(p_simplices, p_faces, card(S, 0))
+      lo = _lap_cls(p_simplices, card(S, 0))
       if normed:
         if not(symmetric):
           import warnings
@@ -1027,13 +1027,10 @@ class UpLaplacianBase(LinearOperator):
   # self.m = _lap_cls(q_ranks, nv, _np)
 
   def __init__(S: Iterable['SimplexLike'], n: int, dtype = None):
-    ## Ensure S is repeatable and faces 'F' is indexable
-    # assert not(S is iter(S)) and not(F is iter(F)), "Simplex iterables must be repeatable (a generator is not sufficient!)"
-    # assert isinstance(F, Sequence), "Faces must be a valid Sequence (supporting .index(*) with SimplexLike objects!)"
-    # p: int = len(next(iter(F)))-1 # 0 => F are vertices, build graph Laplacian
+    from more_itertools import peekable
+    S_peek = peekable(S)
+    p: int = len(S_peek.peek())-1
     assert p == 0 or p == 1 or p == 2, "Only p in {0,1} supported for now"
-    assert (len(next(iter(S))) == p+2), "Invalid length of simplices/faces"
-    # super().__init__(*args, **kwargs)
 
   def diagonal(self) -> ArrayLike:
     return self.degrees
@@ -1076,21 +1073,20 @@ class UpLaplacianBase(LinearOperator):
     self.precompute_degree()
     return self 
 
+from more_itertools import collapse
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
   def __init__(self, S: Iterable['SimplexLike'], nv: int):
-    UpLaplacianBase.__init__(S, b)
-    laplacian.UpLaplacian0D.__init__(self, q_ranks, nv, _np)
-    #self.compute_indexes()
+    S = np.fromiter(collapse(p_simplices), dtype=np.uint16)
+    UpLaplacianBase.__init__(S, nv)
+    laplacian.UpLaplacian0D.__init__(self, S, nv)
     self.precompute_degree()
 
-# class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
-#   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):
-#     _np = len(F)
-#     q_ranks = rank_combs(S, n=nv, order="lex")
-#     UpLaplacianBase.__init__(S, F)
-#     laplacian.UpLaplacian0F.__init__(self, q_ranks, nv, _np)
-#     #self.compute_indexes()
-#     self.precompute_degree()
+class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+    S = np.fromiter(collapse(p_simplices), dtype=np.uint16)
+    UpLaplacianBase.__init__(S, nv)
+    laplacian.UpLaplacian0F.__init__(self, S, nv)
+    self.precompute_degree()
 
 # class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
 #   def __init__(self, S: Iterable['SimplexLike'], F: Sequence['SimplexLike'], nv: int):

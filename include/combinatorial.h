@@ -331,7 +331,7 @@ namespace combinatorial {
 	}
 
 	template< bool safe = true, typename InputIt, typename OutputIt >
-	inline void rank_colex(InputIt s, const InputIt e, const size_t n, const size_t k, OutputIt out){
+	inline void rank_colex(InputIt s, const InputIt e, [[maybe_unused]] const size_t n, const size_t k, OutputIt out){
 		switch (k){
 			case 2:{
 				for (; s != e; s += k){
