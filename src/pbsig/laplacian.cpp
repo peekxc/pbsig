@@ -71,22 +71,23 @@ auto _faces(const Laplacian& L) -> py::array_t< uint16_t > {
   auto face_ranks = unique_face_ranks(L.simplices);
   vector< uint16_t > faces; 
   auto out = std::back_inserter(faces);
-  combinatorial::unrank_combs(face_ranks.begin(), face_ranks.end(), L.nv, L.dim+1, out);
+  combinatorial::unrank_combs< Laplacian::colex_order >(face_ranks.begin(), face_ranks.end(), L.nv, L.dim+1, out);
   array< ssize_t, 2 > _shape = { static_cast< ssize_t >(L.np), L.dim+1 };
   return py::array_t< uint16_t , py::array::c_style | py::array::forcecast >(_shape, faces.data());
 }
 
 
 template< int p, typename F >
-void declare_laplacian(py::module &m, std::string typestr) {
-  using Class = UpLaplacian< p, F, SimplexRange< p+1, true > >;
+void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
+  using Class = UpLaplacian< p, F, SimplexRange< p+1, false > >;
 
   std::string pyclass_name = std::string("UpLaplacian") + typestr;
   using array_t_FF = py::array_t< F, py::array::f_style | py::array::forcecast >;
   py::class_< Class >(m, pyclass_name.c_str())
     // .def(py::init< const vector< uint16_t >, size_t, size_t >())
-    .def(py::init([](const vector< uint16_t > simplices, const size_t n) {
-      auto rng = SimplexRange< p+1, true >(simplices, n);
+    .def(py::init([](vector< uint16_t > simplices, const size_t n) {
+      combinatorial::sort_contiguous(simplices, p+2, std::less< uint16_t>());
+      auto rng = SimplexRange< p+1, false >(simplices, n);
       combinatorial::keep_table_alive = true; // needed for fast binomial coefficients
       return std::unique_ptr< Class >(new Class(rng, n));
     }))

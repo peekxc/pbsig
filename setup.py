@@ -88,6 +88,7 @@ ext_modules = [
   )
 ]
 
+# Develop: pip install --editable . --no-deps --no-build-isolation
 # Build: python -m build --skip-dependency-check --no-isolation --wheel
 setup(
   name="pbsig",

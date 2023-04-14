@@ -1,18 +1,22 @@
 ## Tests various closed-form expressions for Laplacian matrices
 import numpy as np 
 from itertools import combinations
-from scipy.sparse import diags
+from scipy.sparse import diags, spmatrix
 from pbsig.persistence import boundary_matrix
 from pbsig.simplicial import *
 from pbsig.utility import *
 from pbsig.linalg import *
 from splex import simplicial_complex
 from splex import ComplexLike
-
 def generate_dataset(n: int = 15, d: int = 2):
   X = np.random.uniform(size=(n,d))
   K = delaunay_complex(X) 
   return X, K
+
+def test_generate():
+  X, K = generate_dataset(15)
+  assert isinstance(X, np.ndarray)
+  assert isinstance(K, ComplexLike)
 
 def test_laplacian_op_0():
   S = simplicial_complex([[0,1],[0,2],[2,3]])
@@ -23,16 +27,23 @@ def test_laplacian_op_0():
   assert all(L._matvec(np.arange(L.shape[0])) == np.array([-3,1,1,1]))
   assert all(L._matvec(np.ones(L.shape[0])) == 0.0)
   LM = up_laplacian(S, p=0, form='array')
-  assert isinstance(LM, np.ndarray)
+  assert isinstance(LM, spmatrix)
   assert LM.shape == tuple(L.shape)
   x = np.random.uniform(size=L.shape[0])
   assert np.allclose(LM @ x - L @ x, 0.0)
 
+def test_laplacian_op_api():
+  X, S = generate_dataset(5, 2)
+  p = 1
+  L = up_laplacian(S, p=p, form='lo')
+  assert set([Simplex(s) for s in L.simplices]) == set(faces(S, p+1))
+  assert set([Simplex(s) for s in L.faces]) == set(faces(S, p))
+  LM = up_laplacian(S, p=p, form='array')
+  assert isinstance(LM, spmatrix)
+  assert LM.shape == tuple(L.shape)
+  x = np.random.uniform(size=L.shape[0])
+  assert np.allclose(LM @ x - L @ x, 0.0)
 
-def test_generate():
-  X, K = generate_dataset(15)
-  assert isinstance(X, np.ndarray)
-  assert isinstance(K, ComplexLike)
 
 # def test_():
 #   X, K = generate_dataset(5, d=2)

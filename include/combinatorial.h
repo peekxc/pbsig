@@ -261,6 +261,12 @@ namespace combinatorial {
 	}
 	
 	// ----- Combinatorial Number System functions -----
+	template< std::integral I, typename Compare > 
+	void sort_contiguous(vector< I >& S, const size_t modulus, Compare comp){
+		for (size_t i = 0; i < S.size(); i += modulus){
+			std::sort(S.begin()+i, S.begin()+i+modulus, comp);
+		}
+	}
 
 	// Lexicographically rank 2-subsets
 	[[nodiscard]]

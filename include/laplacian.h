@@ -15,6 +15,7 @@
 #include "pmh.h"
 #include "splex_ranges.h"
 #include <ranges>
+#include <unordered_set>
 
 using namespace combinatorial;
 
@@ -51,23 +52,29 @@ concept SimplexIterable = requires(T a){
 //   return fr;
 // };
 
+
+// Order-preserving unique boundary face ranks
 template< SimplexIterable S_Iter > 
-auto unique_face_ranks(S_Iter& simplices) -> vector< uint_64 > {
+auto unique_face_ranks(S_Iter& simplices, bool preserve_order = false) -> vector< uint_64 > {
+  std::unordered_set< uint_64 > seen;
   vector< uint64_t > face_ranks; 
   face_ranks.reserve(std::distance(simplices.begin(), simplices.end())); 
   for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
-    s_it.boundary_ranks([&face_ranks](auto face_rank){
-      face_ranks.push_back(face_rank);
+    s_it.boundary_ranks([&](auto face_rank){
+      if (seen.insert(face_rank).second) {
+        face_ranks.push_back(face_rank);
+      }
     });
   }
-  std::sort(face_ranks.begin(), face_ranks.end());
-  face_ranks.erase(std::unique(face_ranks.begin(), face_ranks.end()), face_ranks.end());
+  if (!preserve_order){ std::sort(face_ranks.begin(), face_ranks.end()); }
+  // face_ranks.erase(std::unique(face_ranks.begin(), face_ranks.end()), face_ranks.end());
   return face_ranks;
 };
 
 template< int p = 0, typename F = double, SimplexIterable S_Iterable = SimplexRange< p+1, true >, IntegralHashTable H = std::unordered_map< uint64_t, uint32_t >  >
 struct UpLaplacian {
   static constexpr int dim = p;           // Laplacian dimension
+  static constexpr bool colex_order = S_Iterable::colex_order; // whether to use colex ordering for boundary bijection 
   using value_type = F;                   // field coefficient type
   const size_t nv;                        // number of vertices
   const size_t nq;                        // number of cofaces

@@ -81,7 +81,7 @@ struct RankRange {
       } else {
         uint16_t* c_labels = this->operator*();
         const index_t N = combinatorial::BinomialCoefficient< false >(_n, dim); 
-        combinatorial::for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
+        for_each_combination(c_labels, c_labels + dim, c_labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
           f(combinatorial::rank_lex_k< false >(b, _n, dim, N)); 
           return false; 
         });
@@ -102,6 +102,7 @@ struct RankRange {
 // Stores the simplex labels as-is, in the prescribed ordering
 template< uint8_t dim, bool colex = true, typename index_t = uint16_t > 
 struct SimplexRange {
+  static constexpr bool colex_order = colex; 
   using iterator = typename vector< index_t >::iterator;
   using const_iterator = typename vector< index_t >::const_iterator;
   static_assert(std::is_integral< index_t >::value, "Must be integral"); 
@@ -111,6 +112,8 @@ struct SimplexRange {
   const size_t n;                       // alphabet size
   
   SimplexRange(const vector< uint16_t > S, const size_t _n) : s_labels(S), n(_n) {
+    // TODO: check labels explicitly and sort them for lex or colex 
+
     combinatorial::BC.precompute(n, dim+1);
   }
 
@@ -155,12 +158,18 @@ struct SimplexRange {
         f(labels[0]);
         f(labels[1]);
       } else if constexpr (dim == 2){
-        f(combinatorial::rank_colex_2(labels[0], labels[1]));
-        f(combinatorial::rank_colex_2(labels[0], labels[2]));
-        f(combinatorial::rank_colex_2(labels[1], labels[2]));
+        if constexpr(colex){
+          f(rank_colex_2(labels[0], labels[1]));
+          f(rank_colex_2(labels[0], labels[2]));
+          f(rank_colex_2(labels[1], labels[2]));
+        } else {
+          f(rank_lex_2(labels[0], labels[1], _n));
+          f(rank_lex_2(labels[0], labels[2], _n));
+          f(rank_lex_2(labels[1], labels[2], _n));
+        }
       } else {
-        combinatorial::for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
-          f(combinatorial::rank_colex_k< false >(b,dim));
+        for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
+          f(rank_comb< colex, false >(b,_n,dim));
           return false; 
         });    
       }
@@ -172,12 +181,16 @@ struct SimplexRange {
       if constexpr (dim == 1){ 
         return std::make_tuple(labels[0], labels[1]);
       } else if constexpr(dim == 2){
-        return std::make_tuple(rank_colex_2(labels[0], labels[1]), rank_colex_2(labels[0], labels[2]), rank_colex_2(labels[1], labels[2]));
+        if constexpr(colex){
+          return std::make_tuple(rank_colex_2(labels[0], labels[1]), rank_colex_2(labels[0], labels[2]), rank_colex_2(labels[1], labels[2]));
+        } else {
+          return std::make_tuple(rank_lex_2(labels[0], labels[1], _n), rank_lex_2(labels[0], labels[2], _n), rank_lex_2(labels[1], labels[2], _n));
+        }
       } else {
         std::array< uint64_t, dim > a; 
         size_t i = 0; 
         for_each_combination(labels, labels + dim, labels + dim + 1, [&](auto b, [[maybe_unused]] auto e){
-          a[i++] = rank_colex_k< false >(b,dim);
+          a[i++] = rank_comb< colex, false >(b,_n,dim);
           return false; 
         });
         return std::tuple_cat(a);
