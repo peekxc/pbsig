@@ -68,7 +68,7 @@ auto _simplices(const Laplacian& L) -> py::array_t< int > {
 
 template< class Laplacian > 
 auto _faces(const Laplacian& L) -> py::array_t< uint16_t > {
-  auto face_ranks = unique_face_ranks(L.simplices);
+  auto face_ranks = unique_face_ranks(L.simplices, false);
   vector< uint16_t > faces; 
   auto out = std::back_inserter(faces);
   combinatorial::unrank_combs< Laplacian::colex_order >(face_ranks.begin(), face_ranks.end(), L.nv, L.dim+1, out);

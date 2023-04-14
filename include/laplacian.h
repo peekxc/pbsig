@@ -53,7 +53,8 @@ concept SimplexIterable = requires(T a){
 // };
 
 
-// Order-preserving unique boundary face ranks
+// Unique boundary face ranks; optionally order-preserving
+// NOTE: By default order-preserving is off; NEED colex or lex ordering to ensure sign pattern is constant
 template< SimplexIterable S_Iter > 
 auto unique_face_ranks(S_Iter& simplices, bool preserve_order = false) -> vector< uint_64 > {
   std::unordered_set< uint_64 > seen;
@@ -90,7 +91,7 @@ struct UpLaplacian {
 
   UpLaplacian(S_Iterable S, const size_t nv_) 
     : nv(nv_), nq(std::distance(S.begin(), S.end())), simplices(S)  {
-    auto pr = unique_face_ranks(simplices);
+    auto pr = unique_face_ranks(simplices, false); // NEED colex or lex ordering to ensure sign pattern is constant
     np = pr.size();
     shape = { np, np };
     y = vector< F >(np); // todo: experiment with local _alloca allocation
@@ -137,7 +138,9 @@ struct UpLaplacian {
         y[jj] -= x[ii] * fpl[jj] * fq[qi] * fpr[ii];
       } else if constexpr(p == 1){
         const auto [i,j,k] = s_it.boundary_ranks();
+        // std::cout << i << ", " << j << ", " << k << std::endl;
         const auto ii = index_map[i], jj = index_map[j], kk = index_map[k];
+        // std::cout << ii << ", " << jj << ", " << kk << std::endl;
         y[ii] -= x[jj] * fpl[ii] * fq[qi] * fpr[jj];
         y[jj] -= x[ii] * fpl[jj] * fq[qi] * fpr[ii]; 
         y[ii] += x[kk] * fpl[ii] * fq[qi] * fpr[kk]; 
