@@ -54,6 +54,46 @@ def test_laplacian_op_api():
     x = np.arange(card(S, p))
     assert np.allclose(LM @ x - L @ x, 0.0)
 
+## Test elementwise definitions
+D1 = boundary_matrix(S, p=1)
+fv = np.random.uniform(size=card(S,0), low=0, high=1)
+fe = np.array([lower_star_weight(fv)(e) for e in faces(S,1)])
+F = dict(zip(faces(S,1), fe))
+W0 = np.diag(fv)
+W1 = np.diag(fe)
+deg = np.zeros(card(S,0))
+for v in faces(S,0):
+  for e in S.cofaces(v):
+    if len(e) == len(v) + 1:
+      deg[v] += F[e]
+
+## Correct 
+(F[(0,1)] + F[(0,2)])*fv[0]
+np.sqrt(W0) @ D1 @ W1 @ D1.T @ np.sqrt(W0)
+
+## Correct 
+(F[(0,1)] + F[(0,2)])*deg[0]
+np.diag(np.sqrt(deg)) @ D1 @ W1 @ D1.T @ np.diag(np.sqrt(deg))
+
+## Indeed: the diagonal is all ones 
+np.diag(1/np.sqrt(deg)) @ D1 @ W1 @ D1.T @ np.diag(1/np.sqrt(deg))
+
+## Indeed: this matches
+up_laplacian(S, weight=lower_star_weight(fv), normed=True).todense()
+
+## Matches higher order too 
+X, S = generate_dataset(30, 2)
+fv = np.random.uniform(size=card(S,0), low=0, high=5.0)
+np.diag(up_laplacian(S, weight=lower_star_weight(fv), normed=True, p=1).todense())
+L = up_laplacian(S, weight=lower_star_weight(fv), normed=True, p=1).todense()
+max(np.linalg.eigvalsh(L)) <= 3 # true
+
+for a,b in zip(np.random.uniform(size=130, low=0, high=2), np.random.uniform(size=30, low=0, high=2)):
+  ub = abs(1/a - 1/b)
+  lb = abs(a-b)*(a*b)**(-1)
+  if not((ub - lb) > -1e-12):
+    print(a,b)
+
 
 # def test_():
 #   X, K = generate_dataset(5, d=2)
