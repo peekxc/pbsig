@@ -3,7 +3,6 @@ from numpy.typing import ArrayLike
 from numbers import *
 
 import numpy as np 
-import primme
 from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
@@ -193,10 +192,10 @@ class PsdSolver():
         self.params = dict(which='LM', tol=self.tolerance, return_eigenvectors=return_eigenvectors) | kwargs
         self.solver = eigsh
       else:
-        import primme
+        from primme import eigsh as primme_eigsh
         methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
         self.params = dict(tol=self.tolerance, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
-        self.solver = primme.eigsh
+        self.solver = primme_eigsh
     else: 
       raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
     
@@ -381,11 +380,10 @@ def pseudoinverse(x: ArrayLike) -> np.ndarray:
 def prox_nuclear(x: ArrayLike, t: float = 1.0):
   """Prox operator on the nuclear norm.
   
-  prox_f returns the (unique) point that achieves the infimum defining the _Moreau envelope_ _M_f_.
+  prox_f returns the (unique) point that achieves the infimum defining the _Moreau envelope_ _Mf_.
 
   prox_{t*f}(x) = argmin_z { f(z) + (1/2t) || x - z ||^2 }
                 = argmin_z { ||z||_* + (1/2t) || x - z ||_F^2 }
-                = \sum\limits_{i=1}^r max(si - t, 0) + ui vi^T
 
   where X = U S V^T
 
@@ -552,17 +550,18 @@ def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
   """
   Calculates all eigenvalues in a block-wise manner 
   """
+  from primme import eigsh as primme_eigsh
   ni = int(np.ceil(k/b))
   f_args = dict(tol=np.finfo(np.float32).eps, which='CGT', return_eigenvectors=True, raise_for_unconverged=False, return_history=False)
   f_args = f_args | kwargs
   evals = np.zeros(ni*b)
   for i in range(ni):
     if i == 0:
-      ew, ev = primme.eigsh(A, k=b, **f_args)
+      ew, ev = primme_eigsh(A, k=b, **f_args)
     else: 
       #f_args['which'] = min(ew)
       f_args['sigma'] = min(ew)
-      ew, ev = primme.eigsh(A, k=b, lock=ev, **f_args)
+      ew, ev = primme_eigsh(A, k=b, lock=ev, **f_args)
     # print(ew)
     evals[(i*b):((i+1)*b)] = ew
   return(evals[-k:])
@@ -613,6 +612,7 @@ def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[Array
     - kwargs := global/'default' keyword arguments to supply to primme.eigsh 
   
   """
+  from primme import eigsh as primme_eigsh
   default_opts = dict(tol=1e-6, printLevel=0, return_eigenvectors=False, return_stats=False, return_history=False) | kwargs
   args = {} 
   reduce_f, is_aggregate = (lambda x: x, False) if reduce is None else (reduce, True)
@@ -621,17 +621,17 @@ def eigsh_family(M: Iterable[ArrayLike], p: float = 0.25, reduce: Callable[Array
     nev = trace_threshold(A, p)
     if default_opts['return_stats']:
       if default_opts['return_eigenvectors']:
-        ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        ew, ev, stats = primme_eigsh(A=A, k=nev, **default_opts)
         yield reduce_f(ew), ev, stats
       else:
-        ew, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        ew, stats = primme_eigsh(A=A, k=nev, **default_opts)
         yield reduce_f(ew), stats
     else: 
       if default_opts['return_eigenvectors']:
-        ew, ev, stats = primme.eigsh(A=A, k=nev, **default_opts)
+        ew, ev, stats = primme_eigsh(A=A, k=nev, **default_opts)
         yield reduce_f(ew), ev
       else:
-        ew = primme.eigsh(A=A, k=nev, **default_opts)
+        ew = primme_eigsh(A=A, k=nev, **default_opts)
         yield reduce_f(ew)
   # else: 
   #   #n = len(M)

@@ -5,13 +5,17 @@ clang_version:
 	$(CXX) --version
 
 laplacian:
-	$(CXX) profile_laplacian.cpp -O2 -std=c++20 -g -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/src/pbsig/
+	$(CXX) profile_laplacian.cpp -O2 -std=c++20 -g -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/include
+
+laplacian_omp:
+	$(CXX) profile_laplacian.cpp -O2 -std=c++20 -g -fopenmp -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/include
+
 
 iterators: 
-	$(CXX) profile_iter.cpp -O2 -std=c++20 -g -o profile_iter -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/src/pbsig/
+	$(CXX) profile_iter.cpp -O2 -std=c++20 -g -o profile_iter -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/include
 
 test_pmh: test_pmh.cpp
-	$(CXX) test_pmh.cpp -O2 -std=c++20 -g -o test_pmh -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/src/pbsig/
+	$(CXX) test_pmh.cpp -O2 -std=c++20 -g -o test_pmh -L/usr/local/lib -lprofiler -I/Users/mpiekenbrock/pbsig/include
 
 profile_hash:
 	LD_PRELOAD=/usr/local/lib/libprofiler.dylib CPUPROFILE=main.prof CPUPROFILE_FREQUENCY=100000 ./test_pmh

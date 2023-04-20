@@ -34,6 +34,51 @@
     backgroundcolor=white
    }
    
+\usepackage{empheq}
+\usepackage{xcolor}
+%\subfile{whiteboxes}
+\definecolor{shadecolor}{cmyk}{0,0,0,0}
+\newsavebox{\mysaveboxM} % M for math
+\newsavebox{\mysaveboxT} % T for text
+
+\newcommand*\boxAppOne[2][Application \#1: Vectorizing persistence information]{%
+  \sbox{\mysaveboxM}{#2}%
+  \sbox{\mysaveboxT}{\fcolorbox{black}{white}{#1}}%
+  \sbox{\mysaveboxM}{%
+    \parbox[t][\ht\mysaveboxM+.5\ht\mysaveboxT+.5\dp\mysaveboxT][b]{\wd\mysaveboxM}{#2}%
+  }%
+  \sbox{\mysaveboxM}{%
+    \fcolorbox{black}{shadecolor}{%
+      \makebox[\linewidth-1em]{\usebox{\mysaveboxM}}%
+    }%
+  }%
+  \usebox{\mysaveboxM}%
+  \makebox[15pt][r]{%
+    \makebox[\wd\mysaveboxM][l]{%
+      \raisebox{\ht\mysaveboxM-0.5\ht\mysaveboxT+0.5\dp\mysaveboxT-0.5\fboxrule}{\usebox{\mysaveboxT}}%
+    }%
+  }%
+}
+
+\newcommand*\boxAppTwo[2][Application \#2: Differentiating persistence information]{%
+  \sbox{\mysaveboxM}{#2}%
+  \sbox{\mysaveboxT}{\fcolorbox{black}{white}{#1}}%
+  \sbox{\mysaveboxM}{%
+    \parbox[t][\ht\mysaveboxM+.5\ht\mysaveboxT+.5\dp\mysaveboxT][b]{\wd\mysaveboxM}{#2}%
+  }%
+  \sbox{\mysaveboxM}{%
+    \fcolorbox{black}{shadecolor}{%
+      \makebox[\linewidth-1em]{\usebox{\mysaveboxM}}%
+    }%
+  }%
+  \usebox{\mysaveboxM}%
+  \makebox[15pt][r]{%
+    \makebox[\wd\mysaveboxM][l]{%
+      \raisebox{\ht\mysaveboxM-0.5\ht\mysaveboxT+0.5\dp\mysaveboxT-0.5\fboxrule}{\usebox{\mysaveboxT}}%
+    }%
+  }%
+}
+  
   
 \usepackage{chngcntr}
 
@@ -127,28 +172,32 @@ As exemplary applications, we study its utility in performing common tasks in to
 
 \section{Introduction}\label{sec:intro}
 % History of persistence: shape descriptor, homology inference, stability => homology is useful for application domains
-Persistent homology~\cite{} is the most widely deployed tool in data analysis and learning applications within the topological data analysis (TDA) community. 
+Persistent homology~\cite{} is the most widely deployed tool for data analysis and learning applications within the topological data analysis (TDA) community. 
 Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably extracted from its \emph{persistence diagram}~\cite{}.
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
-Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}, as they  
+Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, topological features are demarcated succinctly with diagrams.
 %given a finite data $X$ sampled from a topological space $\mathcal{X}$, can one infer the homology of $\mathcal{X}$ from $X$ with high confidence?
 %One of the key properties of persistence is its multi-layered representation: just as homology categorifies the Euler characteristic via alternating sum of its Betti numbers, persistent homology categorifies persistent rank invariant through a similar alternating sum. 
-demarcate topological features by pairings of simplices defined using homomorphisms between homology groups. 
 The surprising and essential quality of persistence is that this pairing exists, is unique, and is stable under additive perturbations~\cite{cohen2005stability}.
-Indeed, persistence provides the bridge between the theory of homology and the application frontier: domains which operate on noisy measurement data like shape recognition, computer vision, and time series data have all found ways of exploiting the information contained in persistence diagrams.
+Persistence connects homology theory to the application frontier: whether for shape recognition, computer vision, metric learning, dimensionality reduction, or time series analysis, researchers have found ways of exploiting the rich information contained in persistence diagrams.
 
-Though theoretically sound, diagrams suffer from several practical issues: they are sensitive to strong outliers, far from injective, and are difficult both to compute \emph{and} to compare. 
-Indeed, it is difficult to do even basic statistical operations under the standard matching metrics, such as averaging~\cite{}. 
-Towards ameliorating many of these issues and facilitating the use of persistence in learning applications, many practitioners have developed means of vectorizing diagrams via maps to function spaces, such as Hilbert spaces~\cite{}---popular examples include persistence images~\cite{}, and persistence landscapes~\cite{}, template functions~\cite{}. 
-These diagram-vectorizations have proven useful in learning purposes due to their stability and configurability~\cite{}, they are fundamentally limited in that they all require diagrams to compute.
-Along a separate thread of research, Turner et al. propose the \emph{persistent homology transform} (PHT) to handle the injectivity issue: rather than compute one diagram, compute many, each diagram representing a different perspective. 
-The main result of~\cite{} is that this collection of diagrams is a sufficient to reconstruct the data.
-This sufficiency result of the PHT is both an exciting and foundational development, as it sparks an entire inverse theory for persistence and in fact motivates the creation of a metric. 
-However, it too relies on the computation of diagrams: in fact, it exacerbates the problem computationally, as computing diagrams in parameterized settings has proven to be non-trivial~\cite{}.  
+Though theoretically sound, diagrams suffer from several practical issues: they are sensitive to strong outliers, far from injective, and difficult both to compute \emph{and} to compare. 
+%Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
+Towards ameliorating many of these issues, practitioners have developed ways of vectorizing diagrams by mapping them to function spaces, such as Hilbert spaces~\cite{}---popular examples include persistence images~\cite{}, persistence landscapes~\cite{}, and template functions~\cite{}. 
+These vectorizations have proven useful for learning applications due to their stability and configurability~\cite{}, however, they are limited practically as they require diagrams for their computation.
+Along a different line of research addressing the issue of injectivity, Turner et al. propose the \emph{persistent homology transform} (PHT), which is a shape statistic associating an embedded data set $X \subset \mathbb{R}^d$ with a collection of diagrams via the map: 
+\begin{align*}\label{eq:pht1}
+	\mathrm{PHT}(X): S^{d-1} &\to \mathcal{D}^d \\
+	v &\mapsto \left( \, \mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v) \, \right) \numberthis
+\end{align*}
+%rather than compute one diagram, compute many, each diagram representing a different perspective. 
+The main result of~\cite{} shows this collection of diagrams is sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning. 
+However, this approach exacerbates both computational problems, as extending the defacto standard persistence computation to parameterized settings has proven non-trivial~\cite{} and achieving rotation invariance in~\eqref{eq:pht1} requires many expensive diagram comparisons.  %moves
  
-We seek to shift the paradigm: rather than constructing diagrams first and vectorizing second, we perform both steps simultaneously. 
+We seek to shift the computational paradigm: rather than constructing diagrams as a first step and vectorizing them as a second step, we propose a means of performing both steps simultaneously. 
 Our strategy is natural in that it extracts persistence information using the duality between diagrams and their rank functions~\cite{}.
-However, unlike existing approaches, our proposed vectorization involves a spectral characterization that avoids the reduction algorithm~\cite{edelsbrunner2022computational} entirely, which has proven non-trivial to extend to the parameterized setting~\cite{}. % moves 
+However, unlike existing approaches, our proposed vectorization involves a spectral characterization that avoids the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
+%Among the many benefits of our approach is its iterative nature: 
 We are partially motivated by recent relationship established between the persistent Betti numbers and combinatorial Laplacian operators, and by a technical observation that suggests several computational advantages to working with the rank invariant directly (see section~\ref{sec:betti_derivation} for details). 
 
 %the multiplicity function is computable solely from (matrix) rank computations~\cite{zomorodian2004computing}. 
@@ -171,54 +220,58 @@ We are partially motivated by recent relationship established between the persis
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
 \subsection*{The Relaxation}
-So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details. At a high level, the relaxation we propose constructs a vector-valued mapping, or \emph{vectorization}, via: 
+So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details. At a high level, the relaxation we propose constructs a vector-valued mapping, or \emph{vectorization}, over a set $\mathcal{A}$: 
 $$ (X, \mathcal{R}, \epsilon) \mapsto \mathbb{R}^{\lvert \mathcal{A} \rvert}$$
-where $X$ is the input a data set, $\epsilon$ a relaxation parameter, and $\mathcal{R}$ a \emph{sieve} which sifts through a set $\mathcal{A}$, summarizing the topological and geometric behavior observed by $(K, f_\alpha)$ for all $\alpha \in \mathcal{A}$ in the process.  The steps to produce this vectorization are as follows:
+where $X$ is the input a data set, $\epsilon$ a relaxation parameter, and $\mathcal{R}$ a \emph{sieve} which sifts through $\mathcal{A}$, summarizing the topological and geometric behavior observed by $(K, f_\alpha)$ for all $\alpha \in \mathcal{A}$ in the process.  The steps to produce this vectorization are as follows:
 \begin{enumerate}
 	\item Let $K$ denote a fixed simplicial complex constructed from the data set $X$. Select a continuously-parameterized family of filtrations:
 	$$(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}$$
-	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters (``hyper-parameters''), such as density-filtered filtrations~\cite{} or Rips filtrations built over dynamic metric spaces~\cite{}.  
+	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters (``hyper-parameters''), such as density filtrations~\cite{} or Rips filtrations over dynamic metric spaces~\cite{}.  
 	\item Choose a \emph{sieve pattern} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
-	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_m = \{(i,j) \in \bar{\mathbb{R}}^2  \mid i < j \}$$ 
-	This choice is typically application-dependent as it requires a priori knowledge. In section~\ref{sec:applications} we give evidence random sampling may be sufficient when $\mathcal{R}$ is unknown.
+	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_m = \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$$ 
+	This choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes when $\mathcal{R}$ is unknown.
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-	\item Choose a homology dimension $p\geq 0$ and relaxation parameter $\epsilon > 0$ representing how closely the relaxation should model the quantity: 
+	\item Choose a homology dimension $p\geq 0$ and approximation parameter $\epsilon > 0$ representing how closely the relaxation should model the quantity: 
 	\begin{equation}\label{eq:mu_alpha}
 		\mu_p(\mathcal{R}_\alpha) \stackrel{\epsilon}{\approx} \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
-	Larger choices of $\epsilon$ yield smoother relaxations that depend more on the geometry of $K$, whereas smaller values of $\epsilon$ more accurately approximate the topology of $f_\alpha$. 
-	\item Associate with each unique \emph{corner point} $(i,j) \in \partial(\mathcal{R})$ an $\alpha$-parameterized combinatorial Laplacian operator $\mathcal{L}_{ij}(K, f_\alpha)$:
-$$ \mathcal{L}_{ij}: \mathcal{R} \; \to \; C_1(\mathcal{A}, \mathbb{R}_+)  $$
+
+	\item Choose a Laplacian operator $\mathcal{L}(K, f_\alpha)$ and regularization scheme $\Phi$ to associate to $\mathcal{R}$: 
+$$ \mathcal{L}: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-	Like step (2), the choice of Laplacian operator depends on the application---we discuss options in section~\eqref{sec:comb_lap}.
-	\item For each corner point $(i,j) \in \mathcal{R}$, restrict and project $\mathcal{L}$ onto the Krylov subspace: 
+Informally, the spectra of $\mathcal{L}$ encodes the geometry and topology of the intersection pattern of $(K, f_\alpha)$, and $\Phi$ determines which information to prioritize in the vectorization. 
+	\item For each corner point $(i,j) \in \partial(\mathcal{R})$, restrict and project $\mathcal{L}$ onto the Krylov subspace: 
 	$$
-	T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}, \quad \quad \mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}
+	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}
 	$$
-	for some initially chosen vector $v \in \mathrm{span}(\textbf{1})^\perp$. As we will show in section~\ref{sec:spectral_relax}, the eigenvalues of $T$ form the basis of the $\epsilon$-approximation of~\eqref{eq:mu_alpha}. 
+	for some initially chosen vector $v \in \mathrm{span}(\textbf{1})^\perp$. As we will show in section~\ref{sec:spectral_relax}, the eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $\epsilon$-approximation of~\eqref{eq:mu_alpha}. 
 	\item (Optional) Depending on the amount of memory available, store the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ to accelerate the computation of (5) along similar $\alpha \in \mathcal{A}$ (see section~\ref{sec:lanczos_it} for details).
 \end{enumerate}
-The remaining steps of the relaxation depend on the application in mind. Below, we record two generic objectives and give several example applications that fit within the scope of each objective.
- 
-The duality between diagrams and rank functions suggests any application which exploits vectorized persistence information may benefit from our relaxation. In particular, any application which, either implicitly or explicitly, depends on \emph{multiplicity} information may benefit. 
-\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
-	Compute an $\epsilon$-approximation of $\mu_p(\mathcal{R}_\alpha)$ over some family $\mathcal{A}$ (in subcubic time per $\alpha$)
-\end{tcolorbox}
+The remaining steps of the relaxation depend on the application in mind. The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation. 
+Moreover, the differentiability of our relaxation enables learning applications to optimize persistence information. We capture these two generic application domains as follows: 
+\begin{enumerate}[label=(\Alph*)]
+	\item Construct an $\epsilon$-approximation of $\mu_p(\mathcal{R}_\alpha)$ over a family $\mathcal{A}$
+	\item Differentiate an $\alpha$-parameterized filter $f_\alpha$ for a fixed sieve $\mathcal{R}$ over a family $\mathcal{A}$ % $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$
+\end{enumerate}
 \noindent
-Such applications include, but are not limited to: characterizing swarm and flocking behavior with Betti curves~\cite{}, topology-guided image denoising~\cite{}, detecting bifurcations in dynamical systems~\cite{}, generating metric invariants for shape classification and metric learning~\cite{},  and so on. 
+Exemplary applications of (A) include: characterizing swarm and flocking behavior with Betti curves~\cite{}, topology-guided image denoising~\cite{}, detecting bifurcations in dynamical systems~\cite{}, generating metric invariants for shape classification and metric learning~\cite{},  and so on. 
+Exemplary applications of (B) include filtration optimization, incorporating topological priors into loss functions, and....
+\\
+\\
+%\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
+%\begin{empheq}[box=\boxAppOne]{equation*}
+%	\epsilon\text{-approximate } \mu_p(\mathcal{R}_\alpha) \text{ over a family } \mathcal{A}
+%\end{empheq}
+%\end{tcolorbox}
+%\begin{tcolorbox}[title=Generic application \#2: Learning using persistence information]
+%	Compute a gradient $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$ with which to optimize $\mu_p(\mathcal{R}_\alpha)$ over $\mathcal{A}$
+%\end{tcolorbox}
 
-The fact that our relaxation is differentiable enables applications which seek to perform a learning task with persistence information.
-\begin{tcolorbox}[title=Generic application \#2: Learning using persistence information]
-	Compute a gradient $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$ with which to optimize $\mu_p(\mathcal{R}_\alpha)$ over $\mathcal{A}$
-\end{tcolorbox}
-\noindent Exemplary applications include filtration optimization, incorporating topological priors into loss functions, and....
- \\
- \\
 %The fact that the proposed relaxation satisfies the same inclusion-exclusion formula obeyed by the rank invariant implies that we may recover a $(1-\epsilon)$-approximation of~\eqref{eq:mu_alpha} simply by obtaining $(1-\epsilon)$-approximations of $\mu_p$ at every corner point $(i,j) \in \partial(\mathcal{R})$. We defer discussion of the details of the computation to section~\ref{sec:computational_imp}.
 \noindent 
 \textbf{Contributions:}
-Our contributions are summarized as follows. We introduce an iterative $\epsilon$-approximation method for computing the \emph{the persistent rank invariants}---$\mu_p^{\ast}$ and $\beta_p^\ast$---in \emph{essentially} $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively. 
+Our primary contribution is an iterative $\epsilon$-approximation method for computing the \emph{persistent rank invariants}---$\mu_p^{\ast}$ and $\beta_p^\ast$---in essentially $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (see section~\ref{sec:computational_imp} for details). 
 The approximation is spectral-based and is particularly efficient when executed on perturbed inputs, which we generically refer to as the \emph{parameterized setting}. 
 When the accuracy parameter $\epsilon$ is made small enough, both invariants are recovered exactly. 
 In deriving the approximation, we obtain families of continuous rank invariants which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. 
@@ -229,8 +282,8 @@ The proposed relaxation is also \emph{matrix-free}, requiring only as much memor
 Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing persistence diagrams (via~\cite{chen2011output}) that requires as its only input  matrix-vector product operator $x \mapsto \partial x$, which we consider to be of independent interest. 
 
 
-\subsection*{Motivation: Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
-In this section, we describe the background theory that motivated the relaxation and contributions listed above, beginning with description of the duality between persistence diagrams and the rank invariant.  
+\subsection*{Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
+%In this section, we describe the background theory that motivated the relaxation and contributions listed above, beginning with description of the duality between persistence diagrams and the rank invariant.  
 
 % --- Counting measure multiplicity interpretation --- 
 \subfile{counting_measure}

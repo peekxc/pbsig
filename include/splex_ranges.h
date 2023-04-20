@@ -127,20 +127,35 @@ struct SimplexRange {
   }
 
   struct SimplexLabelIterator {
-    typedef std::forward_iterator_tag iterator_category;
-    typedef std::ptrdiff_t difference_type;
-    typedef uint16_t value_type;
-    typedef uint16_t* pointer;
-    typedef uint16_t& reference;
+    using iterator_category = std::forward_iterator_tag;
+    // using iterator_category = std::random_access_iterator_tag;
+    using difference_type = std::ptrdiff_t;
+    using value_type = uint16_t;
+    using pointer = uint16_t*;
+    using reference = uint16_t&;
 
     const index_t _n; 
     const index_t _N; 
     const_iterator _it;
     SimplexLabelIterator(const_iterator it, const index_t __n) : _n(__n), _N(combinatorial::BinomialCoefficient< true >(_n, dim)), _it(it) {};
+    SimplexLabelIterator& operator=(const SimplexLabelIterator& it){
+      _it = it._it; 
+      return *this; 
+    }
     uint16_t* operator*() noexcept { return (uint16_t*) &(*_it); }
     constexpr void operator++() noexcept { _it += (dim+1); }
+    constexpr void operator--() noexcept { _it -= (dim+1); }
     constexpr bool operator!=(SimplexLabelIterator o) const noexcept { return _it != o._it; }
-    
+    // operator SimplexLabelIterator() const { return SimplexLabelIterator(_it, _n); }
+
+    // Boilerplate 
+    // constexpr SimplexLabelIterator& operator++() noexcept { _it += (dim+1); return *this; }
+    // constexpr SimplexLabelIterator& operator--() noexcept { _it -= (dim+1); return *this; }
+    // constexpr SimplexLabelIterator operator+(const difference_type& diff) const noexcept { return SimplexLabelIterator(_it + diff*(dim+1), _n); }
+    // constexpr SimplexLabelIterator operator-(const difference_type& diff) const noexcept { return SimplexLabelIterator(_it - diff*(dim+1), _n); }
+    // constexpr reference operator[] (const difference_type& offset) const noexcept { return *(_it + offset*(dim+1)); }
+    // constexpr difference_type operator-(const SimplexLabelIterator& it) const { return this->_it - it._it; }
+
     template< typename Lambda > 
     void boundary_labels(Lambda&& f){
       uint16_t* labels = this->operator*();
