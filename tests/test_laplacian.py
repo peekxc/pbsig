@@ -35,12 +35,12 @@ def test_laplacian_op_0():
 def test_laplacian_op_api():
   X, S = generate_dataset(30, 2)
   for p in range(0, 2):
-    L = up_laplacian(S, p=p, form='lo')
-    assert set([Simplex(s) for s in L.simplices]) == set(faces(S, p+1))
-    assert set([Simplex(s) for s in L.faces]) == set(faces(S, p))
+    LO = up_laplacian(S, p=p, form='lo')
+    assert set([Simplex(s) for s in LO.simplices]) == set(faces(S, p+1))
+    assert set([Simplex(s) for s in LO.faces]) == set(faces(S, p))
     LM = up_laplacian(S, p=p, form='array')
     assert isinstance(LM, spmatrix)
-    assert LM.shape == tuple(L.shape)
+    assert LM.shape == tuple(LO.shape)
     #x = np.random.uniform(size=L.shape[0])
     
     ## Ensure the degree are correct / ordering 
@@ -48,15 +48,15 @@ def test_laplacian_op_api():
     n = card(S, p)
     for i in range(n):
       cv = np.array([0]*i + [1] + [0]*(n-i-1))
-      assert np.isclose(np.max(abs(LM.todense()[i,:] - (L @ cv))), 0)
+      assert np.isclose(np.max(abs(LM.todense()[i,:] - (LO @ cv))), 0)
 
     ## Ensure matvec is correct
     x = np.arange(card(S, p))
-    assert np.allclose(LM @ x - L @ x, 0.0)
+    assert np.allclose(LM @ x - LO @ x, 0.0)
 
 def benchmark_matvec():
   import timeit
-  X, S = generate_dataset(500, 2)
+  X, S = generate_dataset(10000, 2)
   p = 1
   fv = np.random.uniform(size=card(S,0), low=0, high=5)
   LO = up_laplacian(S, p=p, form='lo', weight=lower_star_weight(fv))

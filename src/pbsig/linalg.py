@@ -13,7 +13,7 @@ from splex.combinatorial import rank_combs
 from .meta import *
 from .simplicial import * 
 from .combinatorial import * 
-import _lanczos as lanczos
+# import _lanczos as lanczos
 import _laplacian as laplacian
 from splex import *
 

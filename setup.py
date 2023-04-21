@@ -15,8 +15,12 @@ print(f"COMPILER FLAGS: { str(flags) }")
 
 ## Configure additional compiler flags
 compile_args = sysconfig.get_config_var('CFLAGS').split()
-# compile_args = ["-O3" if (arg[:2] == "-O" and int(arg[2]) in [0,1,2,3]) else arg for arg in compile_args]
-compile_args += ["-std=c++20", "-Wall", "-Wextra", "-O0"]
+compile_args += ["-std=c++20", "-Wall", "-Wextra", "-O2"]
+# compile_args += ["-std=c++20", "-Wall", "-Wextra", "-march=native", "-O3", "-fopenmp"]
+link_args = []
+# link_args = ["-fopenmp"]
+
+
 # compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
 # extra_compile_args += "-O0" ## debug mode  
 # extra_compile_args = list(set(extra_compile_args))
@@ -54,6 +58,7 @@ ext_modules = [
       '/Users/mpiekenbrock/pbsig/src/pbsig/'
     ], 
     extra_compile_args=compile_args,
+    extra_link_args=link_args,
     language='c++20', 
     cxx_std=1
   ), 

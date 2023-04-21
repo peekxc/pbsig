@@ -75,7 +75,7 @@ int main(){
 
   auto L = UpLaplacian< 1, float, SimplexRange< 2, false >, emhash5::HashMap< uint64_t, uint32_t > >(S, 500); // construct  
   // auto L = UpLaplacian< 1, float, SimplexRange< 2, false >, std::unordered_map< uint64_t, uint32_t > >(S, 500); // construct  
-  L.precompute_indices();
+  // L.precompute_indices();
   run_benchmark(L, 5000);
 
   // std::cout << "Size of output vec: " << L.y.size() << std::endl; 

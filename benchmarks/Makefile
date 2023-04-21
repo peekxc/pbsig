@@ -8,7 +8,7 @@ laplacian:
 	$(CXX) profile_laplacian.cpp -O2 -std=c++20 -g -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/include
 
 laplacian_omp:
-	$(CXX) profile_laplacian.cpp -O2 -std=c++20 -g -fopenmp -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/include
+	$(CXX) profile_laplacian.cpp -O3 -std=c++20 -g -fopenmp -o profile_laplacian -L/usr/local/lib/ -lprofiler -I/Users/mpiekenbrock/pbsig/include
 
 
 iterators: 
