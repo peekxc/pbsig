@@ -158,7 +158,7 @@ Matrix-free spectral relaxations of \\ persistence rank invariants
 
 \begin{abstract}
 Using a duality result between persistence diagrams and persistence measures, we introduce a family of continuous relaxations of the persistent rank invariant for persistence modules indexed over the real line. 
-Like the rank invariant, the relaxation satisfies inclusion-exclusion, is derived from simplicial boundary operators, and may be evaluated iteratively to recover persistence information. 
+Like the rank invariant, the relaxation satisfies inclusion-exclusion, is derived from simplicial boundary operators, and may be used to recover the persistence diagram. 
 Unlike the rank invariant, the approximation enjoys a number of stability and continuity properties typically reserved for persistence diagrams, such as global Lipschitz continuity and differentiability over the positive semi-definite cone. 
 %Key to achieving a $(1-\epsilon)$-approximation is the use of spectral L{\"o}wner decompositions 
 %Our proposed $(1-\epsilon)$-approximation relies on uses nonconvex spectral functions  composition with the spectral decomposition relax boundary operators with L{\"o}wner operators. 
@@ -173,29 +173,30 @@ As exemplary applications, we study its utility in performing common tasks in to
 \section{Introduction}\label{sec:intro}
 % History of persistence: shape descriptor, homology inference, stability => homology is useful for application domains
 Persistent homology~\cite{} is the most widely deployed tool for data analysis and learning applications within the topological data analysis (TDA) community. 
-Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably extracted from its \emph{persistence diagram}~\cite{}.
+Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably gleaned from its \emph{persistence diagram}~\cite{}.
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
-Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, topological features are demarcated succinctly with diagrams.
+Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, diagrams demarcate topological features succinctly.
 %given a finite data $X$ sampled from a topological space $\mathcal{X}$, can one infer the homology of $\mathcal{X}$ from $X$ with high confidence?
 %One of the key properties of persistence is its multi-layered representation: just as homology categorifies the Euler characteristic via alternating sum of its Betti numbers, persistent homology categorifies persistent rank invariant through a similar alternating sum. 
 The surprising and essential quality of persistence is that this pairing exists, is unique, and is stable under additive perturbations~\cite{cohen2005stability}.
-Persistence has proven to be the de facto connection between homology theory and the application frontier: whether for shape recognition, computer vision, metric learning, dimensionality reduction, or time series analysis, researchers have found ways of exploiting the rich information contained in persistence diagrams.
+Persistence has established the de facto connection between homology and the application frontier: whether for shape recognition, computer vision, metric learning, dimensionality reduction, or time series analysis, researchers have found ways of exploiting persistence diagrams.
 
 Though theoretically sound, diagrams suffer from several practical issues: they are sensitive to strong outliers, far from injective, and difficult both to compute \emph{and} to compare. 
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
-Towards ameliorating many of these issues, practitioners have developed ways of vectorizing diagrams by mapping them to function spaces, such as Hilbert spaces~\cite{}---popular examples include persistence images~\cite{}, persistence landscapes~\cite{}, and template functions~\cite{}. 
-These vectorizations have proven useful for learning applications due to their stability and configurability~\cite{}, however, they are limited practically as diagrams are prerequisite to their computation.
-Along a different line of research addressing the issue of injectivity, Turner et al. propose the \emph{persistent homology transform} (PHT), which is a shape statistic associating an embedded data set $X \subset \mathbb{R}^d$ with a collection of diagrams via the map: 
+Tackling some of these issues, practitioners have developed ways of equipping diagrams with additional structure by way of maps to function spaces (e.g. Hilbert spaces)---examples include persistence images~\cite{}, persistence landscapes~\cite{}, and template functions~\cite{}. 
+These diagram vectorizations have proven useful for learning applications due to their stability and configurable metric structure~\cite{}, however, their scalability is limited as diagrams are prerequisite to their computation.
+Along a separate thread of research addressing the issue of injectivity, Turner et al. propose the \emph{persistent homology transform} (PHT), which is a shape statistic that associates an embedded data set $X \subset \mathbb{R}^d$ with a collection of diagrams: 
 \begin{align*}\label{eq:pht1}
 	\mathrm{PHT}(X): S^{d-1} &\to \mathcal{D}^d \\
 	v &\mapsto \left( \, \mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v) \, \right) \numberthis
 \end{align*}
 %rather than compute one diagram, compute many, each diagram representing a different perspective. 
-The main result of~\cite{} shows this collection of diagrams is sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning. 
-However, this approach exacerbates both computational problems, as extending the defacto standard persistence computation to parameterized settings has proven non-trivial~\cite{} and achieving rotation invariance in~\eqref{eq:pht1} requires many expensive diagram comparisons.  %moves
+The main result of~\cite{} shows this collection of diagrams is sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
+The scalability problem remains exacerbated, however, as extending the standard persistence computation to parameterized settings has proven non-trivial~\cite{}. %moves
+Indeed, achieving rotation invariance in~\eqref{eq:pht1} involves a quadratic number of diagram comparisons. 
  
-We seek to shift the computational paradigm: rather than constructing diagrams as a first step and vectorizing them as a second step, we propose a means of performing both steps simultaneously. 
-Our strategy is natural in that it extracts persistence information using the duality between diagrams and their rank functions~\cite{}.
+We seek to shift the computational paradigm: rather than constructing and vectorizing diagrams in lockstep, we propose a stable vectorization using the duality between diagrams and their rank functions to performs both simultaneously. 
+%Our strategy is natural in that it extracts persistence information ~\cite{}.
 However, unlike existing approaches, our proposed vectorization involves a spectral characterization that avoids the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 %Among the many benefits of our approach is its iterative nature: 
 We are partially motivated by recent relationship established between the persistent Betti numbers and combinatorial Laplacian operators, and by a technical observation that suggests several computational advantages to working with the rank invariant directly (see section~\ref{sec:betti_derivation} for details). 
@@ -849,7 +850,7 @@ This can be seen directly by~\eqref{eq:tikhonov_soln} as well, as increasing $\e
 \subsection{Combinatorial Laplacians}\label{sec:laplacian_theory}
 %To better understand the interpretation of the smoothed relaxations of the counting invariants from definition~\ref{def:smooth_mu}, it is imperative to understand what the spectral information  constitutive terms encodes. 
 In section~\ref{sec:param_boundary}, we exploited permutation invariance to simplify the persistence rank invariants~\eqref{eq:betti_four} and~\eqref{eq:mu_four} and in section~\ref{sec:spectral_relax} we used the fact\footnote{
-This fact can be attributed to the spectral theorem~\cite{bhatia2013matrix}. A similar proof can show this using the inertia theorem. %Section I.2 of stewart 
+This fact can be proven using the spectral theorem or observed directly due to the inertia theorem~\cite{bhatia2013matrix}. %Section I.2 of stewart 
 } that $\sigma_i(X) > 0$ whenever $\mathrm{rank}(X) \leq i$ to derive a spectral relaxation of the rank function. In this section, we exploit another well known identity of the rank function: 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
 On the spectral side, it is well-known the square roots of the non-zero eigenvalues of either $XX^T$ or $X^T X$ yield the singular values of $X$. Since $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we may consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators.  
@@ -874,8 +875,7 @@ A natural generalization for simplicial complexes is the \emph{$p$-th combinator
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, non-negative, and compact.
-Note when $p = 0$, we have $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$.
+As above, all three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semidefinite, and compact. When $p = 0$, we recover $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$.
 Among the first to study these combinatorial operators was Eckmann~\cite{}, who proved a discrete  Hodge Theorem: 
 %and for each $p \in \mathbb{N}$: 
 %Using the fact that $\mathrm{Im}(L_p^{\text{up}}) \subset \mathrm{Ker}(L_p^{\text{dn}})$ and $\mathrm{Im}(L_p^{\text{dn}}) \subset \mathrm{Ker}(L_p^{\text{up}})$, Eckmann~\cite{} showed the now celebrated discrete version of the Hodge theorem 

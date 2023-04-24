@@ -173,7 +173,7 @@ class PsdSolver():
   def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
     assert solver is not None, "Invalid solver"
     self._rank_bound = lambda A: rank_bound(A, upper=True)
-    self.tolerance = tolerance if tolerance is not None else np.finfo(A.dtype).eps
+    self.tolerance = tolerance if tolerance is not None else np.sqrt(np.finfo(A.dtype).eps)
     self.laplacian = laplacian
     self.configure_type = type(A)
     self.return_eigenvectors = return_eigenvectors
@@ -420,7 +420,7 @@ def numerical_rank(A: Union[ArrayLike, spmatrix, LinearOperator], tol: float = N
   See: https://math.stackexchange.com/questions/2238798/numerically-determining-rank-of-a-matrix
   """
   if isinstance(A, np.ndarray):
-    if np.allclose(A, 0.0) or prod(A.shape): return 0
+    if np.allclose(A, 0.0) or prod(A.shape) == 0: return 0
     return np.linalg.matrix_rank(A, tol, hermitian=True)
   elif isinstance(A, spmatrix):
     # import importlib.util
@@ -979,7 +979,7 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
           import warnings
           warnings.warn("symmetric = False is not a valid option when normed = True")
         lo.set_weights(np.sign(wpl), wq, np.sign(wpr))
-        deg = lo.diagonal()
+        deg = np.array(lo.degrees)
         lo.set_weights(pseudo(np.sqrt(deg)), wq, pseudo(np.sqrt(deg))) # normalized weighted symmetric psd version 
       else: 
         if symmetric:

@@ -9,6 +9,7 @@ from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import * 
 from numpy.typing import ArrayLike
 from pathlib import Path
+from splex import filtration
 
 # Package relative imports 
 from .utility import *
@@ -27,8 +28,32 @@ def random_lower_star(n: int = 50, v: list = [0,1]):
   X = np.random.uniform(size=(n,2))
   fv = X @ np.array(v)
   S = delaunay_complex(X)
-  K = MutableFiltration(S, f=lambda s: max(fv[s]))
+  K = filtration(S, f=lambda s: max(fv[s]))
   return X, K
+
+
+# class FiltrationFamily:
+#   """ Constructs a parameterized family of filtration-like objects derived from a fixed simplicial complex. """
+
+#   def __init__(self):
+#     pass
+
+#   def __call__(self, bw: float):
+#     pass
+
+# class DensityFiltration(FiltrationFamily):
+#   """ Constructs a bandwidth-parameterized family of density-filtered complexes """
+#   def __init__(self, X: ArrayLike):
+#     pass
+
+#   def __call__(self, bw: float):    
+#     self.K
+#     return self.K 
+
+#   def __iter__(self):
+#     for bw in self.bandwidths:
+#       yield self.K
+
 
 def noisy_circle(n: int = 32, n_noise: int = 10, perturb: float = 0.05, r: float = 0.20):
   """Samples points around the unit circle

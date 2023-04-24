@@ -39,7 +39,6 @@ struct RankRange {
   }
 
   struct RankLabelIterator {
-
     const size_t _n; 
     const_iterator _it; 
     array< uint16_t, dim + 1 >& _labels; 

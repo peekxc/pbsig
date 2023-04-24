@@ -379,16 +379,21 @@ def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
     - L := (optional) expected number of periods, if known
   The parameter n and d must be supplied, along with exactly one of 'w', 'tau' or 'L'.  
   '''
-  assert isinstance(f, Callable) or isinstance(f, ArrayLike), "Time series must be function or array like"
+  assert isinstance(f, Callable) or isinstance(f, np.ndarray), "Time series must be function or array like"
   # Assume function like, defined on [0, 1]
-  # Otherwise, construct a continuous interpolation via e.g. cubic spline
-  def sw(n: int, d: int = None, tau: float = None, w: float = None, L: int = None):
-    ''' Creates a slidding window point cloud over 'n' windows '''
+  if isinstance(f, Callable): # Construct a continuous interpolation via e.g. cubic spline
+    def sw(n: int, d: int = None, tau: float = None, w: float = None, L: int = None):
+      ''' Creates a slidding window point cloud over 'n' windows '''
+      d, tau = sw_parameters(bounds, d=d, tau=tau, w=w, L=L)
+      T = np.linspace(bounds[0], bounds[1] - d*tau, n)
+      delay_coord = lambda t: np.array([f(t + di*tau) for di in range(d+1)])
+      X = np.array([delay_coord(t) for t in T])
+      return(X)
+    return(sw)
+  else:
     d, tau = sw_parameters(bounds, d=d, tau=tau, w=w, L=L)
-    T = np.linspace(bounds[0], bounds[1] - d*tau, n)
-    delay_coord = lambda t: np.array([f(t + di*tau) for di in range(d+1)])
-    X = np.array([delay_coord(t) for t in T])
-    return(X)
+    T = np.linspace(bounds[0], bounds[1] - d*tau, n).astype(int)
+    delay_coord = lambda t: np.array([f[int(t + di*tau)] for di in range(d+1)])
   return(sw)
 
 ## TODO: generalize beyond lower stars! 

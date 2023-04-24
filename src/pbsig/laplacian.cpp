@@ -91,7 +91,7 @@ void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
       combinatorial::keep_table_alive = true; // needed for fast binomial coefficients
       return std::unique_ptr< Class >(new Class(rng, n));
     }))
-    .def_readonly("shape", &Class::shape)
+    .def_readwrite("shape", &Class::shape)
     .def_readonly("nv", &Class::nv)
     .def_readonly("np", &Class::np)
     .def_readonly("nq", &Class::nq)

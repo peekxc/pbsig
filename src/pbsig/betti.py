@@ -388,7 +388,7 @@ class MuQuery():
         if self.normed:
           I_sgn = np.sign(abs(I)) # I 
           self.L.set_weights(I_sgn, J, I_sgn)
-          I_norm = pseudoinverse(np.sqrt(I * self.L.diagonal())) # degrees
+          I_norm = pseudoinverse(np.sqrt(self.L.diagonal())) # degrees
           self.L.set_weights(I_norm, J, I_norm)
         else:
           I_norm = pseudoinverse(np.sqrt(I))
@@ -430,9 +430,9 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
     L = up_laplacian(S, p=p, form="lo")
     for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
       if normed:
-        I_sgn = np.sign(abs(I)) # I 
+        I_sgn = np.where(np.isclose(I, 0.0), 0.0, 1.0) #np.sign(abs(I)) # I 
         L.set_weights(I_sgn, J, I_sgn)
-        I_norm = pseudo(np.sqrt(I * L.diagonal())) # degrees
+        I_norm = pseudo(np.sqrt(L.diagonal())) # degrees; multiplying by I shouldn't matter?
         L.set_weights(I_norm, J, I_norm)
       else:
         I_norm = pseudo(np.sqrt(I))
@@ -681,6 +681,59 @@ class MuFamily:
         for cc,(T,s) in enumerate(zip(self._Terms, [1,-1,-1,1])):
           sig[cc,:] += s*self.elementwise_row_sum(T, smoothing)
     return sig
+
+
+
+class Sieve:
+  """ 
+  A sieve M is a statistic M(i) generated over a parameterized family of F = { f1, f2, ..., fk }
+  Constructor parameters: 
+    S := Fixed simplicial complex 
+    F := Iterable of filter functions, each representing scalar-products equipped to S
+    p := dimension of persistence to restrict R too
+
+  Methods: 
+    precompute := precomputes the signature
+  """
+  def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "lo"):
+    # assert isinstance(S, ComplexLike)
+    assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
+    self.S = S
+    self.family = family
+    self.np = card(S, p)
+    self.nq = card(S, p+1)
+    self.p = p
+    self.form = form
+    self.L = up_laplacian(S, p=self.p, form=self.form, normed=True)
+    self.solver = eigvalsh_solver(LO)
+  
+  @propetry 
+  def pattern(R: ArrayLike):
+    """ Sets the sieve pattern to the union of rectangles given by _R_. """
+    assert isinstance(R, np.ndarray) and len(R) % 2 == 0
+    self.R = {}
+    self.R_sgn = {}
+
+  def precompute(k: Any = None):
+    if k is not None: assert k in self.R
+    keys = self.R.keys() if k is None else [k] 
+    for k in keys:
+      i,j = k 
+
+
+  def eigen_values(i: float, j: float):
+    si = smooth_upstep(lb=i, ub=i)
+    sj = smooth_dnstep(lb=j, ub=j)
+    LO.set_weights(si(fv),sj(fe),si(fv))
+    d = np.sqrt(pseudoinverse(LO.degrees))
+    LO.set_weights(d, sj(fe), d)
+    self.solver()
+
+  
+  def partition_rect():
+    """ Increases the discrimaory power by adding two interior points to the pattern"""
+    pass
+
 
 # E: Union[ArrayLike, Iterable],
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
