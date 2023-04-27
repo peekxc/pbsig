@@ -697,7 +697,7 @@ class Sieve:
   """
   def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "lo"):
     # assert isinstance(S, ComplexLike)
-    assert not(family is iter(family)), "Iterable 'family' must be repeateable; a generator is not sufficient!"
+    assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
     self.S = S
     self.family = family
     self.np = card(S, p)
@@ -705,29 +705,34 @@ class Sieve:
     self.p = p
     self.form = form
     self.L = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.solver = eigvalsh_solver(LO)
-  
-  @propetry 
+    self.solver = eigvalsh_solver(self.L)
+    self.delta = np.finfo(float).eps
+
+  @property 
   def pattern(R: ArrayLike):
     """ Sets the sieve pattern to the union of rectangles given by _R_. """
     assert isinstance(R, np.ndarray) and len(R) % 2 == 0
     self.R = {}
     self.R_sgn = {}
 
-  def precompute(k: Any = None):
+  def precompute(k: Any = None, w: float = 0.0):
     if k is not None: assert k in self.R
     keys = self.R.keys() if k is None else [k] 
     for k in keys:
       i,j = k 
-
-
-  def eigen_values(i: float, j: float):
-    si = smooth_upstep(lb=i, ub=i)
-    sj = smooth_dnstep(lb=j, ub=j)
-    LO.set_weights(si(fv),sj(fe),si(fv))
-    d = np.sqrt(pseudoinverse(LO.degrees))
-    LO.set_weights(d, sj(fe), d)
-    self.solver()
+      out = [self.project(i,j,w,f) for f in family]
+      self.R[k] = out 
+        
+  def project(i: float, j: float, w: float, f: Callable):
+    si = smooth_upstep(lb=i, ub=i+w)
+    sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
+    fp = si(np.array([f(s) for s in faces(S,self.p)]))
+    fq = sj(np.array([f(s) for s in faces(S,self.p+1)]))
+    I = np.where(np.isclose(fp, 0), 0, 1)
+    self.L.set_weights(I,fq,I)
+    d = np.sqrt(pseudoinverse(self.L.degrees))
+    self.L.set_weights(d,fq,d)
+    return self.solver(self.L)
 
   
   def partition_rect():

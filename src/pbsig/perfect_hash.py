@@ -8,6 +8,7 @@ from itertools import islice
 from scipy.sparse.csgraph import structural_rank
 from itertools import product
 from .utility import progressbar
+from .linalg import rank_bound
 from numbers import Number
 
 # Miller-Rabin primality test
@@ -16,6 +17,7 @@ def is_prime(n: int):
 
 def gen_primes_above(m: int, n: int):
   """Generate _n_ primes above _m_."""
+  m,n = int(m),int(n)
   primes = []
   while len(primes) < n:
     prime_candidates = np.fromiter(islice(filter(is_prime, range(m, 2*m - 2)), 100), dtype=int) ## Bertrand's postulate
@@ -80,7 +82,7 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
     n_prime: number of primes to sample from 
   """
   assert k_min <= k_max
-  assert solver == "linprog" or solver == "spsolve"
+  assert solver == "linprog" or solver == "lu" or solver == "lsqr"
   S = np.fromiter(iter(S), dtype=np.uint64)
   N = len(S)
   b = max(1, int(np.ceil(n_tries/(max(1, abs(k_max-k_min)))))) # attempts per iteration
@@ -90,25 +92,31 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
   H = None
   primes = gen_primes_above(max(S), n_prime)
   f = LCG(primes)
+  HF = [LCG(primes) for _ in range(k_max)]
   from copy import deepcopy
 
   #print(f"k_min: {k_min}, k_max:{k_max}, block size: {b}")
   for k, _ in progressbar(product(range(k_min, k_max+1), range(b)), n_tries):
     n_attempts += 1
     ## Sample uniformly random universal hash functions
-    HF = [random_hash_function(N, primes) for i in range(k)]
+    # HF = [random_hash_function(N, primes) for i in range(k)]
+    for i in range(k):
+      HF[i].randomize(N)
 
     ## Build the hash matrix 
     I, J = [], []
     for i,s in enumerate(S):
-      I += [i] * len(HF)
-      J += [h(s) for h in HF]
-    H = coo_array(([1]*(N*len(HF)), (I,J)), shape=(N, N))
+      I += [i] * k
+      J += [h(s) for h in HF[:k]]
+    H = coo_array(([1]*(N*k), (I,J)), shape=(N, N))
     
     ## If the structural rank isn't full rank, no way its feasible
     ## Otherwise, Try to find a pmf with the chosen solver
     if structural_rank(H) < N:
       continue
+    elif rank_bound(H @ H.T, upper=True) < N:
+      print(f"{rank_bound(H)} < {N}")
+      continue 
     else: 
       n_solves += 1
       if solver == "linprog":
@@ -119,9 +127,19 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
           success = True
           g = res.x
           break
-      else:
+      elif solver == "lu":
         g = spsolve(H.tocsc(), np.arange(N))
-        if all([int(round(sum([g[h(x)] for h in HF]))) == i for i, x in enumerate(S)]):
+        if all([int(round(sum([g[int(h(x))] for h in HF[:k]]))) == i for i, x in enumerate(S)]):
+          # print("Success")
+          success = True 
+          break
+      elif solver == "lsqr":
+        from scipy.sparse.linalg import cg, cgs, qmr, lsqr
+        _ = lsqr(H.tocsr(), np.arange(N), atol=1e-15)
+        g = _[0]
+        # print(f"{H @ g}")
+        # print([int(round(sum([g[int(h(x))] for h in HF[:k]])))-i for i,x in enumerate(S)])
+        if all([int(round(sum([g[int(h(x))] for h in HF[:k]]))) == i for i, x in enumerate(S)]):
           # print("Success")
           success = True 
           break

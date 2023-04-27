@@ -21,6 +21,7 @@
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
 \citation{edelsbrunner2022computational}
+\citation{chazal2016structure}
 \newlabel{eq:pht1}{{{1.1}}{2}{Introduction}{AMS.2}{}}
 \citation{chen2011output}
 \newlabel{eq:mu_alpha}{{1.2}{3}{}{equation.1.2}{}}
@@ -32,16 +33,16 @@
 \citation{cohen2005stability}
 \citation{edelsbrunner2022computational}
 \citation{chazal2016structure}
-\citation{cerri2013betti}
-\citation{cerri2013betti}
-\citation{cerri2013betti}
 \newlabel{sec:duality_pbn_dgm}{{1}{4}{}{Item.8}{}}
 \newlabel{eq:dgm}{{1.3}{4}{}{equation.1.3}{}}
 \newlabel{eq:multiplicity}{{1.4}{4}{}{equation.1.4}{}}
 \newlabel{eq:betti_mult}{{1.5}{4}{}{equation.1.5}{}}
-\newlabel{eq:measure}{{1.6}{4}{}{equation.1.6}{}}
-\newlabel{eq:pbn_cont}{{1.7}{4}{}{equation.1.7}{}}
+\citation{cerri2013betti}
+\citation{cerri2013betti}
+\citation{cerri2013betti}
 \citation{bauer2021ripser}
+\newlabel{eq:measure}{{1.6}{5}{}{equation.1.6}{}}
+\newlabel{eq:pbn_cont}{{1.7}{5}{}{equation.1.7}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Organization}{5}{subsection.1.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Notation \& Background}{5}{section.2}\protected@file@percent }
 \newlabel{sec:background_notation}{{2}{5}{Notation \& Background}{section.2}{}}
@@ -49,17 +50,15 @@
 \newlabel{eq:oriented_simplex}{{2.2}{6}{Notation \& Background}{equation.2.2}{}}
 \newlabel{eq:alt_sum}{{2.3}{6}{Notation \& Background}{equation.2.3}{}}
 \newlabel{eq:hom_map}{{2.4}{6}{Notation \& Background}{equation.2.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Motivating Derivation}{6}{subsection.2.1}\protected@file@percent }
-\newlabel{sec:betti_derivation}{{2.1}{6}{Motivating Derivation}{subsection.2.1}{}}
 \citation{golub2013matrix}
 \citation{zomorodian2004computing}
 \citation{edelsbrunner2000topological}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Motivating Derivation}{7}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:betti_derivation}{{2.1}{7}{Motivating Derivation}{subsection.2.1}{}}
 \newlabel{eq:boundary_matrix}{{2.6}{7}{Motivating Derivation}{equation.2.6}{}}
 \newlabel{eq:pbn}{{{2.7}}{7}{Motivating Derivation}{AMS.4}{}}
 \newlabel{eq:pbn_simple}{{2.8}{7}{Motivating Derivation}{equation.2.8}{}}
 \newlabel{eq:uniq_pivot}{{2.9}{7}{Motivating Derivation}{equation.2.9}{}}
-\newlabel{lemma:rank}{{1}{7}{}{lemma.1}{}}
-\newlabel{eq:lower_left_rank}{{2.10}{7}{}{equation.2.10}{}}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
 \citation{bauer2022keeping}
@@ -68,6 +67,12 @@
 \citation{dey2022computational}
 \citation{chen2011output}
 \citation{chen2011output}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{8}{figure.1}\protected@file@percent }
+\newlabel{fig:mult}{{1}{8}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.1}{}}
+\newlabel{lemma:rank}{{1}{8}{}{lemma.1}{}}
+\newlabel{eq:lower_left_rank}{{2.10}{8}{}{equation.2.10}{}}
+\newlabel{prop:rank_reduction}{{2}{8}{Dey \& Wang~\cite {dey2022computational}}{proposition.2}{}}
+\newlabel{eq:betti_four}{{2.11}{8}{Dey \& Wang~\cite {dey2022computational}}{equation.2.11}{}}
 \citation{edelsbrunner2000topological}
 \citation{chen2011output}
 \citation{edelsbrunner2022computational}
@@ -75,51 +80,46 @@
 \citation{chen2011output}
 \citation{golub2013matrix}
 \citation{parlett1994we}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{8}{figure.1}\protected@file@percent }
-\newlabel{fig:mult}{{1}{8}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.1}{}}
-\newlabel{prop:rank_reduction}{{2}{8}{Dey \& Wang~\cite {dey2022computational}}{proposition.2}{}}
-\newlabel{eq:betti_four}{{2.11}{8}{Dey \& Wang~\cite {dey2022computational}}{equation.2.11}{}}
-\newlabel{prop:mu_reduction}{{3}{8}{Chen \& Kerber~\cite {chen2011output}}{proposition.3}{}}
-\newlabel{eq:mu_four}{{2.12}{8}{Chen \& Kerber~\cite {chen2011output}}{equation.2.12}{}}
 \citation{chazal2016structure}
 \citation{cohen2006vines}
+\newlabel{prop:mu_reduction}{{3}{9}{Chen \& Kerber~\cite {chen2011output}}{proposition.3}{}}
+\newlabel{eq:mu_four}{{2.12}{9}{Chen \& Kerber~\cite {chen2011output}}{equation.2.12}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Spectral relaxation and its implications}{9}{section.3}\protected@file@percent }
 \newlabel{sec:spectral_relax}{{3}{9}{Spectral relaxation and its implications}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Parameterized boundary operators}{9}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:param_boundary}{{3.1}{9}{Parameterized boundary operators}{subsection.3.1}{}}
-\newlabel{def:time_boundary_matrix}{{1}{9}{Parameterized $\partial _p$}{definition.1}{}}
-\newlabel{eq:param_boundary_matrix}{{3.1}{9}{Parameterized $\partial _p$}{equation.3.1}{}}
+\newlabel{def:time_boundary_matrix}{{1}{10}{Parameterized $\partial _p$}{definition.1}{}}
+\newlabel{eq:param_boundary_matrix}{{3.1}{10}{Parameterized $\partial _p$}{equation.3.1}{}}
 \newlabel{eq:decouple}{{3.2}{10}{Parameterized boundary operators}{equation.3.2}{}}
 \newlabel{eq:rank_equiv_param}{{3.3}{10}{Parameterized boundary operators}{equation.3.3}{}}
 \newlabel{eq:step_functions}{{3.4}{10}{Parameterized boundary operators}{equation.3.4}{}}
 \newlabel{prop:mu_betti_1}{{4}{10}{}{proposition.4}{}}
 \newlabel{eq:pbn_parameterized}{{{3.5}}{10}{}{AMS.6}{}}
 \newlabel{eq:mu_parameterized}{{{3.6}}{10}{}{AMS.8}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Spectral rank relaxation}{10}{subsection.3.2}\protected@file@percent }
-\newlabel{sec:spectral_relax}{{3.2}{10}{Spectral rank relaxation}{subsection.3.2}{}}
-\newlabel{eq:rank_def}{{3.7}{10}{Spectral rank relaxation}{equation.3.7}{}}
 \citation{mangasarian1994class}
 \citation{bi2013approximation}
 \citation{ding2018spectral}
-\citation{bi2013approximation}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2}Spectral rank relaxation}{11}{subsection.3.2}\protected@file@percent }
+\newlabel{sec:spectral_relax}{{3.2}{11}{Spectral rank relaxation}{subsection.3.2}{}}
+\newlabel{eq:rank_def}{{3.7}{11}{Spectral rank relaxation}{equation.3.7}{}}
 \newlabel{eq:phi}{{3.8}{11}{Spectral rank relaxation}{equation.3.8}{}}
 \newlabel{eq:phi2}{{3.9}{11}{Spectral rank relaxation}{equation.3.9}{}}
 \newlabel{eq:lowner}{{{3.10}}{11}{Spectral rank relaxation}{AMS.10}{}}
 \newlabel{def:cont_rank}{{3.11}{11}{Spectral Rank Approximation}{equation.3.11}{}}
+\citation{bi2013approximation}
 \citation{bi2013approximation}
 \citation{bhatia2013matrix}
 \citation{bi2013approximation}
 \@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde  {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt  {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition\nobreakspace  {}\ref  {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal  {S}_i^{\omega }$ from\nobreakspace  {}\textup  {\hbox {\mathsurround \z@ \normalfont  (\ignorespaces \ref  {eq:smoothstep}\unskip \@@italiccorr )}}. }}{12}{figure.2}\protected@file@percent }
 \newlabel{fig:smoothstep}{{2}{12}{From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition~\ref {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal {S}_i^{\omega }$ from~\eqref {eq:smoothstep}}{figure.2}{}}
 \newlabel{eq:smoothstep}{{3.12}{12}{Spectral rank relaxation}{equation.3.12}{}}
-\newlabel{def:smooth_mu}{{3}{12}{Spectral Rank}{definition.3}{}}
+\newlabel{def:smooth_mu}{{3}{13}{Spectral Rank}{definition.3}{}}
 \newlabel{eq:bett_cont}{{{3.13}}{13}{Spectral Rank}{AMS.11}{}}
 \newlabel{eq:mu_cont}{{{3.14}}{13}{Spectral Rank}{AMS.12}{}}
 \newlabel{eq:least_squares}{{3.15}{13}{Spectral rank relaxation}{equation.3.15}{}}
 \newlabel{eq:tikhonov}{{3.16}{13}{Spectral rank relaxation}{equation.3.16}{}}
 \newlabel{eq:tikhonov_soln}{{3.17}{13}{Spectral rank relaxation}{equation.3.17}{}}
 \newlabel{eq:tikhonov_1}{{3.19}{13}{Spectral rank relaxation}{equation.3.19}{}}
-\citation{bhatia2013matrix}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.3}Combinatorial Laplacians}{14}{subsection.3.3}\protected@file@percent }
 \newlabel{sec:laplacian_theory}{{3.3}{14}{Combinatorial Laplacians}{subsection.3.3}{}}
 \newlabel{eq:laplace_hom}{{3.22}{14}{Combinatorial Laplacians}{equation.3.22}{}}
@@ -153,8 +153,9 @@
 \newlabel{sec:comb_lap}{{4.2}{20}{The combinatorial Laplacian \texttt {matvec}}{subsection.4.2}{}}
 \newlabel{eq:lap_quad_from}{{4.7}{20}{The combinatorial Laplacian \texttt {matvec}}{equation.4.7}{}}
 \newlabel{eq:up_laplace_theory}{{4.8}{20}{The combinatorial Laplacian \texttt {matvec}}{equation.4.8}{}}
-\citation{goldberg2002combinatorial}
-\newlabel{eq:l_up_matvec}{{4.9}{21}{The combinatorial Laplacian \texttt {matvec}}{equation.4.9}{}}
+\newlabel{eq:l_up_matvec}{{4.9}{20}{The combinatorial Laplacian \texttt {matvec}}{equation.4.9}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {4.3}Computing diagrams}{21}{subsection.4.3}\protected@file@percent }
+\newlabel{sec:pers_alg}{{4.3}{21}{Computing diagrams}{subsection.4.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Applications \& Experiments}{22}{section.5}\protected@file@percent }
 \newlabel{sec:applications}{{5}{22}{Applications \& Experiments}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Matrix-free persistence computation}{22}{subsection.5.1}\protected@file@percent }
@@ -227,6 +228,8 @@
 \newlabel{eq:lap_rayleigh}{{B.2}{37}{Laplacian facts}{equation.B.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{37}{appendix.C}\protected@file@percent }
 \newlabel{sec:up_laplace_matvec}{{C}{37}{Laplacian \texttt {matvec} products}{appendix.C}{}}
+\citation{goldberg2002combinatorial}
+\newlabel{alg:lap_matvec}{{C}{38}{Laplacian \texttt {matvec} products}{appendix.C}{}}
 \@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{38}{algorithm.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{38}{appendix.D}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{39}{appendix.D}\protected@file@percent }
 \gdef \@abspage@last{39}

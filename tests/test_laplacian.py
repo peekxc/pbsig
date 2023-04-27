@@ -54,6 +54,89 @@ def test_laplacian_op_api():
     x = np.arange(card(S, p))
     assert np.allclose(LM @ x - LO @ x, 0.0)
 
+def test_stability():
+  S = simplicial_complex([[0,1,2], [0,1,3]])
+  fv = np.array([1e-15, 0.2, 0.4, 1.5])
+  # fv = np.array([1,1,1,1])
+  fe = np.array([lower_star_weight(fv)(e) for e in faces(S, 1)])
+  L1 = up_laplacian(S, p=0, normed=True, weight=lower_star_weight(fv))
+  solver = eigvalsh_solver(L1)
+  ew = solver(L1)
+
+  def additive_noise(x: np.ndarray, eps: float = 1e-5):
+    noise = np.random.uniform(size=len(x), low=-eps/2, high=eps/2)
+    return x+noise
+
+  def relative_noise(x: np.ndarray, eps: float = 1e-5):
+    noise = np.random.uniform(size=len(x), low=-eps/2, high=eps/2)
+    return x*(np.ones(len(x))+noise)
+
+  ## Small absolute perturbation, potentially large relative
+  # fv + np.random.uniform(size=len(fv), )
+  # fv = np.maximum(additive_noise(fv, 1e-2), 0.0)
+  fv = np.maximum(relative_noise(fv, 1e-2), 0.0) ## this should be regarded as a large perturbation
+
+  # fv += np.array([-1e-15, 1e-15, 1e-15, 1e-15])
+  L2 = up_laplacian(S, p=0, normed=True, weight=lower_star_weight(fv))
+  ew1 = solver(L1)
+  ew2 = solver(L2)
+  print(f"Absolute error: {max(abs(ew2-ew1)):.12f}")
+  print(f"Relative error: {max(abs(ew2-ew1)/(abs(ew1))):.12f}")
+
+  chi_dist = lambda a,b: abs(np.sort(a)[::-1] - np.sort(b)[::-1])/(np.sqrt(abs(np.sort(a)[::-1] * np.sort(b)[::-1])))
+  del_dist = lambda a,b: abs(np.sort(a)[::-1] - np.sort(b)[::-1])/(np.sqrt(abs(np.sort(a)[::-1]) + abs(np.sort(b)[::-1])))
+
+  _, ua = np.linalg.eigh(L1.todense())
+  _, ub = np.linalg.eigh(L2.todense())
+  Q = np.dot(ua, ub.T) # this one
+  print(f"L1: {np.around(L1.todense(), 5)}")
+  print(f"L1 ew: {ew1}\n")
+  print(f"L2: {np.around(L2.todense(), 5)}")
+  print(f"L2 ew: {ew2}\n")
+  print(f"Q: {np.around(Q, 5)} ")
+  print(f"Q ew: {np.linalg.eigvalsh(Q)}\n")
+  print(f"Q.T @ L1 @ Q: {np.around(Q.T @ L1 @ Q, 5)} \n")
+  # print(f"Two sided error: {np.linalg.norm(L1 @ Q - L2 @ Q)}")
+  print(f"Trace: {np.trace(Q.T @ L1 @ Q - L2)}, Fro: {np.linalg.norm(Q.T @ L1 @ Q - L2.todense())}")
+  # np.around(u_opt.T @ L1 @ u_opt - L2.todense(), 5)
+  print(f"Ostrowski Bound: {max(abs(np.linalg.eigvalsh(np.eye(4) - Q.T @ Q)))}")
+  print(f"Max chi dist: {max(chi_dist(ew1,ew2))}, Max del dist: {max(del_dist(ew1,ew2))}")
+
+  # from scipy.linalg import sqrtm
+  # sqrtm()
+  ew1, ev1 = np.linalg.eigh(L1.todense())
+  ew2, ev2 = np.linalg.eigh(L2.todense())
+  ew1[np.isclose(ew1, 0)] = 0
+  ew2[np.isclose(ew2, 0)] = 0
+
+  # A_isqrt = (ev1 @ np.diag(np.sqrt(pseudoinverse(ew1))) @ ev1.T)
+  # A_sqrt = (ev1 @ np.diag(np.sqrt(ew1)) @ ev1.T)
+  # B = A_isqrt @ L2.todense() @ A_isqrt
+  # u,s,vt = np.linalg.svd(B)
+  # Q = A_sqrt @ u @ vt @ A_sqrt
+  # np.linalg.norm(Q.T @ L1 @ Q - L2)
+  from scipy.optimize import minimize
+  
+  def obj(a):
+    R = np.diag(np.sqrt(a)) @ Q @ np.diag(np.sqrt(a))
+    return np.linalg.norm(R.T @ L1 @ R - L2.todense())
+  xs = minimize(obj, x0 = np.ones(4)).x
+  R = np.diag(np.sqrt(xs)) @ Q @ np.diag(np.sqrt(xs))
+  print(np.linalg.norm(R.T @ L1 @ R - L2.todense()))
+  print(np.sqrt(np.sum((ew1-ew2)**2)))
+  # np.sqrt(np.sum((ew1 - ew2)**2))
+  max(abs(np.linalg.eigvalsh(np.eye(4)-Q.T @ Q)))
+
+  print(L1.todense())
+  print(L2.todense())
+
+
+  np.linalg.norm(L2.todense())
+  
+  L1.todense() - L2.todense()
+  D1 = boundary_matrix(S, p = 1).todense()
+
+
 def benchmark_matvec():
   import timeit
   X, S = generate_dataset(10000, 2)
