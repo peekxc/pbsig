@@ -23,4 +23,28 @@ def sectors_2d(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwarg
   _,Phi = cart2pol(Y[:,0], Y[:,1])
   return np.histogram(Phi, bins=k, **kwargs)[0]
 
+def _archi_alpha(L: float, a_max: float) -> float:
+  ''' Given length 'L', returns the corresponding alpha on the Archimedean spiral '''
+  from scipy.special import ellipeinc
+  from scipy.optimize import minimize
+  archi_arc_len = lambda alpha: ellipeinc((np.pi*alpha)/a_max, -(a_max**2) / (2*np.pi))
+  l2_error = lambda a, L: abs(archi_arc_len(a) - L)**2
+  res = minimize(l2_error, 1.0, args=(L), method='Nelder-Mead', tol=1e-6)
+  return(res.x[0])
+
+def archimedean_sphere(n: int, nr: int):
+  ''' Gives an n-point uniform sampling over 'nr' rotations around the 2-sphere '''
+  a_max = nr*(2*np.pi)
+  alpha = np.linspace(0, a_max, n)
+  max_len = _archi_alpha(alpha[-1], a_max)
+  alpha_equi = np.array([_archi_alpha(L, a_max) for L in np.linspace(0.0, max_len, n)])
+  p = -np.pi/2 + (alpha_equi*np.pi)/(a_max)
+  x = np.cos(alpha_equi)*np.cos(p)
+  y = np.sin(alpha_equi)*np.cos(p)
+  z = -np.sin(p)
+  X = np.vstack((np.c_[x,y,z], np.flipud(np.c_[-x,-y, z])))
+  return(X)
+
+
+
 # def sphere_ext(X: ArrayLike):

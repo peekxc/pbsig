@@ -8,6 +8,7 @@ from scipy.sparse import *
 from scipy.sparse.linalg import * 
 from scipy.sparse.csgraph import *
 from splex.combinatorial import rank_combs
+from more_itertools import collapse
 
 ## Local imports
 from .meta import *
@@ -1073,7 +1074,30 @@ class UpLaplacianBase(LinearOperator):
     self.precompute_degree()
     return self 
 
-from more_itertools import collapse
+
+## Wrapper around the more efficient operator above to simplify things
+class LaplacianOperator:
+  def __init__(self, S: ComplexLike, lo: LinearOperator, normalized: bool = False):
+    assert 'Laplacian' in type(lo).__name__
+    self.operator = lo
+    self.normalized = normalized
+    self.complex = S
+    self.p = int(type(lo).__name__[11])
+    
+  def update_scalar_product(self, f: Callable) -> None:
+    assert isinstance(f, Callable), "Supplied f must be a function"
+    fp = np.array([f(s) for s in faces(self.complex, self.p)], dtype=self.operator.dtype)
+    fq = np.array([f(s) for s in faces(self.complex, self.p+1)], dtype=self.operator.dtype)
+    assert all(fp >= 0.0)
+    if self.normalized:
+      self.operator.set_weights(np.sign(fp), fq, np.sign(fp))
+      deg = np.array(self.operator.degrees)
+      self.operator.set_weights(np.sqrt(pseudoinverse(deg)), fq, np.sqrt(pseudoinverse(deg)))
+    else:
+      self.operator.set_weights(np.sqrt(pseudoinverse(fq)), fq, np.sqrt(pseudoinverse(fq)))
+
+
+
 
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
   def __init__(self, S: Iterable['SimplexLike'], nv: int):
@@ -1146,8 +1170,7 @@ def is_symmetric(A) -> bool:
 # from enum import Enum
 def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps: float = 100*np.finfo(float).resolution):
   """ 
-  Creates a projector that projects onto the intersection of spaces (A,B), where
-  A and B are linear subspace.
+  Creates a projector that projects onto the intersection of spaces (A,B), where A and B are linear subspaces.
   
   method := one of 'neumann', 'anderson', or 'israel' 
   """

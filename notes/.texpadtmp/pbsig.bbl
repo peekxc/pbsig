@@ -115,6 +115,12 @@ Olvi Mangasarian and Chunhui Chen.
   complementarity problems.
 \newblock Technical report, 1994.
 
+\bibitem{memoli2022persistent}
+Facundo M{\'e}moli, Zhengchao Wan, and Yusu Wang.
+\newblock Persistent laplacians: Properties, algorithms and implications.
+\newblock {\em SIAM Journal on Mathematics of Data Science}, 4(2):858--884,
+  2022.
+
 \bibitem{newman2001laplacian}
 Michael~William Newman.
 \newblock The laplacian spectrum of graphs.

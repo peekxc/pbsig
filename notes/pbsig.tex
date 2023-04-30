@@ -227,7 +227,7 @@ Moreover, inspired by a relationship established between the persistent Betti nu
 % TODO: See seminar "Persistent Homology with Random Graph Laplacians"
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
-\subsection*{Rank invariant relaxation}
+\subsection*{Rank invariant relaxation}\label{sec:rank_invariant_summary}
 So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details. At a high level, the relaxation we propose constructs a vector-valued mapping over a subset $\mathcal{A} \subset \mathbb{R}^d$: 
 $$ (X, \mathcal{R}, \epsilon) \mapsto \mathbb{R}^{\lvert \mathcal{R} \rvert}$$
 where $X$ is the input a data set, $\epsilon$ a relaxation parameter, and $\mathcal{R}$ a \emph{sieve} which sifts through $\mathcal{A}$, summarizing the topological and geometric behavior observed by $(K, f_\alpha)$ for all $\alpha \in \mathcal{A}$ in the process.  The steps to produce this mapping are as follows:
@@ -235,7 +235,7 @@ where $X$ is the input a data set, $\epsilon$ a relaxation parameter, and $\math
 	\item Let $K$ denote a fixed simplicial complex constructed from the data set $X$. Select a continuously-parameterized family of filtrations:
 	$$(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}$$
 	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters (``hyper-parameters''), such as density filtrations~\cite{} or Rips filtrations over dynamic metric spaces~\cite{}.  
-	\item Choose a \emph{sieve pattern} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
+	\item Choose a \emph{sieve} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
 	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_m,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$$ 
 	This choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes when $\mathcal{R}$ is unknown.
 	
@@ -249,7 +249,7 @@ where $X$ is the input a data set, $\epsilon$ a relaxation parameter, and $\math
 $$ \mathcal{L}: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
 Informally, the spectra of $\mathcal{L}$ encodes the geometry and topology of the intersection pattern of $(K, f_\alpha)$, and $\Phi$ prioritizes how this information is reflected more in the map. 
-	\item For each corner point $(i,j) \in \partial(\mathcal{R})$, restrict and project $\mathcal{L}$ onto the Krylov subspace: 
+	\item For each corner point $(i,j) \in \partial(\mathcal{R})$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
 	$$
 	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}
 	$$
@@ -495,9 +495,10 @@ In contrast, the rank function is permutation invariant for any $X \in \mathbb{R
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
 % In contrast, the permutation invariance of the rank function suggests $\partial$
-This suggests the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} need not maintain this order---as long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
+This suggests rank invariant computations need not maintain this order---as long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
 
-To more formally convey the utility permutation invariance yields in parameterized settings, consider the following definition of a \emph{parameterized} boundary operator $\partial_p$:
+%Permutation invariance is a useful property for computation in parameterized setting. 
+We now show how to adapt the rank  the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} to exploit this permutation invariance, beginning with a definition.
 \begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
 Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex of size $\lvert K^p \rvert = n$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. Define the $\mathcal{A}$-\emph{parameterized} \emph{boundary matrix} $\partial_p(\alpha)$ of $(K, f_\alpha)$ as the $n \times n$ matrix ordered by $\preceq^\ast$ for all $\alpha \in \mathcal{A}$ whose entries $(k,l)$ satisfy:
 \begin{equation}\label{eq:param_boundary_matrix}
@@ -543,7 +544,7 @@ Without loss in generality, we also assume the orientation of the simplices indu
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
 \begin{proposition}\label{prop:mu_betti_1}
-	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ functions given by: 
+	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, define the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ by: 
 	\begin{align*}\label{eq:pbn_parameterized}
 		\beta_p^{i,j}(\alpha) = \lvert K_i^{p}(\alpha) \rvert - \mathrm{rank}\big(\,\partial_{p}^{i}(\alpha)\,\big) - \mathrm{rank}\big(\,\partial_{q}^{j}(\alpha)\,\big) + \mathrm{rank}\big(\,\partial_{q}^{i \+ \delta, j}(\alpha)\,\big) \numberthis
 	\end{align*}
@@ -555,7 +556,7 @@ Without loss in generality, we also assume the orientation of the simplices indu
 	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(f_\alpha)}{R} \, \right)$ and 
 	$\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}(K))$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, respectively, for all $\alpha \in \mathcal{A}$.
 \end{proposition}
-\noindent We give proofs the equivalence between these two expressions in the appendix. 
+\noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 %% TODO: proof of sign pattern stuff 
 
 %In the following sections, we will exploit the continuity of the entries in  of~\eqref{eq:param_boundary_matrix} to ease the computation of both counting invariants in parameterized settings.
@@ -669,7 +670,7 @@ Without loss in generality, we also assume the orientation of the simplices indu
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
 \subsection{Spectral rank relaxation}\label{sec:spectral_relax}
-Extending from the ideas outlined in the previous section, we now look to substitute the discontinuous rank function with a continuous approximation. Our approach is to exploit the spectral characterization of the rank function: given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, the \emph{rank} of $X$ is given by the composition:
+Extending from the ideas outlined in the previous section, we now substitute the discontinuous rank function with a continuous approximation. Our approach exploits the spectral characterization of the rank function: given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, the \emph{rank} of $X$ is given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -807,7 +808,7 @@ where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ 
 \\
 \\
 \noindent
-\textbf{Regularization:} Another common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
+\textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
 For example, the classical least-squares problem solves the [possibly ill-posed] linear system $A x = b$ via the minimization:
 \begin{equation}\label{eq:least_squares}
 	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
@@ -831,7 +832,7 @@ Substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value
 \begin{equation}\label{eq:tikhonov_1}
 	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
-The connection between the TR and the right hand side of~\eqref{eq:tikhonov_1} is now clear: obtaining $ \lVert \Phi_\epsilon(L) \rVert_\ast$ is equivalent to solving $n$ TR least-squares problems of the form~\eqref{eq:tikhonov} where $X$ is substituted with either the boundary/coboundary operator $\partial_p$/$\partial_p^T$ and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
+The connection between the TR and the right hand side of~\eqref{eq:tikhonov_1} is now clear: obtaining $ \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to solving $n$ TR least-squares problems of the form~\eqref{eq:tikhonov} where $X$ is substituted with either the boundary/coboundary operator $\partial_p$/$\partial_p^T$ and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
 In this sense, the spectral rank invariants proposed in definition~\ref{def:smooth_mu} are essentially regularized rank invariant approximations.
  
  \begin{remark}
@@ -864,90 +865,79 @@ On the spectral side, it is well-known the square roots of the non-zero eigenval
 %Towards revealing  
 % "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
 
-Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected in $G$, and $0$ otherwise. Moreover, denote with $D$ the diagonal degree matrix $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
-The \emph{graph Laplacian} $L$ given in terms of adjacency, incidence, and element-wise interpretations, is defined as: 
-\begin{equation}
-L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
-	L\,[i,j] = \begin{cases}
-		\mathrm{deg}(v_i) & \text{ if } i = j \\
-		-1 & \text{ if } i \sim j \\
-		0 & \text{ if } i \nsim j
-	\end{cases}
-\end{equation}
-where we use the notation $i \sim j$ to denote the path-connected relation in $G$ between pairs of vertices. 
-Its well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$. 
-A natural generalization for simplicial complexes is the \emph{$p$-th combinatorial Laplacian} $\Delta_p$, given by: 
-\begin{equation}
+The natural extension of the graph Laplacian $L$ to simplicial complexes is the \emph{$p$-th combinatorial Laplacian} $\Delta_p$, whose explicit matrix representation is given by: 
+\begin{equation}\label{eq:comb_lap}
 	\Delta_p(K) = 
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
-Like $L$, all three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semidefinite, and compact. When $p = 0$, we recover $\Delta_0(K) = \partial_1 \partial_1^T = L$ since $L_0^{\text{dn}} = 0$.
-Among the first to study these combinatorial operators was Eckmann~\cite{}, who proved a discrete  Hodge Theorem: 
-%and for each $p \in \mathbb{N}$: 
-%Using the fact that $\mathrm{Im}(L_p^{\text{up}}) \subset \mathrm{Ker}(L_p^{\text{dn}})$ and $\mathrm{Im}(L_p^{\text{dn}}) \subset \mathrm{Ker}(L_p^{\text{up}})$, Eckmann~\cite{} showed the now celebrated discrete version of the Hodge theorem 
+Indeed, when $p = 0$, $\Delta_0(K) = \partial_1 \partial_1^T = L$ recovers the graph Laplacian. 
+Moreover, like $L$, all three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semidefinite, and compact.
+To translate the continuity results from definition~\ref{def:smooth_mu} to $\Delta_p$, we must consider weighted versions of $\Delta_p$:  
+\begin{equation}\label{eq:weighted_up_laplace}
+	\Delta_p(K, f) \triangleq  W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T \, + \,  \partial_{p}^T W_p^{-1} \partial_p W_{p+1} 
+\end{equation} 
+where $W_\ast = \mathrm{diag}(\{ f(\sigma_i) \}_{i=1}^n)$ represent positive diagonal weight matrices. 
+%More generally, given a simplicial complex $K$, 
+The Laplace operator is uniquely determined by the choice of \emph{weight function} $f: K \to \mathbb{R}_+$. For example,~\eqref{eq:comb_lap} is determined by the constant map $f(\sigma) = 1$. 
+%Collecting $f$ into diagonal matrices , the 
+ %whether they are weighted, symmetric, or normalized
+% suggesting several classical results (e.g. the matrix tree theorem) may be adapted to simplicial complexes.
+As with boundary operators, $\Delta_p(K)$ encodes simplicial homology groups in its nullspace, a result known as the discrete Hodge Theorem~\cite{}: 
 \begin{equation}\label{eq:laplace_hom}
 	\tilde{H}_p(K; \mathbb{R}) \cong \mathrm{ker}(\Delta_p(K)), \quad \beta_p = \mathrm{nullity}(\Delta_p(K))
 \end{equation}
-Horak and Jost developed a study of the spectra of combinatorial Laplacians that unifies many of the Laplace operators on simplicial complexes~\cite{}. 
-Among other results, they showed that the \emph{non-zero} parts of the spectra $\Lambda_+$ satisfy:
-\begin{equation}
-	\Lambda_+(\Delta_p(K)) = \Lambda_+(L_p^{\text{up}}(K)) \cup \Lambda_+(L_p^{\text{dn}}(K))
-\end{equation}
-Moreover, it may be shown that the non-zero eigensets $\Lambda_+(L_p^{\text{up}}(K))$ and $\Lambda_+(L_{p+1}^{\text{dn}}(K))$ are identical---thus, it suffices to consider only one of them. 
-Many researchers studying higher order combinatorial Laplacians have found applications to areas such as graph optimization~\cite{}, network circuit theory~\cite{}, and graph sparsification~\cite{}. 
+In fact, the nullity of all the Laplace operators discussed here are identical. 
+Thus, any general Laplacian operator in theory can substituted into step (4) in the outline given in section~\ref{sec:rank_invariant_summary}.
+However, the non-zero part of their spectra varies significantly both in the choice of operator and weight function.
+%be used as a rank invariant 
+As our spectral rank approximation~\eqref{def:smooth_mu} is driven entirely by this non-zero portion, it is pertinent to consider viable choices and their ramifications.
 
-Various difficulties arise when these Laplacian operators are equipped with weight functions. 
-Both the range of the spectrum of the combinatorial Laplacian and its structural form depend on choice of the inner product on the coboundary vector spaces. Recall that the cochain groups $C^p(K, \mathbb{R}) := \mathrm{Hom}(K, \mathbb{R})$ are defined as the duals of the chain groups $C_p(K, \mathbb{R})$. 
-As with $C_p(K, \mathbb{R})$, a basis for $C^p(K, \mathbb{R})$ is given by the set of functions:
-\begin{equation}
-	\{ \; \chi([\sigma]) \mid [\sigma] \in B_p(K, \mathbb{R}) \; \}, \text{ where } \chi([\sigma']) = \begin{cases}
-		1 & \text{ if } [\sigma'] = [\sigma] \\
-		0 & \text{ otherwise }
-		\end{cases}
-\end{equation}
-The functions $\chi(\ast)$ are called \emph{elementary cochains}. For any choice of inner product on $C^p(K, \mathbb{R})$ where elementary cochains forms an orthogonal basis, there exists a positive weight function $f: K \to \mathbb{R}_+ \setminus \{0\}$ satisfying: 
-\begin{equation}
-	\langle \, g, h \, \rangle_{f} = \sum\limits_{\sigma \in K^p} w(\sigma) g([\sigma]) h([\sigma])
-\end{equation}
-Moreover, there is a one-to-one correspondence between the choice of weight function and possible scalar products on $C^p(K, \mathbb{R})$ wherein the elementary cochains are orthogonal. In this way, we say that the choice of weight function \emph{induces} an inner product on $C^p(K, \mathbb{R})$.  Thus, we will use the terms \emph{weight function} and \emph{scalar product} interchangeably. 
+%Indeed, normalization and symmetrization are themselves weighting schemes. 
+%Indeed, it is known that the spectra of Laplacians reflects the geometric aspects of about intersection pattern 
+%Thus, we will use the terms \emph{weight function} and \emph{scalar product} interchangeably. 
 
-Given a simplicial complex $K$, the corresponding Laplace operator is uniquely determined by the weight function equipped to the faces of $K$. 
-By choosing the weights, one effectively determines the corresponding inner product, which in-turn determines the spectral range of the corresponding operator. Computationally, the weights of the simplices $\sigma \in K$ manifest in the corresponding Laplace operators via positive diagonal matrices $W_\ast = \mathrm{diag}(\{w(\sigma_i) \}_{i=1}^n)$, 
-yielding the following \emph{weighted combinatorial laplacian}:  
-\begin{equation}\label{eq:weighted_up_laplace}
-	\Delta_p(K, f) := \underbrace{W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T}_{L_p^{\mathrm{up}}} \, + \, \underbrace{\partial_{p}^T W_p^{-1} \partial_p W_{p+1}}_{L_p^{\mathrm{dn}}}
-\end{equation} 
-In general, neither terms in~\eqref{eq:weighted_up_laplace} are symmetric unless $W_p = I_n$ (for $L_p^{\text{up}}$) or $W_{p+1} = I_m$ (for $L_p^{\text{dn}}$). 
+Unfortunately, various difficulties arise with weighting combinatorial Laplacians that aren't suffered by their integral counterparts, such as asymmetry, instability, and scale-dependence. 
+Indeed, observe that in general neither terms in~\eqref{eq:weighted_up_laplace} are symmetric unless $W_p = I_n$ (for $L_p^{\text{up}}$) or $W_{p+1} = I_m$ (for $L_p^{\text{dn}}$). 
 %$W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T$ 
-However, note that $L_p^{\text{up}}$ may be written as follows: 
+However, as noted in~\cite{memoli2022persistent}, $L_p^{\text{up}}$ may be written as follows: 
 \begin{equation}\label{eq:l_up}
 	L_p^{\text{up}} = W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T  = W_p^{-1/2} \big( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1/2}  \big ) W_p^{1/2} 
 \end{equation}
-Since the right hand side of~\eqref{eq:l_up} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix, though the weighted $L_p^{\text{up}}$ may not be a symmetric operator, it is matrix-similar to one. 
-The same result holds for up-, down-, and combinatorial Laplacians~\cite{}. We refer to this inner positive semi-definite matrix as the \emph{symmetric} weighted up-Laplacian of $K$. 
-For now we summarize this fact with a proposition. 
-\begin{proposition}[\cite{}]
-	Let $f : (\mathbb{R}^n, H_n) \to (\mathbb{R}^m, H_m)$ be a linear map between inner product matrices $H_n \in \mathbb{R}^{n \times n}$ and $H_m \in \mathbb{R}^{m \times m}$, and let $F \in \mathbb{R}^{m \times n}$ denote the matrix representation of $f$. Then, for any $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, we have the following equivalence of inner products: 
-	$$ \langle f x, y \rangle_{\mathbb{R}^m}  = \langle x, f^\ast y \rangle_{\mathbb{R}^n} = x^T F^T H_m y = x^T H_n F^\ast y $$
-	where $F^\ast = H_n^+ F^T H_m$ is a representative of the adjoint $f^\ast : (\mathbb{R}^m, H_m) \to (\mathbb{R}^n, H_n)$ of $f$. 
-\end{proposition}
+Since ~\eqref{eq:l_up} is of the form $W^{-1} P W$ where $P \in S_n^+$ and $W$ is a positive diagonal matrix.
+The same result holds for up-, down-, and combinatorial Laplacians, circumventing the issue of asymmetry.  
+%Thus, we may retain the inner product interpretation from~\eqref{} while working with PSD operators---
+%One shortcoming of the stability result shown above is that the Lipshitz constant depends explicitly on the magnitude of $f_\alpha$, which in-turn affects the stability of the proposed relaxation if $f_\alpha$ is scaled poorly, i.e. $\lambda \cdot f_\alpha$. 
+%Moreover, the continuous differentiability of $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ only extends to linear operators defined over the positive semi-definite cone, and the explicit form of the differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ depends on the domain of its corresponding spectral function $\phi(\cdot)$ being bounded to some interval $(a,b)$~\cite{bhatia2013matrix}.  
+%
+%Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{def:time_boundary_matrix}. Assume that the filter function $f : K \to \mathbb{R}_+$ is strictly positive. By taking the product $(\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T$ for some choice of $h \in \mathcal{H}$, we have:
+%\begin{align*}\label{eq:param_up_lap}
+%	\hat{L}_p^{\text{up}}(K, f) &= (\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T \\
+%	&= (V_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (V_p^i)^{+} \\
+%	&\propto (V_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (V_p^i)^{+/2}  \numberthis
+%\end{align*}
+%where $A^{+/2} = (A^{1/2})^+$. 
 
-One shortcoming of the stability result shown above is that the Lipshitz constant depends explicitly on the magnitude of $f_\alpha$, which in-turn affects the stability of the proposed relaxation if $f_\alpha$ is scaled poorly, i.e. $\lambda \cdot f_\alpha$. 
-Moreover, the continuous differentiability of $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ only extends to linear operators defined over the positive semi-definite cone, and the explicit form of the differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ depends on the domain of its corresponding spectral function $\phi(\cdot)$ being bounded to some interval $(a,b)$~\cite{bhatia2013matrix}.  
-
-Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{def:time_boundary_matrix}. Assume that the filter function $f : K \to \mathbb{R}_+$ is strictly positive. By taking the product $(\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T$ for some choice of $h \in \mathcal{H}$, we have:
-\begin{align*}\label{eq:param_up_lap}
-	\hat{L}_p^{\text{up}}(K, f) &= (\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T \\
-	&= (V_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (V_p^i)^{+} \\
-	&\propto (V_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (V_p^i)^{+/2}  \numberthis
-\end{align*}
-where $A^{+/2} = (A^{1/2})^+$. Thus, in this way we think of our definition of a parameterized boundary matrix as corresponding to a choice of a \emph{non-negative scalar-product} on the vector space $C^p(K, \mathbb{R})$, which induces a (degenerate) inner product $\langle \cdot, \cdot \rangle : C^p(K, \mathbb{R}) \times C^p(K, \mathbb{R}) \to \mathbb{R}$ on $C^p(K, \mathbb{R})$. Equivalently, our choice of weight function induces an inner product on the quotient space $W = C^p(K, \mathbb{R}) / \{ b : \lvert b \rvert = 0 \}$.
-We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
-\begin{equation}\label{eq:param_normalized_up_lap}
-	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = \mathcal{D}_p(\mathcal{S}_i \circ f_\alpha)^{+/2} \circ \partial_p \circ W_{p+1}(\mathcal{S}_j \circ f_\alpha) \circ \partial_p^T \circ (\mathcal{D}_p^i)^{+/2} 
+A second difficulty that arises with both the symmetric and asymmetric forms of~\eqref{eq:l_up} is the problem of unbounded spectra. It is not difficult to see that the inverse terms in~\eqref{} drive $\lVert L_p^{\textrm{up}}\rVert_2$ upwards indefinitely as $f(\sigma) \to 0^{+}$, which by extension brings instability to the spectra. Towards rectifying this, Horek and Jost~\cite{} propose normalizing $\Delta_p$ by way of setting the weight function: 
+\begin{equation}
+	f(\tau) = \mathrm{deg}(\tau) \quad \forall \tau \in K^{p}
 \end{equation}
-has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corresponds to the weighted degree matrix with entries $\{ \mathrm{deg}_w(\sigma) \}$. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. 
+Substituting these degrees as weights for the $p$-simplices yields the \emph{normalized combinatorial Laplacian}
+\begin{equation}\label{eq:normalized_up_lap}
+	 \mathcal{L}_p^{\text{up}}(K, f) = (\mathcal{D}_p)^{+/2} \partial_p W_{p+1} \partial_p^T (\mathcal{D}_p)^{+/2} 
+\end{equation}
+The benefits of this normalized is that we have $\Lambda( \mathcal{L}_p^{\text{up}}) \subseteq [0,p+2]$ for any choice of weight function, which lends stability to the spectrum. As the other operators mentioned, the nullity is not affected by this normalization.
+Numerous other properties and implications follow from this normalization, such as tight bounds on the spectral norm and explicit connections between dual graphs.  
+%By choosing the weights, one effectively determines the corresponding inner product, which in-turn determines the spectral range of the corresponding operator.
+%We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. 
+%Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
+%\begin{equation}\label{eq:param_normalized_up_lap}
+%	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = \mathcal{D}_p(\mathcal{S}_i \circ f_\alpha)^{+/2} \circ \partial_p \circ W_{p+1}(\mathcal{S}_j \circ f_\alpha) \circ \partial_p^T \circ (\mathcal{D}_p^i)^{+/2} 
+%\end{equation}
+%has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corresponds to the weighted degree matrix with entries $\{ \mathrm{deg}_w(\sigma) \}$. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. 
+
+
+
 %\begin{remark}
 %~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
 %Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation. 
@@ -1121,7 +1111,19 @@ However, it is not immediately clear whether these results generalize to Laplaci
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
-We first recall the characteristics of the graph Laplacian $L = D - A$ derived from an undirected simple graph $G = (V, E)$. As in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed using the path-connected relation $i \sim j$, shown below:
+We first recall the characteristics of the graph Laplacian. 
+Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected $i \sim j$ in $G$ and denote with $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$ the diagonal \emph{degree} matrix, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
+The \emph{graph Laplacian}'s adjacency, incidence, and element-wise definitions are: 
+\begin{equation}
+L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
+	L\,[i,j] = \begin{cases}
+		\mathrm{deg}(v_i) & \text{ if } i = j \\
+		-1 & \text{ if } i \sim j \\
+		0 & \text{ if } i \nsim j
+	\end{cases}
+\end{equation}
+It is well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$~\cite{newman2001laplacian}. 
+Moreover, as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed using the path-connected relation $i \sim j$, shown below:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
@@ -1293,7 +1295,7 @@ The direct methods to computing a $p$-th persistence diagram of a simplicial com
 \section{Applications \& Experiments}\label{sec:applications}
 
 % --- APPLICATION 1: Fast spectral computation ---
-\subsection{Matrix-free persistence computation}
+\subsection{Rank computation}
  The first and most general application of the work presented here is the matrix-free computation of persistent rank invariants in \emph{essentially} $O(n^2)$ time and $O(m)$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1}\rvert$. 
  Our use of the word essentially stems from...
 %Here, the primary difference between the persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+$ and the multiplicity function $\mu_p^{R}$ on some box $R=[i,j] \times [k,l]$ is that the former can capture essential homology classes (cycles which never die), whereas the multiplicity function by definition can only capture those classes whose persistence is bounded. 
@@ -1361,7 +1363,7 @@ We reframe the problem as follows: rather than filtering $K$ according to its am
 If there exists a density scale $\alpha \in \mathbb{R}_+$ wherein a cycle $c \in H_1(K ; \mathbb{R})$ is highly persistent and $R \subset \Delta_+$ is appropriately chosen, then any maximizer of~\eqref{eq:mult_opt} yields an appropriate density scale $\alpha^\ast$ with which to detect the topology of the data. 
 From another perspective, we refer to this process of choosing appropriate filtration (hyper-)parameters to yield persistence information as \emph{filtration optimization}. 
 
-\begin{figure}[ht!]
+\begin{figure}[ht]
 	\centering
 	\includegraphics[width=0.88\textwidth]{presentation/codensity_dgm_ex}
 	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
@@ -1392,8 +1394,9 @@ This is synonymous to the \emph{iterative thresholding} techniques often in high
 
 
 
-
 \newpage 
+\shipout\null
+\shipout\null
 
 \appendix
 \section{Appendix}
@@ -1451,6 +1454,83 @@ For example, consider creating a classifier for the alphabet of English characte
 
 It would be beneficial to have an invariant that was sensitive to the geometries between shapes, but also stable in some sense.
 \newpage
+
+\subsection*{Inner Products}
+Though the general Laplacian operator carries with it an interpretation of its eigensets as representing information about the intersection pattern of the underlying complex, a more precise interpretation of the eigensets depends both the operator and weighting scheme in question.
+%herein the interpretation of the eigensets varies greatly. 
+%various combinatorial or geometric interpretation arise from which operator is considered and how it is weighted. 
+Many early results followed Kirchhoff's observations about the properties of $L$ reflecting certain physical laws of electrical flows in circuit networks, wherein eigenvectors have certain interpretations useful for graph sparsification and graph partitioning~\cite{chung1997spectral}. 
+%via \emph{effective resistances}.
+%Along a similar vein, Fiedler's characterization of the second eigenvector spawned many efforts in graph partitioning~\cite{chung1997spectral}, due to a connection to Cheegers inequality.
+More recently, Nadler observed the \emph{normalized} graph Laplacian given by: 
+\begin{equation}\label{eq:normal_graph_laplacian}
+\mathcal{L} = D^{-1/2}(D - A) D^{-1/2}
+\end{equation}
+connects the process of diffusion (over a probability density) to the eigensets to $\mathcal{L}$.
+%This gives the spectra of these operators a certain interpretation as representing random walk behavior.   
+Yet another choice of normalization relates the eigenfunctions of $\mathcal{L}$ to the discrete Laplace–Beltrami operator on manifolds~\cite{}, which carries a certain ``heat'' interpretation with it. 
+Ultimately, just as persistence diagrams encode geometric interpretations through their domain-specific filter functions, the geometry contained in the spectra of combinatorial Laplacians is reflected by the choice of a domain-specific weight function.
+
+%convergence results etween eigenvectors of each diffusion map converge to the eigenfunctions of a corresponding differential
+
+%, which has found applications i
+%operator defined on the support of the probability distribution.
+
+
+%\emph{diffusion}, which are often studied in random walk processes .
+%%on the data based on isotropic and anisotropic diffusion.
+%On the theory front, connection to discrete to the weighted Laplace-Beltrami operator on manifold.
+
+%Historically, one of the motivators of the study of graph eigenvalues was the study of vibrations of membranes is closely tied in with the study of eigenvalues and eigenfunctions on Riemannian manifolds.
+%As an infinitesimal generator of a diffusion process and its connection to discrete to the weighted Laplace-Beltrami operator on manifold, the graph Laplacian has served as the foundational operator for many applications both in theory and in practice. 
+%, like random walks or diffusion, a different operator appears...
+
+%Among the first to study these combinatorial operators was Eckmann~\cite{}, who proved a discrete  Hodge Theorem: 
+%\begin{equation}\label{eq:laplace_hom}
+%	\tilde{H}_p(K; \mathbb{R}) \cong \mathrm{ker}(\Delta_p(K)), \quad \beta_p = \mathrm{nullity}(\Delta_p(K))
+%\end{equation}
+%More directly relevant to this work, Horak and Jost developed a systematic study of the spectra of these operators unifies many of the Laplace operators on simplicial complexes~\cite{}. 
+%Among other results, they showed that the \emph{non-zero} parts of the spectra $\Lambda_+$ satisfy:
+%\begin{equation}
+%	\Lambda_+(\Delta_p(K)) = \Lambda_+(L_p^{\text{up}}(K)) \cup \Lambda_+(L_p^{\text{dn}}(K))
+%\end{equation}
+%Moreover, it may be shown that the non-zero eigensets $\Lambda_+(L_p^{\text{up}}(K))$ and $\Lambda_+(L_{p+1}^{\text{dn}}(K))$ are identical---thus, it suffices to consider only one of them. 
+%Many researchers studying higher order combinatorial Laplacians have found applications to areas such as graph optimization~\cite{}, network circuit theory~\cite{}, and graph sparsification~\cite{}. 
+
+Weight functions may be interpreted through their action on the coboundary vector space $C^p(K, \mathbb{R}) := \mathrm{Hom}(K, \mathbb{R})$.
+%are defined as the duals of the chain groups $C_p(K, \mathbb{R})$. 
+As with $C_p(K, \mathbb{R})$, a basis for $C^p(K, \mathbb{R})$ is given by the set of its \emph{elementary cochains}:
+\begin{equation}
+	\{ \; \chi([\sigma]) \mid [\sigma] \in B_p(K, \mathbb{R}) \; \}, \text{ where } \chi([\sigma']) = \begin{cases}
+		1 & \text{ if } [\sigma'] = [\sigma] \\
+		0 & \text{ otherwise }
+		\end{cases}
+\end{equation}
+It can be shown that for any choice of inner product on $C^p(K, \mathbb{R})$, there exists a positive weight function $f: K \to \mathbb{R}_+ \setminus \{0\}$ satisfying: 
+\begin{equation}
+	\langle \, g, h \, \rangle_{f} = \sum\limits_{\sigma \in K^p} f(\sigma) g([\sigma]) h([\sigma])
+\end{equation}
+Furthermore, the set of weight functions and scalar product on $C^p(K, \mathbb{R})$ wherein elementary cochains are orthogonal are in one-to-one correspondence~\cite{}. 
+ Indeed, if $f : (\mathbb{R}^n, H_n) \to (\mathbb{R}^m, H_m)$ be a linear map between inner product matrices $H_n \in \mathbb{R}^{n \times n}$ and $H_m \in \mathbb{R}^{m \times m}$, then by Proposition~\cite{} for any $x \in \mathbb{R}^n$ and $y \in \mathbb{R}^m$, we have the following equivalence of inner products: 
+	$$ \langle f x, y \rangle_{\mathbb{R}^m}  = \langle x, f^\ast y \rangle_{\mathbb{R}^n} = x^T F^T H_m y = x^T H_n F^\ast y $$
+	where $F \in \mathbb{R}^{m \times n}$ denotes the matrix representative of $f$ and $F^\ast = H_n^{-1} F^T H_m$ a representative of the adjoint $f^\ast : (\mathbb{R}^m, H_m) \to (\mathbb{R}^n, H_n)$ of $f$. 
+	 In this way, we say that the choice of weight function \emph{induces} an inner product on $C^p(K, \mathbb{R})$\footnote{Nullspace comment}. 
+In this way, we reduce the study of geometry to the study ``weight functions'' of laplacian operators. 
+%Thus, in this way we think of our definition of a parameterized boundary matrix as corresponding to a choice of a \emph{non-negative scalar-product} on the vector space $C^p(K, \mathbb{R})$, which induces a (degenerate) inner product $\langle \cdot, \cdot \rangle : C^p(K, \mathbb{R}) \times C^p(K, \mathbb{R}) \to \mathbb{R}$ on $C^p(K, \mathbb{R})$. 
+%Equivalently, our choice of weight function induces an inner product on the quotient space $W = C^p(K, \mathbb{R}) / \{ b : \lvert b \rvert = 0 \}$.
+%\begin{remark}
+%In general, neither terms in~\eqref{eq:weighted_up_laplace} are symmetric unless $W_p = I_n$ (for $L_p^{\text{up}}$) or $W_{p+1} = I_m$ (for $L_p^{\text{dn}}$). 
+%%$W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T$ 
+%However, note that $L_p^{\text{up}}$ may be written as follows: 
+%\begin{equation}\label{eq:l_up}
+%	L_p^{\text{up}} = W_p^{-1} \partial_{p+1} W_{p+1} \partial_{p+1}^T  = W_p^{-1/2} \big( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1/2}  \big ) W_p^{1/2} 
+%\end{equation}
+%Though the operator from~\eqref{eq:l_up} is not necessarily symmetric, it is of the form $W^{-1} P W$ where $P \in S_n^+$ and $W$ is a positive diagonal matrix.
+%The same result holds for up-, down-, and combinatorial Laplacians~\cite{}.  
+%We refer to these inner matrices $P$ as the \emph{symmetric} weighted Laplacian of $K$.
+%\end{remark}
+
+
 \subsection*{Directional Transform}
 The canonical interpretation of the information displayed by a persistence diagram is that is summarizes the persistence of the sublevel sets of filtered space. Given a filtration pair $(\, K, f \, )$ where $K$ is a finite simplicial complex and $f : K \to \mathbb{R}$ is a real-valued function, the sublevel sets $\lvert K \rvert_i=f^{-1}(-\infty, i]$ deformation retract to... % say more about stars, homotopy equivalence
 % simplexwise-linear function

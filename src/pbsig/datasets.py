@@ -31,6 +31,14 @@ def random_lower_star(n: int = 50, v: list = [0,1]):
   K = filtration(S, f=lambda s: max(fv[s]))
   return X, K
 
+def shrec20():
+  import pywavefront
+  scene = pywavefront.Wavefront('/Users/mpiekenbrock/Downloads/SHREC20b_lores/models/camel_b.obj', collect_faces=True)
+  triangles = scene.mesh_list[0].faces
+  nv = len(scene.vertices)
+  S = simplicial_complex(triangles)
+  return scene.vertices, S 
+
 
 # class FiltrationFamily:
 #   """ Constructs a parameterized family of filtration-like objects derived from a fixed simplicial complex. """
