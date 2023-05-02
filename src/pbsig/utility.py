@@ -378,6 +378,32 @@ def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
   A_p, B_p = procrustes_cc(A, B, **kwargs)
   return np.linalg.norm(A_p - B_p, 'fro')
 
+# def interpolate_PL_path(path: Sequence, k: int): 
+#   """ Interpolates a Path of Line objects """
+#   from svgpathtools import parse_path, Line, Path, wsvg
+#   arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
+#   if any(arc_lengths == 0):
+#     path = list(filter(lambda p: p.length() > 0.0, path))
+#     for j in range(len(path)-1):
+#       if path[j].end != path[j+1].start:
+#         path[j].end = path[j+1].start
+#     path = Path(*path)
+#   arc_lengths = np.array([np.linalg.norm(seg.length())for seg in path])
+#   assert(all(arc_lengths > 0)), "Invalid shape detected: lines with 0-length found and not handled"
+#   A = np.cumsum(arc_lengths)
+#   p_cc = np.linspace(0, max(A), k)
+#   idx = np.digitize(p_cc, A+np.sqrt(np.finfo(float).resolution))
+#   L_points = []
+#   for i, pp in zip(idx, p_cc):
+#     t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
+#     L_points.append(path[i].point(t))
+#   connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
+#   if any(connect_the_dots[-1].end != connect_the_dots[0].start): #not(path.iscontinuous()) or path.isclosed():
+#     #connect_the_dots.append(Line(L_points[-1], L_points[0]))
+#     connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
+#   new_path = Path(*connect_the_dots)
+#   return(new_path)
+
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg
   arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
