@@ -1,7 +1,7 @@
 ---
 title: "Circle optimization"
 format: html
-jupyter: python3
+# jupyter: python3
 editor: 
   render-on-save: true
 ---

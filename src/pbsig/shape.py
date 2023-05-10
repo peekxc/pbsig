@@ -34,6 +34,7 @@ def _archi_alpha(L: float, a_max: float) -> float:
 
 def archimedean_sphere(n: int, nr: int):
   ''' Gives an n-point uniform sampling over 'nr' rotations around the 2-sphere '''
+  n = int(n/2)
   a_max = nr*(2*np.pi)
   alpha = np.linspace(0, a_max, n)
   max_len = _archi_alpha(alpha[-1], a_max)

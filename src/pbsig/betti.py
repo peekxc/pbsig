@@ -698,24 +698,35 @@ class Sieve:
   def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "lo"):
     # assert isinstance(S, ComplexLike)
     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
-    self.S = S
+    self.complex = S
     self.family = family
     self.np = card(S, p)
     self.nq = card(S, p+1)
     self.p = p
     self.form = form
-    self.L = up_laplacian(S, p=self.p, form=self.form, normed=True)
+    self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
     self.solver = eigvalsh_solver(self.L)
     self.delta = np.finfo(float).eps
-
-  @property 
-  def pattern(R: ArrayLike):
-    """ Sets the sieve pattern to the union of rectangles given by _R_. """
-    assert isinstance(R, np.ndarray) and len(R) % 2 == 0
-    self.R = {}
+    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', bool), ('index', int)])
     self.R_sgn = {}
 
-  def precompute(k: Any = None, w: float = 0.0):
+  @property 
+  def pattern(self, R: ArrayLike):
+    """ Sets the sieve pattern to the union of rectangles given by _R_. """
+    assert isinstance(R, np.ndarray)
+    # if R.shape[1] == 4:
+    self.R = {}
+    self.R_sgn = {}
+  
+  def randomize_pattern(self):
+    R = sample_rect_halfplane(1, area = (0.10, 0.50), disjoint=True)  
+    # R[0,0:2]
+    # Make the pattern
+
+  def plot_pattern(self):
+    pass
+
+  def precompute(self, k: Any = None, w: float = 0.0):
     if k is not None: assert k in self.R
     keys = self.R.keys() if k is None else [k] 
     for k in keys:
@@ -723,20 +734,24 @@ class Sieve:
       out = [self.project(i,j,w,f) for f in family]
       self.R[k] = out 
         
-  def project(i: float, j: float, w: float, f: Callable):
+  def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
+    """ Projects the normalized weight Laplacian L(S,f) onto a Kyrlov subspace at point (i,j)  """
     si = smooth_upstep(lb=i, ub=i+w)
     sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp = si(np.array([f(s) for s in faces(S,self.p)]))
-    fq = sj(np.array([f(s) for s in faces(S,self.p+1)]))
-    I = np.where(np.isclose(fp, 0), 0, 1)
-    self.L.set_weights(I,fq,I)
-    d = np.sqrt(pseudoinverse(self.L.degrees))
-    self.L.set_weights(d,fq,d)
-    return self.solver(self.L)
+    fp = si(np.array([f(s) for s in faces(self.complex,self.p)]))
+    fq = sj(np.array([f(s) for s in faces(self.complex,self.p+1)]))
+    if self.form == 'lo':
+      I = np.where(np.isclose(fp, 0), 0, 1)
+      self.laplacian.set_weights(I,fq,I)
+      d = np.sqrt(pseudoinverse(self.L.degrees))
+      self.laplacian.set_weights(d,fq,d)
+      return self.solver(self.L, **kwargs)
+    else:
+      raise NotImplementedError("Not implemented")
 
   
   def partition_rect():
-    """ Increases the discrimaory power by adding two interior points to the pattern"""
+    """ Increases the discrimatory power by adding two interior points to the pattern"""
     pass
 
 

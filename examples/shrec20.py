@@ -4,7 +4,7 @@ from pbsig.shape import archimedean_sphere
 from splex import * 
 
 X, S = shrec20()
-S2_pts = archimedean_sphere(n = 100, nr = 5)
+S2_pts = archimedean_sphere(n = 100, nr = 2)
 diam_X = np.max(pdist(X))
 
 fv = np.array(X) @ np.array([0,0,1])
@@ -19,6 +19,7 @@ L.update_scalar_product(f)
 
 from scipy.sparse.linalg import eigsh
 from pbsig.utility import progressbar
+
 
 spri = []
 for pt in progressbar(S2_pts):

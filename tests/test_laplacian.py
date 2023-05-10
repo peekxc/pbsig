@@ -18,6 +18,56 @@ def test_generate():
   assert isinstance(X, np.ndarray)
   assert isinstance(K, ComplexLike)
 
+# def test_spectral_norm():
+#   stretch = []
+#   for i in range(1500):
+#     q = np.random.uniform(size=L.shape[0], low=0, high=1)
+#     stretch.append((q @ (L @ q))/(q @ q))
+#   max(stretch)
+    
+def test_matprop():
+  X, K = generate_dataset(50)
+  wv = np.random.uniform(size=card(K,1), low=0, high=150)
+  LN = up_laplacian(K, p=1, weight=lower_star_weight(wv), form='array', normed=True)
+  # abs(LN - np.diag(LN.diagonal())).sum(axis=0)
+  max(np.abs(np.linalg.eigvalsh(LN - np.diag(LN.diagonal()))))
+  # sum(np.sqrt(abs(np.linalg.eigvalsh(LN.todense()))))
+  np.linalg.cond((LN + (1e-5)*np.eye(LN.shape[0])))
+  np.linalg.cond(LN.todense())
+
+def test_energy_props():
+  S = simplicial_complex([[0,1,2,3], [4,5,6,7], [8,9,10,11]])
+  wv = np.random.uniform(size=card(K,0), low=0, high=150)
+  LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
+  ## || LN ||_ast = 
+  # plt.spy(LN)
+
+  ## Ensure additivity between disjoint components
+  c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[:4,:4]))))
+  c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[4:8,4:8]))))
+  c3 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[8:,8:]))))
+  LE_energy = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()))))
+  assert np.isclose(c1 + c2 + c3, LE_energy)
+
+  ## Ensure singletons don't contribute to energy
+  S = simplicial_complex([[0,1,2,3], [4], [5,6,7,8], [9], [10,11,12,13], [14]])
+  wv = np.random.uniform(size=card(K,0), low=0, high=150)
+  LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
+  c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[0:4,0:4]))))
+  c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[5:9,5:9]))))
+  c3 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[10:14,10:14]))))
+  LE_energy = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()))))
+  assert np.isclose(c1 + c2 + c3, LE_energy)
+
+  ## Ensure additivity between disjoint components applies to higher dimensions
+  LN = up_laplacian(S, p=1, weight=lower_star_weight(wv), form='array', normed=True)
+  # plt.spy(LN)
+  c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[0:6,0:6]))))
+  c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[6:12,6:12]))))
+  c3 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[12:,12:]))))
+  LE_energy = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()))))
+  assert np.isclose(c1 + c2 + c3, LE_energy)
+
 def test_laplacian_op_0():
   S = simplicial_complex([[0,1],[0,2],[2,3]])
   L = up_laplacian(S, p=0, form='lo')
@@ -143,10 +193,10 @@ def benchmark_matvec():
   p = 1
   fv = np.random.uniform(size=card(S,0), low=0, high=5)
   LO = up_laplacian(S, p=p, form='lo', weight=lower_star_weight(fv))
-  LM = up_laplacian(S, p=p, form='array', weight=lower_star_weight(fv))
+  # LM = up_laplacian(S, p=p, form='array', weight=lower_star_weight(fv))
   x = np.random.uniform(size=card(S,p), low=-1, high=1)
   timeit.timeit(lambda: LO @ x, number=1000)
-  timeit.timeit(lambda: LM @ x, number=1000)
+  # timeit.timeit(lambda: LM @ x, number=1000)
   assert max(abs((LM @ x) - (LO @ x))) <= 1e-5
   
 ## Test elementwise definitions

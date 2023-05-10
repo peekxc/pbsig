@@ -6,6 +6,8 @@ from pbsig.betti import *
 from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph, filtration
+from splex import *
+from scipy.spatial.distance import pdist, squareform
 import matplotlib.pyplot as plt 
 from pbsig.vis import plot_complex
 
@@ -13,14 +15,34 @@ from pbsig.vis import plot_complex
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = mpeg7()
 
-#%% Compute mu queries 
+# %% Compute mu queries 
 X = dataset[('turtle',1)]
 S = cycle_graph(X)
-L = up_laplacian(S, p=0, form='lo', weight=lambda s: max((X @ np.array([1,0]))[s]) + 2.0)
+radius = np.max(pdist(X))/2
+L = up_laplacian(S, p=0, form='lo', weight=lower_star_weight((X @ np.array([0,1])) + radius))
 
-from scipy.sparse import eye
-from scipy.sparse.linalg import aslinearoperator
-cI = aslinearoperator(0.01*eye(L.shape[0]))
+## Inspect the data set
+print(dataset.keys())
+
+# %%
+from pbsig.pht import directional_transform
+dt = directional_transform(X, theta=32)
+
+# %% 
+from pbsig.betti import Sieve
+sieve = Sieve(S, dt)
+sieve.precompute()
+
+
+from scipy.sparse.linalg import eigsh
+eigsh(L, k=100, return_eigenvectors=False)
+
+
+lower_star_weight((X @ np.array([0,1])) + radius)
+
+# from scipy.sparse import eye
+# from scipy.sparse.linalg import aslinearoperator
+# cI = aslinearoperator(0.01*eye(L.shape[0]))
 
 ## Sample a couple rectangles in the upper half-plane and plot them 
 R = sample_rect_halfplane(1, area=(0.10, 1.00))

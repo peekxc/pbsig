@@ -10,23 +10,48 @@ from numpy.typing import ArrayLike
 from . import rotate_S1
 from .persistence import lower_star_ph_dionysus
 from .utility import progressbar, shape_center, uniform_S1, PL_path, complex2points
-from gudhi.wasserstein import wasserstein_distance
 
-def pht_transformer(scale = ["directions", "diameter"], translate: str = "directions", nd: int = 32, **kwargs):
-  assert nd % 2 == 0, "Number of directions must be even"
-  # if center == "directions":
-  V = np.array(list(uniform_S1(nd)))
-  def _preprocess(X: ArrayLike) -> ArrayLike:
-    u = shape_center(X, method="directions", V=V, **kwargs)
+## What is the directional transfrom?
+## Maybe it should be an iterable of filter functions (defined for every simplex!)
+# See https://arxiv.org/pdf/1912.12759.pdf
+# also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
+def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32, **kwargs):
+  from splex import lower_star_weight
+  class DT_Iterable:
+    def __init__(self, V: np.ndarray):
+      self.V = V
+    def __iter__(self):
+      yield from [lower_star_weight(X @ np.array(v)) for v in self.V]
+    def __len__(self) -> int:
+      return len(self.V)
+  if isinstance(theta, Integral) and X.shape[1] == 2:
+    V = np.array(list(uniform_S1(theta)))
+    return DT_Iterable(V)
+  elif isinstance(theta, Integral) and X.shape[1] == 3:
+    V = archimedean_sphere(theta, nr=5)
+    return DT_Iterable(V)
+  elif isinstance(theta, np.ndarray):
+    assert V.shape[1] == X.shape[1], "Invalid set of direction vectors given"
+    return DT_Iterable(V)
+  else: 
+    raise ValueError(f"Invalid theta input {theta} given")
+
+
+  # assert isinstance(theta, Integral) or isinstance(theta, Iterable)
+  # theta = np.linspace(0, 2*np.pi, theta, endpoint=False) if isinstance(theta, Integral) else np.array(theta)
+
+  
+def dt_preprocess(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
+  u = shape_center(X, method=translate, V=V, **kwargs)
+  X = X - u 
+  if scale == "directions":
     L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
-    X = X - u 
-    X = (nd/L)*X
-    return(X)
-  return(_preprocess)
-
-def pht_preprocess_pc(X: ArrayLike, nd: int = 32):
-  P = pht_transformer(nd)
-  return(P(X))
+    return (nd/L)*X
+  elif scale == "diameter":
+    raise NotImplementedError("Haven't implemented yet")
+    diam = np.max(pdist(X))
+    # X.norm(axis=1)
+    return X 
 
 def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
   """
@@ -61,32 +86,14 @@ def pht_0(X: ArrayLike, E: ArrayLike, nd: int = 32, transform: bool = True, prog
       dgms0[i] = dgm
   return(dgms0)
 
-## What is the directional transfrom?
-## Maybe it should be an iterable of filter functions (defined for every simplex!)
-# See https://arxiv.org/pdf/1912.12759.pdf
-# also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
-def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32):
-  class DT_Iterable():
-    def __init__(self, theta):
-      self.theta = theta
-    def __iter__(self):
-      for t in self.theta:
-        fv = X @ np.array([np.cos(t), np.sin(t)])
-        yield lambda s: max(fv[s]) ## todo fix this 
-    def __len__(self):
-      return len(self.theta)
-  # if theta is None: 
-  #   return DT_Iterable(theta)
-  # else:
-  assert isinstance(theta, Integral) or isinstance(theta, Iterable)
-  theta = np.linspace(0, 2*np.pi, theta, endpoint=False) if isinstance(theta, Integral) else np.array(theta)
-  return DT_Iterable(theta)
+
 
 def wasserstein_mod_rot(D0, D1, p: float = 1.0, **kwargs) -> float:
   """
   D0 := List of diagrams 
   D1 := List of diagrams
   """
+  from gudhi.wasserstein import wasserstein_distance
   from pbsig.utility import rotate
   assert len(D0) == len(D1), "Lists containing diagrams should be equal"
   wd = lambda a,b: wasserstein_distance(a, b, matching=False, order=p, keep_essential_parts=True)
@@ -98,6 +105,7 @@ def wasserstein_mod_rot(D0, D1, p: float = 1.0, **kwargs) -> float:
   return(wdists[np.argmin(wdists)])
 
 def pht_0_dist(X: Iterable, mod_rotation: bool = True, nd: int = 32, preprocess: bool = True, progress: bool = False, diagrams: bool = False):
+  from gudhi.wasserstein import wasserstein_distance
   """
   X := iterable of (V, E) where V is point cloud of vertex positions and E are edges, or iterable of diagrams
   nd := number of directions
