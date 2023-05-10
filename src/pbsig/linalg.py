@@ -370,12 +370,15 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
     ew = np.sqrt(ew) if sqrt else ew
   return ew if raw else sum(ew)
 
-def pseudoinverse(x: ArrayLike) -> np.ndarray:
-  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  if isinstance(x, np.ndarray):
-    return np.linalg.pinv(x) if x.ndim == 2 else pseudo(x)
-  else: 
-    return np.array([pseudo(xi) for xi in x])
+def pseudoinverse(x: ArrayLike, **kwargs) -> np.ndarray:
+  x = np.array(x) if not(isinstance(x, np.ndarray)) else x
+  return np.linalg.pinv(x) if x.ndim == 2 else np.reciprocal(x, where=~np.isclose(x, 0, **kwargs))
+  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
+  
+  # if isinstance(x, np.ndarray):
+  #   return np.linalg.pinv(x) if x.ndim == 2 else pseudo(x)
+  # else: 
+  #   return np.array([pseudo(xi) for xi in x])
   
 
 def prox_nuclear(x: ArrayLike, t: float = 1.0):
@@ -1095,8 +1098,6 @@ class LaplacianOperator:
       self.operator.set_weights(np.sqrt(pseudoinverse(deg)), fq, np.sqrt(pseudoinverse(deg)))
     else:
       self.operator.set_weights(np.sqrt(pseudoinverse(fq)), fq, np.sqrt(pseudoinverse(fq)))
-
-
 
 
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):

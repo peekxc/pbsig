@@ -8,18 +8,28 @@ from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
 from splex.geometry import flag_weight
+from more_itertools import spy 
+
+
+def intervals_intersect(i1: tuple, i2: tuple) -> bool: 
+  """Detects whether two intervals of the form (x1,x2) intersect."""
+  i1, i2 = np.sort(i1), np.sort(i2)
+  return not(i1[1] < i2[0] or i2[1] < i1[0])
+
+def rect_intersect(r1,r2) -> bool:
+  """Detects whether two rectangles of the form (x1,x2,y1,y2) intersect."""
+  return intervals_intersect(r1[[0,1]], r2[[0,1]]) and intervals_intersect(r1[[2,3]], r2[[2,3]])
 
 ## Generate a random set of rectangles in the upper half plane 
-def sample_rect_halfplane(n: int, area: tuple = (0, 0.05), disjoint: bool = False):  
-  """ 
-  Generate random rectilinear boxes with area between [lb,ub] in upper-half plane via rejection sampling 
+def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0, 0.05), disjoint: bool = False):  
+  """Generate random rectilinear boxes with min/max _area_ in upper-half plane via rejection sampling.
   """
   cc = 0
   R = []
   while cc < n:
-    r = np.sort(np.random.uniform(size=4, low = -1.0, high=1.0))
-    ra = (r[1]-r[0])*(r[3]-r[2])
-    if ra >= area[0] and ra <= area[1]:
+    r = np.sort(np.random.uniform(size=4, low = lb, high=ub))
+    ra = abs(r[1]-r[0])*abs(r[3]-r[2])
+    if ra >= area[0] and ra <= area[1] and not(any([rect_intersect(r, r_) for r_ in R])):
       R.append(r)
     else: 
       continue
@@ -64,7 +74,7 @@ def smooth_grad(b, bp):
 #   sig -= elementwise_row_sum(self._Terms[2].data, sv_op)
 #   sig += elementwise_row_sum(self._Terms[3].data, sv_op)
 # elif isinstance(smoothing, str):
-#   if smoothing == "huber":
+#   if smoothing == "huber":asda
 #     raise NotImplemented("Haven't done hinge loss yet")
 #   elif smoothing == "soft-thresholding":
 #     soft_threshold = lambda s: np.sign(s) * np.maximum(np.abs(s) - t, 0)
@@ -687,65 +697,113 @@ class MuFamily:
 class Sieve:
   """ 
   A sieve M is a statistic M(i) generated over a parameterized family of F = { f1, f2, ..., fk }
-  Constructor parameters: 
-    S := Fixed simplicial complex 
-    F := Iterable of filter functions, each representing scalar-products equipped to S
-    p := dimension of persistence to restrict R too
+  
+  Parameters: 
+    S: Fixed simplicial complex 
+    F: Iterable of filter functions, each representing scalar-products equipped to S. Each f should respect the face poset. 
+    p: Homology dimension of interest. Defaults to 0 (connected components).
+    form: Representation of the Laplacian operator. Defaults to 'lo' (LinearOperator).
+
+  Attributes:
+    complex: the stored simplicial complex (ComplexLike).
 
   Methods: 
-    precompute := precomputes the signature
+    precompute: precomputes the signature
   """
   def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "lo"):
     # assert isinstance(S, ComplexLike)
+    assert isinstance(S, ComplexLike), "S must be ComplexLike"
     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
+    f, _ = spy(family)
+    assert isinstance(f[0], Callable), "Iterable family must be a callables!"
     self.complex = S
     self.family = family
+    self.p = p
     self.np = card(S, p)
     self.nq = card(S, p+1)
-    self.p = p
     self.form = form
     self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.solver = eigvalsh_solver(self.L)
+    self.solver = eigvalsh_solver(self.laplacian)
     self.delta = np.finfo(float).eps
-    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', bool), ('index', int)])
-    self.R_sgn = {}
+    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
+    self.bounds = (0, 1)
+    # self.pattern = property(lambda self: self._pattern, self.set_rect)
 
-  @property 
-  def pattern(self, R: ArrayLike):
+  @property
+  def pattern(self):
     """ Sets the sieve pattern to the union of rectangles given by _R_. """
-    assert isinstance(R, np.ndarray)
-    # if R.shape[1] == 4:
-    self.R = {}
-    self.R_sgn = {}
+    return self._pattern
   
-  def randomize_pattern(self):
-    R = sample_rect_halfplane(1, area = (0.10, 0.50), disjoint=True)  
-    # R[0,0:2]
-    # Make the pattern
+  @pattern.setter
+  def pattern(self, rect: ArrayLike = None):
+    """ Sets the sieve pattern to the union of rectangles given by _R_. """
+    if rect is None: 
+      return self._pattern 
+    else:
+      assert isinstance(rect, np.ndarray) and rect.shape[1] == 4, "Invalid rectangle set given"
+      I,J,SGN,IND = [],[],[],[]
+      for cc, (i,j,k,l) in enumerate(rect): # (x1,x2,y1,y2)
+        for pp, s, idx in zip(product([i,j], [k,l]), [-1,1,1,-1], repeat(cc, 4)):
+          I.append(pp[0])
+          J.append(pp[1])
+          SGN.append(s)
+          IND.append(idx)
+      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
+  
+  def randomize_pattern(self, n_rect: int = 1):
+    self.pattern = sample_rect_halfplane(n_rect, area = (0.025, 0.15), disjoint=True)  # must be disjoint 
 
-  def plot_pattern(self):
+  def figure_pattern(self, p = None):
+    from pbsig.vis import figure_dgm
+    p = figure_dgm() if p is None else p
+    indices = self._pattern['index']
+    for idx in np.unique(indices):
+      r = self._pattern[indices == idx]
+      x,y = np.mean(r['i']), np.mean(r['j'])
+      w,h = np.max(np.diff(np.sort(r['i']))), np.max(np.diff(np.sort(r['j'])))
+      p.rect(x,y,width=w,height=h)
+    return p
+
+  def detect_bounds():
     pass
 
-  def precompute(self, k: Any = None, w: float = 0.0):
-    if k is not None: assert k in self.R
-    keys = self.R.keys() if k is None else [k] 
-    for k in keys:
-      i,j = k 
-      out = [self.project(i,j,w,f) for f in family]
-      self.R[k] = out 
+  def presift(self, w: float = 0.0, progress: bool = True, **kwargs):
+    """Precomputes information needed to sift """
+    # from tqdm import tqdm
+    # from tqdm.notebook import tqdm
+    self.spectra = {}
+    # p1 = tqdm(zip(self.pattern['i'], self.pattern['j']), desc="Corner point", total=len(self.pattern))
+    # p2 = tqdm(self.family, desc="Direction   ", total=len(self.family), leave=False)
+    corner_it = zip(self.pattern['i'], self.pattern['j'])
+    main_it = product(self.family, corner_it)
+    main_it = progressbar(main_it, count=len(self.family)*len(self.pattern)) if progress else main_it
+    for f, (i,j) in main_it:  
+      self.spectra[(i,j)] = self.project(i=i, j=j, w=w, f=f, **kwargs)
+      # p2.reset()  
+    # p1.close()
+    # p2.close()
+      
+
+    # if k is not None: assert k in self.R
+    # keys =
+    # for k in keys:
+    #   i,j = k 
+    #   out = [self.project(i,j,w,f) for f in self.family]
+    #   self.R[k] = out 
+    pass
         
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
-    """ Projects the normalized weight Laplacian L(S,f) onto a Kyrlov subspace at point (i,j)  """
+    """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
     si = smooth_upstep(lb=i, ub=i+w)
     sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
     fp = si(np.array([f(s) for s in faces(self.complex,self.p)]))
     fq = sj(np.array([f(s) for s in faces(self.complex,self.p+1)]))
     if self.form == 'lo':
-      I = np.where(np.isclose(fp, 0), 0, 1)
+      I = np.where(np.isclose(fp,0),0,1)
       self.laplacian.set_weights(I,fq,I)
-      d = np.sqrt(pseudoinverse(self.L.degrees))
+      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
       self.laplacian.set_weights(d,fq,d)
-      return self.solver(self.L, **kwargs)
+      return self.solver(self.laplacian, **kwargs)
     else:
       raise NotImplementedError("Not implemented")
 

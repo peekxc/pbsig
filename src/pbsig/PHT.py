@@ -1,6 +1,5 @@
 # from math import comb
 import numpy as np
-import ot
 
 from math import comb
 from typing import *
@@ -10,48 +9,93 @@ from numpy.typing import ArrayLike
 from . import rotate_S1
 from .persistence import lower_star_ph_dionysus
 from .utility import progressbar, shape_center, uniform_S1, PL_path, complex2points
+from .shape import archimedean_sphere
+from splex import lower_star_weight
+from scipy.spatial.distance import pdist, squareform
+
+def stratify_sphere(d: int, n: int, **kwargs) -> np.ndarray:
+  """Partitions the d-sphere into a set of _n_ unit vectors in dimension (d+1)."""
+  assert d == 1 or d == 2, "Only d == 1 or d == 2 are implemented."
+  if d == 1:
+    V = np.array(list(uniform_S1(n)))
+    return V
+  else:
+    args = dict(nr = 5) | kwargs
+    V = archimedean_sphere(n, **args)
+    return V
+  ## TODO: do maxmin sampling, accept option to suppoirt paths
+
+def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
+  """Performs a variety of shape normalizations, such as mean-centering and scaling, with respect to a set of direction vectors _V_."""
+  u = shape_center(X, method=translate, V=V, **kwargs)
+  X = X - u 
+  if scale == "directions":
+    L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
+    return (len(V)/L)*X
+  elif scale == "diameter":
+    raise NotImplementedError("Haven't implemented yet")
+    diam = np.max(pdist(X))
+    return X 
+
+# from pbsig.utility import multigen
+def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: bool = True):
+  """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of _nd_ filter directions on the d-sphere. 
+
+  Parameters: 
+    X: point cloud in euclidean space. 
+    nd: number of directions to filter _X_ by.
+    normalize: whether to translate and scale _X_ using the direction vectors. Defaults to True.
+    nonnegative: whether to shift the filter function to ensure its non-negative. Defaults to True. 
+  Assumes a lower-star filtration is wanted. 
+  """
+  X = X if isinstance(X, np.ndarray) else np.array(X)
+  V = stratify_sphere(X.shape[1]-1, nd)
+  X = normalize_shape(X, V) if normalize else X
+  max_radius = 0.5*np.max(pdist(X)) if nonnegative else 0.0
+  # def _dt_iterable() -> Generator:
+  #   yield from (lower_star_weight((X @ np.array(v)) + max_radius) for v in V)
+  # return multigen(_dt_iterable())
+  class DT_Iterable:
+    def __init__(self, X: np.array, V: np.ndarray, offset: float = 0.0):
+      self.X = X
+      self.V = V
+      self.offset = offset
+    def __iter__(self):
+      yield from (lower_star_weight((self.X @ np.array(v)) + self.offset) for v in self.V)
+    def __len__(self) -> int:
+      return len(self.V)
+  return DT_Iterable(X, V, max_radius)
+
+
+
+
 
 ## What is the directional transfrom?
 ## Maybe it should be an iterable of filter functions (defined for every simplex!)
 # See https://arxiv.org/pdf/1912.12759.pdf
 # also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
-def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32, **kwargs):
-  from splex import lower_star_weight
-  class DT_Iterable:
-    def __init__(self, V: np.ndarray):
-      self.V = V
-    def __iter__(self):
-      yield from [lower_star_weight(X @ np.array(v)) for v in self.V]
-    def __len__(self) -> int:
-      return len(self.V)
-  if isinstance(theta, Integral) and X.shape[1] == 2:
-    V = np.array(list(uniform_S1(theta)))
-    return DT_Iterable(V)
-  elif isinstance(theta, Integral) and X.shape[1] == 3:
-    V = archimedean_sphere(theta, nr=5)
-    return DT_Iterable(V)
-  elif isinstance(theta, np.ndarray):
-    assert V.shape[1] == X.shape[1], "Invalid set of direction vectors given"
-    return DT_Iterable(V)
-  else: 
-    raise ValueError(f"Invalid theta input {theta} given")
+# def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32, preprocess: bool = True, **kwargs):
+#   """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of filter directions on the d-sphere. 
+#   """
+#   from splex import lower_star_weight
+#   class DT_Iterable:
+#     def __init__(self, V: np.ndarray):
+#       self.V = V
+#     def __iter__(self):
+#       yield from [lower_star_weight(X @ np.array(v)) for v in self.V]
+#     def __len__(self) -> int:
+#       return len(self.V)
+#   V = stratify_sphere(X.shape[1]-1, theta)
+
+#   else: 
+#     raise ValueError(f"Invalid theta input {theta} given")
 
 
   # assert isinstance(theta, Integral) or isinstance(theta, Iterable)
   # theta = np.linspace(0, 2*np.pi, theta, endpoint=False) if isinstance(theta, Integral) else np.array(theta)
 
   
-def dt_preprocess(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
-  u = shape_center(X, method=translate, V=V, **kwargs)
-  X = X - u 
-  if scale == "directions":
-    L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
-    return (nd/L)*X
-  elif scale == "diameter":
-    raise NotImplementedError("Haven't implemented yet")
-    diam = np.max(pdist(X))
-    # X.norm(axis=1)
-    return X 
+
 
 def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
   """

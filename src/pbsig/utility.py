@@ -404,6 +404,16 @@ def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
 #   new_path = Path(*connect_the_dots)
 #   return(new_path)
 
+## From: https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
+def multigen(gen_func):
+  class _multigen(object):
+    def __init__(self, *args, **kwargs):
+      self.__args = args
+      self.__kwargs = kwargs
+    def __iter__(self):
+      return gen_func(*self.__args, **self.__kwargs)
+  return _multigen
+
 def PL_path(path, k: int): 
   from svgpathtools import parse_path, Line, Path, wsvg
   arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
