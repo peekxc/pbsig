@@ -173,12 +173,20 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
   else: 
     d = (ub-lb)
     assert d > 0, "Must be positive distance"
-    def _ss(x: float):
-      if (x <= lb): return(1.0 if down else 0.0)
-      if (x >= ub): return(0.0 if down else 1.0)
-      y = (x-lb)/d 
-      return (1.0 - (3*y**2 - 2*y**3)) if down else 3*y**2 - 2*y**3
-  return(np.vectorize(_ss))
+    if down: 
+      def _ss(x: np.array):
+        x = np.where(x <= lb, 1.0, x)
+        x = np.where(x >= ub, 0.0, x)
+        y = (x-lb)/d 
+        return (1.0 - (3*y**2 - 2*y**3))
+      return _ss 
+    else:       
+      def _ss(x: float):
+        x = np.where(x <= lb, 0.0, x)
+        x = np.where(x >= ub, 1.0, x)
+        y = (x-lb)/d 
+        return 3*y**2 - 2*y**3
+      return _ss 
 
 ## Convenience wrapper
 def smooth_upstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):

@@ -716,7 +716,9 @@ class Sieve:
     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
     f, _ = spy(family)
     assert isinstance(f[0], Callable), "Iterable family must be a callables!"
-    self.complex = S
+    # self.complex = S
+    self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
+    self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
     self.family = family
     self.p = p
     self.np = card(S, p)
@@ -796,8 +798,8 @@ class Sieve:
     """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
     si = smooth_upstep(lb=i, ub=i+w)
     sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp = si(np.array([f(s) for s in faces(self.complex,self.p)]))
-    fq = sj(np.array([f(s) for s in faces(self.complex,self.p+1)]))
+    fp = si(f(self.p_faces))
+    fq = sj(f(self.q_faces))
     if self.form == 'lo':
       I = np.where(np.isclose(fp,0),0,1)
       self.laplacian.set_weights(I,fq,I)

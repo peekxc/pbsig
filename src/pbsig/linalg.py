@@ -938,9 +938,9 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
     (see https://github.com/scipy/scipy/blob/main/scipy/sparse/csgraph/_laplacian.py)
     """
     # assert isinstance(K, ComplexLike), "K must be a Simplicial Complex for now"
-    weight = (lambda s: 1.0) if weight is None else weight
+    weight = np.ones(card(S, p+1)) if weight is None else weight
     if isinstance(weight, Callable):
-      _ = weight(next(faces(S, p)))
+      _ = weight(faces(S, p))
       if not isinstance(_, Number) and len(_) == 2:
         W_LR = np.array([weight(s) for s in faces(S, p)]).astype(float)
         wpl = W_LR[:,0]

@@ -289,10 +289,10 @@ Moreover, the differentiability of our relaxation enables learning applications 
 %The fact that the proposed relaxation satisfies the same inclusion-exclusion formula obeyed by the rank invariant implies that we may recover a $(1-\epsilon)$-approximation of~\eqref{eq:mu_alpha} simply by obtaining $(1-\epsilon)$-approximations of $\mu_p$ at every corner point $(i,j) \in \partial(\mathcal{R})$. We defer discussion of the details of the computation to section~\ref{sec:computational_imp}.
 \noindent 
 \textbf{Contributions:}
-Our primary contribution is an iterative $\epsilon$-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in essentially $O(m)$ memory and $O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (see section~\ref{sec:computational_imp}). 
+Our primary contribution is an iterative $\epsilon$-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
 % TODO: explicitly mention multiplicity and betti in hyphened-text
 % exact arithmetic + empirical 
-The approximation is spectral-based and is particularly efficient when executed on parameterized families of inputs, which we generically refer to as the \emph{parameterized setting}. 
+The approximation is spectral-based and is particularly efficient when executed on parameterized families of inputs. 
 When the accuracy parameter $\epsilon$ is made small enough, both invariants are recovered exactly. 
 In deriving the approximation, we obtain families of continuous rank invariants which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. 
 Unlike existing dynamic persistence algorithms, our approach is simple in that it requires no complicated data structures or maintenance procedures to implement. 
@@ -1212,7 +1212,7 @@ L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
 	\end{cases}
 \end{equation}
 %It is well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$~\cite{newman2001laplacian}. 
-Moreover, as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed using the path-connected relation $i \sim j$, shown below:
+Moreover, as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed using the path-connected relation $i \sim j$. They are given as:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &

@@ -41,12 +41,16 @@ def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions",
 def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: bool = True):
   """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of _nd_ filter directions on the d-sphere. 
 
+  Assumes a lower-star filtration is wanted. 
+
   Parameters: 
     X: point cloud in euclidean space. 
     nd: number of directions to filter _X_ by.
     normalize: whether to translate and scale _X_ using the direction vectors. Defaults to True.
     nonnegative: whether to shift the filter function to ensure its non-negative. Defaults to True. 
-  Assumes a lower-star filtration is wanted. 
+  
+  Returns: 
+    Iterable of real-valued weight functions
   """
   X = X if isinstance(X, np.ndarray) else np.array(X)
   V = stratify_sphere(X.shape[1]-1, nd)
