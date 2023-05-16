@@ -170,7 +170,7 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
   return _huber if x is None else _huber(x)
 
 
-class PsdSolver():
+class PsdSolver:
   def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
     assert solver is not None, "Invalid solver"
     self._rank_bound = lambda A: rank_bound(A, upper=True)
@@ -372,7 +372,13 @@ def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple 
 
 def pseudoinverse(x: ArrayLike, **kwargs) -> np.ndarray:
   x = np.array(x) if not(isinstance(x, np.ndarray)) else x
-  return np.linalg.pinv(x) if x.ndim == 2 else np.reciprocal(x, where=~np.isclose(x, 0, **kwargs))
+  if x.ndim == 2:
+    return np.linalg.pinv(x)
+  else:
+    close_to_zero = np.isclose(x, 0.0, **kwargs)
+    x = np.reciprocal(x, where=~close_to_zero)
+    x[close_to_zero] = 0.0
+    return x
   # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
   
   # if isinstance(x, np.ndarray):
@@ -593,7 +599,9 @@ def diagonal(A: Union[ArrayLike, LinearOperator]):
 ## Returns number of largest eigenvalues needed to capture t% of the spectrum 
 def trace_threshold(A, pp=0.80) -> int:
   assert pp >= 0.0 and pp <= 1.0, "Proportion must be in [0,1]"
-  d = diagonal(A)
+  if pp == 0.0: return 0
+  d = np.array(diagonal(A))
+  d = d[d > 1e-15]
   ev_cs = np.cumsum(d)
   if ev_cs[-1] == 0.0: return 0
   thresh_ind = np.flatnonzero(ev_cs/ev_cs[-1] >= pp)[0] # index needed to obtain 80% of the spectrum

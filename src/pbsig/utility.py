@@ -121,11 +121,12 @@ def partition_envelope(f: Callable, threshold: float, interval: Tuple = (0, 1), 
   return(intervals)
   
 ## From: https://stackoverflow.com/questions/3160699/python-progress-bar
-def progressbar(it, count=None, prefix="", size=60, out=sys.stdout, newline: bool = True): # Python3.6+
+def progressbar(it, count=None, prefix="", size=60, out=sys.stdout, f: Callable = None, newline: bool = True): # Python3.6+
   count = len(it) if count == None else count 
+  f = (lambda j: "") if f is None else f
   def show(j):
     x = int(size*j/count)
-    print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count}", end='\r', file=out, flush=True)
+    print(f"{prefix}[{u'█'*x}{('.'*(size-x))}] {j}/{count}" + f(j), end='\r', file=out, flush=True)
   show(0)
   for i, item in enumerate(it):
     yield item
@@ -167,24 +168,22 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
   assert ub >= lb, "Invalid input"
   if lb == ub:
     if down: 
-      def _ss(x: float): return 1.0 if x <= lb else 0.0
+      def _ss(x: float): return np.where(x <= lb, 1.0, 0.0)
+      return _ss 
     else:
-      def _ss(x: float): return 0.0 if x <= lb else 1.0
+      def _ss(x: float): return np.where(x <= lb, 0.0, 1.0)
+      return _ss 
   else: 
     d = (ub-lb)
     assert d > 0, "Must be positive distance"
     if down: 
       def _ss(x: np.array):
-        x = np.where(x <= lb, 1.0, x)
-        x = np.where(x >= ub, 0.0, x)
-        y = (x-lb)/d 
+        y = np.minimum(np.maximum((x-lb)/d, 0), 1.0)
         return (1.0 - (3*y**2 - 2*y**3))
       return _ss 
     else:       
       def _ss(x: float):
-        x = np.where(x <= lb, 0.0, x)
-        x = np.where(x >= ub, 1.0, x)
-        y = (x-lb)/d 
+        y = np.minimum(np.maximum((x-lb)/d, 0), 1.0)
         return 3*y**2 - 2*y**3
       return _ss 
 

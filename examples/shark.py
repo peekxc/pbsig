@@ -3,6 +3,7 @@ import trimesh
 from splex import *
 from pbsig.betti import Sieve
 from pbsig.pht import parameterize_dt
+from pbsig.linalg import *
 
 mesh = trimesh.load("/Users/mpiekenbrock/Downloads/Shark002.blend/frames/sharkfixed46.obj", force='mesh')
 mesh.show()
@@ -16,35 +17,32 @@ F = F[np.lexsort(np.rot90(F)),:]
 S = simplicial_complex(F)
 DT = parameterize_dt(np.array(mesh.vertices), 10, nonnegative=False)
 
-## Create the sieve
+## Create the sieve with a random pattern 
 sieve = Sieve(S, DT)
 sieve.randomize_pattern(2)
+
+## Choose a sensible tolerance and sift through the family
 sieve.solver = eigvalsh_solver(sieve.laplacian, tolerance=1e-5)
+sieve.sift(progress=True, k=10) # most expensive line
+# sieve.sift(pp=0.05)
+
+## Collect the results 
+sieve.summarize()
 
 
+
+
+from scipy.sparse.linalg import eigsh
 import line_profiler
 profile = line_profiler.LineProfiler()
 profile.add_function(sieve.presift)
 profile.add_function(sieve.project)
 profile.add_function(sieve.solver.__call__)
+profile.add_function(eigsh)
 profile.enable_by_count()
 sieve.presift(progress=True, k=10)
 profile.print_stats(output_unit=1e-3, stripzeros=True)
 
-
-## Benchmark construction time 
-import timeit
-timeit.timeit(lambda: simplicial_complex(F, form="tree"), number=10)
-timeit.timeit(lambda: simplicial_complex(F, form="set"), number=10)
-timeit.timeit(lambda: simplicial_complex(F, form="rank"), number=10)
-
-S1, S2, S3 =  simplicial_complex(F, form="set"),  simplicial_complex(F, form="rank"),  simplicial_complex(F, form="tree")
-timeit.timeit(lambda: [max(s) for s in S1], number=10)
-timeit.timeit(lambda: [max(s) for s in S2], number=10)
-timeit.timeit(lambda: [max(s) for s in S3], number=10)
-
-p = sieve.figure_pattern()
-show(p)
 
 sieve.presift()
 

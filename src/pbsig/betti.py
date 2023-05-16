@@ -9,7 +9,8 @@ from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
 from splex.geometry import flag_weight
 from more_itertools import spy 
-
+# from tqdm import tqdm
+# from tqdm.notebook import tqdm
 
 def intervals_intersect(i1: tuple, i2: tuple) -> bool: 
   """Detects whether two intervals of the form (x1,x2) intersect."""
@@ -716,6 +717,7 @@ class Sieve:
     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
     f, _ = spy(family)
     assert isinstance(f[0], Callable), "Iterable family must be a callables!"
+    assert isinstance(family, Sized), "The family of iterables must be sized"
     # self.complex = S
     self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
     self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
@@ -727,7 +729,7 @@ class Sieve:
     self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
     self.solver = eigvalsh_solver(self.laplacian)
     self.delta = np.finfo(float).eps
-    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
+    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int), ('value', float)])
     self.bounds = (0, 1)
     # self.pattern = property(lambda self: self._pattern, self.set_rect)
 
@@ -750,7 +752,7 @@ class Sieve:
           J.append(pp[1])
           SGN.append(s)
           IND.append(idx)
-      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
+      self._pattern = np.fromiter(zip(I,J,SGN,IND, np.zeros(len(I))), dtype=self._pattern.dtype)
   
   def randomize_pattern(self, n_rect: int = 1):
     self.pattern = sample_rect_halfplane(n_rect, area = (0.025, 0.15), disjoint=True)  # must be disjoint 
@@ -769,31 +771,51 @@ class Sieve:
   def detect_bounds():
     pass
 
-  def presift(self, w: float = 0.0, progress: bool = True, **kwargs):
-    """Precomputes information needed to sift """
-    # from tqdm import tqdm
-    # from tqdm.notebook import tqdm
-    self.spectra = {}
-    # p1 = tqdm(zip(self.pattern['i'], self.pattern['j']), desc="Corner point", total=len(self.pattern))
-    # p2 = tqdm(self.family, desc="Direction   ", total=len(self.family), leave=False)
+  def sift(self, w: float = 0.0, progress: bool = True, **kwargs):
+    """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
+    
+    ## Setup the main iterator
+    n_pts, n_family = len(self.pattern), len(self.family)
+    pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
     corner_it = zip(self.pattern['i'], self.pattern['j'])
-    main_it = product(self.family, corner_it)
-    main_it = progressbar(main_it, count=len(self.family)*len(self.pattern)) if progress else main_it
-    for f, (i,j) in main_it:  
-      self.spectra[(i,j)] = self.project(i=i, j=j, w=w, f=f, **kwargs)
-      # p2.reset()  
-    # p1.close()
-    # p2.close()
-      
+    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
 
-    # if k is not None: assert k in self.R
-    # keys =
-    # for k in keys:
-    #   i,j = k 
-    #   out = [self.project(i,j,w,f) for f in self.family]
-    #   self.R[k] = out 
-    pass
-        
+    ## Sets up progress bar, if requested 
+    if progress: 
+      status_f = lambda j: f" (family: {(j % n_family)}/{n_family}, corners: {int(np.floor(j / n_family))}/{n_pts})"
+      main_it = progressbar(main_it, count=n_pts * n_family, f=status_f)
+    
+    ## Setup the default values in the dict
+    import copy
+    default_val = {
+      "eigenvalues" : array('d'),
+      "eigenvectors" : None, 
+      "lengths" : array('I')
+    }
+    self.spectra = { pt_ind : copy.deepcopy(default_val) for pt_ind in pt_indices }
+
+    ## Projects each point (i,j) of the sieve onto a Krylov subspace
+    for ((i,j), f), pt_ind in main_it:  
+      ew = self.project(i=i, j=j, w=w, f=f, **kwargs)
+      self.spectra[pt_ind]['eigenvalues'].extend(ew)
+      self.spectra[pt_ind]['lengths'].extend([len(ew)])
+
+  ## TODO: add ability to handle not just length-dependent function, but pure elementwise
+  def summarize(self, f: Callable = None, **kwargs) -> ArrayLike:
+    f = np.sum if f is None else f
+    assert isinstance(f, Callable), "reduce function must be Callable"
+    assert f(np.zeros(10)) == 0.0, "reduction function must map [0,...,0] -> 0"
+    n_pts, n_family = len(self.pattern), len(self.family)
+    values = np.zeros(shape=(n_pts, n_family))
+    for ii,d in enumerate(self.spectra.values()):
+      ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+      for jj,ew in enumerate(ew_split):
+        values[ii,jj] = f(ew)
+    n_summaries = len(np.unique(self._pattern['index']))
+    summary = np.zeros(shape=(n_summaries, n_family))
+    np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values)
+    return summary
+    
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
     """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
     si = smooth_upstep(lb=i, ub=i+w)
@@ -804,10 +826,13 @@ class Sieve:
       I = np.where(np.isclose(fp,0),0,1)
       self.laplacian.set_weights(I,fq,I)
       d = np.sqrt(pseudoinverse(self.laplacian.degrees))
+      if any(np.isnan(d)):
+        nan_ind = np.flatnonzero(np.isnan(d))
+        raise ValueError(f"Failed to project ({i:.5f},{j:.5f}); nan detected in pseudo-inverse of {self.laplacian.degrees[nan_ind[0]]}.")
       self.laplacian.set_weights(d,fq,d)
       return self.solver(self.laplacian, **kwargs)
     else:
-      raise NotImplementedError("Not implemented")
+      raise NotImplementedError("Array form of projection not implemented")
 
   
   def partition_rect():
@@ -824,8 +849,8 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collectio
   Each r = (a,b,c,d) should satisfy a < b <= c < d so as to parameterize a box [a,b] x [c,d] in the upper half-plane. 
   
   Specialization/overloads: 
-    * Use (-inf,a,a,inf) to calculate the Betti number at index a
-    * Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
+    - Use (-inf,a,a,inf) to calculate the Betti number at index a
+    - Use (-inf,a,b,inf) to calculate the persistent Betti number at (a,b), for any a < b 
 
   Parameters: 
     F := Iterable of vertex functions. Each item should be a collection of length 'n'.
