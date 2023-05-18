@@ -768,6 +768,9 @@ A few such properties are recorded below.
 	\end{enumerate}
 \end{proposition}
 \noindent Note that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$. As we will discuss in section~\ref{sec:laplacian_theory}, this is sufficient for our purposes here. 
+%\begin{remark}
+%	% TODO: Gauge function remark
+%\end{remark}
 \\
 \\
 \noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
@@ -917,15 +920,15 @@ Towards bounding the spectra of $L_p^{\text{up}}$, Horek and Jost~\cite{} propos
 \end{equation}
 Substituting the weights of the $p$-simplices in this way is equivalent to mapping $W_p \mapsto \mathcal{D}_p$ where $\mathcal{D}_p$ is the \emph{diagonal degree matrix}. The corresponding substitution in~\eqref{eq:l_up} yields the \emph{weighted combinatorial normalized Laplacian} (up-)operator:
 \begin{align*}\label{eq:normalized_up_lap}
-	 \mathcal{L}_p^{\text{up}}(K, w) &= (\mathcal{D}_p)^{+/2} \partial_p W_{p+1} \partial_p^T (\mathcal{D}_p)^{+/2} \\
-	 &= I_n(w) - \mathcal{A}_p^{\text{up}}(w) \numberthis
+	 \mathcal{L}_p^{\text{up}} = (\mathcal{D}_p)^{+/2} \partial_p W_{p+1} \partial_p^T (\mathcal{D}_p)^{+/2} = \mathcal{I}_n - \mathcal{A}_p^{\text{up}} \numberthis
 \end{align*}
-where $\mathcal{A}_p^{\text{up}}(w)$ is a weighted adjacency matrix, and $I_n$ is the identity matrix with $I(\tau) = \mathrm{sign}(w(\tau))$ (see Section~\ref{sec:comb_lap}). The primary benefit of this normalization is that it guarantees $\Lambda( \mathcal{L}_p^{\text{up}}) \subseteq [0,p+2]$ for any choice of weight function, from which one obtains several useful implications, such as tight bounds on the spectral norm~\cite{}. 
+where $\mathcal{A}_p^{\text{up}}$ is a weighted adjacency matrix, and $\mathcal{I}_n$ is the identity matrix with $\mathcal{I}(\tau) = \mathrm{sign}(w(\tau))$ (see Section~\ref{sec:comb_lap}). The primary benefit of this normalization is that it guarantees $\Lambda( \mathcal{L}_p^{\text{up}}) \subseteq [0,p+2]$ for any choice of weight function, from which one obtains several useful implications, such as tight bounds on the spectral norm~\cite{}. 
 The same results holds for up-, down-, and combinatorial Laplacians.
 Moreover, as we will show in a subsequent section, one obtains stability properties with degree-normalization not shared otherwise. 
 
 \begin{remark}
-	Compared to~\eqref{eq:l_up}, is it worth remarking that one important quality lost is that $\mathcal{L}_p^{\text{up}}$ is diagonal dominance. %may no longer be diagonally dominant (though it is PSD). 
+	Compared to~\eqref{eq:l_up}, is it worth remarking that one important quality lost in preferring $\mathcal{L}_p^{\text{up}}$ over $L_p^{\textrm{up}}$ is diagonal dominance. 
+	%may no longer be diagonally dominant (though it is PSD). 
 \end{remark}
 
 For all the reasons given above, we exclusively consider the normalized combinatorial Laplacian operator for the remainder of the paper. Moreover, using the spectral connection between boundary and Laplacian operators, we will exclusively consider spectral rank invariants of the form: 
@@ -992,11 +995,12 @@ For all the reasons given above, we exclusively consider the normalized combinat
 % Laplacian Energy
 We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants. 
 For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
-$$ \lVert \Phi(\mathcal{L}_p^{\ast}) \rVert_\ast : \Delta_+ \mapsto \mathbb{R}$$
-where we use the notation $\mathcal{L}_p^{i,j}$ to indicate  
+$$ \lVert \Phi(\mathcal{L}_p^{\ast}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
+where we use the notation $\mathcal{L}_p^{i,j}$ to indicate...
 We have, as its very basic properties: 
 \begin{enumerate}
-	\item $\lVert \Phi(\mathcal{L}_p^{\ast})(K) \rVert_\ast \geq 0$, with equality when $K^p_i \cap K^{p+1}_j = \emptyset$
+	\item $\lVert \Phi(\mathcal{L}_p^{\ast})(K) \rVert_\ast \geq 0$, with equality when $i = j$.
+	%$K^p_i \cap K^{(p+1)}_j = \emptyset$
 	\item If $K$ is the union of disjoint subcomplexes $K_1, K_2, \dots, K_c$, then $\lVert L_p^\ast(K)\rVert_{\Phi} = \sum\limits_{i=1}^c \lVert L_p^\ast(K_i)\rVert_{\Phi}$ 
 	\item If $\tau \in K^p$ does not have a proper coface $\sigma \in K^{p+1}$, then $\lVert L_p^{\text{up}}(K \setminus \tau)\rVert_{\Phi} =\lVert L_p^{\text{up}}(K)\rVert_{\Phi}$. %Similarly, 
 \end{enumerate}
@@ -1111,7 +1115,7 @@ In the following sections, we (1) recall the method of minimized iterations in s
 Computing eigen-decompositions $A = V \Lambda V^T$ of symmetric matrices $A \in S_n$ generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
 While the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using traditional (i.e. non-Strassen) matrix operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
-Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As the Lanczos method is the central tool we use to convert the computation of~\ref{def:smooth_mu} into an iterative procedure, we review it below. 
+Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As it is the central tool we use to convert the spectral rank computation into an iterative procedure, we review it below. 
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -1169,12 +1173,12 @@ where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \al
 Equation~\eqref{eq:three_term_rec} is a variable-coefficient second-order linear difference equation, and it is a known fact that such equations have unique solutions: if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined. 
 % One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. 
 The sequential process that iteratively builds $T_j$ via the recurrence from~\eqref{eq:three_term_rec} is called the \emph{Lanczos iteration}. 
-Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we have solved the symmetric eigenvalue problem~\eqref{eq:eigen_decomp}: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
+Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and we have solved the symmetric eigenvalue problem: $\Lambda(T_j) = \Lambda(A)$, $j = \mathrm{rank}(A)$, and $T_j$ is orthogonally similar to $A$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
- The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' methods---obtaining an eigen-decomposition of a symmetric real matrix $A$ requires only a matrix-vector product operator $v \mapsto Av$. 
-Indeed, since $A$ is not modified during the computation, the entire iteration may be carried out without explicitly storing $A$ in memory. 
+ The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' spectral methods---the only aspect of the computation that depends on $A$ is the matrix-vector product operator $v \mapsto Av$. 
+Indeed, as $A$ is not modified during the computation, the iteration may be executed without explicitly storing $A$ in memory. 
 Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, justifying the following proposition:
 \begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
@@ -1263,7 +1267,7 @@ Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass 
 \begin{proposition}
 	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists an indexing function $h: K^p \to [n]$ with $O(k)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the product: 
 	\begin{equation}
-		L_p^{\mathrm{up}} x = (W_p \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p)x
+		x \mapsto \langle \; L_p, x	\; \rangle
 	\end{equation}
 	in $O(mk(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
@@ -1277,6 +1281,7 @@ As more concrete statements about the computation require moving beyond asymptot
 %\subsection{Computing diagrams}\label{sec:pers_alg}
 \begin{remark}
 	The standard reduction-family of algorithms computes the $p$-th persistent homology of a simplicial complex $K$ of size $\lvert N \rvert = N$ typically exhibit $O(N^3)$ time and $O(N^2)$ storage complexity, respectively. In fact, these bounds are tight $\Theta(N^3)$ on certain pathological inputs~\cite{}. 
+	As a persistence diagram contains at most $N/2 = O(N)$ points,  
 	%In practice, the matrices involved in the computation are much 
 	
 \end{remark}
