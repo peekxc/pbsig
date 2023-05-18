@@ -759,7 +759,7 @@ A few such properties are recorded below.
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
-		$$ 0 \leq r - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c $$
+		$$ 0 \leq r - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(r, \nu, p) $$
 		where $c$ is a positive constant that depends only on $r$, $\nu$, and $p$. 
 		\item $\lVert \Phi_\epsilon(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{The notion of semismoothness here refers to the existence certain directional derivatives in the limit as $\epsilon \to 0^+$, see~\cite{bi2013approximation, bhatia2013matrix} for more details.} on $\mathbb{R}^{n \times m}$.
 %		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
@@ -817,7 +817,7 @@ Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satis
 \end{equation}
 where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
 \end{definition}
-\noindent Since the sum $f + g$ of two Lipshitz functions $f$ and $g$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
+\noindent Since the sum of two Lipshitz functions $g$ and $h$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever the filter function $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
 %
@@ -922,12 +922,22 @@ Substituting the weights of the $p$-simplices in this way is equivalent to mappi
 \end{align*}
 where $\mathcal{A}_p^{\text{up}}(w)$ is a weighted adjacency matrix, and $I_n$ is the identity matrix with $I(\tau) = \mathrm{sign}(w(\tau))$ (see Section~\ref{sec:comb_lap}). The primary benefit of this normalization is that it guarantees $\Lambda( \mathcal{L}_p^{\text{up}}) \subseteq [0,p+2]$ for any choice of weight function, from which one obtains several useful implications, such as tight bounds on the spectral norm~\cite{}. 
 The same results holds for up-, down-, and combinatorial Laplacians.
-Moreover, as we will show in a subsequent section, one obtains stability properties with degree-normalization not shared otherwise. For these reasons, we exclusively consider the normalized combinatorial Laplacian operator in this effort.  
+Moreover, as we will show in a subsequent section, one obtains stability properties with degree-normalization not shared otherwise. 
+
 \begin{remark}
 	Compared to~\eqref{eq:l_up}, is it worth remarking that one important quality lost is that $\mathcal{L}_p^{\text{up}}$ is diagonal dominance. %may no longer be diagonally dominant (though it is PSD). 
 \end{remark}
 
-
+For all the reasons given above, we exclusively consider the normalized combinatorial Laplacian operator for the remainder of the paper. Moreover, using the spectral connection between boundary and Laplacian operators, we will exclusively consider spectral rank invariants of the form: 
+ 
+%Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized  \emph{spectral multiplicity} of $R$ as:
+%	\begin{equation}\label{eq:mu_cont_lap}
+%	\hat{\mu}_{p,\epsilon}^R(\alpha) = 
+%		 \lVert \Phi_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
+%	\end{equation}
 
 
 %Note that, as with the other operators mentioned, the nullity is not affected by this normalization---the rank function is invariant under scalar products with identical sign.   
@@ -976,21 +986,20 @@ Moreover, as we will show in a subsequent section, one obtains stability propert
 %\end{align*}
 %Note that $\tilde{L}_p^{\mathrm{up}}$ is not be symmetric matrix in general. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
 
+
 \subsection{Properties \& Interpretations}
 \subsubsection*{Basic Properties}
 % Laplacian Energy
 We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants. 
 For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
 $$ \lVert \Phi(\mathcal{L}_p^{\ast}) \rVert_\ast : \Delta_+ \mapsto \mathbb{R}$$
+where we use the notation $\mathcal{L}_p^{i,j}$ to indicate  
 We have, as its very basic properties: 
 \begin{enumerate}
 	\item $\lVert \Phi(\mathcal{L}_p^{\ast})(K) \rVert_\ast \geq 0$, with equality when $K^p_i \cap K^{p+1}_j = \emptyset$
-	\item If $K$ has components $K_1, K_2, \dots, K_c$, then $\lVert L_p^\ast(K)\rVert_{\Phi} = \sum\limits_{i=1}^c \lVert L_p^\ast(K_i)\rVert_{\Phi}$ 
-	\item $p$-simplices $\tau \in K^p$ that are \emph{isolated}, i.e. do not have a proper coface $\sigma \in K^{p+1}$, then $\lVert L_p^{\text{up}}(K \setminus \tau)\rVert_{\Phi} =\lVert L_p^{\text{up}}(K)\rVert_{\Phi}$. %Similarly, 
+	\item If $K$ is the union of disjoint subcomplexes $K_1, K_2, \dots, K_c$, then $\lVert L_p^\ast(K)\rVert_{\Phi} = \sum\limits_{i=1}^c \lVert L_p^\ast(K_i)\rVert_{\Phi}$ 
+	\item If $\tau \in K^p$ does not have a proper coface $\sigma \in K^{p+1}$, then $\lVert L_p^{\text{up}}(K \setminus \tau)\rVert_{\Phi} =\lVert L_p^{\text{up}}(K)\rVert_{\Phi}$. %Similarly, 
 \end{enumerate}
-Ever since Kirchoff's matrix tree theorem, which relates any cofactor of the graph Laplacian to the number of spanning trees of a graph.... functions summarizing the spectra of Laplacian operators with a scalar value have found many applications, from quantifying hierarchical image complexities, to summarizing electrical resistance between vertices in a circuit network, to indicating the melting or boiling point of certain polycyclic aromatic hydrocarbons in chemical applications~\cite{}.
-More generally, the sum of the largest $k$ eigenvalues of $L$ is related to the clique number of the graph,  as a measure of complexity.
-is often termed the \emph{Laplacian energy}, has used  % Fiedler 
 
 \begin{proposition}
 Given the, the spectral rank invariants $\hat{\mu}_{p,\epsilon}^R$, $\hat{\beta}_{p,\epsilon}^{i,j}$ satisfy: 
@@ -1081,9 +1090,8 @@ This can be seen directly by~\eqref{eq:tikhonov_soln} as well, as increasing $\e
 \section{Computational Implications}\label{sec:computational_imp}
 %\subsection*{An quadratic-time rank computation}
 In this section, we discuss computational advantages that stem from replacing the counting invariants with their spectral-based approximations from definition~\ref{def:smooth_mu}.
-As the spectral relaxations are defined completely in terms of singular values of boundary operators---which can be obtained are the square roots of eigenvalues of an appropriate Laplacian operator---we focus on spectral methods specialized for symmetric positive semi-definite operators.
-In particular, we focus on \emph{iterative} methods which only require matrix-vector products as their primary operations for estimating the spectrum, as this enables us to decouple the simplicial representation of the  Laplacian operator from its explicit matrix representation.
-
+As the singular values of boundary operators can be obtained are the square roots of eigenvalues of an appropriate Laplacian operator, we focus on spectral methods specialized for symmetric positive semi-definite operators.
+Moreover, we focus on \emph{iterative} methods which only require matrix-vector products as their primary operations for estimating the spectrum, as this enables us to decouple any simplicial-based representation of the Laplacian operator from an explicit matrix representation.
 In the following sections, we (1) recall the method of minimized iterations in section~\ref{sec:lanczos_it}, (2) explore the efficiencies and subtleties of simplicial Laplacian $\mathtt{matvec}$ operators, and (3) discuss the modern advances to estimating spectral quantities of combinatorial Laplacians efficiently, such as preconditioning methods and convergence rates. 
 
 %In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
@@ -1091,19 +1099,19 @@ In the following sections, we (1) recall the method of minimized iterations in s
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection{The Lanczos iteration}\label{sec:lanczos_it}
 % Summarized from "The Lanczos Method: Evolution and Application" 
-For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric, each eigenvalue $\lambda$ satisfying $A v = \lambda v$ is real-valued and each pair of eigenvectors $v, v' \in \mathbb{R}^n$ satisfying $\lambda \neq \lambda'$ is orthogonal.  
-% https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
-Thus, we may reveal the spectrum $\Lambda(A)$ of $A$ via orthogonal diagonalization:
-%by constructing an orthonormal eigenvector basis $V$ of $A$,
-\begin{equation}\label{eq:eigen_decomp}
-	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
-\end{equation}
-% Insert similarity transforms  
-Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
-Computing the eigen decompositions of symmetric matrices generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
+%For a real, square matrix $A$ of order $n$, the quadratic form $x^T A x$ defines a continuous real-valued function of $x \in \mathbb{R}^n$. When $A$ is symmetric, each eigenvalue $\lambda$ satisfying $A v = \lambda v$ is real-valued and each pair of eigenvectors $v, v' \in \mathbb{R}^n$ satisfying $\lambda \neq \lambda'$ is orthogonal.  
+%% https://netlib.org/lanczos/vol2/Chp_2_RealSymmetric.pdf
+%Thus, we may reveal the spectrum $\Lambda(A)$ of $A$ via orthogonal diagonalization:
+%%by constructing an orthonormal eigenvector basis $V$ of $A$,
+%\begin{equation}\label{eq:eigen_decomp}
+%	A = V \Lambda V^T = \sum\limits_{i=1}^n \lambda_i v_i v_i^T
+%\end{equation}
+%% Insert similarity transforms  
+%Factorizing $A$ as in~\eqref{eq:eigen_decomp} is known as the \emph{symmetric eigenvalue problem}. 
+Computing eigen-decompositions $A = V \Lambda V^T$ of symmetric matrices $A \in S_n$ generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
-While the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using non-Strassen-like operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
-Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As it is the key iterative method we exploit in this effort, we review it below. 
+While the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using traditional (i.e. non-Strassen) matrix operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
+Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As the Lanczos method is the central tool we use to convert the computation of~\ref{def:smooth_mu} into an iterative procedure, we review it below. 
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -1172,11 +1180,11 @@ Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies each 
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
 \end{proposition}
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
-Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method.
-\begin{corollary}\label{cor:finite_arith_lanczos}
-	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
-\end{corollary}
-\noindent
+Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method: any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic must require $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
+%\begin{corollary}\label{cor:finite_arith_lanczos}
+%	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
+%\end{corollary}
+
 In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the methods convergence rate towards an invariant subspace, but in fact they muddle the termination condition entirely. 
 As a result, several decades of research have been dedicated to developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or space complexities by non-trivial factors. 
 As these extensions are complex, multifaceted, and beyond the scope of the present work, we defer their discussion to the appendix~\ref{subsec:rounding} and refer the curious reader to~\cite{golub2013matrix, parlett1994we, simon1984analysis} and references therein for an overview. 
@@ -1266,8 +1274,13 @@ As more concrete statements about the computation require moving beyond asymptot
 
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
 
-\subsection{Computing diagrams}\label{sec:pers_alg}
-The direct methods to computing a $p$-th persistence diagram of a simplicial complex $K$ of size $\lvert N \rvert = N$ typically have complexity $O(N^3)$ time and $O(N^2)$ storage complexity, respectively. In fact, these bounds are tight $\Theta(N^3)$ on certain pathological inputs~\cite{}; in practice the matrices involved in the computation are much 
+%\subsection{Computing diagrams}\label{sec:pers_alg}
+\begin{remark}
+	The standard reduction-family of algorithms computes the $p$-th persistent homology of a simplicial complex $K$ of size $\lvert N \rvert = N$ typically exhibit $O(N^3)$ time and $O(N^2)$ storage complexity, respectively. In fact, these bounds are tight $\Theta(N^3)$ on certain pathological inputs~\cite{}. 
+	%In practice, the matrices involved in the computation are much 
+	
+\end{remark}
+
 
 
 %Since we are free to choose the permutation of $\hat{L}_P^{\text{up}}$ ahead of time, we may order the $p+1$ simplices $\{\sigma\}$ in such a way as to minimize the latency associated with memory access to $K^{p+1}$.
@@ -1531,7 +1544,11 @@ The main theorem in~\cite{} is that associating a persistence diagram, or even a
 The former question is synonymous with choosing the invariance model in the GH framework, which seems to be highly domain specific. 
 % TODO: template functions
  In the latter case, though we know the number of directions is bounded~\cite{}, the bound is simply too high to be of any practical use. While there are efficient algorithms for both the ECC and persistence computations in static settings, the state of the art in parameterized settings is non-trivial and ongoing research area.
- 
+
+\subsection*{Expanded Background}
+\textbf{Laplacian Energy:} Ever since Kirchoff's matrix tree theorem, which relates any cofactor of the graph Laplacian to the number of spanning trees of a graph.... functions summarizing the spectra of Laplacian operators with a scalar value have found many applications, from quantifying hierarchical image complexities, to summarizing electrical resistance between vertices in a circuit network, to indicating the melting or boiling point of certain polycyclic aromatic hydrocarbons in chemical applications~\cite{}.
+More generally, the sum of the largest $k$ eigenvalues of $L$ is related to the clique number of the graph,  as a measure of complexity.
+is often termed the \emph{Laplacian energy}, has used  % Fiedler  
 
 \subsection*{Letters}
 As topological invariants, Betti numbers are invariant under homeomorphisms: any pair of filtrations $(K, f)$ and $(K', f')$ that are homotopy equivalent have identical homology classes and thus isomorphic persistence diagrams. 

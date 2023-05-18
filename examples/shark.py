@@ -62,18 +62,23 @@ import pyrender
 # os.environ['PYOPENGL_PLATFORM'] = 'pyglet'
 
 mesh = pyrender.Mesh.from_trimesh(trimesh.load(family.files[0], force='mesh'))
-r = pyrender.OffscreenRenderer(viewport_width=640,viewport_height=480,point_size=1.0)
 scene = pyrender.Scene(ambient_light=[0.02, 0.02, 0.02], bg_color=[1.0, 1.0, 1.0])
 scene.add(mesh, pose=np.eye(4))
 cam = pyrender.PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=1.414)
 scene.add(cam)
-color, depth = r.render(scene)
+pyrender.Viewer(scene)
+#color, depth = r.render(scene)
+
+r = pyrender.OffscreenRenderer(viewport_width=640,viewport_height=480,point_size=1.0)
+
+
 
 import bokeh 
 from bokeh.plotting import figure, show 
 img = color.view(dtype=np.uint8).reshape((480,640,3)) 
 p = figure()
-p.image_rgba(image=np.ravel(img), x=[0], y=[0], dw=[10], dh=[10])
+m = prod(img.shape)
+p.image_rgba(image=np.ravel(img), x=[0]*m, y=[0]*m, dw=[10]*m, dh=[10]*m)
 show(p)
 # light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=2.0)
 # 

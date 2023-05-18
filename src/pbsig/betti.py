@@ -10,6 +10,7 @@ from .utility import progressbar, smooth_upstep, smooth_dnstep
 from splex.geometry import flag_weight
 from itertools import *
 from more_itertools import spy 
+import copy
 # from tqdm import tqdm
 # from tqdm.notebook import tqdm
 
@@ -733,6 +734,7 @@ class Sieve:
     self.bounds = (0, 1) # bounds on the family? 
     self.family = family
     # self.pattern = property(lambda self: self._pattern, self.set_rect)
+    self._default_val = { "eigenvalues" : array('d'), "lengths" : array('I') }
 
   # @property
   # def family(self): 
@@ -808,12 +810,7 @@ class Sieve:
       main_it = progressbar(main_it, count=n_pts * n_family, f=status_f)
     
     ## Setup the default values in the dict
-    import copy
-    default_val = {
-      "eigenvalues" : array('d'),
-      "lengths" : array('I')
-    }
-    self.spectra = { pt_ind : copy.deepcopy(default_val) for pt_ind in pt_indices }
+    self.spectra = { pt_ind : copy.deepcopy(self._default_val) for pt_ind in pt_indices }
 
     ## Projects each point (i,j) of the sieve onto a Krylov subspace
     for ((i,j), f), pt_ind in main_it:  
@@ -821,7 +818,7 @@ class Sieve:
       self.spectra[pt_ind]['eigenvalues'].extend(ew)
       self.spectra[pt_ind]['lengths'].extend([len(ew)])
 
-  ## TODO: add ability to handle not just length-dependent function, but pure elementwise
+  ## TODO: add ability to handle not just length-dependent function, but pure elementwise ufunc
   def summarize(self, f: Callable = None, **kwargs) -> ArrayLike:
     f = np.sum if f is None else f
     assert isinstance(f, Callable), "reduce function must be Callable"

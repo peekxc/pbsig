@@ -36,6 +36,8 @@ def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions",
     raise NotImplementedError("Haven't implemented yet")
     diam = np.max(pdist(X))
     return X 
+  else: 
+    raise ValueError(f"Invalid scale given '{scale}'")
 
 # from pbsig.utility import multigen
 def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: bool = True):
