@@ -60,11 +60,11 @@ def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: 
   #   yield from (lower_star_weight((X @ np.array(v)) + max_radius) for v in V)
   # return multigen(_dt_iterable())
   class DT_Iterable:
-    def __init__(self, X: np.array, V: np.ndarray, offset: float = 0.0):
+    def __init__(self, X: np.array, V: np.ndarray, offset: float = 0.0) -> None:
       self.X = X
       self.V = V
       self.offset = offset
-    def __iter__(self):
+    def __iter__(self) -> Callable:
       yield from (lower_star_weight((self.X @ np.array(v)) + self.offset) for v in self.V)
     def __len__(self) -> int:
       return len(self.V)

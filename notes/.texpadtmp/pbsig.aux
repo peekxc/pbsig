@@ -34,16 +34,16 @@
 \citation{cohen2005stability}
 \citation{cohen2005stability}
 \citation{edelsbrunner2022computational}
+\citation{chazal2016structure}
 \@writefile{toc}{\contentsline {subsection}{\numberline {1.1}Organization}{3}{subsection.1.1}\protected@file@percent }
 \newlabel{sec:duality_pbn_dgm}{{1.1}{3}{}{subsection.1.1}{}}
 \newlabel{eq:dgm}{{1.4}{3}{}{equation.1.4}{}}
 \newlabel{eq:multiplicity}{{1.5}{3}{}{equation.1.5}{}}
-\citation{chazal2016structure}
+\newlabel{eq:betti_mult}{{1.6}{3}{}{equation.1.6}{}}
 \citation{cerri2013betti}
 \citation{cerri2013betti}
 \citation{cerri2013betti}
 \citation{bauer2021ripser}
-\newlabel{eq:betti_mult}{{1.6}{4}{}{equation.1.6}{}}
 \newlabel{eq:measure}{{1.7}{4}{}{equation.1.7}{}}
 \newlabel{eq:pbn_cont}{{1.8}{4}{}{equation.1.8}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {2}Notation \& Background}{4}{section.2}\protected@file@percent }
@@ -52,20 +52,23 @@
 \newlabel{eq:alt_sum}{{2.3}{4}{Notation \& Background}{equation.2.3}{}}
 \citation{zomorodian2004computing}
 \citation{golub2013matrix}
+\citation{zomorodian2004computing}
+\citation{edelsbrunner2000topological}
 \newlabel{eq:hom_map}{{2.4}{5}{Notation \& Background}{equation.2.4}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Motivating Derivation}{5}{subsection.2.1}\protected@file@percent }
 \newlabel{sec:betti_derivation}{{2.1}{5}{Motivating Derivation}{subsection.2.1}{}}
 \newlabel{eq:boundary_matrix}{{2.6}{5}{Motivating Derivation}{equation.2.6}{}}
 \newlabel{eq:pbn}{{{2.7}}{5}{Motivating Derivation}{AMS.4}{}}
 \newlabel{eq:pbn_simple}{{2.8}{5}{Motivating Derivation}{equation.2.8}{}}
-\citation{zomorodian2004computing}
-\citation{edelsbrunner2000topological}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
 \citation{bauer2022keeping}
 \citation{bauer2022keeping}
 \citation{dey2022computational}
 \citation{dey2022computational}
+\citation{chen2011output}
+\citation{chen2011output}
+\citation{edelsbrunner2000topological}
 \citation{chen2011output}
 \@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{6}{figure.1}\protected@file@percent }
 \newlabel{fig:mult}{{1}{6}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.1}{}}
@@ -74,9 +77,8 @@
 \newlabel{eq:lower_left_rank}{{2.10}{6}{}{equation.2.10}{}}
 \newlabel{prop:rank_reduction}{{2}{6}{Dey \& Wang~\cite {dey2022computational}}{proposition.2}{}}
 \newlabel{eq:betti_four}{{2.11}{6}{Dey \& Wang~\cite {dey2022computational}}{equation.2.11}{}}
-\citation{chen2011output}
-\citation{edelsbrunner2000topological}
-\citation{chen2011output}
+\newlabel{prop:mu_reduction}{{3}{6}{Chen \& Kerber~\cite {chen2011output}}{proposition.3}{}}
+\newlabel{eq:mu_four}{{2.12}{6}{Chen \& Kerber~\cite {chen2011output}}{equation.2.12}{}}
 \citation{edelsbrunner2022computational}
 \citation{zomorodian2004computing}
 \citation{chen2011output}
@@ -84,18 +86,16 @@
 \citation{parlett1994we}
 \citation{chazal2016structure}
 \citation{cohen2006vines}
-\newlabel{prop:mu_reduction}{{3}{7}{Chen \& Kerber~\cite {chen2011output}}{proposition.3}{}}
-\newlabel{eq:mu_four}{{2.12}{7}{Chen \& Kerber~\cite {chen2011output}}{equation.2.12}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Spectral relaxation and its implications}{7}{section.3}\protected@file@percent }
 \newlabel{sec:spectral_relax}{{3}{7}{Spectral relaxation and its implications}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Parameterized boundary operators}{7}{subsection.3.1}\protected@file@percent }
 \newlabel{sec:param_boundary}{{3.1}{7}{Parameterized boundary operators}{subsection.3.1}{}}
 \newlabel{def:time_boundary_matrix}{{1}{7}{Parameterized $\partial _p$}{definition.1}{}}
 \newlabel{eq:param_boundary_matrix}{{3.1}{7}{Parameterized $\partial _p$}{equation.3.1}{}}
+\newlabel{eq:decouple}{{3.2}{7}{Parameterized boundary operators}{equation.3.2}{}}
+\newlabel{eq:rank_equiv_param}{{3.3}{7}{Parameterized boundary operators}{equation.3.3}{}}
 \citation{mangasarian1994class}
 \citation{bi2013approximation}
-\newlabel{eq:decouple}{{3.2}{8}{Parameterized boundary operators}{equation.3.2}{}}
-\newlabel{eq:rank_equiv_param}{{3.3}{8}{Parameterized boundary operators}{equation.3.3}{}}
 \newlabel{eq:step_functions}{{3.4}{8}{Parameterized boundary operators}{equation.3.4}{}}
 \newlabel{prop:mu_betti_1}{{4}{8}{}{proposition.4}{}}
 \newlabel{eq:pbn_parameterized}{{{3.5}}{8}{}{AMS.6}{}}
@@ -104,12 +104,12 @@
 \newlabel{sec:spectral_relax}{{3.2}{8}{Spectral rank relaxation}{subsection.3.2}{}}
 \newlabel{eq:rank_def}{{3.7}{8}{Spectral rank relaxation}{equation.3.7}{}}
 \newlabel{eq:phi}{{3.8}{8}{Spectral rank relaxation}{equation.3.8}{}}
+\newlabel{eq:phi2}{{3.9}{8}{Spectral rank relaxation}{equation.3.9}{}}
 \citation{ding2018spectral}
 \citation{bi2013approximation}
 \citation{bi2013approximation}
 \citation{bhatia2013matrix}
 \citation{bi2013approximation}
-\newlabel{eq:phi2}{{3.9}{9}{Spectral rank relaxation}{equation.3.9}{}}
 \newlabel{eq:lowner}{{{3.10}}{9}{Spectral rank relaxation}{AMS.10}{}}
 \newlabel{def:cont_rank}{{3.11}{9}{Spectral Rank Approximation}{equation.3.11}{}}
 \newlabel{eq:smoothstep}{{3.12}{9}{Spectral rank relaxation}{equation.3.12}{}}
@@ -122,8 +122,8 @@
 \newlabel{sec:laplacian_theory}{{3.3}{10}{Combinatorial Laplacians}{subsection.3.3}{}}
 \newlabel{eq:comb_lap}{{3.15}{10}{Combinatorial Laplacians}{equation.3.15}{}}
 \newlabel{eq:laplace_hom}{{3.16}{10}{Combinatorial Laplacians}{equation.3.16}{}}
+\newlabel{eq:lap_spectra_conn}{{3.17}{10}{Combinatorial Laplacians}{equation.3.17}{}}
 \citation{memoli2022persistent}
-\newlabel{eq:lap_spectra_conn}{{3.17}{11}{Combinatorial Laplacians}{equation.3.17}{}}
 \newlabel{eq:weight_func}{{3.18}{11}{Combinatorial Laplacians}{equation.3.18}{}}
 \newlabel{eq:weighted_up_laplace}{{3.20}{11}{Combinatorial Laplacians}{equation.3.20}{}}
 \newlabel{eq:l_up}{{3.21}{11}{Combinatorial Laplacians}{equation.3.21}{}}

@@ -9,6 +9,11 @@
 \usepackage{setspace}
 \usepackage{scalefnt}
 
+\usepackage{mdframed}
+\newenvironment{boxedenumerate}
+  {\begin{mdframed}[font=\small, linewidth=1pt]}
+  {\end{mdframed}}
+  
 \usepackage{tcolorbox}
 
 \numberwithin{equation}{section}
@@ -24,7 +29,7 @@
 
 \usepackage{nicematrix}
 
-\usepackage{mdframed}
+%\usepackage{mdframed}
 \mdfdefinestyle{bframe}{%
     outerlinewidth=1pt,
     innertopmargin=0,
@@ -175,7 +180,7 @@ As exemplary applications, we study its utility in performing common tasks in to
 Persistent homology~\cite{} is the most widely deployed tool for data analysis and learning applications within the topological data analysis (TDA) community. 
 Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably gleaned from its \emph{persistence diagram}~\cite{}.
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
-Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, diagrams demarcate topological features succinctly.
+Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, diagrams demarcate homological features succinctly.
 %given a finite data $X$ sampled from a topological space $\mathcal{X}$, can one infer the homology of $\mathcal{X}$ from $X$ with high confidence?
 %One of the key properties of persistence is its multi-layered representation: just as homology categorifies the Euler characteristic via alternating sum of its Betti numbers, persistent homology categorifies persistent rank invariant through a similar alternating sum. 
 The surprising and essential quality of persistence is that this pairing exists, is unique, and is stable under additive perturbations~\cite{cohen2005stability}.
@@ -232,49 +237,52 @@ So as to not leave the reader in suspense, we first outline the proposed relaxat
 \begin{equation}\label{eq:relaxation_mapping}
 	(X_\alpha, \mathcal{R}, \epsilon) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
 \end{equation}
-where $X_\alpha$ is an $\alpha$-parameterized input data set, $\epsilon$ a relaxation parameter, and $\mathcal{R}$ a \emph{sieve} which sifts through $\mathcal{A}$, summarizing the topological and geometric behavior $X_\alpha$ exhibits. 
+where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\epsilon$ a relaxation parameter, and $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$ which sifts through $\mathcal{A} \times \Delta_+$, extracting and summarizing the topological and geometric behavior $X_\alpha$ exhibits. 
 % sifts through ... something like vineyards, limits towards multiplicity, A x W
 %We interpret $\mathcal{A}$ \emph{parameter space} 
 The steps to produce this mapping are as follows:
+\begin{boxedenumerate}
 \begin{enumerate}
-	\item Let $K$ denote a fixed simplicial complex constructed from the data set $X$. Select a continuously-parameterized family of filtrations:
+	\item Let $K$ denote a fixed simplicial complex constructed from the data set $X$. Select a parameter space $\mathcal{A} \subset \mathbb{R}^d$ which indexes a continuously-varying filter function $f_\alpha$ of $K$:
 	$$(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}$$
-	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters (``hyper-parameters''), such as density filtrations~\cite{} or Rips filtrations over dynamic metric spaces~\cite{} (wherein $\alpha$ represents a time parameter).  
+	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations~\cite{} or time-varying filtrations over dynamic metric spaces~\cite{}. 
 	\item Select a \emph{sieve} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
 	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$$ 
-	As $\mathcal{R}$ determines the dimension of the map~\eqref{eq:relaxation_mapping}, this choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes when $\mathcal{R}$ is unknown.
-
+	This choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes, when $\mathcal{R}$ is unknown.
+%determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
 	\item Fix a homology dimension $p\geq 0$ and approximation parameter $\epsilon > 0$ representing how closely the relaxation should model the quantity: 
 	\begin{equation}\label{eq:mu_alpha}
-		\mu_p(\mathcal{R}_\alpha) \stackrel{\epsilon}{\approx} \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
+		\mu_p(\mathcal{R} \times \mathcal{A}) \stackrel{\epsilon}{\approx} \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
 
-	\item Choose a Laplacian operator $\mathcal{L}$ and regularization scheme $\Phi$ to associate to $\mathcal{R}$: 
+	\item Choose a Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
 $$
-\Phi \circ \mathcal{L} : C_p(K, \mathbb{R}) \times \mathcal{A} \to C_p(K, \mathbb{R})
+\mathcal{L} : C^p(K, \mathbb{R}) \times \mathcal{A} \to C^p(K, \mathbb{R})
 $$
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-Informally, $\mathcal{L}$ encodes specific geometric and topological information about $(K, f_\alpha)$, and $\Phi$ determines how this information is incorporated into the mapping. 
-	\item For each corner point $(i,j)$ in the boundary of $\mathcal{R})$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
+The choice of $\mathcal{L}$ encodes specific geometric and topological information about $(K, f_\alpha)$.%and $\Phi$ determines how this information is incorporated into the mapping. 
+	\item For each corner point $(i,j)$ in the boundary of $\mathcal{R}$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
 	$$
-	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}
+	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}, \quad \quad v \in \mathrm{span}(\textbf{1})^\perp
 	$$
-	for some initially chosen vector $v \in \mathrm{span}(\textbf{1})^\perp$. As we will show in section~\ref{sec:spectral_relax}, the eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $\epsilon$-approximation of~\eqref{eq:mu_alpha}.
-	\item (Optional) Depending on the amount of memory available, store the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ to accelerate the computation of (5) along similar $\alpha \in \mathcal{A}$ (see section~\ref{sec:lanczos_it} for details).
+	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $\epsilon$-approximation\footnote{Depending on the amount of memory available,  step (5) may be accelerated along similar $\alpha \in \mathcal{A}$ by storing the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ (see section~\ref{sec:lanczos_it} for details).} of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
 \end{enumerate}
-The remaining steps of the relaxation depend on the application in mind. We capture these two generic application domains as follows: 
-\begin{enumerate}[label=(\Alph*)]
-	\item Construct an $\epsilon$-approximation of $\mu_p(\mathcal{R}_\alpha)$ over a family $\mathcal{A}$
-	\item Differentiate an $\alpha$-parameterized filter $f_\alpha$ for a fixed sieve $\mathcal{R}$ over a family $\mathcal{A}$ % $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$
-\end{enumerate}
-\noindent
-The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation. 
-Exemplary applications of (A) include: characterizing swarm and flocking behavior with Betti curves~\cite{}, topology-guided image denoising~\cite{}, detecting bifurcations in dynamical systems~\cite{}, generating metric invariants for shape classification and metric learning~\cite{},  and so on. 
-Moreover, the differentiability of our relaxation enables learning applications seeking to optimize persistence information (B), such as filtration optimization, incorporating topological priors into loss functions, and....
+\end{boxedenumerate}
+
+
+\noindent The remaining steps of the relaxation depend on the application in mind. 
+%We capture these two generic application domains as follows: 
+%\begin{enumerate}[label=(\Alph*)]
+%	\item Construct an $\epsilon$-approximation of $\mu_p(\mathcal{R} \times \mathcal{A})$ over a family $\mathcal{A}$
+%	\item Differentiate an $\alpha$-parameterized filter $f_\alpha$ for a fixed sieve $\mathcal{R}$ over a family $\mathcal{A}$ % $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$
+%\end{enumerate}
+%\noindent
+The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation; examples include characterizing swarm and flocking behavior with Betti curves~\cite{}, topology-guided image denoising~\cite{}, detecting bifurcations in dynamical systems~\cite{}, generating metric invariants for shape classification and metric learning~\cite{},  and so on. 
+Moreover, the differentiability of our relaxation enables learning applications seeking to optimize persistence information, such as filtration optimization, incorporating topological priors into loss functions, and....
 \\
 \\
 %\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
@@ -394,11 +402,11 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 %In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
 An explicit proof of this can be found in~\cite{dey2022computational}, though it was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It can be shown by combining the Pairing Uniqueness Lemma with the fact that $R$ is obtained from $\partial$ via left-to-right column operations, which preserves the ranks of every such submatrix.
 Lemma~\ref{lemma:rank} is remarkable in that although $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. 
-This seems like a minor observation at first, however it is far more general, as recently noted by Bauer et al.~\cite{bauer2022keeping}:
+This seems like a minor observation at first, however it is far more general, as recently noted by~\cite{bauer2022keeping}:
 \begin{proposition}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
 \end{proposition}
-\noindent A lesser-known fact that exploits Lemma~\ref{lemma:rank}---also pointed out in~\cite{dey2022computational}---is that~\eqref{eq:lower_left_rank} enables the PBN to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$.
+\noindent A lesser-known fact that exploits Lemma~\ref{lemma:rank}---also pointed out in~\cite{dey2022computational}---is that~\eqref{eq:lower_left_rank} enables the PBN to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
 \begin{proposition}[Dey \& Wang~\cite{dey2022computational}]\label{prop:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
 	\begin{equation}\label{eq:betti_four}
@@ -762,7 +770,7 @@ A few such properties are recorded below.
 \noindent Note that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$. As we will discuss in section~\ref{sec:laplacian_theory}, this is sufficient for our purposes here. 
 \\
 \\
-\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$.
+\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
@@ -774,7 +782,6 @@ A few such properties are recorded below.
 	}
 	\label{fig:smoothstep}
 \end{figure}
-Due to our parameterized boundary chains from definition~\ref{def:time_boundary_matrix}, the discontinuity here comes from the use of step functions~\eqref{eq:step_functions}. 
 We exchange $S : \mathbb{R} \to \{ 0, 1\}$ with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ of the form: 
 %In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{equation}\label{eq:smoothstep}
@@ -785,7 +792,7 @@ We exchange $S : \mathbb{R} \to \{ 0, 1\}$ with clamped \emph{smoothstep} functi
 \end{cases}
 \end{equation} 
 where $P_n: [0,1] \to [0,1]$ is a $n$-th order polynomial satisfying $P_n(0) = 0$ and $P_n(1) = 1$.
-These function interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$ (see Figure~\ref{fig:smoothstep}), and are used in computer graphics and learning applications due to their ease of composability and efficiency in evaluation. 
+These functions interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$ (see Figure~\ref{fig:smoothstep}). 
 %\begin{equation}
 %S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
 %\end{equation} 

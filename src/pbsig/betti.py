@@ -8,6 +8,7 @@ from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
 from splex.geometry import flag_weight
+from itertools import *
 from more_itertools import spy 
 # from tqdm import tqdm
 # from tqdm.notebook import tqdm
@@ -711,7 +712,7 @@ class Sieve:
   Methods: 
     precompute: precomputes the signature
   """
-  def __init__(self, S: ComplexLike, family: Iterable[Callable], p: int = 0, form: str = "lo"):
+  def __init__(self, S: ComplexLike, family: Iterable, p: int = 0, form: str = "lo"):
     # assert isinstance(S, ComplexLike)
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
@@ -721,7 +722,6 @@ class Sieve:
     # self.complex = S
     self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
     self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
-    self.family = family
     self.p = p
     self.np = card(S, p)
     self.nq = card(S, p+1)
@@ -729,9 +729,31 @@ class Sieve:
     self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
     self.solver = eigvalsh_solver(self.laplacian)
     self.delta = np.finfo(float).eps
-    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int), ('value', float)])
-    self.bounds = (0, 1)
+    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
+    self.bounds = (0, 1) # bounds on the family? 
+    self.family = family
     # self.pattern = property(lambda self: self._pattern, self.set_rect)
+
+  # @property
+  # def family(self): 
+  #   """The _family_ refers to the parameter space of the Sieve. 
+
+  #   Each Sieve is parameterized by a parameter space of filter functions. This space is either: 
+
+  #   (1) an Iterable of Callables, the inner of which are filter function 
+  #   (2) an Iterable of Iterables, the inner of which 
+  #   """
+  #   return self._family
+  
+  # @family.setter
+  # def family(self, f1: Union[Callable, Iterable], f2: Union[Callable, Iterable] = None, *args):
+  #   """ Sets the parameterized family to the product """
+  #   if f2 is None: 
+  #     # Single parameter setting
+  #   else: 
+
+    
+
 
   @property
   def pattern(self):
@@ -752,7 +774,7 @@ class Sieve:
           J.append(pp[1])
           SGN.append(s)
           IND.append(idx)
-      self._pattern = np.fromiter(zip(I,J,SGN,IND, np.zeros(len(I))), dtype=self._pattern.dtype)
+      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
   
   def randomize_pattern(self, n_rect: int = 1):
     self.pattern = sample_rect_halfplane(n_rect, area = (0.025, 0.15), disjoint=True)  # must be disjoint 
@@ -789,7 +811,6 @@ class Sieve:
     import copy
     default_val = {
       "eigenvalues" : array('d'),
-      "eigenvectors" : None, 
       "lengths" : array('I')
     }
     self.spectra = { pt_ind : copy.deepcopy(default_val) for pt_ind in pt_indices }
