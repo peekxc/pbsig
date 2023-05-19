@@ -15,10 +15,6 @@ from .linalg import *
 from .fast_pbn import *
 from splex import *
 
-_ROOT = os.path.abspath(os.path.dirname(__file__))
-def _package_data(path: str = ""):
-    return os.path.join(_ROOT, 'data', path)
-
 # def plot_dgm(dgm: ArrayLike):
 #   import matplotlib.pyplot as plt
 #   from matplotlib.patches import Polygon

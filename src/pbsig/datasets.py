@@ -15,8 +15,11 @@ from splex import filtration
 from .utility import *
 from .combinatorial import *
 from .simplicial import *
-from .__init__ import _package_data
+# from .__init__ import _package_data
 
+_ROOT = os.path.abspath(os.path.dirname(__file__))
+def _package_data(path: str = ""):
+    return os.path.join(_ROOT, 'data', path)
 
 def random_lower_star(n: int = 50, v: list = [0,1]):
   """ 

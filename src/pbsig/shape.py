@@ -47,5 +47,62 @@ def archimedean_sphere(n: int, nr: int):
   return(X)
 
 
+def PL_path(path, k: int, close_path: bool = False): 
+  """Convert a SVG collection of paths into a set k-1 piecewise-linear line segments.
+  
+  The sample points interpolated along the given paths are equi-spaced in arclength.
+  """
+  from svgpathtools import parse_path, Line, Path, wsvg
+  arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
+  if any(arc_lengths == 0):
+    path = list(filter(lambda p: p.length() > 0.0, path))
+    for j in range(len(path)-1):
+      if path[j].end != path[j+1].start:
+        path[j].end = path[j+1].start
+    path = Path(*path)
+  arc_lengths = np.array([np.linalg.norm(seg.length())for seg in path])
+  assert(all(arc_lengths > 0)), "Invalid shape detected: lines with 0-length found and not handled"
+  A = np.cumsum(arc_lengths)
+  p_cc = np.linspace(0, max(A), k)
+  idx = np.digitize(p_cc, A+np.sqrt(np.finfo(float).resolution))
+  L_points = []
+  for i, pp in zip(idx, p_cc):
+    t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
+    L_points.append(path[i].point(t))
+  assert len(L_points) == k
+  if isinstance(L_points[0], Complex):
+    complex2pt = lambda x: (np.real(x), np.imag(x))
+    L_points = list(map(complex2pt, L_points))
+  ## Connect them PL 
+  connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
+  if close_path:
+    connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
+  new_path = Path(*connect_the_dots)
+  return(new_path)
+
+def simplify_outline(S: ArrayLike, k: int):
+  from svgpathtools import parse_path, Line, Path, wsvg
+  Lines = [Line(p, q) for p,q in pairwise(S)]
+  Lines.append(Line(Lines[-1].end, Lines[0].start))
+  return(PL_path(Path(*Lines), k))
+
+def offset_curve(path, offset_distance, steps=1000):
+  """
+  Takes in a Path object, `path`, and a distance, `offset_distance`, and outputs an piecewise-linear approximation of the 'parallel' offset curve.
+  """
+  from svgpathtools import parse_path, Line, Path, wsvg
+  nls = []
+  for seg in path:
+    ct = 1
+    for k in range(steps):
+      t = k / steps
+      offset_vector = offset_distance * seg.normal(t)
+      nl = Line(seg.point(t), seg.point(t) + offset_vector)
+      nls.append(nl)
+  connect_the_dots = [Line(nls[k].end, nls[k+1].end) for k in range(len(nls)-1)]
+  if path.isclosed():
+    connect_the_dots.append(Line(nls[-1].end, nls[0].end))
+  offset_path = Path(*connect_the_dots)
+  return offset_path
 
 # def sphere_ext(X: ArrayLike):

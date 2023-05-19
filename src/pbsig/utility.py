@@ -1,18 +1,13 @@
 import sys
 import numpy as np 
-
 from itertools import *
 from operator import le
 from typing import * 
 from numpy.typing import ArrayLike
 from math import comb
+from numbers import Complex, Integral, Number
+from more_itertools import * 
 
-# Simple counter mechanism to count evaluation calls
-class Counter():
-  def __init__(self): self.cc = 0
-  def __call__(self, *args, **kwargs): self.cc += 1
-  def __repr__(self): return f"Number of calls: {self.cc}"
-  def num_calls(self): return self.cc
 
 ## From: https://stackoverflow.com/questions/492519/timeout-on-a-function-call
 def timeout(func, args=(), kwargs={}, timeout_duration=1, default=None):
@@ -349,11 +344,11 @@ def Kabsch(A, B):
 from scipy.linalg import orthogonal_procrustes
 def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
   """ Procrustes distance between closed curves """
-  from procrustes.rotational import rotational
-  from pbsig.pht import pht_preprocess_pc
+  # from procrustes.rotational import rotational
+  # from pbsig.pht import pht_preprocess_pc
   from pyflubber.closed import prepare
-  if preprocess:
-    A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
+  # if preprocess:
+  #   A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
   if do_reflect:
     R_refl = np.array([[-1, 0], [0, 1]])
     A1,B1 = procrustes_cc(A, B, do_reflect=False, matched=matched, preprocess=False)
@@ -375,7 +370,7 @@ def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: 
       def pro_error(X, Y):
         R, _ = orthogonal_procrustes(X, Y)[1]
         return np.linalg.norm((X @ R) - Y, 'fro')
-      pro_error = lambda X,Y: orthogonal_procrustes(X, Y)[1]
+      pro_error = lambda X,Y: np.linalg.norm((X @ orthogonal_procrustes(X, Y)[0]) - Y, 'fro')
       os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
       A, B = A_p, np.roll(B_p, os, axis=0)
       # plt.plot(*A.T);plt.plot(*B.T)
@@ -384,6 +379,9 @@ def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: 
 def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
   A_p, B_p = procrustes_cc(A, B, **kwargs)
   return np.linalg.norm(A_p - B_p, 'fro')
+
+
+
 
 # def interpolate_PL_path(path: Sequence, k: int): 
 #   """ Interpolates a Path of Line objects """
@@ -420,56 +418,6 @@ def multigen(gen_func):
     def __iter__(self):
       return gen_func(*self.__args, **self.__kwargs)
   return _multigen
-
-def PL_path(path, k: int): 
-  from svgpathtools import parse_path, Line, Path, wsvg
-  arc_lengths = np.array([np.linalg.norm(seg.length()) for seg in path])
-  if any(arc_lengths == 0):
-    path = list(filter(lambda p: p.length() > 0.0, path))
-    for j in range(len(path)-1):
-      if path[j].end != path[j+1].start:
-        path[j].end = path[j+1].start
-    path = Path(*path)
-  arc_lengths = np.array([np.linalg.norm(seg.length())for seg in path])
-  assert(all(arc_lengths > 0)), "Invalid shape detected: lines with 0-length found and not handled"
-  A = np.cumsum(arc_lengths)
-  p_cc = np.linspace(0, max(A), k)
-  idx = np.digitize(p_cc, A+np.sqrt(np.finfo(float).resolution))
-  L_points = []
-  for i, pp in zip(idx, p_cc):
-    t = pp/A[i] if i == 0 else (pp-A[i-1])/(A[i]-A[i-1])
-    L_points.append(path[i].point(t))
-  connect_the_dots = [Line(p0, p1) for p0, p1 in pairwise(L_points)]
-  if any(connect_the_dots[-1].end != connect_the_dots[0].start): #not(path.iscontinuous()) or path.isclosed():
-    #connect_the_dots.append(Line(L_points[-1], L_points[0]))
-    connect_the_dots.append(Line(connect_the_dots[-1].end, connect_the_dots[0].start))
-  new_path = Path(*connect_the_dots)
-  return(new_path)
-
-def simplify_outline(S: ArrayLike, k: int):
-  from svgpathtools import parse_path, Line, Path, wsvg
-  Lines = [Line(p, q) for p,q in pairwise(S)]
-  Lines.append(Line(Lines[-1].end, Lines[0].start))
-  return(PL_path(Path(*Lines), k))
-
-def offset_curve(path, offset_distance, steps=1000):
-  """
-  Takes in a Path object, `path`, and a distance, `offset_distance`, and outputs an piecewise-linear approximation of the 'parallel' offset curve.
-  """
-  from svgpathtools import parse_path, Line, Path, wsvg
-  nls = []
-  for seg in path:
-    ct = 1
-    for k in range(steps):
-      t = k / steps
-      offset_vector = offset_distance * seg.normal(t)
-      nl = Line(seg.point(t), seg.point(t) + offset_vector)
-      nls.append(nl)
-  connect_the_dots = [Line(nls[k].end, nls[k+1].end) for k in range(len(nls)-1)]
-  if path.isclosed():
-    connect_the_dots.append(Line(nls[-1].end, nls[0].end))
-  offset_path = Path(*connect_the_dots)
-  return offset_path
 
 import heapq
 import numpy as np

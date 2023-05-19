@@ -5,6 +5,7 @@ from more_itertools import pairwise, triplewise, chunked, peekable, spy
 # from scipy.interpolate import splrep, insert
 from splex import *
 from splex.predicates import is_repeatable
+from typing import * 
 
 # def interpolate_family(S: ComplexLike, x: ArrayLike, y: Iterable[ArrayLike], bs: int = 1, method: str = "cubic", **kwargs):
 #   """"""
@@ -49,15 +50,28 @@ def interpolate_point_cloud(X: Iterable[ArrayLike], time: tuple = None, method: 
     varying_points = np.array([x[i] for x in X])
     curves[i] = CubicSpline(time, varying_points, **kwargs)
 
-  # class Interp:
-  #   def __init__():
-  #     pass
-  #   def __call__(t: float):
-  #     ind = np.searchsorted(time_points, t)
-  #     if ind < len(time_points):
-
-  #     else: 
-  #       IP = np.array([c(time_points[-1]) for c in curves])
-  #       return IP
-
   return curves
+
+class LinearFuncInterp:
+  """Provides a sized-callable that merges set of interpolate functions into a single function f: [0,1] -> Any """
+  def __init__(self, funcs: Iterable[Callable]) -> None:
+    self.funcs = list(funcs)
+    self.time_points = np.linspace(0,1,len(self.funcs)+1)
+  
+  def __len__(self) -> int:
+    return len(self.funcs)
+
+  def __call__(self, t: float) -> Any:
+    if t >= 1.0: return self.funcs[-1](1.0)
+    if t <= 0.0: return self.funcs[0](0.0)
+    d = 1.0/len(self.funcs)
+    end_ind = np.searchsorted(self.time_points, t)
+    new_t = abs((t-self.time_points[end_ind-1])/d)
+    return self.funcs[end_ind-1](new_t)
+
+    # self.funcs[end_ind]
+    # if ind < len(time_points):
+
+    # else: 
+    #   IP = np.array([c(time_points[-1]) for c in curves])
+    #   return IP

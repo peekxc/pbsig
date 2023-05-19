@@ -91,6 +91,12 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
 def plot_dist(*args, **kwargs) -> None:
   show(dist_figure(*args, **kwargs))
 
+def figure_point_cloud(X: ArrayLike, **kwargs):
+  p = figure(**kwargs)
+  p.scatter(X[:,0], X[:,1])
+  return p
+
+
 def figure_complex(
   S: ComplexLike, 
   pos: ArrayLike = None, 

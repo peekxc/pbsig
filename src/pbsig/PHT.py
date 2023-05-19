@@ -23,7 +23,7 @@ def stratify_sphere(d: int, n: int, **kwargs) -> np.ndarray:
     args = dict(nr = 5) | kwargs
     V = archimedean_sphere(n, **args)
     return V
-  ## TODO: do maxmin sampling, accept option to suppoirt paths
+  ## TODO: do maxmin sampling for d > 2, accept option to support paths/Iterables
 
 def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
   """Performs a variety of shape normalizations, such as mean-centering and scaling, with respect to a set of direction vectors _V_."""
@@ -40,7 +40,7 @@ def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions",
     raise ValueError(f"Invalid scale given '{scale}'")
 
 # from pbsig.utility import multigen
-def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: bool = True):
+def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: bool = True):
   """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of _nd_ filter directions on the d-sphere. 
 
   Assumes a lower-star filtration is wanted. 
@@ -55,7 +55,8 @@ def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: 
     Iterable of real-valued weight functions
   """
   X = X if isinstance(X, np.ndarray) else np.array(X)
-  V = stratify_sphere(X.shape[1]-1, nd)
+  V = stratify_sphere(X.shape[1]-1, dv) if isinstance(dv, Integral) else dv
+  assert isinstance(dv, np.ndarray) and dv.ndim == 2 and dv.shape[1] == X.shape[1], "Invalid direction vectors given. Must be 2-d arrays matching the dimension of _X_."
   X = normalize_shape(X, V) if normalize else X
   max_radius = 0.5*np.max(pdist(X)) if nonnegative else 0.0
   # def _dt_iterable() -> Generator:
@@ -71,10 +72,6 @@ def parameterize_dt(X: ArrayLike, nd: int, normalize: bool = True, nonnegative: 
     def __len__(self) -> int:
       return len(self.V)
   return DT_Iterable(X, V, max_radius)
-
-
-
-
 
 ## What is the directional transfrom?
 ## Maybe it should be an iterable of filter functions (defined for every simplex!)

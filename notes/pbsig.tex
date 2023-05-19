@@ -1093,7 +1093,7 @@ This can be seen directly by~\eqref{eq:tikhonov_soln} as well, as increasing $\e
  
 \section{Computational Implications}\label{sec:computational_imp}
 %\subsection*{An quadratic-time rank computation}
-In this section, we discuss computational advantages that stem from replacing the counting invariants with their spectral-based approximations from definition~\ref{def:smooth_mu}.
+In this section, we discuss the computational advantages that stem from replacing the counting invariants with their spectral-based approximations from definition~\ref{def:smooth_mu}.
 As the singular values of boundary operators can be obtained are the square roots of eigenvalues of an appropriate Laplacian operator, we focus on spectral methods specialized for symmetric positive semi-definite operators.
 Moreover, we focus on \emph{iterative} methods which only require matrix-vector products as their primary operations for estimating the spectrum, as this enables us to decouple any simplicial-based representation of the Laplacian operator from an explicit matrix representation.
 In the following sections, we (1) recall the method of minimized iterations in section~\ref{sec:lanczos_it}, (2) explore the efficiencies and subtleties of simplicial Laplacian $\mathtt{matvec}$ operators, and (3) discuss the modern advances to estimating spectral quantities of combinatorial Laplacians efficiently, such as preconditioning methods and convergence rates. 
@@ -1219,9 +1219,9 @@ However, it is not immediately clear whether these improvements generalize to La
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 
-We first recall the characteristics of the graph Laplacian. 
+To begin understanding this generalization, we first recall the characteristics of the $x \mapsto Lx$ operation on the graph Laplacian. 
 Given a simple undirected graph $G = (V, E)$, let $A \in \{0,1\}^{n \times n}$ denote its binary adjacency matrix satisfying $A[i,j] = 1$ if the vertices $v_i,v_j \in V$ are path-connected $i \sim j$ in $G$ and denote with $D = \mathrm{diag}(\{ \, \mathrm{deg}(v_i) \, \})$ the diagonal \emph{degree} matrix, where $\mathrm{deg}(v_i) = \sum_{j \neq i} A[i,j]$.
-The \emph{graph Laplacian}'s adjacency, incidence, and element-wise definitions are: 
+With this notation, the \emph{graph Laplacian}'s adjacency, incidence, and element-wise definitions are given as: 
 \begin{equation}
 L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
 	L\,[i,j] = \begin{cases}
@@ -1231,7 +1231,7 @@ L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
 	\end{cases}
 \end{equation}
 %It is well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$~\cite{newman2001laplacian}. 
-Moreover, as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed using the path-connected relation $i \sim j$. They are given as:
+Furthermore, by using the path-connected relation $i \sim j$ as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed as:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &
@@ -1246,8 +1246,8 @@ If $G$ has $m$ edges and $n$ vertices taking labels in the set $[n]$, computing 
 To extend the two-pass algorithm outlined above when $p > 0$, we first require a generalization of the path-connected relation from~\eqref{eq:lap_quad_from}.
  Denote with $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and the (weighted) \emph{degree} of $\tau \in K^p$ with: 
 $$\mathrm{deg}_w(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} w(\sigma) $$
-Setting $w(\sigma) = 1$ for all $\sigma \in K$ recovers the integral notion of degree representing the number of cofacets a given $p$-simplex has. 
-Since $K$ is a simplicial complex, if the faces $\tau, \tau'$ share a common cofacet $\sigma \in K^{p+1}$, this cofacet $\{\sigma\} = \mathrm{co}(\tau) \cap \mathrm{co}(\tau')$ is in fact \emph{unique}~\cite{goldberg2002combinatorial}. 
+Note setting $w(\sigma) = 1$ for all $\sigma \in K$ recovers the integral notion of degree representing the number of cofacets a given $p$-simplex has. 
+Now, since $K$ is a simplicial complex, if the faces $\tau, \tau'$ share a common cofacet $\sigma \in K^{p+1}$, this cofacet $\{\sigma\} = \mathrm{co}(\tau) \cap \mathrm{co}(\tau')$ is in fact \emph{unique}~\cite{goldberg2002combinatorial}. 
 Thus, we may use a relation $\tau \overset{\sigma}{\sim} \tau'$ to rewrite the operator from~\eqref{eq:l_up} element-wise: 
 \begin{align}\label{eq:up_laplace_theory}
 	 L_p^{\text{up}}(\tau, \tau')= \begin{cases}
@@ -1261,7 +1261,7 @@ where $s_{\tau, \tau'} = \mathrm{sgn}([\tau], \partial[\sigma]) \, \cdot \, \mat
 \begin{equation}\label{eq:l_up_matvec}
 	(L_p^{\textrm{up}} \, x)_i =  \mathrm{deg}_w(\tau) \cdot w(\tau) \cdot x_i + \sum\limits_{\tau \overset{\sigma}{\sim} \tau'} s_{\tau, \tau'} \cdot x_{h(\tau')} \cdot  w^{+/2}(\tau) \cdot w(\sigma) \cdot w^{+/2}(\tau') 
 \end{equation}
-Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass algorithm as described for the graph Laplacian if the simplices of $K^{p+1}$ can be enumerated quickly and the indexing function $h$ can be efficiently evaluated. We summarize this with a proposition. 
+Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass algorithm as described for the graph Laplacian if the simplices of $K^{p+1}$ can be quickly enumerated and the indexing function $h$ can be efficiently evaluated. We summarize this with a proposition. 
 %Since a $p+1$-simplex has $p$ proper faces in its boundary, and we need to iterate through the $p+1$ simplices $\sigma \in K^{p+1}$ just once in the case of the $\mathrm{up}$-Laplacian,
 %We combine the above observations into a proposition. 
 \begin{proposition}
@@ -1273,7 +1273,7 @@ Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{proposition}
-\noindent From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---in practice the operation $x \mapsto L x$ exhibits $\approx O(m)$ time and space complexities. 
+\noindent From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---implying the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
 As more concrete statements about the computation require moving beyond asymptotic analysis, we delegate the practical details---along with pseudocode of the two-phase algorithm---to appendix~\ref{sec:up_laplace_matvec}, for the computationally-minded reader.
 
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
