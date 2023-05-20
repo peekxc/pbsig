@@ -1,4 +1,5 @@
 import numpy as np 
+from typing import * 
 import pyflubber
 from svgpathtools import svg2paths  
 from svgpathtools import parse_path, Line, Path, wsvg
@@ -22,33 +23,59 @@ note_path = parse_path("M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.
 #   <path id="triforce" d="M345.47,250L460.94,450L230,450Z M460.94,50L576.41,250L345.47,250Z M576.41,250L691.88,450L460.94,450Z"/>
 shape_paths = [star_path, heart_path, horse_path, chair_path, hand_path, plane_path, bolt_path, note_path]
 
-from pbsig.utility import PL_path
-shapes_equi = [PL_path(shape_path, k=100, close_path=True) for shape_path in shape_paths]
-shapes_PC = [np.array([s.start for s in S]) for S in shapes_equi]
-# [S.shape for S in shapes_PC]
-
+from pbsig.shape import PL_path
 from pbsig.pht import parameterize_dt, stratify_sphere, normalize_shape
 DV = stratify_sphere(d=1, n=50)                          ## direction vectors
-SHAPE_PCS = [normalize_shape(S, DV) for S in shapes_PC]  ## shape point clouds
 
-## Combine the two iterables in a product to produce parameterized family 
-parameter_space = product(DV, SHAPE_PCS)
-filter_mesh = lambda v, mesh: lower_star_weight(mesh @ v)
-filter_family = IndexedIterable(parameter_space, accessor=filter_mesh, count=len(DV)*len(shapes_PC))
+from pbsig.itertools import LazyIterable
+load_shape = lambda index: normalize_shape(PL_path(shape_paths[index], 100, close_path=True, output_path=False), DV)
+SHAPE_PCS = LazyIterable(load_shape, count=len(shape_paths))
 
-
-
-
-
-
-
-
-## Build the chained interpolaters
+## Build a continuous family of interpolators between shapes
 import pyflubber
 from more_itertools import pairwise
 from pbsig.interpolate import LinearFuncInterp
-f_interp = [pyflubber.interpolator(s1, s2, closed=True) for s1, s2 in pairwise(shapes_emb)]
+f_interp = [pyflubber.interpolator(s1, s2, closed=True) for s1, s2 in pairwise(SHAPE_PCS)]
 F_interp = LinearFuncInterp(f_interp)
+SHAPE_INTERP = LazyIterable(lambda index: F_interp(int(index/150)), count=150)
+
+## Generate the parameterized family of filter functions
+from pbsig.itertools import rproduct, rstarmap
+from splex import lower_star_weight
+parameter_space = rproduct(SHAPE_INTERP, DV) 
+filter_mesh = lambda mesh, v: lower_star_weight(mesh @ v)
+filter_family = rstarmap(filter_mesh, parameter_space)
+
+## Sieve 
+from pbsig.betti import Sieve
+from splex import *
+n = len(SHAPE_INTERP[0])
+S = simplicial_complex(pairwise(range(n)))
+sieve = Sieve(S, family=filter_family, p=0, form='lo')
+sieve.randomize_pattern(2)
+sieve.solver
+sieve.sift(w=0.15, progress=True, k=10)
+
+m = len(sieve.summarize()[0])
+p = figure()
+p.line(np.arange(m), sieve.summarize()[0])
+show(p)
+
+show(sieve.figure_pattern())
+
+from scipy.sparse.linalg import eigsh
+eigsh(sieve.laplacian)
+
+
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(perfect_hash_dag)
+profile.enable_by_count()
+perfect_hash_dag(tr, mult_max=1.5, n_tries=100, n_prime=15, progress=True)
+profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+
+
 
 ## Indeed, the procrustes differences are all low
 diffs = np.array([procrustes_dist_cc(F_interp(t0), F_interp(t1)) for t0, t1 in pairwise(np.linspace(0, 1, 100))])
@@ -63,20 +90,20 @@ show(p)
 # RepeatableIterable()
 
 
-def flubber_filter(F: Callable, time_points: ArrayLike) -> Iterable[Callable]: 
+# def flubber_filter(F: Callable, time_points: ArrayLike) -> Iterable[Callable]: 
   
-  class _family:
+#   class _family:
     
-  for t in time_points: 
-    X = F(t)
-    DT = parameterize_dt(X, dv=DV, normalize=False)
-    for f in DT:
-      yield f
+#   for t in time_points: 
+#     X = F(t)
+#     DT = parameterize_dt(X, dv=DV, normalize=False)
+#     for f in DT:
+#       yield f
 
 from more_itertools import seekable
 
 family = flubber_filter(F_interp, np.linspace(0,1,100))
-sieve = Sieve()
+
 
 
 ## Show the shapes
@@ -125,3 +152,29 @@ f_interp(1.)
   # <path id="chair" d="M638.9,259.3v-23.8H380.4c-0.7-103.8-37.3-200.6-37.3-200.6s-8.5,0-22.1,0C369.7,223,341.4,465,341.4,465h22.1
   # 	c0,0,11.4-89.5,15.8-191h210.2l11.9,191h22.1c0,0-5.3-96.6-0.6-205.7H638.9z"/>
   # <path id="triforce" d="M345.47,250L460.94,450L230,450Z M460.94,50L576.41,250L345.47,250Z M576.41,250L691.88,450L460.94,450Z"/>
+
+
+
+ 
+from pbsig.itertools import rproduct
+from array import array
+from pbsig.itertools import sequence
+x, y = array('I'), array('I')
+x.extend([1,2,3])
+y.extend([4,5,6])
+
+s = sequence(x)
+assert id(x) == id(s._seq)
+view = SequenceView(s)
+id(view._target)
+
+## Side effects work! 
+x, y = [0,1,2,4], [4,5,6]
+x_view = SequenceView(x)
+assert id(x_view._target) == id(x)
+s = sequence(x)
+assert id(s._seq) == id(x)
+S = SequenceView(s)
+assert id(S._target._seq) == id(x)
+r = rproduct(x,y)
+x.extend([5]) 

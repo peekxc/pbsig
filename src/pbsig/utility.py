@@ -31,11 +31,6 @@ def lexsort_rows(A):
   A = np.array([np.sort(a) for a in A])
   return A[np.lexsort(np.rot90(A))] 
 
-def pairwise(S: Iterable): 
-  a, b = tee(S)
-  next(b, None)
-  return zip(a, b)
-
 def window(S: Iterable, n: int = 2):
   "Returns a sliding window (of width n) over data from the iterable"
   "   s -> (s0,s1,...s[n-1]), (s1,s2,...,sn), ...                   "
@@ -241,147 +236,6 @@ def scale_diameter(X: ArrayLike, diam: float = 1.0):
   return(Xs)
 
 
-def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
-  """
-  Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
-
-  Each type of center varies in cost and definition, but each can effectively be interpreted as some kind of 'barycenter'. In particular: 
-
-  barycenter := point-wise barycenter of 'X', equivalent to arithmetic mean of the points 
-  box := barycenter of bounding box of 'X' 
-  hull := barycenter of convex hull of 'X'
-  polygon := barycenter of 'X', when 'X' traces out the boundary of a closed polygon in R^2*
-  directions := barycenter of 'X' projected onto a set of rotationally-symmetric direction vectors 'V' in S^1
-  
-  The last options 'directions' uses an iterative process (akin to meanshift) to find the barycenter 'u' satisfying: 
-
-  np.array([min((X-u) @ v)*v for v in V]).sum(axis=0) ~= [0.0, 0.0]
-  """
-  import warnings
-  n, d = X.shape[0], X.shape[1]
-  method = "directions" if V is not None else method 
-  if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
-    return(X.mean(axis=0))
-  elif method == "hull":
-    from scipy.spatial import ConvexHull
-    return(X[ConvexHull(X).vertices,:].mean(axis=0))
-  elif method == "directions":
-    assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
-    ## Check V is rotationally symmetric
-    rot_sym = np.allclose([min(np.linalg.norm(V + v, axis=1)) for v in V], 0.0, atol=atol)
-    warnings.warn("Warning: supplied vectors 'V' not rotationally symmetric up to supplied tolerance")
-    original_center = X.mean(axis=0)
-    cost: float = np.inf
-    while not(np.isclose(cost, 0.0, atol=atol)):
-      Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
-      U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
-      center_diff = U.mean(axis=0)
-      X = X - center_diff
-      cost = min([
-        np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
-        np.linalg.norm(center_diff)
-      ])
-    return(original_center - X.mean(axis=0))
-  elif method == "bbox":
-    min_x, max_x = X.min(axis=0), X.max(axis=0)
-    return((min_x + (max_x-min_x)/2))
-  elif method == "polygon":
-    from shapely.geometry import Polygon
-    P = Polygon(X)
-    return np.array(list(P.centroid.coords)).flatten()
-  else: 
-    raise ValueError("Invalid method supplied")
-
-def winding_distance(X: ArrayLike, Y: ArrayLike):
-  """ 
-  Returns the minimum 'winding' distance between sequences of points (X,Y) defining closed curves in the plane homeomorphic to S^1
-  
-  Given two arrays (X, Y) of size (n,m) = (|X|,|Y|) representing 'circle-ish outlines', i.e. representing shapes whose edge sets EX satisfy:
-  
-  EX = [(X[0,:], X[1,:]), ..., (X[-1,], X[0])] (and similar with Y)
-  
-  This function: 
-  1. finds a set of N=max(n,m) equi-spaced points along the boundaries (EX,EY) 
-  2. cyclically rotates the N points from (1) along EX to best-align the N points along EY (i.e. w/ minimum squared euclidean distance)
-  3. computes the integrated distances between the PL-curves traced by (EX, EY) 
-
-  Since the curves are PL, (3) reduces to a sequence of irregular quadrilateral area calculations. 
-  """ 
-  from scipy.spatial import ConvexHull
-  from shapely.geometry import Polygon
-  from itertools import cycle
-  from pyflubber.closed import prepare
-  A, B = prepare(X, Y)
-  N = A.shape[0] # should match B 
-  edge_pairs = cycle(zip(pairwise(A), pairwise(B)))
-  int_diff = 0.0
-  for (p1,p2), (q1,q2) in islice(edge_pairs, N+1):
-    ind = ConvexHull([p1,p2,q1,q2]).vertices
-    int_diff += Polygon(np.vstack([p1,p2,q1,q2])[ind,:]).area
-  return(int_diff)
-
-def shift_curve(line, reference, objective: Optional[Callable] = None):
-  min_, best_offset = np.inf, 0
-  if objective is None: 
-    objective = lambda X,Y: np.linalg.norm(X-Y)
-  for offset in range(len(line)):
-    deviation = objective(reference, np.roll(line, offset, axis=0))
-    if deviation < min_:
-      min_ = deviation
-      best_offset = offset
-  if best_offset:
-    line = np.roll(line, best_offset, axis=0)
-  return line
-
-def Kabsch(A, B):
-  H = A.T @ B
-  R = (H.T @ H)**(1/2) @ np.linalg.inv(H)
-  u,s,vt = np.linalg.svd(H)
-  d = np.sign(np.linalg.det(vt.T @ u.T))
-  R = vt.T @ np.diag(np.append(np.repeat(1, A.shape[1]-1), d)) @ u.T
-  return R
-
-from scipy.linalg import orthogonal_procrustes
-def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
-  """ Procrustes distance between closed curves """
-  # from procrustes.rotational import rotational
-  # from pbsig.pht import pht_preprocess_pc
-  from pyflubber.closed import prepare
-  # if preprocess:
-  #   A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
-  if do_reflect:
-    R_refl = np.array([[-1, 0], [0, 1]])
-    A1,B1 = procrustes_cc(A, B, do_reflect=False, matched=matched, preprocess=False)
-    A2,B2 = procrustes_cc(A @ R_refl, B, do_reflect=False, matched=matched, preprocess=False)
-    return (A1, B1) if np.linalg.norm(A1-B1, 'fro') < np.linalg.norm(A2-B2, 'fro') else (A2, B2)
-  else:
-    if matched:
-      # R = rotational(A, B, pad=False, translate=False, scale=False)
-      # from scipy.spatial import procrustes
-      R, err = orthogonal_procrustes(A, B)
-      #return np.linalg.norm((A @ R.t) - B, 'fro')
-      return A @ R, B
-    else: 
-      ## Fix clockwise / counter-clockwise orientation of points
-      A_p, B_p = prepare(A, B)
-      
-      ## Shift points along shape until minimum procrustes distance is obtained
-      #pro_error = lambda X,Y: rotational(X, Y, pad=False, translate=False, scale=False).error
-      def pro_error(X, Y):
-        R, _ = orthogonal_procrustes(X, Y)[1]
-        return np.linalg.norm((X @ R) - Y, 'fro')
-      pro_error = lambda X,Y: np.linalg.norm((X @ orthogonal_procrustes(X, Y)[0]) - Y, 'fro')
-      os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
-      A, B = A_p, np.roll(B_p, os, axis=0)
-      # plt.plot(*A.T);plt.plot(*B.T)
-      return procrustes_cc(A, B, matched=True)
-
-def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
-  A_p, B_p = procrustes_cc(A, B, **kwargs)
-  return np.linalg.norm(A_p - B_p, 'fro')
-
-
-
 
 # def interpolate_PL_path(path: Sequence, k: int): 
 #   """ Interpolates a Path of Line objects """
@@ -456,14 +310,6 @@ def isotonic_regress(y: ArrayLike, w: Optional[ArrayLike] = None):
     p[i] = -b_position
   z = np.flip(np.minimum.accumulate(np.flip(p)))  # right_to_left_cumulative_min
   return z
-
-def complex2points(x): 
-  return(np.c_[np.real(x), np.imag(x)])
-
-def uniform_S1(n: int = 10):
-  theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
-  for x,y in zip(np.cos(theta), np.sin(theta)):
-    yield np.array([x,y])
 
 
 def spectral_bound(V, E, type: str = ["graph", "laplacian"]):

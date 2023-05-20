@@ -802,7 +802,8 @@ class Sieve:
     n_pts, n_family = len(self.pattern), len(self.family)
     pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
     corner_it = zip(self.pattern['i'], self.pattern['j'])
-    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
+    #main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
+    main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
 
     ## Sets up progress bar, if requested 
     if progress: 
