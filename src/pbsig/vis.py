@@ -87,6 +87,7 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   # p.y_range = Range1d(0,-10)
   # p.x_range = Range1d(0,10)
   p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
+  return p
 
 def plot_dist(*args, **kwargs) -> None:
   show(dist_figure(*args, **kwargs))

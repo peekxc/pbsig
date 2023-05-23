@@ -15,6 +15,7 @@ extern/
 **.png
 **.gif
 **.txt
+src/pbsig/data/mesh_poses
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

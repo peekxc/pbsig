@@ -25,7 +25,7 @@ shape_paths = [star_path, heart_path, horse_path, chair_path, hand_path, plane_p
 
 from pbsig.shape import PL_path
 from pbsig.pht import parameterize_dt, stratify_sphere, normalize_shape
-DV = stratify_sphere(d=1, n=50)                          ## direction vectors
+DV = stratify_sphere(d=1, n=64)                          ## direction vectors
 
 from pbsig.itertools import LazyIterable
 load_shape = lambda index: normalize_shape(PL_path(shape_paths[index], 100, close_path=True, output_path=False), DV)
@@ -35,9 +35,10 @@ SHAPE_PCS = LazyIterable(load_shape, count=len(shape_paths))
 import pyflubber
 from more_itertools import pairwise
 from pbsig.interpolate import LinearFuncInterp
-f_interp = [pyflubber.interpolator(s1, s2, closed=True) for s1, s2 in pairwise(SHAPE_PCS)]
-F_interp = LinearFuncInterp(f_interp)
-SHAPE_INTERP = LazyIterable(lambda index: F_interp(int(index/150)), count=150)
+# f_interp = [pyflubber.interpolator(s1, s2, closed=True) for s1, s2 in pairwise(SHAPE_PCS)]
+# F_interp = LinearFuncInterp(f_interp)
+F_interp = pyflubber.interpolator(SHAPE_PCS[0], SHAPE_PCS[1], closed=True) 
+SHAPE_INTERP = LazyIterable(lambda index: F_interp(float(index/100)), count=100)
 
 ## Generate the parameterized family of filter functions
 from pbsig.itertools import rproduct, rstarmap
@@ -46,22 +47,205 @@ parameter_space = rproduct(SHAPE_INTERP, DV)
 filter_mesh = lambda mesh, v: lower_star_weight(mesh @ v)
 filter_family = rstarmap(filter_mesh, parameter_space)
 
-## Sieve 
+## Build the sieve 
+from pbsig.linalg import eigvalsh_solver
 from pbsig.betti import Sieve
 from splex import *
 n = len(SHAPE_INTERP[0])
 S = simplicial_complex(pairwise(range(n)))
 sieve = Sieve(S, family=filter_family, p=0, form='lo')
-sieve.randomize_pattern(2)
-sieve.solver
-sieve.sift(w=0.15, progress=True, k=10)
 
-m = len(sieve.summarize()[0])
-p = figure()
-p.line(np.arange(m), sieve.summarize()[0])
+## Choose a rectilinear pattern 
+sieve.randomize_pattern(6)
+show(sieve.figure_pattern())
+
+## Set solve parameters and sift away
+# import line_profiler
+# profile = line_profiler.LineProfiler()
+# profile.add_function(sieve.sift)
+# profile.add_function(sieve.project)
+# profile.add_function(sieve.solver.__call__)
+# profile.add_function(sieve.solver.solver.__call__)
+# profile.add_function(product)
+# profile.enable_by_count()
+sieve.solver = eigvalsh_solver(sieve.laplacian, tolerance=1e-5)
+sieve.sift(w=0.15, progress=True, k=15)
+# profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+
+
+## Plot the signals
+from bokeh.io import export_png
+from bokeh.models import Div 
+from scipy.signal import savgol_filter
+from bokeh.models import Range1d
+from pbsig.vis import figure_dgm 
+summary = sieve.summarize()
+n_dir = 64
+n_summary, sum_len = summary.shape
+pic_dir = "/Users/mpiekenbrock/pbsig/animations/flubber_svgs/star2heart/smooth"
+
+def figure_signal(x: ArrayLike, y: ArrayLike, figkwargs = dict(), **kwargs):
+  p = figure(**figkwargs)
+  p.line(x, y, **kwargs)
+  return p
+
+BOUNDS = {}
+for j in range(n_summary):
+  min_bnds = savgol_filter(np.array([np.array(s).min() for s in chunked(summary[j], n_dir)]), 15, 3) 
+  max_bnds = savgol_filter(np.array([np.array(s).max() for s in chunked(summary[j], n_dir)]), 15, 3) 
+  min_bnds = np.minimum(min_bnds, -1)
+  max_bnds = np.maximum(max_bnds, 1)
+  BOUNDS[j] = {'min' : min_bnds, 'max': max_bnds}
+
+summary_colors = getattr(bokeh.palettes, f"Viridis{n_summary}")
+for i in range(sum_len // n_dir):
+  
+  ## Obtain the shape plots
+  shape_fig = figure(height=80*3, width=80*3)
+  shape_fig.toolbar_location = None 
+  X = np.c_[SHAPE_INTERP[i][:,0], -SHAPE_INTERP[i][:,1]]
+  cycle_outline = np.vstack([X, X[0]])
+  shape_fig.patch(*cycle_outline.T, fill_alpha = 0.35)
+  # p.line(*cycle_outline.T, line_color='red')
+  # p.scatter(*SHAPE_INTERP[i].T)
+  shape_fig.xaxis.visible = False
+  shape_fig.yaxis.visible = False
+
+  ## Obtain the signature plots  
+  # p = figure()
+  # p.scatter(np.arange(100), max_bnds)
+  # show(p)
+  figs = []
+  for j, col in zip(range(n_summary), summary_colors):
+    # bnds = summary[j].min(), summary[j].max()
+    bnds = BOUNDS[j]['min'][i], BOUNDS[j]['max'][i] 
+    extra = abs(float(np.diff(bnds)))*0.15
+    x = np.arange(n_dir)
+    y = savgol_filter(summary[j][i*n_dir:((i+1)*n_dir)], 8, 3)
+    # bnds = y.min()-0.5, y.max()+0.5
+    bnds = bnds[0]-extra, bnds[1]+extra
+    sig = figure_signal(x, y, figkwargs=dict(width=250, height=80), line_color=col, line_width=2)
+    sig.toolbar_location = None
+    sig.y_range = Range1d(*bnds)
+    sig.xaxis.visible = False
+    sig.yaxis.minor_tick_line_color = None  
+    figs.append(sig)
+
+  ## Construct the diagram plot
+  dgm_plot = figure_dgm(width=240, height=240, title=None)
+  indices = sieve._pattern['index']
+  for idx, col in zip(np.unique(indices), summary_colors):
+    r = sieve._pattern[indices == idx]
+    x,y = np.mean(r['i']), np.mean(r['j'])
+    w,h = np.max(np.diff(np.sort(r['i']))), np.max(np.diff(np.sort(r['j'])))
+    dgm_plot.rect(x,y,width=w,height=h,fill_color=col, line_color=None)
+  dgm_plot.toolbar_location = None
+  dgm_plot.xaxis.visible = False 
+  dgm_plot.yaxis.visible = False 
+  
+  ## Aggregate the three plots
+  # plot_titles = row(
+  #   Div(text="<strong> PL-embedded complex </strong>", styles={"background-color": "white"}, width=240), 
+  #   Div(text="<strong> Spectral rank signatures </strong>",  styles={"background-color": "white"}, width=500), 
+  #   Div(text="<strong> Random sieve </strong>", styles={"background-color": "white"}, width=240)
+  # )
+  full_plot = column(
+    row(shape_fig, column(*figs[:3]), column(*figs[3:]), dgm_plot)
+  )
+  #show(full_plot)
+  export_png(full_plot, filename=pic_dir+f"/frame_{i}.png")
+
+# ----------------------
+import time
+from splex import * 
+from pbsig.pht import stratify_sphere
+from pbsig.betti import Sieve
+
+## Plot the image contours
+# X = SHAPE_INTERP[100]
+X = SHAPE_PCS[3]
+f = lower_star_weight(X @ np.array([1,0]))
+sieve_image = Sieve(S, family=[f],  p=0, form='lo')
+# sieve_image.solver = 
+
+from pbsig.linalg import sgn_approx
+phi = sgn_approx(eps=0.001, p=1.0)
+
+xi, yi = np.meshgrid(np.linspace(0,1,50), np.linspace(0,1,50))
+z = np.zeros(xi.shape)
+for v in stratify_sphere(1, 32):
+  f = lower_star_weight(X @ v)
+  z += np.reshape([np.sum(phi(sieve_image.project(i,j,w=0.25,f=f, k=10))) if i < j else 0.0 for i,j in zip(np.ravel(xi),np.ravel(yi))], xi.shape)
+  print(v)
+
+from bokeh.palettes import Sunset10
+p = figure(width=300, height=300)
+levels = np.unique(np.quantile(np.ravel(z[z!=0]), q=np.linspace(0.0,1.0,10)))
+p.contour(xi, yi, z, levels=levels, fill_color=Sunset10, line_color="black")
+show(p)
+#time.sleep(0.25)
+
+from pbsig.persistence import ph
+from pbsig.vis import figure_dgm
+X = SHAPE_PCS[2]
+zero_dgms = []
+K = filtration(S, f=lambda s: s)
+for i, v in enumerate(stratify_sphere(d=1, n=100)):
+  K.reindex(lower_star_weight(X @ v))
+  dgm0 = ph(K, engine="dionysus")[0]
+  inessential = dgm0['death'] != np.inf
+  dgm0_ext = np.c_[dgm0['birth'][inessential], dgm0['death'][inessential], np.repeat(i, sum(inessential))]
+  zero_dgms.append(dgm0_ext)
+zero_dgms = np.vstack(zero_dgms)
+
+from pbsig.color import bin_color
+from bokeh.models import Range1d
+color_pal = bokeh.palettes.viridis(8)
+colors = (bin_color(zero_dgms[:,2].astype(int), 'viridis')*255).astype(np.uint8)
+
+p = figure_dgm()
+p.scatter(zero_dgms[:,0], zero_dgms[:,1], color=colors)
+p.x_range = Range1d(zero_dgms[:,0].min()-0.1, zero_dgms[:,1].max()+0.1)
+p.y_range = Range1d(zero_dgms[:,0].min()-0.1, zero_dgms[:,1].max()+0.1)
 show(p)
 
-show(sieve.figure_pattern())
+
+uhp_pts = rproduct(np.linspace(0,1,50), np.linspace(0,1,50))
+uhp_pts = np.array([(i,j) for i,j in image_family if i < j])
+
+# sieve_image._pattern = np.fromiter(
+#   zip(uhp_pts[:,0], uhp_pts[:,1], np.repeat(1, len(uhp_pts)), np.arange(len(uhp_pts))),
+#   dtype=sieve_image._pattern.dtype
+# )
+# for i,j in zip(np.ravel(xi),np.ravel(yi)):
+#   if i < j:
+#     sum(sieve_image.project(i,j,w=0.15, f=f))
+
+# show(sieve_image.figure_pattern())
+
+sieve_image.solver = eigvalsh_solver(sieve_image.laplacian, tolerance=1e-5)
+sieve_image.sift(w=0.15, progress=True, k=15)
+
+summary_image = sieve_image.summarize()
+
+from bokeh.palettes import Sunset8
+from pbsig.color import bin_color
+v_cols = bokeh.palettes.viridis(10)
+
+
+p.image_rgba()
+
+
+
+
+
+
+
+
+
+## Vineyard diagrams?
+ph(filtration(S, filter_family[0]))
 
 from scipy.sparse.linalg import eigsh
 eigsh(sieve.laplacian)
@@ -71,7 +255,6 @@ import line_profiler
 profile = line_profiler.LineProfiler()
 profile.add_function(perfect_hash_dag)
 profile.enable_by_count()
-perfect_hash_dag(tr, mult_max=1.5, n_tries=100, n_prime=15, progress=True)
 profile.print_stats(output_unit=1e-3, stripzeros=True)
 
 

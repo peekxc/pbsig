@@ -169,9 +169,9 @@ Unlike the rank invariant, these spectrally-derived relaxations enjoy a number o
 %Our proposed $(1-\epsilon)$-approximation relies on uses nonconvex spectral functions  composition with the spectral decomposition relax boundary operators with L{\"o}wner operators. 
 %equipping the space of cochains over $\mathbb{R}$ with an inner product. 
 %Fundamental to the family we propose is their characterization as spectral functions.
-These operators manifest as combinatorial Laplacians, which encode rich geometric information in their non-harmonic spectra, providing several avenues for geometric data analysis. 
+Moreover, we find the combinatorial Laplacians operators these relaxations derive from encode rich geometric information in their non-harmonic spectra, providing several avenues for geometric data analysis. 
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
-As exemplary applications, we study its utility in performing common tasks in topological data analysis and machine learning, such as hyper-parameter optimization and shape classification.
+We investigate the utility of our relaxation with exemplary applications in topological data analysis and machine learning, such as hyper-parameter optimization and shape classification.
 
 \end{abstract}
 
@@ -198,15 +198,15 @@ Along a separate thread of research addressing the issue of injectivity, Turner 
 %rather than compute one diagram, compute many, each diagram representing a different perspective. 
 The main result of~\cite{} shows this collection of diagrams is sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
 %however, their scalability is limited as diagrams are prerequisite to their computation.
-The scalability issue remains exacerbated, however, as extending the standard persistence computation to parameterized settings has proven non-trivial~\cite{}. %moves
-Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone involves a quadratic number of diagram comparisons. 
+The scalability issue remains exacerbated, however, as extending the standard persistence computation to parameterized settings has proven non-trivial~\cite{}, and all of the previously mentioned vectorizations require diagrams as part of their input. %moves
+Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone\footnote{This is often a necessary post-processing step of the PHT.} involves a quadratic number of bottleneck computations. 
  
  % decrease usage of vectorization / increase generality 
  % enable learning applications including ones addressed by ones from previous paragraph
-We seek to shift the computational paradigm on persistence while retaining the application potential: rather than first constructing diagrams and then endowing them with additional structure, we devise a spectral method that performs both steps, simultaneously and approximately. 
+We seek to shift the computational paradigm on persistence while retaining its application potential: rather than first constructing diagrams and then endowing them with additional structure, we devise a spectral method that performs both steps, simultaneously and approximately. 
 %Our strategy is natural in that it extracts persistence information ~\cite{}.
 % include words: without constructing diagrams 
-Using the duality between rank functions and diagrams, we not only avoid explicitly computing diagrams, but we in fact avoid using both explicit matrix representations and the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
+Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 Our strategy is motivated by both a measure-theoretic perspective on $\mathbb{R}$-indexed persistence modules~\cite{chazal2016structure} and by a technical observation that suggests several computational advantages to working with the rank invariant directly (see section~\ref{sec:betti_derivation} for details). 
 %?between the persistent Betti numbers and combinatorial Laplacian operators
 As the vectorization we propose continuously interpolates between the rank invariant and a certain spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
@@ -233,11 +233,13 @@ Moreover, inspired by a relationship established between the persistent Betti nu
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
 \subsection*{Rank invariant relaxation}\label{sec:rank_invariant_summary}
-So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details. At a high level, the relaxation we propose constructs a vector-valued mapping over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
+So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details associated with using and implementing the relaxation. At a high level, we propose a family of vector-valued mappings over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
 \begin{equation}\label{eq:relaxation_mapping}
-	(X_\alpha, \mathcal{R}, \epsilon) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
+	(X_\alpha, \mathcal{R}, \epsilon, \lambda) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
 \end{equation}
-where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\epsilon$ a relaxation parameter, and $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$ which sifts through $\mathcal{A} \times \Delta_+$, extracting and summarizing the topological and geometric behavior $X_\alpha$ exhibits. 
+where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \lambda) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
+%The intuition is that that are many situations where one has a data set 
+The intuition is that $\mathcal{R}$ is used to extract, filter, and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
 % sifts through ... something like vineyards, limits towards multiplicity, A x W
 %We interpret $\mathcal{A}$ \emph{parameter space} 
 The steps to produce this mapping are as follows:
@@ -247,29 +249,32 @@ The steps to produce this mapping are as follows:
 	$$(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}$$
 	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations~\cite{} or time-varying filtrations over dynamic metric spaces~\cite{}. 
 	\item Select a \emph{sieve} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
-	$$ \mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$$ 
+	\begin{equation}\label{eq:rect_sieve}
+		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
+	\end{equation} 
 	This choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes, when $\mathcal{R}$ is unknown.
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-	\item Fix a homology dimension $p\geq 0$ and approximation parameter $\epsilon > 0$ representing how closely the relaxation should model the quantity: 
+	\item Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \lambda) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
 	\begin{equation}\label{eq:mu_alpha}
-		\mu_p(\mathcal{R} \times \mathcal{A}) \stackrel{\epsilon}{\approx} \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
+		\mu_p(\mathcal{R} \times \mathcal{A}) \triangleq \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
-
-	\item Choose a Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
+	We will show in section~\ref{sec:spri_properties}, letting both $\lambda \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
+	\item Choose a Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$, such as the Kirchhoff or random-walk Laplacians: 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
-$$
+\begin{equation}\label{eq:laplace_intro}
 \mathcal{L} : C^p(K, \mathbb{R}) \times \mathcal{A} \to C^p(K, \mathbb{R})
-$$
+\end{equation}
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-The choice of $\mathcal{L}$ encodes specific geometric and topological information about $(K, f_\alpha)$.%and $\Phi$ determines how this information is incorporated into the mapping. 
+The choice of $\mathcal{L}$ determines how the geometric and topological information about $(K, f_\alpha)$ is encoded.
+%and $\Phi$ determines how this information is incorporated into the mapping. 
 	\item For each corner point $(i,j)$ in the boundary of $\mathcal{R}$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
 	$$
 	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}, \quad \quad v \in \mathrm{span}(\textbf{1})^\perp
 	$$
-	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $\epsilon$-approximation\footnote{Depending on the amount of memory available,  step (5) may be accelerated along similar $\alpha \in \mathcal{A}$ by storing the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ (see section~\ref{sec:lanczos_it} for details).} of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
+	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $(\epsilon, \lambda)$-approximation\footnote{Depending on the amount of memory available,  step (5) may be accelerated along similar $\alpha \in \mathcal{A}$ by storing the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ (see section~\ref{sec:lanczos_it} for details).} of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
 \end{enumerate}
 \end{boxedenumerate}
 
@@ -309,9 +314,10 @@ The proposed relaxation is also \emph{matrix-free}, requiring only as much memor
 %We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
 Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing persistence diagrams (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
 % TODO: mention more explicitly Chen's result compared to reduction 
-
-\subsection{Organization}
-The paper is organized as follows. 
+\\
+\\
+\noindent 
+\textbf{Organization: } The paper is organized as follows. 
 Section~\ref{sec:background_notation} introduces the notation and background theory on which the rest of the paper depends, including an illuminating derivation of a relatively little-known expression of the persistent Betti number $\beta_p(K)$ in section~\ref{sec:betti_derivation}, which is a key technical ingredient for much of the work presented here.
 Section~\ref{sec:spectral_relax} contains the main results: a family of spectral relaxations of the rank invariants, their properties and interpretations, and their connections to other areas of mathematics. 
 Section~\ref{sec:computational_imp} compares and contrasts the computational differences between the proposed relaxation and the traditional persistence computation.
@@ -990,7 +996,7 @@ For all the reasons given above, we exclusively consider the normalized combinat
 %Note that $\tilde{L}_p^{\mathrm{up}}$ is not be symmetric matrix in general. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
 
 
-\subsection{Properties \& Interpretations}
+\subsection{Properties \& Interpretations}\label{sec:spri_properties}
 \subsubsection*{Basic Properties}
 % Laplacian Energy
 We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants. 

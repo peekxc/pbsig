@@ -24,15 +24,17 @@ def rect_intersect(r1,r2) -> bool:
   return intervals_intersect(r1[[0,1]], r2[[0,1]]) and intervals_intersect(r1[[2,3]], r2[[2,3]])
 
 ## Generate a random set of rectangles in the upper half plane 
-def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0, 0.05), disjoint: bool = False):  
-  """Generate random rectilinear boxes with min/max _area_ in upper-half plane via rejection sampling.
+def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0, 0.05), max_asp = 5, disjoint: bool = False):  
+  """Generate random rectangles with min/max _area_ and maximum aspect ratio _max asp_ in upper-half plane via rejection sampling.
   """
   cc = 0
   R = []
   while cc < n:
     r = np.sort(np.random.uniform(size=4, low = lb, high=ub))
-    ra = abs(r[1]-r[0])*abs(r[3]-r[2])
-    if ra >= area[0] and ra <= area[1] and not(any([rect_intersect(r, r_) for r_ in R])):
+    dx, dy = abs(r[1]-r[0]), abs(r[3]-r[2])
+    asp = max(dx/dy, dy/dx)
+    ra = dx*dy
+    if ra >= area[0] and ra <= area[1] and asp < max_asp and not(any([rect_intersect(r, r_) for r_ in R])):
       R.append(r)
     else: 
       continue
@@ -778,18 +780,20 @@ class Sieve:
           IND.append(idx)
       self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
   
-  def randomize_pattern(self, n_rect: int = 1):
-    self.pattern = sample_rect_halfplane(n_rect, area = (0.025, 0.15), disjoint=True)  # must be disjoint 
+  def randomize_pattern(self, n_rect: int = 1, **kwargs):
+    kwargs = dict(area=(0.0025, 0.050), disjoint=True) | kwargs 
+    self.pattern = sample_rect_halfplane(n_rect, **kwargs)  # must be disjoint 
 
-  def figure_pattern(self, p = None):
+  def figure_pattern(self, p = None, rect_opts = {}, **kwargs):
     from pbsig.vis import figure_dgm
-    p = figure_dgm() if p is None else p
+    p = figure_dgm(**kwargs) if p is None else p
     indices = self._pattern['index']
+    rect_opts = { idx : {} for idx in np.unique(indices) } | rect_opts
     for idx in np.unique(indices):
       r = self._pattern[indices == idx]
       x,y = np.mean(r['i']), np.mean(r['j'])
       w,h = np.max(np.diff(np.sort(r['i']))), np.max(np.diff(np.sort(r['j'])))
-      p.rect(x,y,width=w,height=h)
+      p.rect(x,y,width=w,height=h, **rect_opts[idx])
     return p
 
   def detect_bounds():
@@ -837,6 +841,7 @@ class Sieve:
     
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
     """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
+    # if i > j: return
     si = smooth_upstep(lb=i, ub=i+w)
     sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
     fp = si(f(self.p_faces))

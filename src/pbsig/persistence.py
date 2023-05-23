@@ -247,6 +247,7 @@ def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collaps
   # for i, s in enumerate(faces(K)):
   #   pass
   # pass 
+from splex import boundary_matrix
 
 ## TODO: redo with filtration class at some point
 def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: str = ["python", "cpp", "dionysus"], field="reals", validate: bool = True,  **kwargs):
@@ -484,7 +485,7 @@ def lower_star_ph_dionysus(f: ArrayLike, E: ArrayLike, T: ArrayLike):
 
 def ph_dionysus(K: FiltrationLike):
   import dionysus as d
-  F = d.Filtration([d.Simplex(s, f) for f,s in K.items()])
+  F = d.Filtration([d.Simplex(s,f) for f,s in K])
   m = d.homology_persistence(F)
   dgms = d.init_diagrams(m, F)
   bd_dtype = [('birth', 'f4'), ('death', 'f4')]
