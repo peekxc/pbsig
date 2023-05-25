@@ -18,6 +18,82 @@ elephant_poses = [f"elephant-0{i}.obj" for i in range(1,4)] + ["elephant-referen
 elephant_poses = ["elephant-poses/"+fp for fp in elephant_poses]
 pose_paths = [mesh_dir + "/" + path for path in chain(elephant_poses, camel_poses)]
 
+## Preprocess 
+from pbsig.pht import stratify_sphere, normalize_shape
+from pbsig.itertools import LazyIterable
+
+def load_mesh(i: int):
+  mesh_in = o3.io.read_triangle_mesh(pose_paths[i])
+  mesh_in.compute_vertex_normals()
+  mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=5000)
+  X = np.asarray(mesh_smp.vertices)
+  V = stratify_sphere(2, 132)
+  X_norm = normalize_shape(X, V)
+  return X_norm, mesh_smp
+
+import networkx as nx
+meshes = list(LazyIterable(load_mesh, len(pose_paths)))
+
+def geodesic_dist(X, mesh):
+  mesh.compute_adjacency_list()
+  G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
+  A = nx.adjacency_matrix(G)
+  A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+  AG = floyd_warshall(A)
+  return squareform(AG)
+
+mesh_geodesics = [geodesic_dist(X, mesh) for X, mesh in meshes]
+mesh_ecc = [squareform(gd).max(axis=1) for gd in mesh_geodesics]
+
+
+## Plot the low-d embeddings 
+# from pbsig.linalg import cmds
+# p = figure()
+# p.scatter(*cmds(squareform(mesh_geodesics[5]**2), d=2).T)
+# show(p)
+
+
+from splex.geometry import flag_weight
+from pbsig.persistence import ph 
+
+
+R = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
+ecc_f = [[max(mesh_ecc[cc][i], mesh_ecc[cc][j]) for (i,j) in combinations(range(X.shape[0]), 2)] for cc, (X, mesh) in enumerate(meshes)]
+eff_f = [np.array(ecc) for ecc in ecc_f]
+
+dgms = []
+for i, (X, mesh) in enumerate(meshes):
+  S = simplicial_complex(mesh.triangles)
+  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 5.0*eff_f[i]))
+  K = filtration(S, f=diam_filter)
+  dgms.append(ph(K, engine="dionysus"))
+
+import gudhi 
+p_hom = 1
+to_mat = lambda d: np.c_[d['birth'][d['death'] != np.inf], d['death'][d['death'] != np.inf]]
+bd = np.array([gudhi.bottleneck_distance(to_mat(dgms[i][p_hom]), to_mat(dgms[j][p_hom])) for i,j in combinations(range(len(dgms)), 2)])
+
+from pbsig.vis import figure_dist
+show(figure_dist(bd))
+
+from pbsig.vis import figure_dgm
+p = figure_dgm(dgms[5][1])
+show(p)
+
+
+
+##
+i = 0
+X, mesh = meshes[i]
+S = simplicial_complex(mesh.triangles)
+diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
+sieve = Sieve(S, diam_filters)
+sieve.randomize_pattern(4) # show(sieve.figure_pattern())
+sieve.solver = eigvalsh_solver(sieve.laplacian, tolerance=1e-5)
+sieve.sift(w=0.15, k=15)
+
+
+
 sieves = []
 for pose_path in pose_paths: 
   mesh_in = o3.io.read_triangle_mesh("/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses/camel-poses/camel-02.obj")

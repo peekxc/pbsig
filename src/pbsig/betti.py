@@ -801,7 +801,8 @@ class Sieve:
 
   def sift(self, w: float = 0.0, progress: bool = True, **kwargs):
     """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
-    
+    if len(self._pattern) == 0:
+      raise ValueError("No rectilinear pattern has been chosen! Consider using 'randomize_pattern'.")
     ## Setup the main iterator
     n_pts, n_family = len(self.pattern), len(self.family)
     pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)

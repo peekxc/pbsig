@@ -28,15 +28,17 @@ def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
   '''Classical Multidimensional Scaling (CMDS).
 
   Parameters:  
-    D: squared distance matrix
-    coords: whether to produce a coordinitization of 'D' or just return the  
+    D: _squared_ dense distance matrix.
+    d: target dimension of the embedding.
+    coords: whether to produce a coordinitization of 'D' or just return the eigen-sets.
+    pos: keep only eigenvectors whose eigenvalues are positive. Defaults to True. 
   '''
   n = D.shape[0]
   H = np.eye(n) - (1.0/n)*np.ones(shape=(n,n)) # centering matrix
   evals, evecs = np.linalg.eigh(-0.5 * H @ D @ H)
   evals, evecs = evals[(n-d):n], evecs[:,(n-d):n]
 
-  # Compute the coordinates using positive-eigenvalued components only     
+  ## Compute the coordinates using positive-eigenvalued components only     
   if coords:               
     w = np.flip(np.maximum(evals, np.repeat(0.0, d)))
     Y = np.fliplr(evecs) @ np.diag(np.sqrt(w))
