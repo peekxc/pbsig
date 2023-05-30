@@ -305,6 +305,19 @@ def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> 
   #return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
   return PsdSolver(A, return_eigenvectors=False, **kwargs)
 
+
+def eigen_dist(x: np.ndarray, y: np.ndarray, p: int = 2, method: str = "relative"):
+  """Computes a variety of distances between sets of eigenvalues. """
+  if method == "relative":
+    n = max(len(x), len(y))
+    a,b = np.zeros(n), np.zeros(n)
+    a[:len(x)] = np.sort(x)
+    b[:len(y)] = np.sort(y)
+    denom = (np.abs(a)**p + np.abs(b)**p)**(1/p)
+    return np.sum(np.where(np.isclose(denom, 0, atol=1e-15), 0, np.abs(a-b)/denom))
+  else: 
+    raise NotImplementedError("Haven't implemented other distances yet.")
+
 def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: float = None) -> int:
   if len(ew) == 0: return 0
   ew = np.array(ew) if not isinstance(ew, np.ndarray) else ew

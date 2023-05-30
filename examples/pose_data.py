@@ -1,39 +1,64 @@
-import trimesh 
-import numpy as np
+# %% Imports 
+from itertools import *
 import networkx as nx
+import numpy as np
 import open3d as o3
-
-from splex import *
-from scipy.sparse.csgraph import floyd_warshall
-from itertools import * 
-from more_itertools import pairwise, chunked
-from pbsig.linalg import eigvalsh_solver
+from more_itertools import chunked, pairwise
 from pbsig.betti import Sieve
-# mesh = trimesh.load("/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses/elephant-poses/elephant-01.obj")
+from pbsig.linalg import eigvalsh_solver
+from scipy.sparse.csgraph import floyd_warshall
+from splex import *
 
+# %% Bokeh configuration 
+import bokeh
+from bokeh.plotting import show, figure 
+from bokeh.models import Range1d
+from bokeh.layouts import row, column
+from bokeh.io import output_notebook
+output_notebook()
+
+# %% Configure the mesh directories 
+import os 
 mesh_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses"
-camel_poses = [f"camel-0{i}.obj" for i in range(1,4)] + ["camel-reference.obj"]
-camel_poses = ["camel-poses/"+fp for fp in camel_poses]
-elephant_poses = [f"elephant-0{i}.obj" for i in range(1,4)] + ["elephant-reference.obj"]
-elephant_poses = ["elephant-poses/"+fp for fp in elephant_poses]
-pose_paths = [mesh_dir + "/" + path for path in chain(elephant_poses, camel_poses)]
+pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses"]
+get_pose_objs = lambda pd: np.array(list(filter(lambda s: s[-3:] == "obj", sorted(os.listdir(mesh_dir+"/"+pd)))))
+pose_objs = [get_pose_objs(pose_type)[[0,1,2,3]] for pose_type in pose_dirs]
+pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_dirs, pose_objs)]
+pose_objs = list(collapse(pose_objs))
+pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
 
-## Preprocess 
-from pbsig.pht import stratify_sphere, normalize_shape
+# %% 
+"/Users/mpiekenbrock/neuromorph/data/meshes/SHREC20b_lores/full"
+
+
+
+# %% Lazily-load the mesh data, normalized
+import networkx as nx
 from pbsig.itertools import LazyIterable
-
+from pbsig.pht import normalize_shape, stratify_sphere
 def load_mesh(i: int):
   mesh_in = o3.io.read_triangle_mesh(pose_paths[i])
   mesh_in.compute_vertex_normals()
   mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=5000)
   X = np.asarray(mesh_smp.vertices)
-  V = stratify_sphere(2, 132)
-  X_norm = normalize_shape(X, V)
+  V = stratify_sphere(2, 64)
+  X_norm = normalize_shape(X, V=V, translate="hull")
   return X_norm, mesh_smp
-
-import networkx as nx
 meshes = list(LazyIterable(load_mesh, len(pose_paths)))
 
+from pbsig.pht import archimedean_sphere, shape_center
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(load_mesh)
+profile.add_function(stratify_sphere)
+profile.add_function(normalize_shape)
+profile.add_function(shape_center)
+profile.add_function(archimedean_sphere)
+profile.enable_by_count()
+meshes = list(LazyIterable(load_mesh, 1))
+profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+# %% Compute geodesic distances and eccentricities
 def geodesic_dist(X, mesh):
   mesh.compute_adjacency_list()
   G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
@@ -41,117 +66,117 @@ def geodesic_dist(X, mesh):
   A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
   AG = floyd_warshall(A)
   return squareform(AG)
-
 mesh_geodesics = [geodesic_dist(X, mesh) for X, mesh in meshes]
 mesh_ecc = [squareform(gd).max(axis=1) for gd in mesh_geodesics]
 
-
-## Plot the low-d embeddings 
-# from pbsig.linalg import cmds
-# p = figure()
-# p.scatter(*cmds(squareform(mesh_geodesics[5]**2), d=2).T)
-# show(p)
-
-
-from splex.geometry import flag_weight
-from pbsig.persistence import ph 
-
-
-R = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
+# %% Precompute eccentricities
 ecc_f = [[max(mesh_ecc[cc][i], mesh_ecc[cc][j]) for (i,j) in combinations(range(X.shape[0]), 2)] for cc, (X, mesh) in enumerate(meshes)]
 eff_f = [np.array(ecc) for ecc in ecc_f]
 
+# %% Compute eccentricity-equipped diagrams 
+from pbsig.persistence import ph
+from splex.geometry import flag_weight
+# ecc_p = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
 dgms = []
 for i, (X, mesh) in enumerate(meshes):
   S = simplicial_complex(mesh.triangles)
-  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 5.0*eff_f[i]))
+  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
   K = filtration(S, f=diam_filter)
   dgms.append(ph(K, engine="dionysus"))
 
-import gudhi 
+# %% Visualize the bottleneck-based distance matrix for the enriched diagrams
+import gudhi
+from pbsig.vis import figure_dist, figure_dgm
 p_hom = 1
 to_mat = lambda d: np.c_[d['birth'][d['death'] != np.inf], d['death'][d['death'] != np.inf]]
 bd = np.array([gudhi.bottleneck_distance(to_mat(dgms[i][p_hom]), to_mat(dgms[j][p_hom])) for i,j in combinations(range(len(dgms)), 2)])
-
-from pbsig.vis import figure_dist
+dgm_figs = [figure_dgm(d[1], width=150, height=150) for d in dgms]
+show(row(*dgm_figs))
 show(figure_dist(bd))
 
-from pbsig.vis import figure_dgm
-p = figure_dgm(dgms[5][1])
+# %% Randomly maxmin sample to get sieve pattern
+dgm_colors = bokeh.palettes.viridis(len(dgms))
+p = figure()
+for d, dcol in zip(dgms, dgm_colors):
+  birth, death = d[1]['birth'], d[1]['death']
+  dgm_points = np.c_[birth[death != np.inf], death[death != np.inf]]
+  p.scatter(*dgm_points.T, color=dcol)
+show(p)
+
+b = np.hstack([d[1]['birth'] for d in dgms])
+d = np.hstack([d[1]['death'] for d in dgms])
+dgm_points = np.c_[b[d != np.inf], d[d != np.inf]]
+D = squareform(pdist(dgm_points))
+knn = np.argsort(D, axis=1)[:,5]
+L0 = np.argmin([D[i,j] for i,j in enumerate(knn)])
+L = np.array([L0])
+for i in range(16):
+  dl = D[:,L]
+  dl[L,:] = -np.inf
+  L = np.append(L, [np.argmax(D[:,L].min(axis=1))])
+
+p = figure()
+p.scatter(*dgm_points.T)
+p.scatter(*dgm_points[L,:].T, color="red")
 show(p)
 
 
-
-##
-i = 0
-X, mesh = meshes[i]
-S = simplicial_complex(mesh.triangles)
-diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
-sieve = Sieve(S, diam_filters)
-sieve.randomize_pattern(4) # show(sieve.figure_pattern())
-sieve.solver = eigvalsh_solver(sieve.laplacian, tolerance=1e-5)
-sieve.sift(w=0.15, k=15)
-
+from pbsig.betti import sample_rect_halfplane
+P = dgm_points[L,:]
+rects = sample_rect_halfplane(len(P), lb=0.0025, ub=0.050)
+a = P[:,0] - (abs(rects[:,0] - rects[:,1]))/2
+b = P[:,0] + (abs(rects[:,0] - rects[:,1]))/2
+c = P[:,1] - (abs(rects[:,2] - rects[:,3]))/2
+d = P[:,1] + (abs(rects[:,2] - rects[:,3]))/2
+rects = np.array(list(zip(a,b,c,d)))
+rects = rects[np.logical_and(rects[:,0] <= rects[:,1], rects[:,1] <= rects[:,2], rects[:,2] <= rects[:,3]),:]
 
 
+# %% Select a random sieve pattern and 
 sieves = []
-for pose_path in pose_paths: 
-  mesh_in = o3.io.read_triangle_mesh("/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses/camel-poses/camel-02.obj")
-  mesh_in.compute_vertex_normals()
-  mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=5000)
-  # o3.visualization.draw_geometries([mesh_smp])
-
-  ## Compute the sieve 
-  from pbsig.pht import stratify_sphere, normalize_shape
-  X = np.asarray(mesh_smp.vertices)
-  V = stratify_sphere(2, 132)
-  X_norm = normalize_shape(X, V)
-
-  ## Fix the pattern
-  sieve_pattern = np.loadtxt("/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses/elephant-poses/4_pattern.txt")
-  sieve_pattern = np.array([tuple(s) for s in sieve_pattern], dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
-  
-  ## Construct the sieve
-  S = simplicial_complex(np.array(mesh_smp.triangles))
-  DV_family = [lower_star_weight(X_norm @ v) for v in V]
-  sieve = Sieve(S, DV_family)
-  sieve._pattern = sieve_pattern
+for i, (X, mesh) in enumerate(meshes):
+  X, mesh = meshes[i]
+  S = simplicial_complex(mesh.triangles, form="tree")
+  # diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
+  f = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
+  sieve = Sieve(S, [f], p=1)
+  sieve.pattern = rects
+  # sieve.randomize_pattern(4) # show(sieve.figure_pattern())
   sieve.solver = eigvalsh_solver(sieve.laplacian, tolerance=1e-5)
-  sieve.sift(w=0.15, k=15)
-
-  ## Save the sieve
   sieves.append(sieve)
 
+for sieve in sieves: 
+  sieve.sift(w=0.35, k=25)
+
+summaries = [sieve.summarize() for sieve in sieves]
+nd = np.array([np.linalg.norm(summaries[i] - summaries[j]) for i,j in combinations(range(len(summaries)), 2)])
+show(figure_dist(nd))
+
+import time
+from math import comb
+normalize = lambda x: (x - min(x))/(max(x) - min(x))
+nd = np.zeros(comb(len(sieves), 2))
+# nd.fill(np.inf)
+for cc in range(40):
+  d_ij = np.array([rho_dist(sieves[i].spectra[cc]['eigenvalues'], sieves[j].spectra[cc]['eigenvalues']) for i,j in combinations(range(len(sieves)), 2)])
+  nd += d_ij
+  # nd += np.where(normalize(d_ij) <= 0.25, normalize(d_ij), 1.0)
+  # nd = np.minimum(nd, d_ij)
+
+# show(figure_dist(nd))
+# time.sleep(0.5)
+
 ## Compare the distances 
-from bokeh.plotting import show
 from bokeh.io import output_notebook
-from scipy.spatial.distance import pdist, squareform
+from bokeh.plotting import show
 from pbsig.dsp import signal_dist
 from pbsig.vis import figure_dist
+from scipy.spatial.distance import pdist, squareform
+
 output_notebook()
 summaries = [sieve.summarize() for sieve in sieves]
 D = np.array([signal_dist(summaries[i][0], summaries[j][0], scale=True, center=True) for i,j in combinations(range(len(sieves)), 2)])
 show(figure_dist(D))
-
-def rho_dist(x: np.ndarray, y: np.ndarray, p: int = 2):
-  n = max(len(x), len(y))
-  a,b = np.zeros(n), np.zeros(n)
-  a[:len(x)] = np.sort(x)
-  b[:len(y)] = np.sort(y)
-  denom = (np.abs(a)**p + np.abs(b)**p)**(1/p)
-  return np.sum(np.where(np.isclose(denom, 0, atol=1e-15), 0, np.abs(a-b)/denom))
-
-shape0_p0 = list(chunked(sieves[0].spectra[0]['eigenvalues'], 15))
-shape1_p0 = list(chunked(sieves[7].spectra[0]['eigenvalues'], 15))
-
-np.sum([rho_dist(ew1, ew2) for ew1, ew2 in zip(shape0_p0, shape1_p0)])
-
-ev1 = [s['eigenvalues'] for s in chunked(sieves[0].spectra.values(), 15)]
-ev2 = [s['eigenvalues'] for s in chunked(sieves[1].spectra.values(), 15)]
-
-# sieve.randomize_pattern(4)
-# show(sieve.figure_pattern())
-# np.savetxt("/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses/elephant-poses/4_pattern.txt", sieve._pattern)
 
 ## Show the summary statistics
 summary = sieve.summarize()
@@ -159,6 +184,7 @@ n_summaries = len(np.unique(sieve._pattern['index']))
 n_dir = len(V)
 
 import time
+
 figs = []
 for j in range(n_summaries):
   x = np.arange(n_dir)
@@ -171,28 +197,12 @@ for j in range(n_summaries):
   figs.append(sig)
   # time.sleep(0.15)s
 
-from bokeh.models import Div
-from bokeh.layouts import row, column
-show(column(Div(text="Camel-2"), *figs))
 
-## make function-endowed Rips 
+# %%
 
+## Plot the low-d embeddings 
+# from pbsig.linalg import cmds
+# p = figure()
+# p.scatter(*cmds(squareform(mesh_geodesics[5]**2), d=2).T)
+# show(p)
 
-
-
-
-
-
-
-
-
-# A = nx.adjacency_matrix(mesh.vertex_adjacency_graph)
-# X = np.array(mesh.vertices)
-# A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
-# floyd_warshall(A)
-# maxmin sampling
-
-
-from pbsig.betti import Sieve
-
-S = simplicial_complex(mesh.faces)

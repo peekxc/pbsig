@@ -112,7 +112,36 @@ def offset_curve(path, offset_distance, steps=1000):
   offset_path = Path(*connect_the_dots)
   return offset_path
 
+def stratify_sphere(d: int, n: int, **kwargs) -> np.ndarray:
+  """Partitions the d-sphere into a set of _n_ unit vectors in dimension (d+1)."""
+  assert d == 1 or d == 2, "Only d == 1 or d == 2 are implemented."
+  if d == 1:
+    theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
+    V = np.array(list(zip(np.cos(theta), np.sin(theta))))
+    return V
+  elif d == 2:
+    args = dict(nr = 5) | kwargs
+    V = archimedean_sphere(n, **args)
+    return V
+  else: 
+    ## TODO: do maxmin sampling for d > 2, accept option to support paths/Iterables
+    raise NotImplementedError("Haven't done d-spheres larger than 2 yet")
 
+def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray] = None, scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
+  """Performs a variety of shape normalizations, such as mean-centering and scaling, with respect to a set of direction vectors _V_."""
+  u = shape_center(X, method=translate, V=V, **kwargs)
+  X = X - u 
+  if scale == "directions":
+    assert V is not None, "Direction vectors must be supplied when scaling is directions based!"
+    L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
+    return (len(V)/L)*X
+  elif scale == "diameter":
+    raise NotImplementedError("Haven't implemented yet")
+    diam = np.max(pdist(X))
+    return X 
+  else: 
+    raise ValueError(f"Invalid scale given '{scale}'")
+                               
 def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
   """
   Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
@@ -131,7 +160,7 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
   """
   import warnings
   n, d = X.shape[0], X.shape[1]
-  method = "directions" if V is not None else method 
+  method = "directions" if V is not None and method == ["barycenter", "directions", "bbox", "hull"] else method 
   if method == "barycenter" or method == ["barycenter", "directions", "bbox", "hull"]:
     return(X.mean(axis=0))
   elif method == "hull":
@@ -139,9 +168,10 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
     return(X[ConvexHull(X).vertices,:].mean(axis=0))
   elif method == "directions":
     assert V is not None and isinstance(V, np.ndarray) and V.shape[1] == d
-    ## Check V is rotationally symmetric
+    ## Check V is rotationally symmetric by seeing if there is an opposite vector that exists for each v
     rot_sym = np.allclose([min(np.linalg.norm(V + v, axis=1)) for v in V], 0.0, atol=atol)
-    warnings.warn("Warning: supplied vectors 'V' not rotationally symmetric up to supplied tolerance")
+    if not rot_sym:
+      warnings.warn(f"Warning: supplied vectors 'V' not rotationally symmetric up to supplied tolerance {atol}")
     original_center = X.mean(axis=0)
     cost: float = np.inf
     while not(np.isclose(cost, 0.0, atol=atol)):

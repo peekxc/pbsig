@@ -12,36 +12,8 @@ from typing import *
 
 from .persistence import lower_star_ph_dionysus
 from .utility import progressbar
-from .shape import archimedean_sphere, shape_center, PL_path
+from .shape import *
 
-def stratify_sphere(d: int, n: int, **kwargs) -> np.ndarray:
-  """Partitions the d-sphere into a set of _n_ unit vectors in dimension (d+1)."""
-  assert d == 1 or d == 2, "Only d == 1 or d == 2 are implemented."
-  if d == 1:
-    theta = np.linspace(0, 2*np.pi, n, endpoint=False)+(np.pi/2)
-    V = np.array(list(zip(np.cos(theta), np.sin(theta))))
-    return V
-  elif d == 2:
-    args = dict(nr = 5) | kwargs
-    V = archimedean_sphere(n, **args)
-    return V
-  else: 
-    ## TODO: do maxmin sampling for d > 2, accept option to support paths/Iterables
-    raise NotImplementedError("Haven't done d-spheres larger than 2 yet")
-  
-def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray], scale = "directions", translate: str = "directions", **kwargs) -> ArrayLike:
-  """Performs a variety of shape normalizations, such as mean-centering and scaling, with respect to a set of direction vectors _V_."""
-  u = shape_center(X, method=translate, V=V, **kwargs)
-  X = X - u 
-  if scale == "directions":
-    L = -sum([min(X @ vi[:,np.newaxis]) for vi in V])
-    return (len(V)/L)*X
-  elif scale == "diameter":
-    raise NotImplementedError("Haven't implemented yet")
-    diam = np.max(pdist(X))
-    return X 
-  else: 
-    raise ValueError(f"Invalid scale given '{scale}'")
 
 # from pbsig.utility import multigen
 def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: bool = True):

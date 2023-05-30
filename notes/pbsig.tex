@@ -302,17 +302,17 @@ Moreover, the differentiability of our relaxation enables learning applications 
 %The fact that the proposed relaxation satisfies the same inclusion-exclusion formula obeyed by the rank invariant implies that we may recover a $(1-\epsilon)$-approximation of~\eqref{eq:mu_alpha} simply by obtaining $(1-\epsilon)$-approximations of $\mu_p$ at every corner point $(i,j) \in \partial(\mathcal{R})$. We defer discussion of the details of the computation to section~\ref{sec:computational_imp}.
 \noindent 
 \textbf{Contributions:}
-Our primary contribution is an iterative $\epsilon$-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
+Our primary contribution is an iterative ($\epsilon$, $\lambda$)-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
 % TODO: explicitly mention multiplicity and betti in hyphened-text
 % exact arithmetic + empirical 
 The approximation is spectral-based and is particularly efficient when executed on parameterized families of inputs. 
-When the accuracy parameter $\epsilon$ is made small enough, both invariants are recovered exactly. 
+When the parameters $\epsilon$ and $\lambda$ made small enough, both invariants are recovered exactly. 
 In deriving the approximation, we obtain families of continuous rank invariants which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. 
 Unlike existing dynamic persistence algorithms, our approach is simple in that it requires no complicated data structures or maintenance procedures to implement. 
 %require explicitly filtered complexes $K$ to reside in memory .
 The proposed relaxation is also \emph{matrix-free}, requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$.
 %We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
-Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing persistence diagrams (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
+Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing $\Gamma$-persistence pairs with at least ($\Gamma >0$)-persistence (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
 % TODO: mention more explicitly Chen's result compared to reduction 
 \\
 \\
@@ -874,7 +874,7 @@ In fact, as pointed out by~\cite{}, one need not only consider $\Delta_p$ as the
 \begin{equation}\label{eq:lap_spectra_conn}
 	\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \stackrel{\cdot}{\cup} \Lambda(L_p^{\text{dn}}), \quad \quad \Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1}^{\text{dn}})
 \end{equation}
-where $A \doteq B$ and $A \stackrel{\cdot}{\cup} B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A, B$, respectively.
+where $A \doteq B$ and $A \stackrel{\cdot}{\cup} B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 Moreover, all three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semidefinite, and compact---thus, for the purpose of estimating $\beta_p$, it suffices to consider only one family of operators.
 %Indeed, using the analysis done~\cite{}, the number of non-zero 
 
@@ -999,9 +999,9 @@ For all the reasons given above, we exclusively consider the normalized combinat
 \subsection{Properties \& Interpretations}\label{sec:spri_properties}
 \subsubsection*{Basic Properties}
 % Laplacian Energy
-We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants. 
+We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants~\cite{}. 
 For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
-$$ \lVert \Phi(\mathcal{L}_p^{\ast}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
+$$ \lVert \Phi(\mathcal{L}_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
 where we use the notation $\mathcal{L}_p^{i,j}$ to indicate...
 We have, as its very basic properties: 
 \begin{enumerate}
@@ -1010,9 +1010,10 @@ We have, as its very basic properties:
 	\item If $K$ is the union of disjoint subcomplexes $K_1, K_2, \dots, K_c$, then $\lVert L_p^\ast(K)\rVert_{\Phi} = \sum\limits_{i=1}^c \lVert L_p^\ast(K_i)\rVert_{\Phi}$ 
 	\item If $\tau \in K^p$ does not have a proper coface $\sigma \in K^{p+1}$, then $\lVert L_p^{\text{up}}(K \setminus \tau)\rVert_{\Phi} =\lVert L_p^{\text{up}}(K)\rVert_{\Phi}$. %Similarly, 
 \end{enumerate}
+Many of these properties inherit from the fact that $\lVert \cdot \rVert_\Phi$ is a norm. 
 
 \begin{proposition}
-Given the, the spectral rank invariants $\hat{\mu}_{p,\epsilon}^R$, $\hat{\beta}_{p,\epsilon}^{i,j}$ satisfy: 
+Given $K$, the spectral rank invariants $\hat{\mu}_{p,\epsilon}^R$, $\hat{\beta}_{p,\epsilon}^{i,j}$ satisfy: 
 $$ \lim_{\epsilon \to 0^+ }\hat{\mu}_{p,\epsilon}^R = \mu_p^R(K,f), \quad \quad \lim_{\epsilon \to 0^+ } \hat{\beta}_{p,\epsilon}^{i,j} = \beta_{p}^{i,j}(K,f)$$
 \end{proposition}
 \begin{proof}

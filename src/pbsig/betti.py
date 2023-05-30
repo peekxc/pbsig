@@ -26,6 +26,9 @@ def rect_intersect(r1,r2) -> bool:
 ## Generate a random set of rectangles in the upper half plane 
 def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0, 0.05), max_asp = 5, disjoint: bool = False):  
   """Generate random rectangles with min/max _area_ and maximum aspect ratio _max asp_ in upper-half plane via rejection sampling.
+
+  Returns: 
+    - an array of rectangles each of the form [a,b]x[c,d] specified as (a,b,c,d) 
   """
   cc = 0
   R = []

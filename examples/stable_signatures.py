@@ -1,3 +1,4 @@
+# %% 
 import numpy as np 
 from typing import * 
 import pyflubber
@@ -13,7 +14,7 @@ from pbsig.shape import PL_path
 from pbsig.itertools import LazyIterable
 from pbsig.pht import parameterize_dt, stratify_sphere, normalize_shape
 
-
+# %% 
 ## From: https://github.com/veltman/flubber/blob/master/demos/medley.html
 # svg2paths("/Users/mpiekenbrock/pbsig/src/pbsig/data/flubber_svgs/star.svg")
 star_path = parse_path("M480,50L423.8,182.6L280,194.8L389.2,289.4L356.4,430L480,355.4L480,355.4L603.6,430L570.8,289.4L680,194.8L536.2,182.6Z")
