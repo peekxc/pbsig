@@ -33,9 +33,29 @@ where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ is the numbe
 	\partial_p[\sigma] := \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
 \end{equation}
 Generalizing beyond simplices, given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$ whose boundary $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. 
-The collection of chains under addition yields an $\mathbb{F}$-vector space $C_p(K)$, whose elements $c \in \partial_p[c']$ are called \emph{boundaries} unless $\partial_p[c] = 0$, in which case they are called \emph{cycles}.
+We denote with $\partial$ the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of $K_\bullet$:
+\begin{equation}\label{eq:boundary_matrix}
+	\partial[i,j] = \begin{cases}
+		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j], \; \text{where } s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])  \\
+		0 & \text{otherwise}
+	\end{cases}
+\end{equation}
+Note that $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$ and that one may obtain a matrix representative of $\partial_p$ by setting all columns of $\partial$ corresponding to simplices of dimension $q \neq p$ to $0$. 
+With a small abuse in notation, we will freely use both $\partial$ and $\partial_p$ to refer to both the boundary operators themselves and their matrix representatives.
+
+For any fixed field $\mathbb{F}$, the collection of $p$-chains under addition yields an $\mathbb{F}$-vector space $C_p(K)$, whose elements $c \in \partial_p[c']$ are called \emph{boundaries} unless $\partial_p[c] = 0$, in which case they are called \emph{cycles}.
 %We assume every $p$-chain is \emph{oriented} such that $K$ is an \emph{oriented simplicial complex}.
- Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is a well-defined group called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$. The dimension of the $p$-th homology group $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the \emph{$p$-th Betti number} of $K$. 
+ Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $Z_p(K) / B_{p}(K)$ is a well-defined group called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$:
+ \begin{equation}
+ 	H_p(K) \triangleq Z_p(K) / B_{p}(K), \quad \quad \beta_p(K) = \mathrm{dim}(H_p(K))
+ \end{equation}
+ The dimension of the $p$-th homology group $\beta_p(K)$ is called the \emph{$p$-th Betti number} of $K$.
+ %TODO: insert sentence about betti == rank invariant, mention Mobius inversion 
+% $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the \emph{$p$-th Betti number} of $K$. 
+
+%Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively, and let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the $p$-th boundary operator. 
+
+
 
 Let $K_\bullet = \{K_i\}_{i\in [N]}$ denote a filtration of size $\lvert K_\bullet \rvert = N$, 
 %let $\Delta_{+} = \{ (i,j) : i < j, i, j \in \mathbb{R} \}$ denote the upper half-plane, 

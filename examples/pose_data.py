@@ -27,9 +27,8 @@ pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_d
 pose_objs = list(collapse(pose_objs))
 pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
 
-# %% 
-"/Users/mpiekenbrock/neuromorph/data/meshes/SHREC20b_lores/full"
-
+# %% TODO: try SHREC20 
+# "/Users/mpiekenbrock/neuromorph/data/meshes/SHREC20b_lores/full"
 
 
 # %% Lazily-load the mesh data, normalized
@@ -138,7 +137,7 @@ for i, (X, mesh) in enumerate(meshes):
   X, mesh = meshes[i]
   S = simplicial_complex(mesh.triangles, form="tree")
   # diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
-  f = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
+  f = flag_weight(np.maximum(mesh_geodesics[i], 5.0*eff_f[i]))
   sieve = Sieve(S, [f], p=1)
   sieve.pattern = rects
   # sieve.randomize_pattern(4) # show(sieve.figure_pattern())
@@ -148,23 +147,33 @@ for i, (X, mesh) in enumerate(meshes):
 for sieve in sieves: 
   sieve.sift(w=0.35, k=25)
 
+p = sieves[0].figure_pattern()
+p.x_range = Range1d(min(sieves[0].pattern['i'])-1, max(sieves[0].pattern['j'])+1)
+p.y_range = Range1d(min(sieves[0].pattern['i'])-1, max(sieves[0].pattern['j'])+1)
+show(p)
+
 summaries = [sieve.summarize() for sieve in sieves]
 nd = np.array([np.linalg.norm(summaries[i] - summaries[j]) for i,j in combinations(range(len(summaries)), 2)])
 show(figure_dist(nd))
 
 import time
+from pbsig.linalg import eigen_dist
 from math import comb
 normalize = lambda x: (x - min(x))/(max(x) - min(x))
 nd = np.zeros(comb(len(sieves), 2))
 # nd.fill(np.inf)
 for cc in range(40):
-  d_ij = np.array([rho_dist(sieves[i].spectra[cc]['eigenvalues'], sieves[j].spectra[cc]['eigenvalues']) for i,j in combinations(range(len(sieves)), 2)])
-  nd += d_ij
+  d_ij = np.array([eigen_dist(sieves[i].spectra[cc]['eigenvalues'], sieves[j].spectra[cc]['eigenvalues']) for i,j in combinations(range(len(sieves)), 2)])
+  nd = d_ij
+  show(figure_dist(nd))
+  time.sleep(0.5)
+  
+  # nd += d_ij
   # nd += np.where(normalize(d_ij) <= 0.25, normalize(d_ij), 1.0)
+  # nd += normalize(d_ij)
   # nd = np.minimum(nd, d_ij)
+show(figure_dist(nd))
 
-# show(figure_dist(nd))
-# time.sleep(0.5)
 
 ## Compare the distances 
 from bokeh.io import output_notebook

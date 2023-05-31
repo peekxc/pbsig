@@ -178,9 +178,28 @@ We investigate the utility of our relaxation with exemplary applications in topo
 \section{Introduction}\label{sec:intro}
 % History of persistence: shape descriptor, homology inference, stability => homology is useful for application domains
 Persistent homology~\cite{} is the most widely deployed tool for data analysis and learning applications within the topological data analysis (TDA) community. 
-Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably gleaned from its \emph{persistence diagram}~\cite{}.
+Persistence-related pipelines typically follow a well-established pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably gleaned from its \emph{persistence diagram}---a 
+%given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$,
+%its $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is the 
+multiset summary of $f$ constructed by pairing homological critical values $\{ a_i \}_{i=1}^n$ with non-zero \emph{multiplicities} $\mu_p^{i,j}$~\cite{cohen2005stability}: 
+\begin{equation}\label{eq:dgm}
+\mathrm{dgm}_p(f) \triangleq \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta, \quad \quad \mu_p^{i,j} \triangleq \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
+% \{(x,x): x \in \mathbb{R}, \mu_p^{x,x} = \infty \}
+\end{equation}
+%where $\Delta$ denotes the diagonal, measured with infinite multiplicity.  
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
 Historically, persistence diagrams were first used as shape descriptors due to their effectiveness in tackling the \emph{homology inference problem}~\cite{}: by pairing simplices using homomorphisms between homology groups, diagrams demarcate homological features succinctly.
+%The connection between the persistent homology (PH) groups and their corresponding persistent Betti numbers (PBNs) has long been studied from multiple perspectives~\cite{cerri2013betti, chazal2016structure, cohen2005stability, zomorodian2004computing}.
+%We recall a few characterizations which are illuminating in this effort.
+%From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
+%They also give a cubic-time algorithm to compute these groups on spaces in arbitrary dimensions over any field. 
+%More recently, Bauer studied persistence in a form a matching. 
+%A discrete perspective was given by Cohen-Steiner et al.~\cite{cohen2005stability}, who studied persistence through the lens of \emph{multiplicities}: 
+%the set of points $(a_i,a_j)$ drawn on the plane with non-zero multiplicity $\mu_p^{i,j}$: 
+%defined for all $0 \leq i < j \leq n+ 1$ as: 
+%\begin{equation}\label{eq:multiplicity}
+%	\mu_p^{i,j} = \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
+%\end{equation}
 %given a finite data $X$ sampled from a topological space $\mathcal{X}$, can one infer the homology of $\mathcal{X}$ from $X$ with high confidence?
 %One of the key properties of persistence is its multi-layered representation: just as homology categorifies the Euler characteristic via alternating sum of its Betti numbers, persistent homology categorifies persistent rank invariant through a similar alternating sum. 
 The surprising and essential quality of persistence is that this pairing exists, is unique, and is stable under additive perturbations~\cite{cohen2005stability}.
@@ -201,6 +220,49 @@ The main result of~\cite{} shows this collection of diagrams is sufficient to re
 The scalability issue remains exacerbated, however, as extending the standard persistence computation to parameterized settings has proven non-trivial~\cite{}, and all of the previously mentioned vectorizations require diagrams as part of their input. %moves
 Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone\footnote{This is often a necessary post-processing step of the PHT.} involves a quadratic number of bottleneck computations. 
  
+  %For any $i,j \in \Delta_+$, define the \emph{multiplicity} $\mu_p^{i,j}$ of the pair $p = (i,j)$ by: 
+%\begin{equation}
+%	\mu_p^{i,j} = \beta_{p}^{i-1, j} - \beta_{p}^{i, j} + \beta_{p}^{i, j-1}  - \beta_{p}^{i-1, j-1}
+%\end{equation}
+%The multiplicity function is intimately linked with the persistence diagram. Indeed, the original definition of a persistence 
+%The inclusion-exclusion property conveyed by~\eqref{eq:multiplicity} suggests that diagrams completely characterize their PBNs, illuminating an intrinsic connection between diagrams and their Betti numbers. 
+%Indeed, the fundamental lemma of persistent homology~\cite{edelsbrunner2022computational} states that for every pair of indices $0 \leq k \leq l \leq n+1$: 
+%\begin{equation}\label{eq:betti_mult}
+%	\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}
+%\end{equation}
+%% TODO: move to computation section?
+%The direct consequence of ~\eqref{eq:betti_mult} is that if one is interested in computing any of the PBNs of some space $\mathcal{X}$, then it is sufficient to compute $\mathrm{dgm}_p(\mathcal{X})$ and read them off directly via~\eqref{eq:betti_mult}. Conversely, combinations of Betti numbers recover portions of $\mathrm{dgm}_p(\mathcal{X})$  via~\eqref{eq:dgm} and~\eqref{eq:multiplicity}.
+%The focus of this effort inverts this mindset: we focus on recovering \emph{portions} of the diagram by fixing the the index pairs $(i,j)$ ahead of time.
+%This fundamental observation inspired the divide-and-conquer PH algorithm given in~\cite{chen2011output}, wherein positional information about the diagram is accessed solely through $\mu$-queries on the unreduced boundary matrix.
+% TODO: Intro this section with something like "Chazal showed you don't need decomposability to get the diagram, it's enough to construct a dgm's persistence measure---the "generalized" perspective on constructing diagrams from PBNs. Could even throw in Mobius inversion. Still good end with parameterized setting. 
+%The duality between diagrams and PBNs becomes more apparent from the measure-theoretic perspective of persistence modules indexed over the real line. 
+%By reinterpreting the multiplicity function $\mu^\ast_p$ as a kind of integer-valued measure over rectangles in the plane, Chazal~\cite{chazal2016structure} demonstrated one may recover the diagram of a persistence module $M$ over $\mathbb{R}$ by constructing its corresponding \emph{persistence measure}:
+%via measure-theoretic tools to prove the existence and stability of persistence diagram. ~\cite{chazal2016structure} 
+%re-define the multiplicity function by interpreting $\mu_p^\ast$ as a  $\mu_p(R; M)$. means that 
+% After introducing several alternative notions of `tameness',
+%\begin{equation}\label{eq:measure}
+%	\mu_p(R; M) = \mathrm{card}\left( \,
+%	%\mathrm{dgm}_p(M)\restriction_R 
+%	\restr{\mathrm{dgm}_p(M)}{R} \,
+%	\right) \quad \text{ for all rectangles } R \subset \mathbb{R}^2 
+%\end{equation}
+% The diagram exists wherever the measure takes finite values. 
+%Cerri et al.~\cite{cerri2013betti} incorporate this interpretation in studying the stability of PBNs in multidimensional persistence via what they define as \emph{proper cornerpoints}. These are points $x = (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ satisfying $\mu_p(x) > 0$, where:
+%%\begin{flalign}\label{eq:pbn_cont}
+%	(\, \forall x =  (\, \hat\imath, \hat\jmath \,) \in \mathrm{dgm}_p(f) \,)  & & \quad\quad 
+%	 \; \Longleftrightarrow \; \mu_p(x) := \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
+%\end{flalign}
+%\begin{equation}\label{eq:pbn_cont}
+%\mu_p(x) := \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
+%\end{equation}
+%One may compare~\eqref{eq:multiplicity} with~\eqref{eq:pbn_cont}. Towards understanding the stability of the rank invariant in the multidimensional persistence settings, Cerri et al.~\cite{cerri2013betti} use ~\eqref{eq:pbn_cont} to prove a representation theorem akin to~\eqref{eq:betti_mult}, showing that PBNs of a scalar-valued filtering function can be completely described by a persistence diagram. 
+%%expressing the persistent Betti number function $\beta_\ast : \Delta_+ \to \mathbb{N} \, \cup \, \{\infty\}$ as a sum of multiplicity functions. 
+%One consequence of this theorem is that distances between diagrams induces distances between PBN functions. Since diagrams are stable, the former conveys stability in the latter: small changes in continuous filtering functions imply small changes in the corresponding persistent Betti numbers functions~\cite{cerri2013betti}.  
+
+%The duality exhibited by~\eqref{eq:measure} and~\eqref{eq:pbn_cont} suggests an alternative way of extracting persistence information than the diagram. 
+% For example, if one could replace the four Betti quantities in ~\eqref{eq:pbn_cont} with continuously-varying approximations, then the inclusion-exclusion property granted by the measure-theoretic perspective suggests the multiplicity $\mu_p(x)$  at any fixed $ (\, \hat\imath, \hat\jmath \,) \in \Delta_+$ could also be approximated with a continuous function. 
+
+ 
  % decrease usage of vectorization / increase generality 
  % enable learning applications including ones addressed by ones from previous paragraph
 We seek to shift the computational paradigm on persistence while retaining its application potential: rather than first constructing diagrams and then endowing them with additional structure, we devise a spectral method that performs both steps, simultaneously and approximately. 
@@ -209,8 +271,8 @@ We seek to shift the computational paradigm on persistence while retaining its a
 Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 Our strategy is motivated by both a measure-theoretic perspective on $\mathbb{R}$-indexed persistence modules~\cite{chazal2016structure} and by a technical observation that suggests several computational advantages to working with the rank invariant directly (see section~\ref{sec:betti_derivation} for details). 
 %?between the persistent Betti numbers and combinatorial Laplacian operators
-As the vectorization we propose continuously interpolates between the rank invariant and a certain spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
-Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and sparse optimization.  
+As the vectorization we propose continuously interpolates between the rank invariant and a spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
+Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
 %Suprsingly, among the many benefits of our approach is its iterative nature: 
 
 %the multiplicity function is computable solely from (matrix) rank computations~\cite{zomorodian2004computing}. 
@@ -246,7 +308,9 @@ The steps to produce this mapping are as follows:
 \begin{boxedenumerate}
 \begin{enumerate}
 	\item Let $K$ denote a fixed simplicial complex constructed from the data set $X$. Select a parameter space $\mathcal{A} \subset \mathbb{R}^d$ which indexes a continuously-varying filter function $f_\alpha$ of $K$:
-	$$(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}$$
+	\begin{equation}
+		(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}
+	\end{equation}
 	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations~\cite{} or time-varying filtrations over dynamic metric spaces~\cite{}. 
 	\item Select a \emph{sieve} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
 	\begin{equation}\label{eq:rect_sieve}
@@ -261,7 +325,7 @@ The steps to produce this mapping are as follows:
 		\mu_p(\mathcal{R} \times \mathcal{A}) \triangleq \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
 	We will show in section~\ref{sec:spri_properties}, letting both $\lambda \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
-	\item Choose a Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$, such as the Kirchhoff or random-walk Laplacians: 
+	\item Choose a combinatorial Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
 \begin{equation}\label{eq:laplace_intro}
@@ -288,7 +352,6 @@ The choice of $\mathcal{L}$ determines how the geometric and topological informa
 %\noindent
 The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation; examples include characterizing swarm and flocking behavior with Betti curves~\cite{}, topology-guided image denoising~\cite{}, detecting bifurcations in dynamical systems~\cite{}, generating metric invariants for shape classification and metric learning~\cite{},  and so on. 
 Moreover, the differentiability of our relaxation enables learning applications seeking to optimize persistence information, such as filtration optimization, incorporating topological priors into loss functions, and....
-\\
 \\
 %\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
 %\begin{empheq}[box=\boxAppOne]{equation*}
@@ -324,7 +387,7 @@ Section~\ref{sec:computational_imp} compares and contrasts the computational dif
 Section~\ref{sec:applications} demonstrates some of the prototypical use cases of the proposed framework.
 Technical details, illustrative examples, and pseudocode have been relegated to the appendix for readability.
 
-\subsection*{Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
+%\subsection*{Duality between ranks and diagrams}\label{sec:duality_pbn_dgm}
 %In this section, we describe the background theory that motivated the relaxation and contributions listed above, beginning with description of the duality between persistence diagrams and the rank invariant.  
 
 % --- Counting measure multiplicity interpretation --- 
@@ -336,25 +399,12 @@ Technical details, illustrative examples, and pseudocode have been relegated to 
 \section{Notation \& Background}\label{sec:background_notation}
 \subfile{background}
 
-\subsection{Motivating Derivation}\label{sec:betti_derivation}
+\subsection{Background}\label{sec:betti_derivation}
 %In what follows, we briefly outline the computation of the 
-To motivate this effort, we begin by deriving a lesser known
+We now derive lesser known expression of the persistent Betti number, which serves as the key technical observation motivating this work. 
 %\footnote{To the authors knowledge, only two works have } 
-expression of the persistent Betti number, beginning with a bit of notation. 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
-Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively, and let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the $p$-th boundary operator. 
-We use $\partial$ to denote the $N \times N$ filtration boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ induced by $K_\bullet$, given by:
-\begin{equation}\label{eq:boundary_matrix}
-	\partial[i,j] = \begin{cases}
-		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j], \; \text{where } s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])  \\
-		0 & \text{otherwise}
-	\end{cases}
-\end{equation}
-Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$,  one may obtain a matrix representative of $\partial_p$ by setting all columns corresponding to simplices of dimension $q \neq p$ to $0$. 
-With a small abuse in notation, we will freely use both $\partial$ and $\partial_p$ to refer to both the boundary operators themselves and their matrix representatives.
-
-
-Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^N$, where $\Delta_+^N  := \{ \, (i,j) \in [N] \times [N] : i < j \, \}$, is defined as as the dimension of the quotient group $H_p^{i,j} = Z_p(K_i) / B_p(K_j)$: 
+Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^N$, where $\Delta_+^N  := \{ \, (i,j) \in [N] \times [N] : i < j \, \}$, is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
 	\beta_p^{i,j} &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
@@ -1066,15 +1116,15 @@ where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mat
 	TODO stability statement
 \end{proposition}  
 \textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
-For example, the classical least-squares problem solves the [possibly ill-posed] linear system $A x = b$ via the minimization:
-\begin{equation}\label{eq:least_squares}
-	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
-\end{equation}
-% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
-For a variety of reasons, such as giving preference to solutions $x^\ast$ with small norm,~\eqref{eq:least_squares} is often substituted with an explicit \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
-\begin{equation}\label{eq:tikhonov}
+For a variety of reasons, the classical least-squares problem objective to the solving the [possibly ill-posed] linear system $A x = b$ is often substituted with an explicit \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
+ \begin{equation}\label{eq:tikhonov}
 	x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2
 \end{equation}
+When $\epsilon = 0$, one recovers the $\ell_2$ minimization, whereas when $\epsilon > 0$, solutions $x^\ast$ with small norm are favored. 
+%\begin{equation}\label{eq:least_squares}
+%	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
+%\end{equation}
+% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
 The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
 \begin{equation}\label{eq:tikhonov_soln}
 	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b

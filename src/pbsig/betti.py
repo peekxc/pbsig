@@ -789,6 +789,7 @@ class Sieve:
 
   def figure_pattern(self, p = None, rect_opts = {}, **kwargs):
     from pbsig.vis import figure_dgm
+    from bokeh.models import Range1d
     p = figure_dgm(**kwargs) if p is None else p
     indices = self._pattern['index']
     rect_opts = { idx : {} for idx in np.unique(indices) } | rect_opts
@@ -797,6 +798,9 @@ class Sieve:
       x,y = np.mean(r['i']), np.mean(r['j'])
       w,h = np.max(np.diff(np.sort(r['i']))), np.max(np.diff(np.sort(r['j'])))
       p.rect(x,y,width=w,height=h, **rect_opts[idx])
+    lb, ub = min(self._pattern['i']) - 1, max(self._pattern['j']) + 1
+    p.x_range = Range1d(lb, ub)
+    p.y_range = Range1d(lb, ub)
     return p
 
   def detect_bounds():
@@ -839,6 +843,8 @@ class Sieve:
       for jj,ew in enumerate(ew_split):
         values[ii,jj] = f(ew)
     n_summaries = len(np.unique(self._pattern['index']))
+    
+    ## Apply inclusion-exclusion to add the appropriately signed corner points together
     summary = np.zeros(shape=(n_summaries, n_family))
     np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values)
     return summary
