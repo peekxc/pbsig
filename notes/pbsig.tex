@@ -169,7 +169,7 @@ Unlike the rank invariant, these spectrally-derived relaxations enjoy a number o
 %Our proposed $(1-\epsilon)$-approximation relies on uses nonconvex spectral functions  composition with the spectral decomposition relax boundary operators with L{\"o}wner operators. 
 %equipping the space of cochains over $\mathbb{R}$ with an inner product. 
 %Fundamental to the family we propose is their characterization as spectral functions.
-Moreover, we find the combinatorial Laplacians operators these relaxations derive from encode rich geometric information in their non-harmonic spectra, providing several avenues for geometric data analysis. 
+By exploiting a connection to combinatorial Laplacian operators, we find that the non-harmonic spectra from which our interpolation derives encodes rich geometric information about the underlying space, providing several avenues for geometric data analysis. 
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
 We investigate the utility of our relaxation with exemplary applications in topological data analysis and machine learning, such as hyper-parameter optimization and shape classification.
 
@@ -209,13 +209,14 @@ Though theoretically sound, diagrams suffer from several practical issues: they 
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
 Tackling some of these issues, practitioners have equipped diagrams with additional structure by way of maps to function spaces (e.g. Hilbert spaces)---examples include persistence images~\cite{}, persistence landscapes~\cite{}, and template functions~\cite{}. 
 These diagram vectorizations have proven useful for learning applications due to their stability and  metric configurability~\cite{}.
-Along a separate thread of research addressing the issue of injectivity, Turner et al. propose the \emph{persistent homology transform} (PHT), which is a shape statistic that associates an embedded data set $X \subset \mathbb{R}^d$ with a collection of diagrams: 
-\begin{align*}\label{eq:pht1}
-	\mathrm{PHT}(X): S^{d-1} &\to \mathcal{D}^d \\
-	v &\mapsto \left( \, \mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v) \, \right) \numberthis
-\end{align*}
+Along a separate thread of research addressing the issue of injectivity, Turner et al. propose the \emph{persistent homology transform} (PHT), which is a shape statistic that associates an embedded data set $X \subset \mathbb{R}^d$ with a collection of diagrams
+%\begin{align*}\label{eq:pht1}
+%	\mathrm{PHT}(X): S^{d-1} &\to \mathcal{D}^d \\
+%	v &\mapsto \left( \, \mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v) \, \right) \numberthis
+%\end{align*}
 %rather than compute one diagram, compute many, each diagram representing a different perspective. 
-The main result of~\cite{} shows this collection of diagrams is sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
+%The main result of~\cite{} shows this collection of diagrams is 
+sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
 %however, their scalability is limited as diagrams are prerequisite to their computation.
 The scalability issue remains exacerbated, however, as extending the standard persistence computation to parameterized settings has proven non-trivial~\cite{}, and all of the previously mentioned vectorizations require diagrams as part of their input. %moves
 Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone\footnote{This is often a necessary post-processing step of the PHT.} involves a quadratic number of bottleneck computations. 
@@ -294,7 +295,7 @@ Moreover, inspired by a relationship established between the persistent Betti nu
 % TODO: See seminar "Persistent Homology with Random Graph Laplacians"
 % Iterative solution of linear systems in the 20th century
 % Sketching Persistence Diagrams
-\subsection*{Rank invariant relaxation}\label{sec:rank_invariant_summary}
+\subsection*{Outline: Relaxing the rank invariant}\label{sec:rank_invariant_summary}
 So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details associated with using and implementing the relaxation. At a high level, we propose a family of vector-valued mappings over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
 \begin{equation}\label{eq:relaxation_mapping}
 	(X_\alpha, \mathcal{R}, \epsilon, \lambda) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
@@ -1116,11 +1117,11 @@ where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mat
 	TODO stability statement
 \end{proposition}  
 \textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
-For a variety of reasons, the classical least-squares problem objective to the solving the [possibly ill-posed] linear system $A x = b$ is often substituted with an explicit \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
+For example, the classical least-squares workaround to solving the [possibly ill-posed] linear system $A x = b$ is often substituted with the \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
  \begin{equation}\label{eq:tikhonov}
 	x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2
 \end{equation}
-When $\epsilon = 0$, one recovers the $\ell_2$ minimization, whereas when $\epsilon > 0$, solutions $x^\ast$ with small norm are favored. 
+When $\epsilon = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\epsilon > 0$ solutions $x^\ast$ with small norm are favored. 
 %\begin{equation}\label{eq:least_squares}
 %	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
 %\end{equation}
@@ -1536,7 +1537,7 @@ From another perspective, we refer to this process of choosing appropriate filtr
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width=0.88\textwidth]{presentation/codensity_dgm_ex}
+	\includegraphics[width=0.78\textwidth]{presentation/codensity_dgm_ex}
 	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
 	}\label{fig:codensity}
 \end{figure}
@@ -1566,7 +1567,6 @@ This is synonymous to the \emph{iterative thresholding} techniques often in high
 
 
 \newpage 
-\shipout\null
 \shipout\null
 
 \appendix

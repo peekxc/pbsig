@@ -11,6 +11,7 @@ from splex.geometry import flag_weight
 from itertools import *
 from more_itertools import spy 
 import copy
+from array import array
 # from tqdm import tqdm
 # from tqdm.notebook import tqdm
 
@@ -719,13 +720,16 @@ class Sieve:
     precompute: precomputes the signature
   """
   def __init__(self, S: ComplexLike, family: Iterable, p: int = 0, form: str = "lo"):
-    # assert isinstance(S, ComplexLike)
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
-    assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
-    f, _ = spy(family)
-    assert isinstance(f[0], Callable), "Iterable family must be a callables!"
-    assert isinstance(family, Sized), "The family of iterables must be sized"
-    # self.complex = S
+    if isinstance(family, Iterable):
+      assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
+      assert isinstance(family, Sized), "The family of iterables must be sized"
+      f, _ = spy(family)
+      assert isinstance(f[0], Callable), "Iterable family must be a callables!"
+      self.family = family
+    else: 
+      assert isinstance(family, Callable), "family must be iterable or Callable"
+      self.family = family
     self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
     self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
     self.p = p
@@ -736,9 +740,8 @@ class Sieve:
     self.solver = eigvalsh_solver(self.laplacian)
     self.delta = np.finfo(float).eps
     self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
-    self.bounds = (0, 1) # bounds on the family? 
-    self.family = family
-    # self.pattern = property(lambda self: self._pattern, self.set_rect)
+    self.bounds_domain = (0, 1) # bounds on the domain of the family, if Callable
+    self.bounds_range = (0, 1)  # bounds on the range of the filter functions
     self._default_val = { "eigenvalues" : array('d'), "lengths" : array('I') }
 
   # @property
@@ -748,7 +751,7 @@ class Sieve:
   #   Each Sieve is parameterized by a parameter space of filter functions. This space is either: 
 
   #   (1) an Iterable of Callables, the inner of which are filter function 
-  #   (2) an Iterable of Iterables, the inner of which 
+  #   (2) a Callable itself, in which case bounds should be properly set 
   #   """
   #   return self._family
   
@@ -759,23 +762,29 @@ class Sieve:
   #     # Single parameter setting
   #   else: 
 
-    
-
-
+  
   @property
   def pattern(self):
     """ Sets the sieve pattern to the union of rectangles given by _R_. """
     return self._pattern
   
   @pattern.setter
-  def pattern(self, rect: ArrayLike = None):
+  def pattern(self, R: ArrayLike = None):
     """ Sets the sieve pattern to the union of rectangles given by _R_. """
-    if rect is None: 
+    if R is None: 
       return self._pattern 
-    else:
-      assert isinstance(rect, np.ndarray) and rect.shape[1] == 4, "Invalid rectangle set given"
+    elif isinstance(R, np.ndarray) and R.shape[1] == 2:
       I,J,SGN,IND = [],[],[],[]
-      for cc, (i,j,k,l) in enumerate(rect): # (x1,x2,y1,y2)
+      for cc, (i,j) in enumerate(R): # (x1,x2,y1,y2)
+        I.append(i)
+        J.append(j)
+        SGN.append(1)
+        IND.append(cc)
+      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
+    else:
+      assert isinstance(R, np.ndarray) and R.shape[1] == 4, "Invalid rectangle set given"
+      I,J,SGN,IND = [],[],[],[]
+      for cc, (i,j,k,l) in enumerate(R): # (x1,x2,y1,y2)
         for pp, s, idx in zip(product([i,j], [k,l]), [-1,1,1,-1], repeat(cc, 4)):
           I.append(pp[0])
           J.append(pp[1])
@@ -873,6 +882,11 @@ class Sieve:
     """ Increases the discrimatory power by adding two interior points to the pattern"""
     pass
 
+  def gradient(index: int):
+    """Computes the derivative of the summar"""
+    from numdifftools import Derivative, Jacobian
+    assert self.family 
+
 
 # E: Union[ArrayLike, Iterable],
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
@@ -920,113 +934,6 @@ def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collectio
         print(f"{t1-t2-t3+t4}: {t1},{t2},{t3},{t4}")
         yield t1-t2-t3+t4
     
-
-
-
-class Laplacian_DT_2D:
-  def __init__(self, X: ArrayLike, K, nd: 132):
-    self.theta = np.linspace(0, 2*np.pi, nd, endpoint=False)
-    self.X = X 
-    self.cc = 0
-    self.D1 = boundary_matrix(K, p=1).tocsc()
-    self.D1.sort_indices() # ensure !
-    self.W = np.zeros(shape=(1,self.D1.shape[0]))
-  
-  def __len__(self) -> int: 
-    return len(self.theta)
-
-  def __iter__(self):
-    self.cc = 0
-    return self
-
-  def __next__(self):
-    if self.cc >= len(self.theta):
-      raise StopIteration
-    v = np.cos(self.theta[self.cc]), np.sin(self.theta[self.cc])
-    self.W = diags(self.X @ v)
-    self.cc += 1
-    return self.W @ self.D1 @ self.D1.T @ self.W
-
-
-
-
-# A_exc = ss_ac(f[E]).flatten()
-# B_inc = np.repeat(ss_b(edge_f), 2)
-# D1.data = np.array([s*af*bf if af*bf > 0 else 0.0 for (s, af, bf) in zip(D1_nz_pattern, A_exc, B_inc)])
-# L = D1 @ D1.T
-# k = structural_rank(L)
-# if k > 0: 
-#   k = k - 1 if k == min(D1.shape) else k
-#   T4 = eigsh(L, return_eigenvectors=False, k=k)
-#   terms[3] = relax_f(np.array(T4))
-# else: 
-#   terms[3] = 0.0
-#   nv, ne = shape
-# r, rz = np.zeros(ne), np.zeros(nv)
-# def _ab_mat_vec(x: ArrayLike): # x ~ O(V)
-#   r.fill(0) # r = Ax ~ O(E)
-#   rz.fill(0)# rz = Ar ~ O(V)
-#   for cc, (i,j) in enumerate(E):
-#     ew = max(fv[i], fv[j])
-#     r[cc] = ss_ac(fv[i])*ss_b(ew)*x[i] - ss_ac(fv[j])*ss_b(ew)*x[j]
-#   for cc, (i,j) in enumerate(E):
-#     ew = max(fv[i], fv[j])
-#     rz[i] += ew*r[cc] #?? 
-#     rz[j] -= ew*r[cc]
-#   return(rz)
-
-# def lower_star_multiplicity(F: Iterable[ArrayLike], E: ArrayLike, R: Collection[tuple], p: int = 0, **kwargs):
-#   a,b,c,d = next(iter(R))
-#   Ef = [f[E].max(axis=1) for f in F]
-
-
-# def _fix_ew(ew): 
-#   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-#   ew[np.isclose(abs(ew), 0.0, atol=atol)] = 0.0 # compress
-#   #if not(all(np.isreal(ew)) and all(ew >= 0.0)):
-#     #print(f"Negative or non-real eigenvalues detected [{min(ew)}]")
-#     # print(ew)
-#     # print(min(ew))
-#   #assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected."
-#   return np.maximum(ew, 0.0)
-# self._T1 = [_fix_ew(t) for t in self._T1]
-# self._T2 = [_fix_ew(t) for t in self._T2]
-# self._T3 = [_fix_ew(t) for t in self._T3]
-# self._T4 = [_fix_ew(t) for t in self._T4]
-# self._T1 = csr_array(self._T1)
-# self._T2 = csr_array(self._T2)
-# self._T3 = csr_array(self._T3)
-# self._T4 = csr_array(self._T4)
-# self._T1.eliminate_zeros() 
-# self._T2.eliminate_zeros() 
-# self._T3.eliminate_zeros() 
-# self._T4.eliminate_zeros() 
-
-#   ## Prep smooth-step functions for rectangle R = [i,j] x [k,l]
-#   i,j,k,l = R 
-#   sd_k = smooth_dnstep(lb = k-w, ub = k+delta)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-#   sd_l = smooth_dnstep(lb = l-w, ub = l+delta)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-#   su_i = smooth_upstep(lb = i, ub = i+w)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-#   su_j = smooth_upstep(lb = j, ub = j+w)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-
-#   ## Get initial set of weights based on weight function
-#   weight = (lambda s: 1) if weight is None else weight 
-#   L = up_laplacian(S, p=0, form='lo')
-#   fw = np.array([weight(s) for s in L.faces])
-#   sw = np.array([weight(s) for s in L.simplices])
-
-#   ## Multiplicity formula 
-#   fi,fj,fk,fl = np.sqrt(su_i(fw)), np.sqrt(su_j(fw)), sd_k(sw), sd_l(sw)
-
-#   ## Choose a eigenvalue solver 
-#   eigh_solver = parameterize_solver(L) 
-#   # pairs = [(i,j), (), (), ()
-
-#   ## Precompute the eigenvalues for each box r \in R 
-#   EW1 = [] ## eigenvalues for first pair
-
-#   pass
-
 # def mu_query(S: ComplexLike, i: float, j: float, p: int = 1, weight: Optional[Callable] = None, w: float = 0.0):
 #   """
 #   Returns the rank of the lower-left portion of the p-th boundary matrix of 'S' with real-valued coefficients.

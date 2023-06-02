@@ -1,0 +1,1209 @@
+---
+title: Spectral relaxations of persistent rank invariants
+subtitle: With a focus on _parameterized_ settings
+author: Matt Piekenbrock$\mathrm{}^\dagger$   \&   Jose Perea$\mathrm{}^\ddagger$
+format: 
+  revealjs:
+    css: 
+      - katex.min.css
+      - styles.css
+    html-math-method: 
+      method: katex 
+      url: "/"
+    smaller: true
+    footer: "Spectral relaxations of persistent rank invariants"
+    theme: simple 
+    institute: 
+      - $\dagger$ Khoury College of Computer Sciences, Northeastern University
+      - $\ddagger$. Department of Mathematics and Khoury College of Computer Sciences, Northeastern University
+    spotlight:
+      useAsPointer: false
+      size: 35
+      toggleSpotlightOnMouseDown: false
+      spotlightOnKeyPressAndHold: 16 # shift : 
+      presentingCursor: "default"
+    overview: true
+    margin: 0.075
+    title-slide-attributes:
+      data-background-image: NE.jpeg
+      data-background-size: contain
+      data-background-opacity: "0.25"
+    # csl: csl.csl
+revealjs-plugins:
+  - spotlight
+html: 
+  html-math-method: katex
+  standalone: true
+filters:
+  # - pandoc-katex.lua
+  - roughnotation
+# keycodes: https://gcctech.org/csc/javascript/javascript_keycodes.htm
+bibliography: references.bib
+---
+
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+::: {.fragment .fade-in style="text-align: left"}
+
+- Persistence Landscapes [@bubenik2020persistence]
+
+:::
+
+
+::: {.fragment .fade-in-then-out style="text-align: center"}
+
+![](pers_landscape_def.png){width=40% fig-align="center"}
+
+$$ \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} $$
+
+:::
+
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+- Persistence Landscapes [@bubenik2020persistence] + Learning applications [@kim2020pllay]
+
+![](pers_landscape_app.png){width=40% fig-align="center"}
+
+$$ \lambda(k, t) = \sup \{ h \geq 0 \mid \mathrm{rank}(H_p^{i-h} \to H_p^{i+h}) \geq k \} $$
+
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+<ul> 
+
+::: { style="color: rgb(127,127,127);"}
+
+<li> Persistence Landscapes [@bubenik2020persistence] + Learning applications [@kim2020pllay] </li>
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+<li> Persistence Images [@adams2017persistence] </li> 
+
+:::
+
+<ul> 
+
+
+::: {.fragment .fade-in-then-out style="text-align: center"}
+
+![](pers_image_def.png){height=50% fig-align="center"}
+
+$$ \rho(f, \phi) = \sum\limits_{(i,j) \in \mathrm{dgm}} f(i,j) \phi(\lvert j - i \rvert)$$
+
+:::
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+<ul> 
+
+::: { style="color: rgb(127,127,127);"}
+
+<li> Persistence Landscapes [@bubenik2020persistence] + Learning applications [@kim2020pllay] </li>
+
+:::
+
+<li> Persistence Images [@adams2017persistence] + Learning applications [@som2020pi]
+</li> 
+
+<ul> 
+
+![](pers_image_app.png){height=50% fig-align="center"}
+
+$$ \rho(f, \phi) = \sum\limits_{(i,j) \in \mathrm{dgm}} f(i,j) \phi(\lvert j - i \rvert)$$
+
+
+
+## Vectorizing diagrams
+
+There are many mappings from $\mathrm{dgm}$'s to function spaces (e.g. Hilbert spaces) 
+
+<ul> 
+
+::: { style="color: rgb(127,127,127);"}
+
+<li> Persistence Landscapes [@bubenik2020persistence] + Learning applications [@kim2020pllay] </li>
+
+:::
+
+::: { style="color: rgb(127,127,127);"}
+
+<li> Persistence Images [@adams2017persistence] + Learning applications [@som2020pi] </li>
+
+:::
+
+::: {.fragment .fade-in}
+
+<li> A few others...$^1$ </li> 
+
+![](vec1.png){width=80% height=100% fig-align="center"}
+
+:::
+
+</ul>
+
+:::{.aside}
+
+See [@bubenik2020persistence] for an overview. 
+
+:::
+
+## We have many goals in common...
+
+:::: {.columns}
+
+::: {.column width=40% layout-align="left" style="margin-left: 2em;"}
+
+::: {.fragment fragment-index=1}
+
+- Vectorize persistence information
+
+:::
+
+::: {.fragment fragment-index=2}
+
+- Optimize persistence invariants 
+
+:::
+
+::: {.fragment fragment-index=3}
+
+- Leverage the stability of persistence
+
+:::
+
+
+::: {.fragment fragment-index=4}
+
+- Connect to other areas of mathematics
+
+:::
+ 
+:::
+
+::: {.column width=40% layout-align="left"}
+
+:::{.r-stack}
+
+![](pers_image.png){.fragment fragment-index=1 width="300" height="300"}
+
+![](pers_landscape_app.png){.fragment fragment-index=2 width="300" height="300"}
+
+![](stability.gif){.fragment fragment-index=3 width="400" height="300"}
+
+![](lsst.png){.fragment fragment-index=4 width="250" height="250"}
+
+:::
+
+:::
+
+:::: 
+
+::: {.fragment style="text-align: center" style="font-size: 40px;"}
+
+<div style="text-align: center; font-size: 35px;" >
+
+__Can we achieve them without computing diagrams?$^\ast$__
+
+</div>
+
+
+:::
+
+<!-- ::: {.fragment style="text-align: center"}
+
+$^\ast$ _avoid the reduction the algorithm_
+
+:::
+
+::: {.fragment style="text-align: center"}
+
+$$\mathrm{dgm}(K) \leftrightarrow R = \partial V $$
+
+::: -->
+
+:::{.aside}
+
+Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/
+
+:::
+
+<br> 
+
+## Setting: Parameterized filtrations
+
+Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
+
+$$
+f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K \text{ and } \alpha \in \mathbb{R}
+$$
+
+:::{layout-ncol=2}
+
+![](family.gif){width=48% height=100% fig-align="right"}
+
+![](complex_plain.gif){width=48% height=100% fig-align="left"}
+
+:::
+
+
+## Why _not use_ diagrams?
+
+
+<div style="text-align: center;">
+
+__Pro:__ Diagrams are stable, well-studied, and information rich.
+
+</div>
+
+<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
+
+:::: {.columns}
+
+:::{.fragment}
+
+::: {.column width="45%" layout-align="right"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="45%" height="1em" layout-align="left"}
+![](complex_plain.gif){width=90%}
+:::
+
+:::
+
+::::
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+
+## Why _not use_ diagrams?
+
+<div style="text-align: center;">
+
+__Con:__ Extending the $R = \partial V$ to parameterized settings is highly non-trivial
+
+</div>
+
+:::: {.columns}
+
+::: {.column width="33%"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="33%" height="1em"}
+![](complex_updated.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](spy_matrices.gif){width=90%}
+:::
+::::
+
+<div style="text-align: center;">
+
+Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
+
+</div>
+
+:::{.aside}
+For more details on the computations, see "Move Schedules" @piekenbrock2021move
+:::
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+## Why the rank invariant?
+
+
+:::{.fragment}
+
+There is a duality between diagrams its associated rank function:
+
+$$ \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
+
+$$\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad $$
+
+:::
+
+:::{.fragment}
+
+_Fundamental Lemma of Persistent Homology_ shows diagrams characterize their ranks
+$$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
+
+:::
+
+:::{.incremental}
+
+- _Persistence measures_ [@chazal2016structure] extend (1,2) naturally when $\mathbb{F} = \mathbb{R}$ 
+- Stability in context of multidimensional persistence [@cerri2013betti] 
+- Generalizations of rank invariant via Möbius inversion [@mccleary2022edit] and via zigzag persistence[@dey2021computing]
+
+:::
+
+
+
+## This Talk 
+
+<br>
+
+<br>
+
+<br>
+
+:::{.incremental}
+:::{.fragment .fade-in style="text-align: left"}
+
+In __this talk__ we introduce a _spectral-relaxation_ of the rank invariant that:
+
+<div style="margin-left:2.5em;">
+
+1. is smooth + differentiable on $\mathbf{S}_+$ 
+2. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time
+3. Vectorizes non-harmonic spectra of Laplacian operators
+4. Is computable in a "matrix-free" fashion in $O(n)$ memory
+
+</div>
+
+:::
+:::
+
+## Application: optimizing filtrations
+
+![](codensity_dgm_ex.png){width=68% height=100% fig-align="center"}
+
+:::{.fragment}
+
+$$ \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) $$
+
+:::
+
+
+## The rank invariants with pictures
+
+::::{.columns}
+
+:::{.column}
+
+![](dgm_pbn.png){width=400 height=400 fig-align="center"}
+
+<div style="text-align: center;">
+
+$$ \beta_p^{i,j}(K)$$
+
+</div>
+
+:::
+
+:::{.column}
+
+![](dgm_mu.png){width=400 height=400 fig-align="center"}
+
+<div style="text-align: center;">
+
+$\mu_p^R(K)$
+
+</div>
+
+:::
+
+::::
+
+## Revisiting the rank computation
+ 
+$$ \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))$$
+	
+<!-- <hr style="margin: 0; padding: 0;">  -->
+
+:::{.incremental style="list-style-type: none;align=center;"}
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+$\;\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+:::
+
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out">
+$\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_p(K_i))\; / \;\mathrm{Im}(\partial_{p+1}(K_j)) \; \big )$
+</li> -->
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+<!-- <li style="text-align: left" class="fragment fade-in-then-semi-out"> -->
+$\;\quad\quad\quad\hphantom{\beta_p^{i,j} }= \mathrm{dim}\big(\; \mathrm{Ker}(\partial_p(K_i)) \; / \; (\mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))) \; \big )$
+:::
+
+::: {.fragment .fade-in-then-semi-out style="text-align: left"}
+$\;\quad\quad\quad\hphantom{\beta_p^{i,j}}=\color{blue}{\mathrm{dim}\big(\;\mathrm{Ker}(\partial_p(K_i)) \; \big)} \; \color{black}{-} \; \color{red}{\mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_i)) \cap \mathrm{Im}(\partial_{p+1}(K_j))\;\; \big)}$
+:::
+
+::: 
+
+<!-- <br>  -->
+::: {.fragment .fade-in-then-semi-out}
+Rank-nullity yields the <span style="color: blue">left term</span>: 
+$$
+\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \lvert C_p(K_i) \rvert - \mathrm{dim}(\mathrm{Im}(\partial_p(K_i)))
+$$
+:::
+
+:::{.fragment .fade-in-then-semi-out}
+Computing the <span style="color: red">right term</span> more nuanced: 
+:::
+
+:::{.incremental style="list-style-type: none; align=center; text-align: left; margin-left: 2.5em; margin: 0; padding: 0;"}
+- Pseudo-inverse$^1$, projectors$^2$, Neumann's inequality$^3$, etc.
+- PID algorithm$^4$, Reduction algorithm$^5$, Persistent Laplacian$^6$
+:::
+
+:::{.aside}
+@anderson1969series, @ben1967geometry, @ben2015projectors, @zomorodian2004computing, @edelsbrunner2000topological, @memoli2022persistent
+:::
+
+## Key Observation
+
+Structure theorem for persistence modules can be used to show: 
+
+:::{.fragment}
+$$ 
+(i,j) \in \mathrm{dgm}(K_\bullet)
+$$
+ 
+:::
+
+:::{.fragment}
+
+$$
+\Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0
+$$
+:::
+
+:::{.fragment style="margin: 0; padding: 0;"}
+
+![](rank_ll.png){width=575 height=100% fig-align="center" style="margin: 0; padding: 0;"}
+
+:::
+
+:::{.fragment}
+
+$$
+\Rightarrow \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j}) 
+$$
+
+:::
+
+## Key Observation
+
+
+:::{.fragment}
+
+$$
+\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j}) 
+$$
+
+:::
+
+:::{.fragment style="margin: 0; padding: 0;"}
+
+![](rv_ll.png){width=950 height=100% fig-align="center" style="margin: 0; padding: 0;"}
+
+:::
+
+:::{.fragment style="text-align: center"}
+
+__Take-a-way:__ Can deduce the $\mathrm{dgm}$ from ranks of "lower-left" submatrices of $\partial_p(K_\bullet)$
+
+:::
+
+## Key Observation
+
+<!-- $$ \mathrm{sgn}_+(R[i,j]) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) $$ -->
+
+$$ 
+\begin{equation}
+\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
+\end{equation}
+$$
+ 
+<hr>
+
+:::{.fragment}
+
+$(1)$ often used to show correctness of reduction, but far more general, as it implies:
+
+:::
+
+:::{.fragment}
+
+<div style="padding-left: 1em; border: 1px solid black; margin: 2em; ">
+__Corollary [@bauer2022keeping]__: Any algorithm that preserves the ranks of the submatrices $\partial^{i,j}$ for all $i,j \in \{ 1, \dots, n \}$ is a valid barcode algorithm.
+</div>
+
+:::
+
+:::{.fragment}
+$$ 
+\begin{equation}
+(1) \Rightarrow \beta_p^{i,j} = \lvert C_p(K_i) \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p+1 }^{1,j}) + \mathrm{rank}(\partial_{p+1}^{i + 1, j} ) 
+\end{equation}
+$$
+
+:::
+
+
+:::{.fragment}
+
+$$ 
+\begin{equation}
+(2) \Rightarrow \mu_p^{R} = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  
+\end{equation}
+$$
+
+:::
+
+:::{.aside}
+
+@edelsbrunner2000topological noted (1) in passing showing correctness of reduction; @dey2022computational explicitly prove (2); (3) was used by @chen2011output. (2) & (3) are connected to relative homology.
+
+:::
+
+::: {.notes}
+- Lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.
+- The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. 
+- Corollary Bauer et al.  studied in the context of reducing the sparsity of the matrices
+- Has a geometric/algbraic interpretation using releative homology 
+
+:::
+
+## ALERT {visibility="hidden"}
+
+<div style="text-align: center; font-size: 55px;" >
+
+__THIS HAS NON-TRIVIAL IMPLICATIONS__
+
+</div>
+
+
+$$ 
+\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
+$$
+
+## Example {visibility="hidden"}
+
+![](bowtie.svg){width=50%}
+
+## Example {visibility="hidden"}
+
+![](ex_dgm.svg){width=50%}
+
+$$\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})$$
+
+## Overview 
+
+<div style="color: #7F7F7F;"> 
+
+- Introduction \& Motivation 
+  - Diagram vectorization and optimization
+  - The effective intractability of reduction
+  - Duality between diagrams and their ranks
+
+</div> 
+
+- Derivation of relaxation 
+  - Parameterizing $p$-chains with $\mathbb{R}$ coefficients
+  - Replacing boundary operators with Löwner operators
+  - Connections to combinational Laplacians
+
+<div style="color: #7F7F7F;"> 
+
+- Experiments  
+  - Codensity example 
+  - Shape signature example 
+
+</div>
+
+
+## The Implication: Rank Invariances 
+
+::: {.fragment .fade-in style="text-align: left"}
+
+&emsp;&emsp;&emsp;&emsp;
+
+$\hspace{10em} \mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))$
+
+::: 
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A^T) \quad \quad  \quad \text{(adjoint)}$
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A^T A) \quad \quad \; \text{(inner product)}$
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(A A^T) \quad \quad \; \text{(outer product)}$
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(S^{-1}AS) \quad \;  \text{(change of basis)}$
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \mathrm{rank}(P^T A P) \quad \; \text{(permutation)}$
+
+:::
+
+::: {.fragment .fade-in style="text-align: left"}
+
+$\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \dots  \quad \quad \quad \quad  \quad \quad  \! \! \text{(many others)}$
+
+:::
+
+<br> 
+
+::: {.fragment .fade-in style="text-align: left"}
+
+<div style="text-align: center; font-size: 35px;" >
+
+__Question: Can we exploit some of these?__
+
+</div>
+
+:::
+
+
+## Parameterized filtrations
+
+Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
+
+$$
+f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K 
+$$
+
+:::{layout-ncol=2}
+
+![](family.gif){width=48% height=100% fig-align="right"}
+
+![](complex_plain.gif){width=48% height=100% fig-align="left"}
+
+:::
+
+## Parameterized _boundary matrices_
+
+<br> 
+
+:::{.fragment style="text-align: center;"}
+
+__Idea \#1__: Parameterize $p$-chains $c \in C_p(K; \mathbb{R})$ with  $f_\alpha : K \to \mathbb{R}_+$
+
+$$ \partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) $$ 
+
+:::
+
+:::{.fragment style="text-align: center;"}
+
+![](smoothstep.png){width=88% height=100% fig-align="center"}
+
+:::
+
+:::{.fragment style="text-align: center;"}
+
+__Note__: $\partial_p^{i,j}(\alpha)$ has rank $= \mathrm{rank}(R_p^{i,j}(\alpha))$ for all $\alpha \in \mathbb{R}$. 
+
+:::
+
+
+## Spectral functions 
+
+<!-- Both $\beta_p^{i,j}(K_\bullet)$ and $\mu_p^{R}(K_\bullet)$ expressible with _ranks_ of _unfactored matrices_ -->
+
+:::{style="text-align: center"} 
+
+__Idea \#2__: Approximate $\mathrm{rank}$ with _spectral functions_ [@bhatia2013matrix]
+
+:::
+
+:::{style="list-style-type: none; align=center;"}
+
+::::{.columns}
+
+:::{.column width="50%"}
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"} -->
+$\quad\quad\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"} -->
+$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"} -->
+$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: left"} -->
+$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast$
+<!-- ::: -->
+
+:::
+
+:::{.column}
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"} -->
+$X = U \mathrm{Diag}(\mathbf{\sigma})V^T$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"} -->
+$\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x > 0)$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"} -->
+$\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz$
+<!-- ::: -->
+
+<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: right"} -->
+
+$\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T$
+
+<!-- ::: -->
+
+:::
+
+::::
+
+
+::: {.fragment .fade-in style="text-align: center"}
+
+$\Phi_\epsilon(X)$ is a _Löwner operator_ when $\phi$ is _operator monotone_ [@jiang2018unified]
+
+$$ A \succeq B \implies \Phi_\epsilon(A) \succeq \Phi_\epsilon(B) $$
+
+:::
+
+:::{.fragment style="text-align: center"}
+
+Used in convex analysis + nonexpansive mappings [@bauschke2011convex]
+
+:::
+
+:::
+
+::: footer 
+
+Spectral approximations to rank 
+
+::: 
+
+## Lowner Operators
+[@bi2013approximation] show that for any smoothed Dirac delta function^[Any $\hat{\delta}$ of the form $\nu(1/\epsilon) p (z \cdot \nu (1/\epsilon))$ where $p$ is a density function and $\nu$ positive and increasing is sufficient.] $\hat{\delta}$ and differentiable _operator monotone_ function $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, we have:
+
+<!-- <div class="columns" style="margin-left: 2.5em; "> -->
+
+<div style="list-style-type: none !important;">
+
+::::{.columns}
+<!-- :::{layout="[[50,50]]""} -->
+
+:::{.column width=30%}
+
+:::{.fragment .fade-in fragment-index=1 .no_bullet}
+($\epsilon$-close)
+:::
+
+:::{.fragment .fade-in fragment-index=2}
+(Monotonicity)
+:::
+
+:::{.fragment .fade-in fragment-index=3}
+(Smooth)
+:::
+
+:::{.fragment .fade-in fragment-index=4}
+(Computable)
+:::
+
+:::{.fragment .fade-in fragment-index=5}
+(Differentiable)
+:::
+
+:::
+
+:::{.column width=70% layout-align="right"}
+
+:::{.fragment .fade-in fragment-index=1}
+
+$0 \leq \mathrm{rank}(X) - \lVert \Phi_\epsilon(X) \rVert_\ast \leq c(\hat{\delta})$
+
+:::
+
+:::{.fragment .fade-in fragment-index=2}
+
+$\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for any $\epsilon \leq \epsilon'$
+
+:::
+
+:::{.fragment .fade-in fragment-index=3}
+
+Lipshitz + semismooth^[Here _semismooth_ refers the existence of directional derivatives] on $\mathbb{R}^{n \times m}$
+
+:::
+
+:::{.fragment .fade-in fragment-index=4}
+
+Closed-form soln. to differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ 
+
+:::
+
+:::{.fragment .fade-in fragment-index=5}
+
+Continuously differentiable on $\mathbf{S}_+^m$
+
+:::
+
+:::
+
+::::
+
+:::{.fragment style="text-align: center; margin-top: 1em; "}
+
+Small issue: $\quad \partial_p^\ast(\alpha) \in \mathbb{R^{n \times m}}$ (not in $\mathbf{S}_+^m$) 
+
+:::
+
+<!-- 
+Easy fix: $\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)$  -->
+
+
+:::{.fragment style="text-align: center"}
+
+Easy fix: $\quad$ $\Phi_\epsilon(\partial_p \circ \partial_p^T)(\alpha)$ $\quad$ or $\quad$ $\Phi_\epsilon(\partial_p^T \circ \partial_p)(\alpha)$
+
+:::
+
+</div>
+
+## Combinatorial Laplacian 
+
+__3rd idea:__ parameterize using _combinatorial Laplacians_ [@horak2013spectra]:
+
+$$ \Delta_p = \underbrace{\partial_{p+1} \partial_{p+1}^T}_{L_p^{\mathrm{up}}}  + \underbrace{\partial_{p}^T \partial_{p}}_{L_p^{\mathrm{dn}}} $$
+
+$f_\alpha$ is 1-to-1 correspondence with inner products on cochain groups $C^p(K, \mathbb{R})$ 
+
+$$L_p^{i,j}(\alpha) \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)$$
+
+Has closed-form linear and quadratic forms, e.g.:
+$$
+L_p^{\text{up}}(\tau, \tau')= \begin{cases}
+		 \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) & \text{ if } \tau = \tau' \\ 
+%		\mathrm{deg}(\tau_i) & \text{ if } i = j \\ 
+		s_{\tau, \tau'} \cdot  f^{+/2}(\tau) \cdot f(\sigma) \cdot f^{+/2}(\tau') & \text{ if } \tau \overset{\sigma}{\sim} \tau' \\
+		0 & \text{ otherwise} 
+	\end{cases}
+$$
+
+
+
+:::{.fragment}
+$\implies$ can represent operator in "matrix-free" fashion
+:::
+
+<!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
+
+## Summary of relaxation {visibility="hidden"}
+
+$$
+\begin{align*}
+\mu_p^R(K_\bullet, f) &\triangleq \mathrm{card}\big(\, \left.\mathrm{dgm}(K, \, f_\alpha) \right|_{R} \, \big) \\
+&= \mathrm{rank}(\partial_{p+1}^{j+1,k}) + \dots \\
+\hat{\mu}_p^R(K, f_\alpha) &= \mathrm{rank}(\hat{\partial}_{p+1}^{j+1, k}(\alpha)) + \dots  \\
+&\approx \lVert \Phi_{\epsilon}(\hat{\partial}_{p+1}^{j+1, k}(\alpha)) \rVert_\ast + \dots \\
+&= \lVert \Phi_{\epsilon}(L_p^\ast(\alpha)) \rVert_\ast \\
+& \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)
+\end{align*} 
+$$
+
+By construction, $\hat{\mu}_p^R(K, f_\alpha)$ is not only continuous, but varying $\alpha \in \mathbb{R}$ traces out a curve in $\mathbf{S}_+$
+
+## Overview 
+<div style="color: #7F7F7F;"> 
+
+- Introduction \& Motivation 
+  - Diagram vectorization and optimization
+  - The effective intractability of reduction
+  - Duality between diagrams and their ranks
+
+</div> 
+
+<div style="color: #7F7F7F;"> 
+
+- Derivation of relaxation 
+  - Parameterizing $p$-chains with $\mathbb{R}$ coefficients
+  - Replacing boundary operators with Löwner operators
+  - Connections to combinational Laplacians
+
+</div>
+
+- Experiments  
+  - Codensity example 
+  - Shape signature example 
+
+
+## Experiment \#1
+
+![](codensity_mult.png)
+
+## Experiment \#1
+
+![](smoothed_mu.png){width=55% height=100%}
+![](optimal_codensity_complex.png){width=35% height=100%}
+
+## Experiment \#2: Directional Transform 
+
+Consider "looking" at a complex $K$ derived from an embedded $X \subset R^d$
+
+$$\begin{align*}
+\mathrm{DT}(K): S^{d-1} &\to  K \times C(K, \mathbb{R}) \\
+	v &\mapsto (K_\bullet, f_v)
+\end{align*}
+$$
+
+
+![](dt.png){width=400 height=100% fig-align="center"}
+
+$$
+K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
+$$
+
+## Experiment \#2: Directional Transform 
+
+$$
+K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
+$$
+
+![](dt.png){width=400 height=100% fig-align="center"}
+
+
+:::{.fragment}
+
+$$\{ \; \mathrm{dgm}(v) : v \in S^{d-1} \; \} \Leftrightarrow \mathrm{PHT} $$
+
+:::
+
+:::{.fragment}
+$$\{ \; \chi(v) : v \in S^{d-1} \; \} \Leftrightarrow \mathrm{ECT} $$
+
+:::
+
+
+## Experiment \#2: Directional Transform 
+
+$$
+K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
+$$
+
+Injectivity of the PHT $\leftrightarrow$ endow a metric $\mathcal{D}$ by integrating $d_B$ (or $d_W$) over $S_{d-1}$
+
+$$ \operatorname{d}_{\mathrm{PHT}}\left(\mathrm{dgm}_X, \mathrm{dgm}_Y\right):=\sum_{p=0}^d \int_{S^{d-1}} \operatorname{d}_B\left(\mathrm{dgm}(X, v) \right), \left( \mathrm{dgm}(X, v) \right) dv $$
+
+:::{.fragment}
+
+:::{layout=[[50,50]]}
+
+![](turtle1.png){width=650 height=100% fig-align="right"}
+
+![](turtle2.png){width=650 height=100% fig-align="left"}
+
+:::
+
+:::
+
+
+## Experiment \#2: Directional Transform 
+
+$$
+K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
+$$
+
+Injectivity of the PHT $\leftrightarrow$ endow a metric $\mathcal{D}$ by integrating $d_B$ (or $d_W$) over $S_{d-1}$
+
+$$ \operatorname{d}_{\mathrm{PHT}}\left(\mathrm{dgm}_X, \mathrm{dgm}_Y\right):=\sum_{p=0}^d \int_{S^{d-1}} \operatorname{d}_B\left(\mathrm{dgm}(X, v) \right), \left( \mathrm{dgm}(X, v) \right) dv $$
+
+:::{layout=[[50,50]]}
+
+![](turtle1.png){width=650 height=100% fig-align="right"}
+
+![](bone1.png){width=650 height=100% fig-align="left"}
+
+:::
+
+
+
+
+## Experiment \#2: PHT 
+
+![](shape_signatures.png){width=80% height=100% fig-align="center"}
+
+:::{.notes}
+Luis mentioned modding out rotations and translations adn scale to compare shapes. We can handle rotations via phase alignment. 
+
+Sarah mentioned handling orientation.
+
+:::
+
+
+## Time permitting: Computation 
+
+Spectra of Laplacian operators well-studied: 
+
+- Iterative Krylov methods / Lanczos dominate solving sparse systems$^2$
+- Many laplacian preconditioning methods known [@jambulapati2021ultrasparse]
+- Nearly optimal algorithms known for SDD [@stathopoulos2007nearly]
+
+<div style="padding-left: 1em; border: 1px solid black; margin: 0em; ">
+__Theorem [@simon1984analysis]__: Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space  done in exact arithmetic. 
+</div>
+
+:::{.fragment}
+
+- Permutation invariance $\implies$ can optimize memory access of $\mathtt{SpMat}$ operation
+
+:::
+
+:::{.fragment}
+
+- Any complex data structure suffices, e.g. tries$^2$, combinadics, etc...
+
+::: 
+
+:::{.aside}
+
+See [@komzsik2003lanczos, @parlett1995we] for an overview of the Lanczos. See [@boissonnat2014simplex] for representing complexes.
+
+:::
+
+
+## Time permitting: Computation 
+
+
+Preliminary experiments suggest the scalability is promising 
+
+![](watts_strogatz_perf.png)
+
+- $\approx \, \leq 25$ Lanczos vectors to approximate full spectrum at $\epsilon > 0$
+- $\implies O(n)$ memory to obtain $\lVert \cdot \rVert_\ast$ in $O(n^2)$ time (with small constants!)
+- Larger values $\epsilon$ or lower numerical tolerances $\implies$ essentially linear time compute
+- Previousy computed eigenvectors can be re-used for "warm restarts"
+
+## Conclusion 
+
+Spectral relaxation of rank invariant using Löwner operators 
+
+- Suitable for parameterized families of filtrations
+- Differentiable + amenable for optimization 
+- Stable to perturbations in $f_\alpha$ when $\epsilon > 0$, but unstable as as $\epsilon \to 0^+$
+- Excellent compute properties. Implementation ongoing. 
+- Better optimizer implementation also ongoing. 
+
+Looking for collaborators! In particular:
+
+:::{.incremental}
+
+- Optimizing parameterized filtrations
+- Differentiating n-parameter families of filtrations
+- Encoding features with Laplacian spectra
+- Sparse minimization problems (compressive sensing)
+- Understanding connections to other areas of math
+
+:::
+
+## References
+
+::: {#refs}
+:::
+
+<script>
+  window.WebFontConfig = {
+    custom: {
+      families: ['KaTeX_AMS'],
+    },
+  };
+</script>
+
+
+
+
+
+## Permutation Invariance {visibility="hidden"}
+
+Consider the setting where $f_\alpha : \mathbb{R} \to \mathbb{R}^N$ is an $\alpha$-parameterized filter function: 
+
+$$ \mu_p^R(\, f_\alpha \, ) = \{ \mu_p^R(K_\bullet^\alpha) : \alpha \in \mathbb{R} \}$$
+
+Difficult to compute $R_\alpha = \partial_\alpha V_\alpha$ for all $\alpha$ as $K_\bullet = (K, f_\alpha)$ is changing constantly...
+
+<!-- #\mathrm{rank}(\partial_p(K_\bullet( \, f_\alpha \,))) -->
+
+<!-- On the other hand... -->
+$$ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(P^T \partial_p(K) P) $$
+$$ \mathrm{rank}(\partial_p(K_\bullet)) \equiv \mathrm{rank}(W \mathrm{sgn}(\partial_p(K)) W) $$
+
+Thus we may decouple $f_\alpha$ and $K$ in the computation: 
+
+$$
+\begin{align*}
+ \mu_p^{R}(K,f_\alpha) &\triangleq \mathrm{rank}\big(\,\hat{\partial}_{q}^{j + \delta, k}\,\big) - \; \dots \; + \mathrm{rank}\big(\, \hat{\partial}_{q}^{i + \delta, l}\,\big)  \\
+&\equiv \mathrm{rank}\big(\,V_p^j \circ \partial_{q} \circ W_q^k \,\big) - \; \dots \; + \mathrm{rank}\big(\,V_p^{i+\delta} \circ \partial_{q} \circ W_q^l \,\big)
+ \end{align*}
+ $$
+
+where the entries of $V$, $W$ change continuously w/ $\alpha$, while $\partial_q$ remains _fixed_...
+
+## Spectral functions {visibility="hidden"}
+
+Nuclear norm $\lVert X \rVert_\ast = \lVert \mathbf{\sigma} \rVert_1$ often used in sparse minimization problems like _compressive sensing_ due to its convexity in the unit-ball $\{A \in \mathbb{R}^{n \times m} : \lVert A \rVert_2 \leq 1 \}$
+
+:::{layout="[[50,50]]" layout-valign="bottom"}
+
+![](l0_l1.png){width=300 height=100% fig-align="right"}
+
+![](convex_envelope.png){width=320 height=100% fig-align="left"}
+
+:::
+
+<div style="text-align: center;"> 
+
+__Left:__ The $\ell_0$ and $\ell_1$ norms on the interval $[-1,1]$
+
+__Right:__ $g$ forms the convex envelope of $f$ in the interval $[a,b]$
+
+</div> 
+
+## Spectral functions {visibility="hidden"}
+
+Unfortunately, $\lVert \cdot \rVert_\ast$ often a poor substitute for rank
+
+![](rank_relax.png){width=70% height=100% fig-align="center"}
+
+__Left:__ The $\ell_0$ and $\ell_1$ norms on the interval $[-1,1]$
+__Right:__ 

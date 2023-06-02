@@ -77,6 +77,35 @@ auto _faces(const Laplacian& L) -> py::array_t< uint16_t > {
 }
 
 
+// autodiff include
+// #include <autodiff/forward/real.hpp>
+// #include <autodiff/forward/real/eigen.hpp>
+// using namespace autodiff;
+// using Eigen::MatrixXd;
+// using Eigen::VectorXreal;
+
+// // The vector function for which the Jacobian is needed
+// template< typename Laplacian, typename F = typename Laplacian::value_type > 
+// auto __lap_matvec(const VectorXreal& x, const VectorXreal& deg, const VectorXreal& fq, const VectorXreal& fp, const vector< int >& face_indices, size_t np, size_t nq) -> VectorXreal {  
+//   VectorXreal y = VectorXreal(np);
+//   std::transform(deg.begin(), deg.end(), x, y.begin(), std::multiplies< F >());
+//   for (size_t qi = 0; qi < nq; ++qi){
+//     const auto ii = face_indices[qi*3], jj = face_indices[qi*3+1], kk = face_indices[qi*3+2];
+//     y[ii] += x[kk] * fp[ii] * fq[qi] * fp[kk] - x[jj] * fp[ii] * fq[qi] * fp[jj];
+//     y[kk] += x[ii] * fp[kk] * fq[qi] * fp[ii] - x[jj] * fp[kk] * fq[qi] * fp[jj]; 
+//     y[jj] -= x[ii] * fp[jj] * fq[qi] * fp[ii] + x[kk] * fp[jj] * fq[qi] * fp[kk]; 
+//   }
+//   return y;
+// }
+
+// // Matvec operation: Lx |-> y for any vector x
+// template< typename Laplacian, typename F = typename Laplacian::value_type > 
+// auto __matvecgrad(const Laplacian& L, const VectorXreal& x) -> MatrixXd {
+//   VectorXreal y;
+//   MatrixXd J = jacobian(__lap_matvec, wrt(x), at(x), y, L.degrees, L.fq, L.fpl, L.face_indices, L.np, L.nq);
+//   return J;
+// }
+
 template< int p, typename F >
 void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
   using Class = UpLaplacian< p, F, SimplexRange< p+1, false > >;
@@ -115,11 +144,12 @@ void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
     .def("_rmatvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
     .def("_matmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
     .def("_rmatmat", [](const Class& L, const array_t_FF& X){ return _matmat(L, X); })
+    // .def("__matvecgrad", [](const Class& L, const VectorXreal& X){ return __matvecgrad(L, X); })
     ;
 }
 
 // Package: pip install --no-deps --no-build-isolation --editable .
-// Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++20 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 
+// Compile: clang -Wall -fPIC -c src/pbsig/laplacian.cpp -std=c++20 -Iextern/pybind11/include -isystem /Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include -I/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/include/python3.9 -I/Users/mpiekenbrock/pbsig/extern/eigen -I/Users/mpiekenbrock/pbsig/include
 PYBIND11_MODULE(_laplacian, m) {
   m.doc() = "Laplacian multiplication module";
   declare_laplacian< 0, double >(m, "0D");

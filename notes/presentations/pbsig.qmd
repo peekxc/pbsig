@@ -246,7 +246,7 @@ Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/
 Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
 
 $$
-f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K 
+f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K \text{ and } \alpha \in \mathbb{R}
 $$
 
 :::{layout-ncol=2}
@@ -1106,7 +1106,7 @@ See [@komzsik2003lanczos, @parlett1995we] for an overview of the Lanczos. See [@
 ## Time permitting: Computation 
 
 
-Preliminar experiments suggest the scalability is promising 
+Preliminary experiments suggest the scalability is promising 
 
 ![](watts_strogatz_perf.png)
 

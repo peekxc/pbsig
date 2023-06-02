@@ -90,6 +90,17 @@ ext_modules = [
     extra_compile_args=compile_args,
     language='c++20', 
     cxx_std=1
+  ), 
+   Pybind11Extension(
+    '_landmark', 
+    sources = ['src/pbsig/landmark.cpp'], 
+    include_dirs=[
+      '/Users/mpiekenbrock/pbsig/include', 
+      '/Users/mpiekenbrock/pbsig/extern/eigen'
+    ], 
+    extra_compile_args=compile_args,
+    language='c++20', 
+    cxx_std=1
   )
 ]
 

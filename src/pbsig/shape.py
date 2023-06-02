@@ -7,6 +7,8 @@ from numbers import Number, Integral, Complex
 from numpy.typing import ArrayLike
 from itertools import * 
 from more_itertools import *
+from splex.predicates import * 
+import _landmark as lm
 
 def cart2pol(x, y):
   rho = np.sqrt(x**2 + y**2)
@@ -53,6 +55,55 @@ def archimedean_sphere(n: int, nr: int):
 def complex2points(x): 
   return(np.c_[np.real(x), np.imag(x)])
 
+
+# %% Definitions
+def landmarks(a: ArrayLike, k: Optional[int] = 15, eps: Optional[float] = -1.0, seed: int = 0, diameter: bool = False, metric = "euclidean"):
+	'''
+	Computes landmarks points for a point set or set of distance 'a' using the 'maxmin' method. 
+
+	Parameters:
+		a := (n x d) matrix of *n* points in *d* dimensions, a distance matrix, or a set of pairwise distances
+		k := (optional) number of landmarks requested. Defaults to 15. 
+		eps := (optional) covering radius to stop finding landmarks at. Defaults to -1.0, using *k* instead.
+		seed := index of the initial point to be the first landmark. Defaults to 0.
+		diameter := whether to include the diameter as the first insertion radius (see details). Defaults to False. 
+		metric := metric distance to use. Ignored if *a* is a set of distances. See details. 
+
+	Details: 
+		- The first radius is always the diameter of the point set, which can be expensive to compute for high dimensions, so by default "inf" is used as the first covering radius 
+		- If the 'metric' parameter is "euclidean", the point set is used directly, otherwise the pairwise distances are computed first via 'dist'
+		- If 'k' is specified an 'eps' is not (or it's -1.0), then the procedure stops when 'k' landmarks are found. The converse is true if k = 0 and eps > 0. 
+			If both are specified, the both are used as stopping criteria for the procedure (whichever becomes true first).
+		- Given a fixed seed, this procedure is deterministic. 
+
+	Returns a pair (indices, radii) where:
+		indices := the indices of the points defining the landmarks; the prefix of the *greedy permutation* (up to 'k' or 'eps')
+		radii := the insertion radii whose values 'r' yield a cover of 'a' when balls of radius 'r' are places at the landmark points.
+
+	The maxmin method yields a logarithmic approximation to the geometric set cover problem.
+
+	'''
+	a = np.asanyarray(a)
+	k = 0 if k is None else int(k)
+	eps = -1.0 if eps is None else float(eps)
+	seed = int(seed)
+	if is_dist_like(a):
+		if is_distance_matrix(a):
+			a = a[np.triu_indices(a.shape[0], k=1)]
+		if a.dtype != np.float64:
+			a = a.astype(np.float64)
+		indices, radii = lm.maxmin(a, eps, k, True, seed)
+	elif metric == "euclidean" and is_point_cloud(a):
+		indices, radii = lm.maxmin(a.T, eps, k, False, seed)
+		radii = np.sqrt(radii)
+	else:
+		raise ValueError("Unknown input type detected. Must be a matrix of points, a distance matrix, or a set of pairwise distances.")
+	
+	## Check is a valid cover 
+	is_monotone = np.all(np.diff(-np.array(radii)) >= 0.0)
+	assert is_monotone, "Invalid metric: non-monotonically decreasing radii found."
+
+	return(indices, radii)
 
 def PL_path(path, k: int, close_path: bool = False, output_path: bool = False): 
   """Convert a SVG collection of paths into a set k-1 piecewise-linear line segments.

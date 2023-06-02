@@ -45,19 +45,20 @@ def load_mesh(i: int):
   return X_norm, mesh_smp
 meshes = list(LazyIterable(load_mesh, len(pose_paths)))
 
-from pbsig.pht import archimedean_sphere, shape_center
-import line_profiler
-profile = line_profiler.LineProfiler()
-profile.add_function(load_mesh)
-profile.add_function(stratify_sphere)
-profile.add_function(normalize_shape)
-profile.add_function(shape_center)
-profile.add_function(archimedean_sphere)
-profile.enable_by_count()
-meshes = list(LazyIterable(load_mesh, 1))
-profile.print_stats(output_unit=1e-3, stripzeros=True)
+# %% Profile 
+# from pbsig.pht import archimedean_sphere, shape_center
+# import line_profiler
+# profile = line_profiler.LineProfiler()
+# profile.add_function(load_mesh)
+# profile.add_function(stratify_sphere)
+# profile.add_function(normalize_shape)
+# profile.add_function(shape_center)
+# profile.add_function(archimedean_sphere)
+# profile.enable_by_count()
+# meshes = list(LazyIterable(load_mesh, 1))
+# profile.print_stats(output_unit=1e-3, stripzeros=True)
 
-# %% Compute geodesic distances and eccentricities
+# %% Compute geodesic distances
 def geodesic_dist(X, mesh):
   mesh.compute_adjacency_list()
   G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
@@ -66,9 +67,9 @@ def geodesic_dist(X, mesh):
   AG = floyd_warshall(A)
   return squareform(AG)
 mesh_geodesics = [geodesic_dist(X, mesh) for X, mesh in meshes]
-mesh_ecc = [squareform(gd).max(axis=1) for gd in mesh_geodesics]
 
 # %% Precompute eccentricities
+mesh_ecc = [squareform(gd).max(axis=1) for gd in mesh_geodesics]
 ecc_f = [[max(mesh_ecc[cc][i], mesh_ecc[cc][j]) for (i,j) in combinations(range(X.shape[0]), 2)] for cc, (X, mesh) in enumerate(meshes)]
 eff_f = [np.array(ecc) for ecc in ecc_f]
 
@@ -121,8 +122,10 @@ show(p)
 
 
 from pbsig.betti import sample_rect_halfplane
+np.random.seed(1234)
 P = dgm_points[L,:]
-rects = sample_rect_halfplane(len(P), lb=0.0025, ub=0.050)
+area = np.prod(np.abs(dgm_points.min(axis=0) - dgm_points.max(axis=0)))
+rects = sample_rect_halfplane(len(P), lb=area*0.025, ub=area*0.10)
 a = P[:,0] - (abs(rects[:,0] - rects[:,1]))/2
 b = P[:,0] + (abs(rects[:,0] - rects[:,1]))/2
 c = P[:,1] - (abs(rects[:,2] - rects[:,3]))/2
@@ -137,7 +140,7 @@ for i, (X, mesh) in enumerate(meshes):
   X, mesh = meshes[i]
   S = simplicial_complex(mesh.triangles, form="tree")
   # diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
-  f = flag_weight(np.maximum(mesh_geodesics[i], 5.0*eff_f[i]))
+  f = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
   sieve = Sieve(S, [f], p=1)
   sieve.pattern = rects
   # sieve.randomize_pattern(4) # show(sieve.figure_pattern())
@@ -174,7 +177,35 @@ for cc in range(40):
   # nd = np.minimum(nd, d_ij)
 show(figure_dist(nd))
 
+# %% Try to optimize a convex combination of corner points 
+normalize = lambda x: (x - np.min(x))/(np.max(x) - np.min(x))
+n_corner_pts = len(sieves[0].spectra)
+spectral_dist = lambda cc: np.array([eigen_dist(sieves[i].spectra[cc]['eigenvalues'], sieves[j].spectra[cc]['eigenvalues']) for i,j in combinations(range(len(sieves)), 2)])
+D = [spectral_dist(cc) for cc in range(n_corner_pts)]
 
+def convex_distance(alpha: np.ndarray):
+  fd = np.zeros(comb(len(sieves), 2))
+  for i, a in enumerate(alpha): 
+    fd += a * D[i]
+  return fd
+
+def bottleneck_loss(alpha: np.ndarray):
+  fd = convex_distance(alpha)
+  return np.sum((normalize(fd) - normalize(bd))**2)
+
+from scipy.optimize import minimize, LinearConstraint
+sum_to_one = LinearConstraint(np.ones(40)[np.newaxis,:], lb=1, ub=1)
+res = minimize(bottleneck_loss, x0=np.ones(40)/40, constraints=sum_to_one, method="trust-constr", bounds=[(0,1)])
+nd = convex_distance(res.x)
+show(figure_dist(nd))
+
+
+
+
+
+
+
+# %% 
 ## Compare the distances 
 from bokeh.io import output_notebook
 from bokeh.plotting import show

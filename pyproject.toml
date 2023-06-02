@@ -9,9 +9,9 @@ name = "pbsig"
 authors = [
 	{ name = "Matt Piekenbrock", email = "matt.piekenbrock@gmail.com" }
 ]
-version = "0.2.2"
+version = "0.2.3"
 # readme = "README.md"
-description = "Persistent Betti Signatures"
+description = "Spectral Rank Invariant"
 license = { file = "LICENSE.txt" }
 requires-python = ">=3.8"
 keywords = ["TDA"]
