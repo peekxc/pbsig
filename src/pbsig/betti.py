@@ -842,20 +842,25 @@ class Sieve:
 
   ## TODO: add ability to handle not just length-dependent function, but pure elementwise ufunc
   def summarize(self, f: Callable = None, **kwargs) -> ArrayLike:
+    n_pts, n_family = len(self.pattern), len(self.family)
     f = np.sum if f is None else f
     assert isinstance(f, Callable), "reduce function must be Callable"
-    assert f(np.zeros(10)) == 0.0, "reduction function must map [0,...,0] -> 0"
-    n_pts, n_family = len(self.pattern), len(self.family)
-    values = np.zeros(shape=(n_pts, n_family))
-    for ii,d in enumerate(self.spectra.values()):
-      ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
-      for jj,ew in enumerate(ew_split):
-        values[ii,jj] = f(ew)
-    n_summaries = len(np.unique(self._pattern['index']))
-    
+    r = f(np.zeros(10))
+    if isinstance(r, Number):
+      assert np.isclose(r, 0.0), "reduction function must map [0,...,0] -> 0"
+      values = np.zeros(shape=(n_pts, n_family))
+      for ii,d in enumerate(self.spectra.values()):
+        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+        for jj,ew in enumerate(ew_split):
+          values[ii,jj] = f(ew)
+    else:
+      raise NotImplementedError("Haven't implemented yet")
+    # or np.allclose(f(np.zeros(10)), np.zeros(10)), 
+
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
+    n_summaries = len(np.unique(self._pattern['index']))
     summary = np.zeros(shape=(n_summaries, n_family))
-    np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values)
+    np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
     
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:

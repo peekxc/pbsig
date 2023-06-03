@@ -968,6 +968,11 @@ By construction, $\hat{\mu}_p^R(K, f_\alpha)$ is not only continuous, but varyin
   - Codensity example 
   - Shape signature example 
 
+## Experiment \#0 
+
+Bottleneck distance yield stable lower bound on GH distance
+
+
 
 ## Experiment \#1
 

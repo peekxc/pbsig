@@ -21,11 +21,15 @@ def colors_to_hex(x):
 # hex_to_rgb(colors_to_hex(pt_col*255))
 from matplotlib.colors import to_hex
 
-def hex_to_rgb(hex):
-  ''' "#FFFFFF" -> [255,255,255] '''
+def hex_to_rgb(hex_str: Union[List, str]):
+	''' "#FFFFFF" -> [255,255,255] '''
 	# to_rgb(colors_to_hex(pt_col*255)[0])
-  # Pass 16 to the integer function for change of base
-  return [int(hex[i:i+2], 16) for i in range(1,6,2)]
+	# Pass 16 to the integer function for change of base
+	if isinstance(hex_str, str):
+		return [int(hex_str[i:i+2], 16) for i in range(1,6,2)]	
+	else:
+		return np.array([hex_to_rgb(h) for h in hex_str], dtype=np.uint8)
+
 
 def rgb_to_hex(rgb):
   ''' [255,255,255] -> "#FFFFFF" '''
@@ -129,20 +133,24 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 
 def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
-	from matplotlib import cm
+	# from matplotlib import cm
 	if isinstance(color_pal, str):
-		col = cm.get_cmap(color_pal)
-		color_pal = [col(i) for i in range(0, 255)]
+		import bokeh
+		color_pal = getattr(bokeh.palettes, color_pal.lower())
+		assert isinstance(color_pal, Callable)
+		color_pal = color_pal(100)
+		# col = cm.get_cmap(color_pal)
+		# color_pal = [col(i) for i in range(0, 255)]
 		# color_pal = cm.get_cmap(color_pal).colors
-	else: 
-		raise ValueError("Unknown color map")
+	# else: 
+	# 	raise ValueError("Unknown color map")
 	x = scale_interval(x, **kwargs)
 	lb = float(np.min(x)) if lb is None else float(lb)
 	ub = float(np.max(x)) if ub is None else float(ub)
 	ind = np.digitize(np.clip(x, a_min=lb, a_max=ub), bins=np.linspace(lb, ub, len(color_pal)))
 	ind = np.minimum(ind, len(color_pal)-1) ## bound from above
 	ind = np.maximum(ind, 0)								## bound from below
-	return(np.asarray(color_pal)[ind])
+	return(hex_to_rgb(np.asarray(color_pal)[ind]))
 
 
 # From: https://matplotlib.org/stable/gallery/images_contours_and_fields/image_annotated_heatmap.html#sphx-glr-gallery-images-contours-and-fields-image-annotated-heatmap-py

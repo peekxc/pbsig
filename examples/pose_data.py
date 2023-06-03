@@ -20,9 +20,9 @@ output_notebook()
 # %% Configure the mesh directories 
 import os 
 mesh_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses"
-pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses"]
+pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses", "cat-poses", "lion-poses"]
 get_pose_objs = lambda pd: np.array(list(filter(lambda s: s[-3:] == "obj", sorted(os.listdir(mesh_dir+"/"+pd)))))
-pose_objs = [get_pose_objs(pose_type)[[0,1,2,3]] for pose_type in pose_dirs]
+pose_objs = [get_pose_objs(pose_type)[[0,1,2,3,7,8]] for pose_type in pose_dirs]
 pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_dirs, pose_objs)]
 pose_objs = list(collapse(pose_objs))
 pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
@@ -124,8 +124,7 @@ show(p)
 from pbsig.betti import sample_rect_halfplane
 np.random.seed(1234)
 P = dgm_points[L,:]
-area = np.prod(np.abs(dgm_points.min(axis=0) - dgm_points.max(axis=0)))
-rects = sample_rect_halfplane(len(P), lb=area*0.025, ub=area*0.10)
+rects = sample_rect_halfplane(len(P), lb=0, ub=1, area=(0.005, 0.030))
 a = P[:,0] - (abs(rects[:,0] - rects[:,1]))/2
 b = P[:,0] + (abs(rects[:,0] - rects[:,1]))/2
 c = P[:,1] - (abs(rects[:,2] - rects[:,3]))/2
@@ -133,6 +132,15 @@ d = P[:,1] + (abs(rects[:,2] - rects[:,3]))/2
 rects = np.array(list(zip(a,b,c,d)))
 rects = rects[np.logical_and(rects[:,0] <= rects[:,1], rects[:,1] <= rects[:,2], rects[:,2] <= rects[:,3]),:]
 
+## Show the actual pattern
+p = figure()
+p.scatter(*dgm_points.T)
+p.scatter(*dgm_points[L,:].T, color="red")
+for r in rects:
+  x,y = np.mean(r[:2]), np.mean(r[2:])
+  w,h = np.max(np.diff(np.sort(r[:2]))), np.max(np.diff(np.sort(r[2:])))
+  p.rect(x,y,width=w,height=h, color="orange")
+show(p)
 
 # %% Select a random sieve pattern and 
 sieves = []
@@ -159,6 +167,10 @@ summaries = [sieve.summarize() for sieve in sieves]
 nd = np.array([np.linalg.norm(summaries[i] - summaries[j]) for i,j in combinations(range(len(summaries)), 2)])
 show(figure_dist(nd))
 
+
+
+
+
 import time
 from pbsig.linalg import eigen_dist
 from math import comb
@@ -176,6 +188,7 @@ for cc in range(40):
   # nd += normalize(d_ij)
   # nd = np.minimum(nd, d_ij)
 show(figure_dist(nd))
+
 
 # %% Try to optimize a convex combination of corner points 
 normalize = lambda x: (x - np.min(x))/(np.max(x) - np.min(x))
@@ -200,8 +213,43 @@ nd = convex_distance(res.x)
 show(figure_dist(nd))
 
 
+# %% Plot eccentricities of shapes 
+from pbsig.color import bin_color
+i = 9
+X, mesh = meshes[i]
+# o3.visualization.draw_geometries([mesh])
+
+# tri_weight = lower_star_weight(X @ np.array([0,0,1]))(np.array(mesh.triangles))
+# tri_weight = lower_star_weight(mesh_ecc[i])(np.array(mesh.triangles))
+tri_weight = flag_weight(np.maximum(mesh_geodesics[i], 0.15*eff_f[i]))(np.array(mesh.triangles))
+
+device = o3.core.Device("CPU:0")
+dtype_f = o3.core.float32
+dtype_i = o3.core.int32
+mesh_t = o3.t.geometry.TriangleMesh(device)
+mesh_t.vertex.positions = o3.core.Tensor(X, dtype_f, device)
+mesh_t.triangle.indices = o3.core.Tensor(np.array(mesh.triangles), dtype_i, device)
+mesh_t.vertex.normals = o3.core.Tensor(np.array(mesh.vertex_normals), dtype_f, device)
+# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(X @ np.array([0,1,0]), 'turbo')/255.0, dtype_f, device)
+# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i], 'turbo')/255.0, dtype_f, device) 
+# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i]), 'turbo')/255.0, dtype_f, device) 
+mesh_t.triangle['colors'] = o3.core.Tensor(bin_color(tri_weight, 'turbo')/255.0, dtype_f, device)
+
+o3.visualization.draw([mesh_t], show_skybox=False)
 
 
+
+
+
+
+
+
+
+from scipy.spatial import KDTree
+tree = KDTree(X)
+vertex_balls = np.array([len(tree.query_ball_point(x, 0.30)) for x in X])
+mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(vertex_balls, 'turbo')/255.0, dtype_f, device) 
+# [tree.query(x, k=30)[0] for x in X]
 
 
 
