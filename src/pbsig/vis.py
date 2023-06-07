@@ -66,7 +66,8 @@ def plot_dgm(*args, **kwargs) -> None:
 
 def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   n = inverse_choose(len(d), 2)
-  C = np.floor(bin_color(d)*255).astype(int)
+  C = np.floor(bin_color(np.append([0], d), palette)*255).astype(int)
+  base_color, C = C[0], C[1:]
   D = np.zeros((n,n), dtype=np.uint32)
   D_view = D.view(dtype=np.int8).reshape((n, n, 4))
   for cc, (i,j) in enumerate(combinations(range(n),2)):
@@ -74,11 +75,11 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
     D_view[i,j,1] = D_view[j,i,1] = C[cc,1]
     D_view[i,j,2] = D_view[j,i,2] = C[cc,2]
     D_view[i,j,3] = D_view[j,i,3] = 255
-  min_col = (bin_color([0, 1])[0,:]*255).astype(int)
+  # min_col = (bin_color([0, 1])[0,:]*255).astype(int)
   for i in range(n):
-    D_view[i,i,0] = 68
-    D_view[i,i,1] = 2
-    D_view[i,i,2] = 85
+    D_view[i,i,0] = base_color[0]
+    D_view[i,i,1] = base_color[1]
+    D_view[i,i,2] = base_color[2]
     D_view[i,i,3] = 255
   fig_kw = dict(width=200, height=200) | kwargs
   p = figure(**fig_kw)
@@ -86,6 +87,14 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   # p.y_range.flipped = True
   # p.y_range = Range1d(0,-10)
   # p.x_range = Range1d(0,10)
+  # D_view[0,0,0] = 255
+  # D_view[0,0,1] = 0
+  # D_view[0,0,2] = 0
+  # D_view[0,0,3] = 255
+  # D_view[1,1,0] = 0
+  # D_view[1,1,1] = 255
+  # D_view[1,1,2] = 0
+  # D_view[1,1,3] = 255
   p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10)
   return p
 

@@ -20,7 +20,7 @@ output_notebook()
 # %% Configure the mesh directories 
 import os 
 mesh_dir = "/Users/mpiekenbrock/pbsig/src/pbsig/data/mesh_poses"
-pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses", "cat-poses", "lion-poses"]
+pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses"] # "cat-poses", "lion-poses"
 get_pose_objs = lambda pd: np.array(list(filter(lambda s: s[-3:] == "obj", sorted(os.listdir(mesh_dir+"/"+pd)))))
 pose_objs = [get_pose_objs(pose_type)[[0,1,2,3,7,8]] for pose_type in pose_dirs]
 pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_dirs, pose_objs)]
@@ -29,6 +29,13 @@ pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
 
 # %% TODO: try SHREC20 
 # "/Users/mpiekenbrock/neuromorph/data/meshes/SHREC20b_lores/full"
+# from pbsig.color import bin_color
+# p = figure()
+# X = np.random.uniform(size=(80,2))
+# c = bin_color(X[:,0], 'viridis')
+# p.scatter(*X.T, color=c)
+# show(p)
+
 
 
 # %% Lazily-load the mesh data, normalized
@@ -38,6 +45,7 @@ from pbsig.pht import normalize_shape, stratify_sphere
 def load_mesh(i: int):
   mesh_in = o3.io.read_triangle_mesh(pose_paths[i])
   mesh_in.compute_vertex_normals()
+  # mesh_smp = mesh_in
   mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=5000)
   X = np.asarray(mesh_smp.vertices)
   V = stratify_sphere(2, 64)
@@ -76,13 +84,44 @@ eff_f = [np.array(ecc) for ecc in ecc_f]
 # %% Compute eccentricity-equipped diagrams 
 from pbsig.persistence import ph
 from splex.geometry import flag_weight
-# ecc_p = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
+
 dgms = []
 for i, (X, mesh) in enumerate(meshes):
   S = simplicial_complex(mesh.triangles)
-  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
+  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 0.50*eff_f[i]))
   K = filtration(S, f=diam_filter)
   dgms.append(ph(K, engine="dionysus"))
+
+# %% OPTIONAL: try varying the distances and inspecting the diagrams
+i = 0
+dgm_vary = []
+X, mesh = meshes[i]
+S = simplicial_complex(mesh.triangles)
+# ecc_p = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
+K = filtration(S, f=flag_weight(np.maximum(mesh_geodesics[i], 0.0*eff_f[i])))
+for c in np.linspace(0, 0.10, 6):
+  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], c*eff_f[i]))
+  K.reindex(diam_filter)
+  dgm_vary.append(ph(K, engine="dionysus"))
+
+def clean_fig(p):
+  p.toolbar.logo = None
+  p.toolbar_location = None
+  p.xaxis.visible = False
+  p.yaxis.visible = False 
+  return p
+
+show(row(*[clean_fig(figure_dgm(d[1], width=640, height=640)) for d in dgm_vary[:-1]]))
+
+
+# %% Hack to load wasserstein 
+import importlib.util
+import sys
+spec = importlib.util.spec_from_file_location("gudhi.wasserstein", "/Users/mpiekenbrock/opt/miniconda3/envs/pbsig/lib/python3.9/site-packages/gudhi/wasserstein/__init__.py")
+wasserstein = importlib.util.module_from_spec(spec)
+sys.modules["gudhi.wasserstein"] = wasserstein
+spec.loader.exec_module(wasserstein)
+format(dir(wasserstein))
 
 # %% Visualize the bottleneck-based distance matrix for the enriched diagrams
 import gudhi
@@ -90,9 +129,14 @@ from pbsig.vis import figure_dist, figure_dgm
 p_hom = 1
 to_mat = lambda d: np.c_[d['birth'][d['death'] != np.inf], d['death'][d['death'] != np.inf]]
 bd = np.array([gudhi.bottleneck_distance(to_mat(dgms[i][p_hom]), to_mat(dgms[j][p_hom])) for i,j in combinations(range(len(dgms)), 2)])
-dgm_figs = [figure_dgm(d[1], width=150, height=150) for d in dgms]
+wd = np.array([wasserstein.wasserstein_distance(to_mat(dgms[i][p_hom]), to_mat(dgms[j][p_hom])) for i,j in combinations(range(len(dgms)), 2)])
+dgm_figs = [figure_dgm(d[1], width=450, height=450) for d in dgms]
 show(row(*dgm_figs))
-show(figure_dist(bd))
+show(figure_dist(bd, palette='magma', width=640, height=640))
+# show(figure_dist(wd, palette='magma'))
+
+show(row(*[dgm_figs[0], dgm_figs[6]]))
+show(row(*[dgm_figs[:2]]))
 
 # %% Randomly maxmin sample to get sieve pattern
 dgm_colors = bokeh.palettes.viridis(len(dgms))
@@ -129,8 +173,17 @@ a = P[:,0] - (abs(rects[:,0] - rects[:,1]))/2
 b = P[:,0] + (abs(rects[:,0] - rects[:,1]))/2
 c = P[:,1] - (abs(rects[:,2] - rects[:,3]))/2
 d = P[:,1] + (abs(rects[:,2] - rects[:,3]))/2
-rects = np.array(list(zip(a,b,c,d)))
-rects = rects[np.logical_and(rects[:,0] <= rects[:,1], rects[:,1] <= rects[:,2], rects[:,2] <= rects[:,3]),:]
+centered_rects = np.array(list(zip(a,b,c,d)))
+valid_rects = np.logical_and(centered_rects[:,0] <= centered_rects[:,1], centered_rects[:,1] <= centered_rects[:,2], centered_rects[:,2] <= centered_rects[:,3])
+
+a = P[:,0] - (abs(rects[:,0] - rects[:,1]))
+b = P[:,0] 
+c = P[:,1]
+d = P[:,1] + (abs(rects[:,2] - rects[:,3]))
+backup_rects = np.array(list(zip(a,b,c,d)))
+assert all(np.logical_and(backup_rects[:,0] <= backup_rects[:,1], backup_rects[:,1] <= backup_rects[:,2], backup_rects[:,2] <= backup_rects[:,3]))
+
+rects = np.array([rc if v else rb for rc, rb, v in zip(centered_rects, backup_rects, valid_rects)])
 
 ## Show the actual pattern
 p = figure()
@@ -142,7 +195,7 @@ for r in rects:
   p.rect(x,y,width=w,height=h, color="orange")
 show(p)
 
-# %% Select a random sieve pattern and 
+# %% Select a random sieve pattern and sift it 
 sieves = []
 for i, (X, mesh) in enumerate(meshes):
   X, mesh = meshes[i]
@@ -158,6 +211,7 @@ for i, (X, mesh) in enumerate(meshes):
 for sieve in sieves: 
   sieve.sift(w=0.35, k=25)
 
+# %% 
 p = sieves[0].figure_pattern()
 p.x_range = Range1d(min(sieves[0].pattern['i'])-1, max(sieves[0].pattern['j'])+1)
 p.y_range = Range1d(min(sieves[0].pattern['i'])-1, max(sieves[0].pattern['j'])+1)
@@ -204,24 +258,51 @@ def convex_distance(alpha: np.ndarray):
 
 def bottleneck_loss(alpha: np.ndarray):
   fd = convex_distance(alpha)
-  return np.sum((normalize(fd) - normalize(bd))**2)
+  # if np.min(fd) == np.max(fd):
+  #   return np.sum(np.abs(fd - normalize(bd))**2)
+  diff = np.abs(normalize(fd) - normalize(wd))
+  dc = np.digitize(diff, [0, 0.25, 0.50, 0.75, 1.0])
+  for cl, con in zip(range(4), [5,3,1,1]): #[10,5,2,1]
+    diff[dc==cl] = con*diff[dc==cl]
+  return np.sum(diff**1.8)
 
 from scipy.optimize import minimize, LinearConstraint
-sum_to_one = LinearConstraint(np.ones(40)[np.newaxis,:], lb=1, ub=1)
-res = minimize(bottleneck_loss, x0=np.ones(40)/40, constraints=sum_to_one, method="trust-constr", bounds=[(0,1)])
+sum_to_one = LinearConstraint(np.ones(n_corner_pts)[np.newaxis,:], lb=1.0, ub=1.0)
+res = minimize(bottleneck_loss, x0=np.ones(n_corner_pts)/n_corner_pts, constraints=sum_to_one, method="trust-constr", bounds=[(0,1)], options={'verbose': 1})
 nd = convex_distance(res.x)
-show(figure_dist(nd))
+show(figure_dist(nd, palette='magma'))
+show(figure_dist(wd, palette='magma'))
+
+#
+from bokeh.io import export_png
+p = figure_dist(nd, width=1200, height=1200, palette='magma')
+# p.toolbar_location = None
+show(p)
+
+
+from pbsig.linalg import cmds
+X = cmds(squareform(nd)**2)
+p = figure()
+p.scatter(*X.T, color=bin_color(np.repeat([1,2,3,4], 6)))
+show(p)
+
+# %% Show 1-NN plot 
+from scipy.spatial import KDTree
+
+
 
 
 # %% Plot eccentricities of shapes 
 from pbsig.color import bin_color
-i = 9
+i = 0
 X, mesh = meshes[i]
 # o3.visualization.draw_geometries([mesh])
 
+# tri_weight = flag_weight(mesh_geodesics[i])(np.array(mesh.triangles))
 # tri_weight = lower_star_weight(X @ np.array([0,0,1]))(np.array(mesh.triangles))
 # tri_weight = lower_star_weight(mesh_ecc[i])(np.array(mesh.triangles))
-tri_weight = flag_weight(np.maximum(mesh_geodesics[i], 0.15*eff_f[i]))(np.array(mesh.triangles))
+# 0.  , 0.02, 0.04, 0.06, 0.08, 0.1
+# tri_weight = flag_weight(np.maximum(mesh_geodesics[i], 0.08*eff_f[i]))(np.array(mesh.triangles))
 
 device = o3.core.Device("CPU:0")
 dtype_f = o3.core.float32
@@ -230,27 +311,13 @@ mesh_t = o3.t.geometry.TriangleMesh(device)
 mesh_t.vertex.positions = o3.core.Tensor(X, dtype_f, device)
 mesh_t.triangle.indices = o3.core.Tensor(np.array(mesh.triangles), dtype_i, device)
 mesh_t.vertex.normals = o3.core.Tensor(np.array(mesh.vertex_normals), dtype_f, device)
-# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(X @ np.array([0,1,0]), 'turbo')/255.0, dtype_f, device)
+mesh_t.vertex['colors'] = o3.core.Tensor(np.array([[1.0, 0.41568627, 0.02352941] for _ in range(len(mesh_ecc[i]))]), dtype_f, device)
+# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(X @ np.array([1,0,0]), 'turbo')/255.0, dtype_f, device)
 # mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i], 'turbo')/255.0, dtype_f, device) 
-# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i]), 'turbo')/255.0, dtype_f, device) 
-mesh_t.triangle['colors'] = o3.core.Tensor(bin_color(tri_weight, 'turbo')/255.0, dtype_f, device)
+# mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i], 'turbo')[:,:3], dtype_f, device) 
+# mesh_t.triangle['colors'] = o3.core.Tensor(bin_color(tri_weight, 'turbo')[:,:3], dtype_f, device)
 
 o3.visualization.draw([mesh_t], show_skybox=False)
-
-
-
-
-
-
-
-
-
-from scipy.spatial import KDTree
-tree = KDTree(X)
-vertex_balls = np.array([len(tree.query_ball_point(x, 0.30)) for x in X])
-mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(vertex_balls, 'turbo')/255.0, dtype_f, device) 
-# [tree.query(x, k=30)[0] for x in X]
-
 
 
 # %% 

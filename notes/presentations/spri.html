@@ -655,7 +655,7 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <li class="fragment">is smooth + differentiable on <span class="math inline">\mathbf{S}_+</span></li>
 <li class="fragment"><span class="math inline">(1{\textstyle -}\epsilon)</span> approximates <span class="math inline">\beta_p^{i,j}</span> for any <span class="math inline">\epsilon &gt; 0</span> + essentially <span class="math inline">O(n^2)</span> time</li>
 <li class="fragment">Vectorizes non-harmonic spectra of Laplacian operators</li>
-<li class="fragment">Is computable in a “matrix-free” fashion in <span class="math inline">O(n)</span> memory</li>
+<li class="fragment">Is computable in a “matrix-free” fashion in <span class="math inline">O(n)</span> memory <!-- 5. Continuously interpolates the rank function --></li>
 </ol>
 </div>
 </div>
@@ -734,8 +734,8 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <aside><div>
 <p><span class="citation" data-cites="anderson1969series">Anderson Jr and Duffin (<a href="#/references" role="doc-biblioref" onclick="">1969</a>)</span>, <span class="citation" data-cites="ben1967geometry">Ben-Israel (<a href="#/references" role="doc-biblioref" onclick="">1967</a>)</span>, <span class="citation" data-cites="ben2015projectors">Ben-Israel (<a href="#/references" role="doc-biblioref" onclick="">2015</a>)</span>, <span class="citation" data-cites="zomorodian2004computing">Zomorodian and Carlsson (<a href="#/references" role="doc-biblioref" onclick="">2004</a>)</span>, <span class="citation" data-cites="edelsbrunner2000topological">Edelsbrunner, Letscher, and Zomorodian (<a href="#/references" role="doc-biblioref" onclick="">2000</a>)</span>, <span class="citation" data-cites="memoli2022persistent">Mémoli, Wan, and Wang (<a href="#/references" role="doc-biblioref" onclick="">2022</a>)</span></p>
 </div></aside></section>
-<section id="key-observation" class="slide level2">
-<h2>Key Observation</h2>
+<section id="key-technical-observation" class="slide level2">
+<h2>Key technical observation</h2>
 <p>Structure theorem for persistence modules can be used to show:</p>
 <div class="fragment">
 <p><span class="math display">
@@ -760,8 +760,8 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 </span></p>
 </div>
 </section>
-<section id="key-observation-1" class="slide level2">
-<h2>Key Observation</h2>
+<section id="key-technical-observation-1" class="slide level2">
+<h2>Key technical observation</h2>
 <div class="fragment">
 <p><span class="math display">
 \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})
@@ -778,8 +778,8 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <p><strong>Take-a-way:</strong> Can deduce the <span class="math inline">\mathrm{dgm}</span> from ranks of “lower-left” submatrices of <span class="math inline">\partial_p(K_\bullet)</span></p>
 </div>
 </section>
-<section id="key-observation-2" class="slide level2">
-<h2>Key Observation</h2>
+<section id="key-technical-observation-2" class="slide level2">
+<h2>Key technical observation</h2>
 <!-- $$ \mathrm{sgn}_+(R[i,j]) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) $$ -->
 <p><span class="math display">
 \begin{equation}
@@ -831,9 +831,6 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <aside><div>
 <p><span class="citation" data-cites="edelsbrunner2000topological">Edelsbrunner, Letscher, and Zomorodian (<a href="#/references" role="doc-biblioref" onclick="">2000</a>)</span> noted (1) in passing showing correctness of reduction; <span class="citation" data-cites="dey2022computational">Tamal Krishna Dey and Wang (<a href="#/references" role="doc-biblioref" onclick="">2022</a>)</span> explicitly prove (2); (3) was used by <span class="citation" data-cites="chen2011output">Chen and Kerber (<a href="#/references" role="doc-biblioref" onclick="">2011</a>)</span>. (2) &amp; (3) are connected to relative homology.</p>
 </div></aside></section>
-
-
-
 <section id="overview" class="slide level2">
 <h2>Overview</h2>
 <div style="color: #7F7F7F;">
@@ -858,14 +855,16 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <ul>
 <li>Experiments
 <ul>
+<li>Shape signatures via directional transform</li>
+<li>Shape signatures via intrinsic metrics<br>
+</li>
 <li>Codensity example</li>
-<li>Shape signature example</li>
 </ul></li>
 </ul>
 </div>
 </section>
-<section id="the-implication-rank-invariances" class="slide level2">
-<h2>The Implication: Rank Invariances</h2>
+<section id="the-implication-rank-invariance" class="slide level2">
+<h2>The Implication: Rank Invariance</h2>
 <div class="fragment fade-in" style="text-align: left">
 <p>    </p>
 <p><span class="math inline">\hspace{10em} \mathrm{rank}(A) \triangleq \mathrm{dim}(\mathrm{Im}(A))</span></p>
@@ -948,22 +947,22 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <div class="columns">
 <div class="column" style="width:50%;">
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0</span> <!-- ::: --></p>
+<p><span class="math inline">\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)</span> <!-- ::: --></p>
+<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)</span> <!-- ::: --></p>
+<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast</span> <!-- ::: --></p>
+<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast \vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
 </div><div class="column">
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"} -->
-<p><span class="math inline">X = U \mathrm{Diag}(\mathbf{\sigma})V^T</span> <!-- ::: --></p>
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">X = U \mathrm{Diag}(\mathbf{\sigma})V^T</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"} -->
-<p><span class="math inline">\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x &gt; 0)</span> <!-- ::: --></p>
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x &gt; 0)\vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"} -->
-<p><span class="math inline">\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz</span> <!-- ::: --></p>
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz\vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: right"} -->
-<p><span class="math inline">\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T</span></p>
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T</span></p>
 <!-- ::: -->
 </div>
 </div>
@@ -1074,26 +1073,16 @@ L_p^{\text{up}}(\tau, \tau')= \begin{cases}
 <ul>
 <li>Experiments
 <ul>
+<li>Shape signatures via directional transform</li>
+<li>Shape signatures via intrinsic metrics<br>
+</li>
 <li>Codensity example</li>
-<li>Shape signature example</li>
 </ul></li>
 </ul>
 </section>
-<section id="experiment-0" class="slide level2">
-<h2>Experiment #0</h2>
-<p>Bottleneck distance yield stable lower bound on GH distance</p>
-</section>
-<section id="experiment-1" class="slide level2">
-<h2>Experiment #1</h2>
-
-<img data-src="codensity_mult.png" class="r-stretch"></section>
-<section id="experiment-1-1" class="slide level2">
-<h2>Experiment #1</h2>
-<p><img data-src="smoothed_mu.png" style="width:55.0%;height:100.0%"> <img data-src="optimal_codensity_complex.png" style="width:35.0%;height:100.0%"></p>
-</section>
-<section id="experiment-2-directional-transform" class="slide level2">
-<h2>Experiment #2: Directional Transform</h2>
-<p>Consider “looking” at a complex <span class="math inline">K</span> derived from an embedded <span class="math inline">X \subset R^d</span></p>
+<section id="experiment-1-directional-transform" class="slide level2">
+<h2>Experiment #1: Directional Transform</h2>
+<p>Consider “looking” at a complex <span class="math inline">K</span> embedded in <span class="math inline">R^d</span></p>
 <p><span class="math display">\begin{align*}
 \mathrm{DT}(K): S^{d-1} &amp;\to  K \times C(K, \mathbb{R}) \\
     v &amp;\mapsto (K_\bullet, f_v)
@@ -1108,8 +1097,8 @@ L_p^{\text{up}}(\tau, \tau')= \begin{cases}
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </span></p>
 </section>
-<section id="experiment-2-directional-transform-1" class="slide level2">
-<h2>Experiment #2: Directional Transform</h2>
+<section id="experiment-1-directional-transform-1" class="slide level2">
+<h2>Experiment #1: Directional Transform</h2>
 <p><span class="math display">
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </span></p>
@@ -1125,8 +1114,8 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 <p><span class="math display">\{ \; \chi(v) : v \in S^{d-1} \; \} \Leftrightarrow \mathrm{ECT} </span></p>
 </div>
 </section>
-<section id="experiment-2-directional-transform-2" class="slide level2">
-<h2>Experiment #2: Directional Transform</h2>
+<section id="experiment-1-directional-transform-2" class="slide level2">
+<h2>Experiment #1: Directional Transform</h2>
 <p><span class="math display">
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </span></p>
@@ -1153,8 +1142,8 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </div>
 </div>
 </section>
-<section id="experiment-2-directional-transform-3" class="slide level2">
-<h2>Experiment #2: Directional Transform</h2>
+<section id="experiment-1-directional-transform-3" class="slide level2">
+<h2>Experiment #1: Directional Transform</h2>
 <p><span class="math display">
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </span></p>
@@ -1179,8 +1168,8 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </div>
 </div>
 </section>
-<section id="experiment-2-pht" class="slide level2">
-<h2>Experiment #2: PHT</h2>
+<section id="experiment-1-directional-transform-4" class="slide level2">
+<h2>Experiment #1: Directional Transform</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="shape_signatures.png" style="width:80.0%;height:100.0%"></p>
@@ -1200,6 +1189,156 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
           overflow: hidden!important;
           display:block!important;
       }</style></aside>
+</section>
+<section id="experiment-2-intrinsic-signatures" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<p>The <em>Gromov-Hausdorff</em> distance yields a metric on the set of compact metric spaces <span class="math inline">\mathcal{X}</span></p>
+<p><span class="math display">
+d_{GH}(d_X, d_Y) = \sup_{x \in X, y \in Y} \lvert d_X(x, \psi(y)) - d_Y(y, \phi(x))\rvert
+</span></p>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="camel_gh.png" style="height:100.0%" width="600"></p>
+</figure>
+</div>
+<p>Using intrinsic metric makes <span class="math inline">d_{\mathrm{GH}}</span> blind to e.g.&nbsp;shapes represented in different <em>poses</em></p>
+<p>Unfortunately, the GH distance is NP-hard to compute</p>
+</section>
+<section id="experiment-2-intrinsic-signatures-1" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<div style="text-align: center;">
+<p>It’s known <span class="math inline">d_B</span> (<span class="math inline">d_W</span>) on Rips filtrations <span class="math inline">\mathcal{R}(X, d_X)</span> lower bound GH (GW) distance</p>
+</div>
+<p><span class="math display">
+d_B(\mathrm{dgm}_p(\mathcal{R}(X, d_X)), \mathrm{dgm}_p(\mathcal{R}(Y, d_Y))) \; \leq \; d_{GH}((X, d_X), (Y, d_Y))
+</span></p>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="camel_gh_rips_comparison.png" width="875"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div style="text-align: center;">
+<p>Motivates use of persistence in metric settings for e.g.&nbsp;shape classification!</p>
+</div>
+</section>
+<section id="experiment-2-intrinsic-signatures-2" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<div style="text-align: center;">
+<p><strong>Issue:</strong> Diagrams are far from injective, cannot distinguish e.g.&nbsp;stretched shapes</p>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dgm_noninjective.png" style="height:100.0%" width="575"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p>The lower bound on <span class="math inline">d_{\mathrm{GH}}</span> could be totally useless!</p>
+</div>
+</section>
+<section id="experiment-2-intrinsic-signatures-3" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
+<p><span class="math display">
+\mathcal{R}(f) \triangleq \mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha &gt; 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+</span></p>
+<p>The diagrams from <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span> represent <em>stable signatures</em> for each <span class="math inline">\lambda &gt; 0</span>:</p>
+<p><span class="math display">
+d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
+</span></p>
+<!-- <div style="text-align: center;">  -->
+<p><span style="color: red;"> NOTE: </span> Size of <span class="math inline">L</span> depends on the choice of <span class="math inline">f</span> + each <span class="math inline">\lambda</span> produces a new signature!</p>
+<!-- </div>  -->
+<hr>
+<p>Chazal showed these bounds extend to metrics on <em>augmented</em> metric spaces:</p>
+<p><span class="math display">
+\mathcal{X}_1 = \{ (X, d_X, f_X) \mid (X, d_X, f_X) \in \mathcal{X}, f_X: X \to \mathbb{R} \text{ continuous }\}
+</span></p>
+<p>These signatures also extend to measure metric spaces, see <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span></p>
+</section>
+<section id="experiment-2-intrinsic-signatures-4" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<div style="text-align: center;">
+<p><strong>Ex:</strong> The <em>eccentricity</em> function <span class="math inline">e_X^1(x) = \max_{x' \in X} d_X(x,x')</span> has <span class="math inline">L = 2</span></p>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dgm_noninjective2.png" style="height:100.0%" width="775"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p>Augmenting via a fraction of <span class="math inline">e_X^1</span> modifies the diagrams of the ellipsoid significantly <!-- , while the ones for the sphere hardly change due to the fact that the eccentricity is constant --></p>
+</div>
+</section>
+<section id="experiment-2-intrinsic-signatures-5" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
+<p><span class="math display">
+\mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha &gt; 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+</span></p>
+<!-- $$
+d_B(d_X^\mathcal{R}, d_Y^\mathcal{R}) \; \leq 
+\max \big( \lVert f - g\rVert_{\infty}^{\Gamma},  d_{GH}((X, d_X), (Y, d_Y)) \big)
+$$ -->
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="camel1_rips.png" width="450"></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="camel_dgm_rips.png" width="450"></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="camel1_ecc.png" width="450"></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-left">
+<figure>
+<p><img data-src="camel_dgm_ecc.png" width="450"></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<!-- Extra structure combines stability of persistence with flexibility of metrics -->
+</section>
+<section id="experiment-2-intrinsic-signatures-6" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<p>[1] show <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span> yields <em>stable signatures</em> for each <span class="math inline">\lambda &gt; 0</span>, satisfying:</p>
+<p><span class="math display">
+d_B(\mathrm{dgm} \mathcal{R}(\lambda \cdot f_X), \mathrm{dgm} \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
+</span></p>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="camel1_interp1.png" style="height:100.0%" width="950"></p>
+</figure>
+</div>
+<p>Larger <span class="math inline">\lambda</span> <span class="math inline">\leftrightarrow</span> worse LB on <span class="math inline">d_{\mathrm{GH}}</span>,</p>
+</section>
+<section id="experiment-3" class="slide level2">
+<h2>Experiment #3:</h2>
+
+<img data-src="codensity_mult.png" class="r-stretch"></section>
+<section id="experiment-3-1" class="slide level2">
+<h2>Experiment #3:</h2>
+<p><img data-src="smoothed_mu.png" style="width:55.0%;height:100.0%"> <img data-src="optimal_codensity_complex.png" style="width:35.0%;height:100.0%"></p>
 </section>
 <section id="time-permitting-computation" class="slide level2">
 <h2>Time permitting: Computation</h2>

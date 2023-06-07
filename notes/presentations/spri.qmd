@@ -357,7 +357,7 @@ $$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
 
 
 
-## This Talk 
+## This Talk
 
 <br>
 
@@ -376,6 +376,7 @@ In __this talk__ we introduce a _spectral-relaxation_ of the rank invariant that
 2. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time
 3. Vectorizes non-harmonic spectra of Laplacian operators
 4. Is computable in a "matrix-free" fashion in $O(n)$ memory
+<!-- 5. Continuously interpolates the rank function -->
 
 </div>
 
@@ -470,7 +471,7 @@ Computing the <span style="color: red">right term</span> more nuanced:
 @anderson1969series, @ben1967geometry, @ben2015projectors, @zomorodian2004computing, @edelsbrunner2000topological, @memoli2022persistent
 :::
 
-## Key Observation
+## Key technical observation
 
 Structure theorem for persistence modules can be used to show: 
 
@@ -502,7 +503,7 @@ $$
 
 :::
 
-## Key Observation
+## Key technical observation
 
 
 :::{.fragment}
@@ -525,7 +526,7 @@ __Take-a-way:__ Can deduce the $\mathrm{dgm}$ from ranks of "lower-left" submatr
 
 :::
 
-## Key Observation
+## Key technical observation
 
 <!-- $$ \mathrm{sgn}_+(R[i,j]) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) $$ -->
 
@@ -585,29 +586,6 @@ $$
 
 :::
 
-## ALERT {visibility="hidden"}
-
-<div style="text-align: center; font-size: 55px;" >
-
-__THIS HAS NON-TRIVIAL IMPLICATIONS__
-
-</div>
-
-
-$$ 
-\mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
-$$
-
-## Example {visibility="hidden"}
-
-![](bowtie.svg){width=50%}
-
-## Example {visibility="hidden"}
-
-![](ex_dgm.svg){width=50%}
-
-$$\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})$$
-
 ## Overview 
 
 <div style="color: #7F7F7F;"> 
@@ -626,14 +604,14 @@ $$\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{ran
 
 <div style="color: #7F7F7F;"> 
 
-- Experiments  
+- Experiments 
+  - Shape signatures via directional transform
+  - Shape signatures via intrinsic metrics  
   - Codensity example 
-  - Shape signature example 
 
 </div>
 
-
-## The Implication: Rank Invariances 
+## The Implication: Rank Invariance
 
 ::: {.fragment .fade-in style="text-align: left"}
 
@@ -750,19 +728,19 @@ __Idea \#2__: Approximate $\mathrm{rank}$ with _spectral functions_ [@bhatia2013
 :::{.column width="50%"}
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"} -->
-$\quad\quad\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0$
+$\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"} -->
-$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)$
+$\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"} -->
-$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)$
+$\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: left"} -->
-$\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast$
+$\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast \vphantom{\sum\limits_{i=1}^n}$
 <!-- ::: -->
 
 :::
@@ -770,20 +748,20 @@ $\quad\quad\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon
 :::{.column}
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"} -->
-$X = U \mathrm{Diag}(\mathbf{\sigma})V^T$
+where $\quad\quad$ $X = U \mathrm{Diag}(\mathbf{\sigma})V^T$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"} -->
-$\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x > 0)$
+where $\quad\quad$ $\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x > 0)\vphantom{\sum\limits_{i=1}^n}$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"} -->
-$\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz$
+where $\quad\quad$ $\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz\vphantom{\sum\limits_{i=1}^n}$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: right"} -->
 
-$\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T$
+where $\quad\quad$ $\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T$
 
 <!-- ::: -->
 
@@ -964,28 +942,15 @@ By construction, $\hat{\mu}_p^R(K, f_\alpha)$ is not only continuous, but varyin
 
 </div>
 
-- Experiments  
+- Experiments 
+  - Shape signatures via directional transform
+  - Shape signatures via intrinsic metrics  
   - Codensity example 
-  - Shape signature example 
-
-## Experiment \#0 
-
-Bottleneck distance yield stable lower bound on GH distance
 
 
+## Experiment \#1: Directional Transform 
 
-## Experiment \#1
-
-![](codensity_mult.png)
-
-## Experiment \#1
-
-![](smoothed_mu.png){width=55% height=100%}
-![](optimal_codensity_complex.png){width=35% height=100%}
-
-## Experiment \#2: Directional Transform 
-
-Consider "looking" at a complex $K$ derived from an embedded $X \subset R^d$
+Consider "looking" at a complex $K$ embedded in $R^d$
 
 $$\begin{align*}
 \mathrm{DT}(K): S^{d-1} &\to  K \times C(K, \mathbb{R}) \\
@@ -1000,7 +965,7 @@ $$
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 $$
 
-## Experiment \#2: Directional Transform 
+## Experiment \#1: Directional Transform 
 
 $$
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
@@ -1021,7 +986,7 @@ $$\{ \; \chi(v) : v \in S^{d-1} \; \} \Leftrightarrow \mathrm{ECT} $$
 :::
 
 
-## Experiment \#2: Directional Transform 
+## Experiment \#1: Directional Transform 
 
 $$
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
@@ -1044,7 +1009,7 @@ $$ \operatorname{d}_{\mathrm{PHT}}\left(\mathrm{dgm}_X, \mathrm{dgm}_Y\right):=\
 :::
 
 
-## Experiment \#2: Directional Transform 
+## Experiment \#1: Directional Transform 
 
 $$
 K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
@@ -1065,7 +1030,7 @@ $$ \operatorname{d}_{\mathrm{PHT}}\left(\mathrm{dgm}_X, \mathrm{dgm}_Y\right):=\
 
 
 
-## Experiment \#2: PHT 
+## Experiment \#1: Directional Transform  
 
 ![](shape_signatures.png){width=80% height=100% fig-align="center"}
 
@@ -1075,6 +1040,163 @@ Luis mentioned modding out rotations and translations adn scale to compare shape
 Sarah mentioned handling orientation.
 
 :::
+
+## Experiment \#2: Intrinsic signatures
+
+The _Gromov-Hausdorff_ distance yields a metric on the set of compact metric spaces $\mathcal{X}$
+
+$$
+d_{GH}(d_X, d_Y) = \sup_{x \in X, y \in Y} \lvert d_X(x, \psi(y)) - d_Y(y, \phi(x))\rvert 
+$$
+
+![](camel_gh.png){width=600 height=100% fig-align="center"}
+
+Using intrinsic metric makes $d_{\mathrm{GH}}$ blind to e.g. shapes represented in different _poses_
+
+Unfortunately, the GH distance is NP-hard to compute
+
+## Experiment \#2: Intrinsic signatures
+
+<div style="text-align: center;"> 
+
+It's known $d_B$ ($d_W$) on Rips filtrations $\mathcal{R}(X, d_X)$ lower bound GH (GW) distance
+
+</div> 
+
+$$ 
+d_B(\mathrm{dgm}_p(\mathcal{R}(X, d_X)), \mathrm{dgm}_p(\mathcal{R}(Y, d_Y))) \; \leq \; d_{GH}((X, d_X), (Y, d_Y))
+$$
+
+:::{layout-ncol=1}
+
+![](camel_gh_rips_comparison.png){width=875 height=100% fig-align="center"}
+
+:::
+
+<div style="text-align: center;"> 
+
+Motivates use of persistence in metric settings for e.g. shape classification!
+
+</div> 
+
+## Experiment \#2: Intrinsic signatures
+
+<div style="text-align: center;"> 
+
+__Issue:__ Diagrams are far from injective, cannot distinguish e.g. stretched shapes
+
+</div> 
+
+![](dgm_noninjective.png){width=575 height=100% fig-align="center"}
+
+<div style="text-align: center;"> 
+
+The lower bound on $d_{\mathrm{GH}}$ could be totally useless!
+
+</div> 
+
+
+## Experiment \#2: Intrinsic signatures
+
+Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
+
+$$
+\mathcal{R}(f) \triangleq \mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha > 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+$$
+
+The diagrams from $\mathcal{R}(\lambda \cdot f_X)$ represent _stable signatures_ for each $\lambda > 0$:
+
+$$
+d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
+$$
+
+<!-- <div style="text-align: center;">  -->
+
+<span style="color: red;"> NOTE:   </span> 
+Size of $L$ depends on the choice of $f$ + each $\lambda$ produces a new signature! 
+
+<!-- </div>  -->
+
+<hr> 
+
+Chazal showed these bounds extend to metrics on _augmented_ metric spaces:
+
+$$
+\mathcal{X}_1 = \{ (X, d_X, f_X) \mid (X, d_X, f_X) \in \mathcal{X}, f_X: X \to \mathbb{R} \text{ continuous }\}
+$$
+
+These signatures also extend to measure metric spaces, see [@chazal2016structure]
+
+## Experiment \#2: Intrinsic signatures
+
+<div style="text-align: center;"> 
+
+__Ex:__ The _eccentricity_ function $e_X^1(x) = \max_{x' \in X} d_X(x,x')$ has $L = 2$ 
+
+</div> 
+
+![](dgm_noninjective2.png){width=775 height=100% fig-align="center"}
+
+<div style="text-align: center;"> 
+
+Augmenting via a fraction of $e_X^1$ modifies the diagrams of the ellipsoid significantly
+<!-- , while the ones for the sphere hardly change due to the fact that the eccentricity is constant -->
+
+</div> 
+
+
+## Experiment \#2: Intrinsic signatures
+
+Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
+
+$$
+\mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha > 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+$$
+
+<!-- $$
+d_B(d_X^\mathcal{R}, d_Y^\mathcal{R}) \; \leq 
+\max \big( \lVert f - g\rVert_{\infty}^{\Gamma},  d_{GH}((X, d_X), (Y, d_Y)) \big)
+$$ -->
+
+:::{layout-ncol=4}
+
+![](camel1_rips.png){width=450 height=100% fig-align="left"}
+
+![](camel_dgm_rips.png){width=450 height=100% fig-align="left"}
+
+![](camel1_ecc.png){width=450 height=100% fig-align="left"}
+
+![](camel_dgm_ecc.png){width=450 height=100% fig-align="left"}
+
+:::
+
+
+
+<!-- Extra structure combines stability of persistence with flexibility of metrics -->
+
+
+## Experiment \#2: Intrinsic signatures
+
+[1] show $\mathcal{R}(\lambda \cdot f_X)$ yields _stable signatures_ for each $\lambda > 0$, satisfying: 
+
+$$
+d_B(\mathrm{dgm} \mathcal{R}(\lambda \cdot f_X), \mathrm{dgm} \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
+$$
+
+![](camel1_interp1.png){width=950 height=100% fig-align="center"}
+
+Larger $\lambda$ $\leftrightarrow$ worse LB on $d_{\mathrm{GH}}$, 
+
+## Experiment \#3: 
+
+![](codensity_mult.png)
+
+## Experiment \#3:
+
+![](smoothed_mu.png){width=55% height=100%}
+![](optimal_codensity_complex.png){width=35% height=100%}
+
+
 
 
 ## Time permitting: Computation 

@@ -13,3 +13,10 @@ aside {
 h1 .title {
   font-size: 2.0em;
 }
+
+.quarto-layout-panel {
+  margin-bottom: 0 !important;
+}
+.quarto-figure {
+  margin-bottom: 0 !important;
+}

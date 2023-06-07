@@ -133,12 +133,13 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 
 def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
-	# from matplotlib import cm
+	from matplotlib import cm
 	if isinstance(color_pal, str):
 		import bokeh
 		color_pal = getattr(bokeh.palettes, color_pal.lower())
 		assert isinstance(color_pal, Callable)
-		color_pal = color_pal(100)
+		color_pal = np.c_[hex_to_rgb(color_pal(255))/255.0, np.ones(255)]
+		# color_pal = np.c_[np.array(color_pal(255)), np.ones(255)]
 		# col = cm.get_cmap(color_pal)
 		# color_pal = [col(i) for i in range(0, 255)]
 		# color_pal = cm.get_cmap(color_pal).colors
@@ -150,7 +151,8 @@ def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb
 	ind = np.digitize(np.clip(x, a_min=lb, a_max=ub), bins=np.linspace(lb, ub, len(color_pal)))
 	ind = np.minimum(ind, len(color_pal)-1) ## bound from above
 	ind = np.maximum(ind, 0)								## bound from below
-	return(hex_to_rgb(np.asarray(color_pal)[ind]))
+	return np.asarray(color_pal)[ind]
+	# return(hex_to_rgb(np.asarray(color_pal)[ind]))
 
 
 # From: https://matplotlib.org/stable/gallery/images_contours_and_fields/image_annotated_heatmap.html#sphx-glr-gallery-images-contours-and-fields-image-annotated-heatmap-py
