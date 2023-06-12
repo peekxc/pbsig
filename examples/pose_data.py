@@ -294,7 +294,7 @@ from scipy.spatial import KDTree
 
 # %% Plot eccentricities of shapes 
 from pbsig.color import bin_color
-i = 0
+i = 23
 X, mesh = meshes[i]
 # o3.visualization.draw_geometries([mesh])
 
@@ -311,7 +311,7 @@ mesh_t = o3.t.geometry.TriangleMesh(device)
 mesh_t.vertex.positions = o3.core.Tensor(X, dtype_f, device)
 mesh_t.triangle.indices = o3.core.Tensor(np.array(mesh.triangles), dtype_i, device)
 mesh_t.vertex.normals = o3.core.Tensor(np.array(mesh.vertex_normals), dtype_f, device)
-mesh_t.vertex['colors'] = o3.core.Tensor(np.array([[1.0, 0.41568627, 0.02352941] for _ in range(len(mesh_ecc[i]))]), dtype_f, device)
+mesh_t.vertex['colors'] = o3.core.Tensor(np.array([[1.0, 0.41568627, 0.02352941] for _ in range(len(X))]), dtype_f, device)
 # mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(X @ np.array([1,0,0]), 'turbo')/255.0, dtype_f, device)
 # mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i], 'turbo')/255.0, dtype_f, device) 
 # mesh_t.vertex['colors'] = o3.core.Tensor(bin_color(mesh_ecc[i], 'turbo')[:,:3], dtype_f, device) 

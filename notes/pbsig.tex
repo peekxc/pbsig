@@ -298,11 +298,11 @@ Moreover, inspired by a relationship established between the persistent Betti nu
 \subsection*{Outline: Relaxing the rank invariant}\label{sec:rank_invariant_summary}
 So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details associated with using and implementing the relaxation. At a high level, we propose a family of vector-valued mappings over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
 \begin{equation}\label{eq:relaxation_mapping}
-	(X_\alpha, \mathcal{R}, \epsilon, \lambda) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
+	(X_\alpha, \mathcal{R}, \epsilon, \omega) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
 \end{equation}
-where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \lambda) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
+where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \omega) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
 %The intuition is that that are many situations where one has a data set 
-The intuition is that $\mathcal{R}$ is used to extract, filter, and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
+The intuition is that $\mathcal{R}$ is used to filter and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
 % sifts through ... something like vineyards, limits towards multiplicity, A x W
 %We interpret $\mathcal{A}$ \emph{parameter space} 
 The steps to produce this mapping are as follows:
@@ -312,7 +312,7 @@ The steps to produce this mapping are as follows:
 	\begin{equation}
 		(K, f_\alpha) = \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K, \alpha \in \mathcal{A} \, \}
 	\end{equation}
-	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations~\cite{} or time-varying filtrations over dynamic metric spaces~\cite{}. 
+	Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations or time-varying filtrations over dynamic metric spaces~\cite{kim2021spatiotemporal}. % TODO: mention bifiltrations?
 	\item Select a \emph{sieve} $\mathcal{R} \subset \Delta_+$ that is decomposable to a disjoint set of rectangles:
 	\begin{equation}\label{eq:rect_sieve}
 		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
@@ -321,11 +321,11 @@ The steps to produce this mapping are as follows:
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-	\item Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \lambda) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
+	\item Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \omega ) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
 	\begin{equation}\label{eq:mu_alpha}
 		\mu_p(\mathcal{R} \times \mathcal{A}) \triangleq \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
-	We will show in section~\ref{sec:spri_properties}, letting both $\lambda \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
+	We will show in section~\ref{sec:spri_properties}, letting both $\omega \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
 	\item Choose a combinatorial Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
@@ -375,6 +375,7 @@ In deriving the approximation, we obtain families of continuous rank invariants 
 Unlike existing dynamic persistence algorithms, our approach is simple in that it requires no complicated data structures or maintenance procedures to implement. 
 %require explicitly filtered complexes $K$ to reside in memory .
 The proposed relaxation is also \emph{matrix-free}, requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$.
+%breaking away from the reduction paradigm of algorithms.
 %We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
 Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing $\Gamma$-persistence pairs with at least ($\Gamma >0$)-persistence (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
 % TODO: mention more explicitly Chen's result compared to reduction 
@@ -1103,7 +1104,7 @@ On the other hand, our spectral rank invariants derive from symmetric Laplacian 
 In what follows, we investigate how to exploit the structure of $L_p^\ast$ and the smoothness of $f_\alpha$ to stabilize the constitutive terms in $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^{\ast}$. 
 
 We will exclusively consider the spectra of normalized combinatorial Laplacian operators:
-$$ \lVert \Phi( \mathcal{L}_p ) \rVert_\ast = \sum\limits_{i = 1}^n \phi_{\epsilon}(\lambda_i(\mathcal{L}))
+$$ \lVert \Phi( \partial_p 	) \rVert_\ast = \sum\limits_{i = 1}^n \phi_{\epsilon}(\lambda_i(\mathcal{L}))
 $$
 under some choice of regularization $(\Phi, \phi)$ and $\epsilon > 0$. Our focus is on the \emph{relative} perturbation model, which seeks to describe perturbations of the form: 
 $$ \tilde{A} = Q^T A Q $$
@@ -1117,30 +1118,33 @@ where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mat
 	TODO stability statement
 \end{proposition}  
 \textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
-For example, the classical least-squares workaround to solving the [possibly ill-posed] linear system $A x = b$ is often substituted with the \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
+For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
  \begin{equation}\label{eq:tikhonov}
-	x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2
+	x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2 = (A^T A + \epsilon I)^{-1} A^T b
 \end{equation}
 When $\epsilon = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\epsilon > 0$ solutions $x^\ast$ with small norm are favored. 
 %\begin{equation}\label{eq:least_squares}
 %	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
 %\end{equation}
 % ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
-The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
-\begin{equation}\label{eq:tikhonov_soln}
-	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
-\end{equation}
-To illustrate the relevance of TR with our proposed approximation, consider the parameterization
+%The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
+%\begin{equation}\label{eq:tikhonov_soln}
+%	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
+%\end{equation}
+%To illustrate the relevance of TR with our proposed approximation, 
+Similarly, by parameterizating
 %\footnote{Similar regularization interpretations may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}
- of $\phi$ obtained by setting $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$. By~\eqref{eq:phi}, one obtains:
+$\phi$ by $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains via ~\eqref{eq:phi}:
 \begin{equation}
 	\phi(x, \epsilon) = \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz = \frac{x^2}{x^2 + \epsilon}
 \end{equation}
 Substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:cont_rank}, the corresponding spectral rank approximation reduces to:
 \begin{equation}\label{eq:tikhonov_1}
-	\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon} = \mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
+%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
+	\lVert \Phi_\epsilon(A) \rVert_\ast = \mathrm{Tr}\left[(A^T A + \epsilon \, I_n)^{-1} A^T A \right]  = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \epsilon} 
+	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
-The connection between the TR and the right hand side of~\eqref{eq:tikhonov_1} is now clear: obtaining $ \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to solving $n$ TR least-squares problems of the form~\eqref{eq:tikhonov} where $X$ is substituted with either the boundary/coboundary operator $\partial_p$/$\partial_p^T$ and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
+The connection between the TR and the right hand side of~\eqref{eq:tikhonov_1} is now clear: obtaining $ \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
 In this sense, the spectral rank invariants proposed in definition~\ref{def:smooth_mu} can be viewed as regularized rank invariant approximations.
  
  \begin{remark}
@@ -1480,7 +1484,7 @@ For our purposes, since the graph distance between pairs of nodes scale logarith
 The corresponding incidence matrix $\partial_1 \in \mathbb{R}^{n \times m}$ and up-Laplacians $L_0^{\mathrm{up}} \in \mathbb{R}^{n \times n}$ would have $\approx 5,000$ and  $\approx 5,500$ non-zero entries, were they to be formed explicitly, which are weighted according randomly by embedding the graph in the plane and filtering  graph via its sublevel sets in a random direction. 
 A much smaller Watts-Strogatz graph of the same type (but with only $50$ nodes) is shown on the left-side of figure~\ref{fig:watts_strogatz}, colored by the filtering of its lower stars. 
 \begin{figure}[ht]
-	\includegraphics[width=\textwidth]{presentation/watts_strogatz_perf.png}
+	\includegraphics[width=\textwidth]{presentations/watts_strogatz_perf.png}
 	\caption{Random Watts-Strogatz ``Small world'' graph example}
 	\label{fig:watts_strogatz}
 \end{figure}
@@ -1537,7 +1541,7 @@ From another perspective, we refer to this process of choosing appropriate filtr
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width=0.78\textwidth]{presentation/codensity_dgm_ex}
+	\includegraphics[width=0.78\textwidth]{presentations/codensity_dgm_ex}
 	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
 	}\label{fig:codensity}
 \end{figure}
@@ -1545,7 +1549,7 @@ From another perspective, we refer to this process of choosing appropriate filtr
 As an introductory example, we sampled $80$ points noisily around $S^1$ and then sampled an additional $30$ points in $[-1,1] \times [-1,1]$ to act as ``strong outliers.'' After constructing a Delaunay complex $K$ of these points, we parameterized a filter function $f_\alpha : K \times \mathbb{R} \to \mathbb{R}_+$ by assigning the filtration values of each simplex according to the lower stars of a kernel (co)density estimate, upon which we computed its vineyard~\cite{cohen2006vines} along a subset $\mathcal{A} \subset \mathbb{R}$. The vineyard, colored by $\alpha$, is shown on the left side of figure~\ref{fig:vineyard_codensity}. In this example, we choose the rectangle $R = \frac{1}{5}([1, 2] \times [3,4])$ out of simplicity; the corresponding multiplicity function is shown in the black curve on the right of figure~\ref{fig:vineyard_codensity}. 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.90\textwidth]{presentation/combined_mult}
+	\includegraphics[width=0.90\textwidth]{presentations/combined_mult}
 	\caption{(Left) Vineyard of of the codensity $\alpha$-parameterized filtration from figure~\ref{fig:codensity}. (Right) The exact multiplicity $\mu_1(K, f_\alpha)$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm{e}{-3}$.}\label{fig:vineyard_codensity}
 \end{figure}
 By inspection, the optimal density parameter satisfying~\eqref{eq:mult_opt} is any parameter $\alpha$ lying approximately in the interval $[0.40, 0.44]$. 

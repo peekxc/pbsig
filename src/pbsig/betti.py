@@ -588,7 +588,7 @@ class MuFamily:
             L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
             # L = D @ diags(J) @ D.T
           solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
-          self._terms[cc][i] = solver(L)
+          self._terms[cc][i] = solver(L, **kwargs)
           # ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
           # self._terms[cc][i] = ew_ext * np.sort(I)
       elif self.form == "lo":
@@ -602,7 +602,7 @@ class MuFamily:
             I_norm = pseudo(np.sqrt(I))
             L.set_weights(I_norm, J, I_norm)
           solver = eigvalsh_solver(L, **kwargs)
-          self._terms[cc][i] = solver(L)
+          self._terms[cc][i] = solver(L, **kwargs)
       else: 
         raise ValueError("Unknown type")  
     

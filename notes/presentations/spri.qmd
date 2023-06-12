@@ -241,6 +241,33 @@ Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/
 
 <br> 
 
+## This Talk
+
+:::{.incremental}
+:::{.fragment .fade-in style="text-align: left"}
+
+In this talk we introduce a <span style="color:orange"> _spectral-relaxation_ </span> of the rank invariant that:
+
+<div style="margin-left:2.5em;">
+
+1. Continuously interpolates the _persistent rank_ function
+2. is smooth + differentiable on $\mathbf{S}_+$
+3. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time
+4. Vectorizes non-harmonic spectra of Laplacian operators
+5. Is computable in a "matrix-free" fashion in $O(n)$ memory 
+
+</div>
+
+:::
+:::
+
+:::{.fragment .fade-in style="text-align: left"}
+
+![](spri_overview.png){width=88% height=100% fig-align="center"}
+
+:::
+
+
 ## Setting: Parameterized filtrations
 
 Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
@@ -254,6 +281,76 @@ $$
 ![](family.gif){width=48% height=100% fig-align="right"}
 
 ![](complex_plain.gif){width=48% height=100% fig-align="left"}
+
+:::
+
+
+## Application: optimizing filtrations
+
+![](codensity_dgm_ex.png){width=68% height=100% fig-align="center"}
+
+:::{.fragment}
+
+$$ \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) $$
+
+:::
+
+## The rank invariants with pictures
+
+::::{.columns}
+
+:::{.column}
+
+![](dgm_pbn.png){width=400 height=400 fig-align="center"}
+
+<div style="text-align: center;">
+
+$$ \beta_p^{i,j}(K)$$
+
+</div>
+
+:::
+
+:::{.column}
+
+![](dgm_mu.png){width=400 height=400 fig-align="center"}
+
+<div style="text-align: center;">
+
+$\mu_p^R(K)$
+
+</div>
+
+:::
+
+::::
+
+
+## Why the rank invariant?
+
+
+:::{.fragment}
+
+There is a duality between diagrams its associated rank function:
+
+$$ \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
+
+$$\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad $$
+
+:::
+
+:::{.fragment}
+
+_Fundamental Lemma of Persistent Homology_ shows diagrams characterize their ranks
+$$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
+
+:::
+
+:::{.incremental}
+
+- _Persistence measures_ [@chazal2016structure] extend (1,2) naturally when $\mathbb{F} = \mathbb{R}$ 
+- Stability in context of multidimensional persistence [@cerri2013betti] 
+- Generalizations of rank invariant via Möbius inversion [@mccleary2022edit] and via zigzag persistence[@dey2021computing]
 
 :::
 
@@ -326,103 +423,6 @@ For more details on the computations, see "Move Schedules" @piekenbrock2021move
 ::: {.notes}
 Reduction algorithm is a restricted form of gaussian elimination. 
 :::
-
-## Why the rank invariant?
-
-
-:::{.fragment}
-
-There is a duality between diagrams its associated rank function:
-
-$$ \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta $$
-
-$$\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad $$
-
-:::
-
-:::{.fragment}
-
-_Fundamental Lemma of Persistent Homology_ shows diagrams characterize their ranks
-$$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
-
-:::
-
-:::{.incremental}
-
-- _Persistence measures_ [@chazal2016structure] extend (1,2) naturally when $\mathbb{F} = \mathbb{R}$ 
-- Stability in context of multidimensional persistence [@cerri2013betti] 
-- Generalizations of rank invariant via Möbius inversion [@mccleary2022edit] and via zigzag persistence[@dey2021computing]
-
-:::
-
-
-
-## This Talk
-
-<br>
-
-<br>
-
-<br>
-
-:::{.incremental}
-:::{.fragment .fade-in style="text-align: left"}
-
-In __this talk__ we introduce a _spectral-relaxation_ of the rank invariant that:
-
-<div style="margin-left:2.5em;">
-
-1. is smooth + differentiable on $\mathbf{S}_+$ 
-2. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time
-3. Vectorizes non-harmonic spectra of Laplacian operators
-4. Is computable in a "matrix-free" fashion in $O(n)$ memory
-<!-- 5. Continuously interpolates the rank function -->
-
-</div>
-
-:::
-:::
-
-## Application: optimizing filtrations
-
-![](codensity_dgm_ex.png){width=68% height=100% fig-align="center"}
-
-:::{.fragment}
-
-$$ \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) $$
-
-:::
-
-
-## The rank invariants with pictures
-
-::::{.columns}
-
-:::{.column}
-
-![](dgm_pbn.png){width=400 height=400 fig-align="center"}
-
-<div style="text-align: center;">
-
-$$ \beta_p^{i,j}(K)$$
-
-</div>
-
-:::
-
-:::{.column}
-
-![](dgm_mu.png){width=400 height=400 fig-align="center"}
-
-<div style="text-align: center;">
-
-$\mu_p^R(K)$
-
-</div>
-
-:::
-
-::::
 
 ## Revisiting the rank computation
  
@@ -663,7 +663,7 @@ $\hspace{10em}  \hphantom{\mathrm{rank}(A)} \equiv \dots  \quad \quad \quad \qua
 
 <div style="text-align: center; font-size: 35px;" >
 
-__Question: Can we exploit some of these?__
+__Q: Can we exploit some of these to speed up the computation?__
 
 </div>
 
@@ -706,6 +706,12 @@ $$ \partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p
 
 :::{.fragment style="text-align: center;"}
 
+Replacing $S \mapsto \mathcal{S}$ ensures $\partial_p^{i,j}(\alpha)$ is element-wise continuous
+
+:::
+
+:::{.fragment style="text-align: center;"}
+
 __Note__: $\partial_p^{i,j}(\alpha)$ has rank $= \mathrm{rank}(R_p^{i,j}(\alpha))$ for all $\alpha \in \mathbb{R}$. 
 
 :::
@@ -727,43 +733,45 @@ __Idea \#2__: Approximate $\mathrm{rank}$ with _spectral functions_ [@bhatia2013
 
 :::{.column width="50%"}
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"} -->
+::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"}
 $\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0$
-<!-- ::: -->
+
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"} -->
 $\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)$
 <!-- ::: -->
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"} -->
-$\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)$
-<!-- ::: -->
+:::
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: left"} -->
+::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"}
+$\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)$
+:::
+
+::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"}
 $\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast \vphantom{\sum\limits_{i=1}^n}$
-<!-- ::: -->
+:::
 
 :::
 
 :::{.column}
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"} -->
+::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"}
 where $\quad\quad$ $X = U \mathrm{Diag}(\mathbf{\sigma})V^T$
 <!-- ::: -->
 
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"} -->
 where $\quad\quad$ $\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x > 0)\vphantom{\sum\limits_{i=1}^n}$
-<!-- ::: -->
+:::
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"} -->
+::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"}
 where $\quad\quad$ $\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz\vphantom{\sum\limits_{i=1}^n}$
-<!-- ::: -->
+:::
 
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: right"} -->
+::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"}
 
 where $\quad\quad$ $\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T$
 
-<!-- ::: -->
+:::
 
 :::
 
@@ -890,7 +898,7 @@ $f_\alpha$ is 1-to-1 correspondence with inner products on cochain groups $C^p(K
 
 $$L_p^{i,j}(\alpha) \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)$$
 
-Has closed-form linear and quadratic forms, e.g.:
+Have "nice" linear and quadratic forms, e.g.:
 $$
 L_p^{\text{up}}(\tau, \tau')= \begin{cases}
 		 \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) & \text{ if } \tau = \tau' \\ 
@@ -907,6 +915,92 @@ $\implies$ can represent operator in "matrix-free" fashion
 :::
 
 <!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
+
+## Regularization interpretation
+
+::: {.fragment fragment-index=1}
+
+Instead of solving $Ax = b$, consider the "regularized" least-squares objective: 
+
+::: 
+
+::: {.fragment fragment-index=2}
+
+$$
+x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert_1 
+$$
+
+:::
+
+::: {.fragment fragment-index=3}
+
+The minimizer is given in closed-form by the regularized pseudo-inverse:
+
+$$
+x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
+$$
+:::
+
+::: {.fragment fragment-index=4}
+
+![](lasso.png){width=50% fig-align="center"}
+
+:::
+
+::: {.footer} 
+
+[1]: https://thaddeus-segura.com/lasso-ridge/
+
+::: 
+
+## Regularization interpretation
+
+::: {.fragment fragment-index=1}
+
+$$
+x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2 = (A^T A + \epsilon I)^{-1} A^T b
+$$
+
+:::
+
+::: {.fragment fragment-index=2}
+
+<div style="text-align: center;">
+
+Under the appropriate hyper-parameter settings^[This $\phi$ corresponds to setting $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$.], $\phi$ takes the form:
+
+</div>
+
+$$
+\phi(x, \epsilon) = \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz = \frac{x^2}{x^2 + \epsilon}
+$$
+
+:::
+
+
+::: {.fragment fragment-index=3}
+
+<div style="text-align: center;">
+
+The corresponding Lowner operator and its Schatten $1$-norm is given by:
+
+</div>
+
+$$
+\Phi_\epsilon(X) = (X^T X + \epsilon \, I_n)^{-1} X^T X, \quad \quad \lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon}
+$$
+
+:::
+
+::: {.fragment fragment-index=3}
+
+<div style="text-align: center;">
+
+This the _Tikhonov regularization_ in standard form used in $\ell_1$-regression (LASSO)
+
+</div>
+
+:::
 
 ## Summary of relaxation {visibility="hidden"}
 
@@ -1043,6 +1137,22 @@ Sarah mentioned handling orientation.
 
 ## Experiment \#2: Intrinsic signatures
 
+<div style="text-align: center;"> 
+
+__Dataset:__ 3D meshes of animals in different poses [@chazal2009gromov]
+
+</div>
+
+![](gh_data_pose.png){width=425 height=100% fig-align="center"}
+
+<div style="text-align: center;"> 
+
+__Challenge:__ Recognize intrinsic shape categories (via a distance metric)
+
+</div>
+
+## Experiment \#2: Intrinsic signatures
+
 The _Gromov-Hausdorff_ distance yields a metric on the set of compact metric spaces $\mathcal{X}$
 
 $$
@@ -1053,7 +1163,15 @@ $$
 
 Using intrinsic metric makes $d_{\mathrm{GH}}$ blind to e.g. shapes represented in different _poses_
 
-Unfortunately, the GH distance is NP-hard to compute
+:::{.fragment}
+
+<div style="text-align: center;"> 
+
+Unfortunately, the GH distance is NP-hard to compute [@memoli2012some]
+
+</div>
+
+:::
 
 ## Experiment \#2: Intrinsic signatures
 
@@ -1098,11 +1216,16 @@ The lower bound on $d_{\mathrm{GH}}$ could be totally useless!
 
 ## Experiment \#2: Intrinsic signatures
 
+:::{.fragment}
 Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
 
 $$
 \mathcal{R}(f) \triangleq \mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha > 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
 $$
+
+:::
+
+:::{.fragment}
 
 The diagrams from $\mathcal{R}(\lambda \cdot f_X)$ represent _stable signatures_ for each $\lambda > 0$:
 
@@ -1110,14 +1233,15 @@ $$
 d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
 $$
 
-<!-- <div style="text-align: center;">  -->
+:::
 
-<span style="color: red;"> NOTE:   </span> 
-Size of $L$ depends on the choice of $f$ + each $\lambda$ produces a new signature! 
+<!-- <div style="text-align: center;">  -->
 
 <!-- </div>  -->
 
-<hr> 
+<!-- <hr>  -->
+
+:::{.fragment}
 
 Chazal showed these bounds extend to metrics on _augmented_ metric spaces:
 
@@ -1125,7 +1249,18 @@ $$
 \mathcal{X}_1 = \{ (X, d_X, f_X) \mid (X, d_X, f_X) \in \mathcal{X}, f_X: X \to \mathbb{R} \text{ continuous }\}
 $$
 
-These signatures also extend to measure metric spaces, see [@chazal2016structure]
+These signatures also extend to measure metric spaces, see [@chazal2009gromov]
+
+::: 
+
+:::{.fragment}
+
+<br>  
+
+<span style="color: red;"> NOTE:   </span> 
+Size of $L$ depends on the choice of $f$ + each $\lambda$ produces a new signature! 
+
+:::
 
 ## Experiment \#2: Intrinsic signatures
 
@@ -1150,7 +1285,7 @@ Augmenting via a fraction of $e_X^1$ modifies the diagrams of the ellipsoid sign
 Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
 
 $$
-\mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha > 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
 $$
 
 <!-- $$
@@ -1170,34 +1305,170 @@ $$ -->
 
 :::
 
+<div style="text-align: center;"> 
 
+Larger values of $\lambda$ yield worse bounds, but can lead to simpler diagrams
+
+</div>
 
 <!-- Extra structure combines stability of persistence with flexibility of metrics -->
 
 
 ## Experiment \#2: Intrinsic signatures
 
-[1] show $\mathcal{R}(\lambda \cdot f_X)$ yields _stable signatures_ for each $\lambda > 0$, satisfying: 
 
-$$
-d_B(\mathrm{dgm} \mathcal{R}(\lambda \cdot f_X), \mathrm{dgm} \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
-$$
+<div style="text-align: center;"> 
+
+Each choice of $\lambda > 0$ yields a _stable signature_ via $\mathcal{R}(\lambda \cdot f_X)$
+
+</div> 
+
+<div style="text-align: center;"> 
+
+Which value of $\lambda$ to choose?
+
+</div>
 
 ![](camel1_interp1.png){width=950 height=100% fig-align="center"}
 
-Larger $\lambda$ $\leftrightarrow$ worse LB on $d_{\mathrm{GH}}$, 
 
-## Experiment \#3: 
 
+## Experiment \#2: Intrinsic signatures
+
+
+<div style="text-align: center;"> 
+
+Each choice of $\lambda > 0$ yields a _stable signature_ via $\mathcal{R}(\lambda \cdot f_X)$
+
+</div> 
+
+<div style="text-align: center;"> 
+
+Which value of $\lambda$ to choose?
+
+</div>
+
+![](camel1_interp2.png){width=950 height=100% fig-align="center"}
+
+<div style="text-align: center;"> 
+
+We sample from $\Delta_+$ randomly, retaining signatures with sufficient topological activity
+
+</div>
+
+## Experiment \#2: Intrinsic signatures
+...and compared the computed spectral signatures under the relative distance metric: 
+
+<!-- \partial_p^\ast = U \Sigma V^T -->
+$$
+\Lambda(\mu_p^R) = \{\sigma_1, \sigma_2, \dots, \sigma_n \}, \quad \quad \chi(\mathbf{\sigma}, \mathbf{\tilde{\sigma}}) = \sum\limits_{i=1}^n \frac{\lvert \sigma_i - \tilde{\sigma}_i \rvert}{\sqrt{\sigma_i + \tilde{\sigma}_i}}
+$$
+
+![](dw_chi_comp.png){width=750 height=100% fig-align="center"}
+
+
+<!-- ## Experiment \#3: Filtration optimization -->
+
+<!-- ![](smoothed_mu.png){width=55% height=100%} -->
+
+
+## Experiment \#3: Filtration optimization
+
+:::{layout="[[25,50,25]]" layout-valign="bottom"}
+
+::: {.column layout-align="right"}
+![](vineyard.gif){width=60%}
+:::
+
+::: {.column layout-align="center"}
+![](dgm_opt.png){height=100% fig-align="center"}
+:::
+
+::: {.column layout-align="left"}
+![](complex_plain.gif){width=60%}
+:::
+
+::::
+
+$$ 
+\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) 
+$$
+
+## Experiment \#3: Filtration optimization
+
+:::{layout="[[60,30]]" layout-valign="bottom"}
+
+::: {.column layout-align="right"}
 ![](codensity_mult.png)
+:::
 
-## Experiment \#3:
-
-![](smoothed_mu.png){width=55% height=100%}
+::: {.column layout-align="center"}
 ![](optimal_codensity_complex.png){width=35% height=100%}
+:::
+
+:::
+
+$$ 
+\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) 
+$$
 
 
 
+## Experiment \#3: Filtration optimization
+
+![](codensity_ex1.png){width=60%, fig-align="center"}
+
+$$
+\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)
+$$
+
+$$ 
+\mu_p^{R} = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  
+$$
+
+## Experiment \#3: Filtration optimization
+
+![](codensity_ex2.png){width=60%, fig-align="center"}
+
+$$
+\lVert X \rVert_\ast = \sum\limits_{i=1}^{n} \, \lvert \sigma_i \rvert 
+$$
+
+$$ 
+\hat{\mu}_p^{R} = \lVert \partial_{p+1}^{j + 1, k}\rVert_\ast  -  \lVert \partial_{p+1}^{i + 1, k}\rVert_\ast  -  \lVert \partial_{p+1}^{j + 1, l}\rVert_\ast +  \lVert \partial_{p+1}^{i + 1, l} \rVert_\ast
+$$
+
+## Experiment \#3: Filtration optimization
+
+![](codensity_ex3.png){width=60%, fig-align="center"}
+
+$$
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon = 0.30
+$$
+
+## Experiment \#3: Filtration optimization
+
+![](combinatorial_explosion.png){width=60%, fig-align="center"}[^1]
+
+
+[^1]: Xu, Weiyu, and Babak Hassibi. "Precise Stability Phase Transitions for $\ell_1 $ Minimization: A Unified Geometric Framework." IEEE transactions on information theory (2011)
+
+
+## Experiment \#3: Filtration optimization
+
+![](codensity_ex4.png){width=60%, fig-align="center"}
+
+$$
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon = 0.10
+$$
+
+## Experiment \#3: Filtration optimization
+
+![](codensity_ex5.png){width=60%, fig-align="center"}
+
+$$
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon \to 0^+
+$$
 
 ## Time permitting: Computation 
 

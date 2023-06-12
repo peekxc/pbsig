@@ -98,7 +98,7 @@ for a in np.linspace(0.05, 0.70, 6):
   figures.append(p)
 show(row(figures))
 
-## %% Show three plots
+# %% Show three plots
 from bokeh.models import Range1d
 from pbsig.vis import figure_complex, figure_dgm
 complex_figures, dgm_figures = [], []
@@ -124,7 +124,7 @@ for a in [0.10, 0.414, 0.75]:
 show(column(row(complex_figures), row(dgm_figures)))
 # export_png(column(row(complex_figures), row(dgm_figures)), filename="/Users/mpiekenbrock/pbsig/notes/presentation/codensity_pers_ex.png")
 
-## %% single plot 
+# %% single plot 
 f = codensity(0.404)
 s_codensity = np.array([f(s) for s in S])
 p = figure_complex(S, pos=X, color=s_codensity, title="Complex with optimal codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
@@ -153,8 +153,8 @@ show(p)
 # %% Verify multiplicity matches with persistence diagram visually
 from pbsig.betti import MuFamily
 R = (0.2, 0.4, 0.6, 0.8)
-mu_f = MuFamily(S, codensity_family, p = 1)
-mu_f.precompute(R, w=0.30, normed=True)
+mu_f = MuFamily(S, codensity_family, p = 1, form='array')
+mu_f.precompute(R, w=1.30, normed=True)
 
 # %% Compare
 p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=300, height=300)
@@ -163,26 +163,75 @@ r_width, r_height = R[1]-R[0], R[3]-R[2]
 p.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, alpha=1.0, fill_alpha=0.0)
 q = figure(width=300, height=300, title="Multiplicity")
 q.step(alpha_family, mu_f(smoothing=None))
+q.step(alpha_family, mu_f(smoothing=True), color='red')
 p.toolbar_location = None 
 q.toolbar_location = None
 q.xaxis.axis_label = r"$$\alpha$$"
 show(row(p,q))
 
+
+top10  = lambda x: np.append(np.sort(x)[-10:], [0]*(len(x)-10))
+
 # %% Look at the other relaxations
+from scipy.signal import savgol_filter
 from pbsig.linalg import *
 mu_rk = mu_f(smoothing=None, terms=False)
 mu_nn = mu_f(smoothing=False, terms=False)
-mu_sa = mu_f(smoothing=sgn_approx(eps=0.008, p=2.8), terms=False)
+mu_sa = mu_f(smoothing=sgn_approx(eps=5.0, p=2.8), terms=False) # 0.008, 2.8
 mu_sa = savgol_filter(mu_sa, 8, 3)
 
-p = figure(width=450, height=300, title="Multiplicity")
+mu_sa2 = mu_f(smoothing=sgn_approx(eps=0.3, p=2.8), terms=False) # 0.008, 2.8
+mu_sa2 = savgol_filter(mu_sa2, 8, 3)
+
+mu_sa3 = mu_f(smoothing=sgn_approx(eps=0.01, p=2.8), terms=False) # 0.008, 2.8
+mu_sa3 = savgol_filter(mu_sa3, 8, 3)
+
+mu_sa4 = mu_f(smoothing=sgn_approx(eps=0.005, p=2.8), terms=False) # 0.008, 2.8
+mu_sa4 = savgol_filter(mu_sa4, 8, 3)
+
+mu_sa5 = mu_f(smoothing=sgn_approx(eps=0.001, p=2.8), terms=False) # 0.008, 2.8
+mu_sa5 = savgol_filter(mu_sa5, 8, 3)
+
+mu_sa6 = mu_f(smoothing=sgn_approx(eps=0.0001, p=2.8), terms=False) # 0.008, 2.8
+# mu_sa6 = savgol_filter(mu_sa5, 8, 3)
+
+p = figure(width=550, height=300, title="Multiplicity")
 p.step(alpha_family, mu_rk, line_color="black", legend_label="rank")
-# p.line(alpha_family, mu_nn, line_color="red")
-p.line(alpha_family, mu_sa, line_color="blue", legend_label="spectral approx.")
+# p.line(alpha_family, mu_nn, line_color="red", legend_label="nuclear")
+p.line(alpha_family, mu_sa, line_color="red", legend_label="nuclear")
+p.line(alpha_family, mu_sa2, line_color="orange", legend_label="ht (0.30)")
+p.line(alpha_family, mu_sa3, line_color="green", legend_label="ht (0.10)")
+p.line(alpha_family, mu_sa4, line_color="blue", legend_label="ht (0.05)")
+p.line(alpha_family, mu_sa5, line_color="gray", legend_label="ht (0.01)")
+# p.line(alpha_family, mu_sa6, line_color="darkgray", legend_label="ht (0.001)")
+
 
 p.toolbar_location = None
-show(p)
+# p.x_range = Range1d()
+# show(p)
 
+# %% 
+dom = np.linspace(-1,1,1500)
+q = figure(width=375, height=300, title="Sign approx. (φ)")
+# q.line(dom, [1 if x != 0 else 0 for x in dom ], color='black')
+q.line([-1,0.001], [1,1], color='black', legend_label="sgn+")
+q.line([0.001,1], [1,1], color='black')
+q.scatter([0], [0], color='black', size=5)
+q.line(dom, np.abs(dom)**1.0, color="red", legend_label="l1")
+q.line(dom, sgn_approx(eps=0.3, p=1.0)(np.abs(dom)), color="orange", legend_label="φ (0.30)")
+q.line(dom, sgn_approx(eps=0.10, p=1.0)(np.abs(dom)), color="green", legend_label="φ (0.10)")
+q.line(dom, sgn_approx(eps=0.05, p=1.0)(np.abs(dom)), color="blue", legend_label="φ (0.05)")
+q.line(dom, sgn_approx(eps=0.01, p=1.0)(np.abs(dom)), color="gray", legend_label="φ (0.01)")
+# q.line(dom, sgn_approx(eps=0.001, p=1.0)(np.abs(dom)), color="darkgray", legend_label="φ (0.001)")
+q.x_range = Range1d(-1.8,1.0)
+q.y_range = Range1d(-0.05,1.05)
+# show(q)
+q.legend.location = 'bottom_left'
+q.toolbar_location = None 
+show(row(p,q))
+
+
+# %% 
 min_supp = min(alpha_family[mu_sa > 0.0001])
 max_supp = max(alpha_family[mu_sa > 0.0001])
 
@@ -196,17 +245,45 @@ from scipy.optimize import minimize
 # %% Constitutive terms
 mu_rk = mu_f(smoothing=None, terms=True).T
 mu_nn = mu_f(smoothing=False, terms=True).T
+
 #mu_nn = mu_f(smoothing=lambda x: sum(abs(x))/max(abs(x)), terms=True).T
 mu_sa = mu_f(smoothing=sgn_approx(eps=1e-1, p=1.0), terms=True).T
 
+f1,f2,f3 = figure(width=400, height=int(500/3), title="Rank"), figure(width=400, height=int(500/3), title="Nuclear norm"), figure(width=400, height=int(500/3), title="Sgn approximation (0.1)")
+f1.toolbar_location = None 
+f2.toolbar_location = None 
+f3.toolbar_location = None 
 figures = []
 for i in range(4):
-  p = figure(width=300, height=250, title="Multiplicity")
+  p = figure(width=300, height=250, title=f"Multiplicity terms (T{i+1})")
   p.step(alpha_family, mu_rk[:,i], line_color="black")
   p.line(alpha_family, mu_nn[:,i], line_color="red")
   p.line(alpha_family, mu_sa[:,i], line_color="blue")
+  p.toolbar_location = None
   figures.append(p)
-show(row(figures))
+
+mu_nn = mu_f(smoothing=sgn_approx(eps=5.0, p=2.8), terms=True).T
+f1.step(alpha_family, mu_rk.sum(axis=1), color="black")
+f1.line(alpha_family, mu_rk[:,0]/np.max(abs(mu_rk[:,0])), line_dash='dashed', color="black")
+f1.line(alpha_family, mu_rk[:,1]/np.max(abs(mu_rk[:,1])), line_dash='dotted', color="black")
+f1.line(alpha_family, mu_rk[:,2]/np.max(abs(mu_rk[:,2])), line_dash='dotted', color="black")
+f1.line(alpha_family, mu_rk[:,3]/np.max(abs(mu_rk[:,3])), line_dash='dashed', color="black")
+
+f2.step(alpha_family, mu_nn.sum(axis=1), color="red")
+f2.line(alpha_family, mu_nn[:,0]/np.max(abs(mu_nn[:,0])), line_dash='dashed', color="red")
+f2.line(alpha_family, mu_nn[:,1]/np.max(abs(mu_nn[:,1])), line_dash='dotted', color="red")
+f2.line(alpha_family, mu_nn[:,2]/np.max(abs(mu_nn[:,2])), line_dash='dotted', color="red")
+f2.line(alpha_family, mu_nn[:,3]/np.max(abs(mu_nn[:,3])), line_dash='dashed', color="red")
+
+f3.step(alpha_family, mu_sa.sum(axis=1), color="blue")
+f3.line(alpha_family, mu_sa[:,0]/np.max(abs(mu_sa[:,0])), line_dash='dashed', color="blue")
+f3.line(alpha_family, mu_sa[:,1]/np.max(abs(mu_sa[:,1])), line_dash='dotted', color="blue")
+f3.line(alpha_family, mu_sa[:,2]/np.max(abs(mu_sa[:,2])), line_dash='dotted', color="blue")
+f3.line(alpha_family, mu_sa[:,3]/np.max(abs(mu_sa[:,3])), line_dash='dashed', color="blue")
+
+show(
+  row(column(row(figures[:2]), row(figures[2:])), column(f1,f2,f3))
+)
 
 # %% Gradient calculation
 from pbsig.betti import MuQuery

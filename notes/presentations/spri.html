@@ -535,6 +535,30 @@ $$\mathrm{dgm}(K) \leftrightarrow R = \partial V $$
 <aside><div>
 <p>Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/</p>
 </div></aside></section>
+<section id="this-talk" class="slide level2">
+<h2>This Talk</h2>
+<div>
+<div class="fragment fade-in" style="text-align: left">
+<p>In this talk we introduce a <span style="color:orange"> <em>spectral-relaxation</em> </span> of the rank invariant that:</p>
+<div style="margin-left:2.5em;">
+<ol type="1">
+<li class="fragment">Continuously interpolates the <em>persistent rank</em> function</li>
+<li class="fragment">is smooth + differentiable on <span class="math inline">\mathbf{S}_+</span></li>
+<li class="fragment"><span class="math inline">(1{\textstyle -}\epsilon)</span> approximates <span class="math inline">\beta_p^{i,j}</span> for any <span class="math inline">\epsilon &gt; 0</span> + essentially <span class="math inline">O(n^2)</span> time</li>
+<li class="fragment">Vectorizes non-harmonic spectra of Laplacian operators</li>
+<li class="fragment">Is computable in a “matrix-free” fashion in <span class="math inline">O(n)</span> memory</li>
+</ol>
+</div>
+</div>
+</div>
+<div class="fragment fade-in" style="text-align: left">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="spri_overview.png" style="width:88.0%;height:100.0%"></p>
+</figure>
+</div>
+</div>
+</section>
 <section id="setting-parameterized-filtrations" class="slide level2">
 <h2>Setting: Parameterized filtrations</h2>
 <p>Suppose we have an <span class="math inline">\alpha</span>-parameterized filtration <span class="math inline">(K, f_\alpha)</span> where <span class="math inline">f_\alpha : K \to \mathbb{R}_+</span> satisfies:</p>
@@ -558,6 +582,59 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 </div>
 </div>
 </div>
+</div>
+</section>
+<section id="application-optimizing-filtrations" class="slide level2">
+<h2>Application: optimizing filtrations</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="codensity_dgm_ex.png" style="width:68.0%;height:100.0%"></p>
+</figure>
+</div>
+<div class="fragment">
+<p><span class="math display"> \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) </span></p>
+</div>
+</section>
+<section id="the-rank-invariants-with-pictures" class="slide level2">
+<h2>The rank invariants with pictures</h2>
+<div class="columns">
+<div class="column">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dgm_pbn.png" width="400" height="400"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p><span class="math display"> \beta_p^{i,j}(K)</span></p>
+</div>
+</div><div class="column">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dgm_mu.png" width="400" height="400"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p><span class="math inline">\mu_p^R(K)</span></p>
+</div>
+</div>
+</div>
+</section>
+<section id="why-the-rank-invariant" class="slide level2">
+<h2>Why the rank invariant?</h2>
+<div class="fragment">
+<p>There is a duality between diagrams its associated rank function:</p>
+<p><span class="math display"> \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta </span></p>
+<p><span class="math display">\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad </span></p>
+</div>
+<div class="fragment">
+<p><em>Fundamental Lemma of Persistent Homology</em> shows diagrams characterize their ranks <span class="math display">\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}</span></p>
+</div>
+<div>
+<ul>
+<li class="fragment"><em>Persistence measures</em> <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span> extend (1,2) naturally when <span class="math inline">\mathbb{F} = \mathbb{R}</span></li>
+<li class="fragment">Stability in context of multidimensional persistence <span class="citation" data-cites="cerri2013betti">(<a href="#/references" role="doc-biblioref" onclick="">Cerri et al. 2013</a>)</span></li>
+<li class="fragment">Generalizations of rank invariant via Möbius inversion <span class="citation" data-cites="mccleary2022edit">(<a href="#/references" role="doc-biblioref" onclick="">McCleary and Patel 2022</a>)</span> and via zigzag persistence<span class="citation" data-cites="dey2021computing">(<a href="#/references" role="doc-biblioref" onclick="">Tamal K. Dey, Kim, and Mémoli 2021</a>)</span></li>
+</ul>
 </div>
 </section>
 <section id="why-not-use-diagrams" class="slide level2">
@@ -624,78 +701,6 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <aside><div>
 <p>For more details on the computations, see “Move Schedules” <span class="citation" data-cites="piekenbrock2021move">Piekenbrock and Perea (<a href="#/references" role="doc-biblioref" onclick="">2021</a>)</span></p>
 </div></aside></section>
-<section id="why-the-rank-invariant" class="slide level2">
-<h2>Why the rank invariant?</h2>
-<div class="fragment">
-<p>There is a duality between diagrams its associated rank function:</p>
-<p><span class="math display"> \mathrm{dgm}_p(\, K_\bullet, \, f \, ) \triangleq \{ \, ( \, i, j \,) \in \Delta_+ :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta </span></p>
-<p><span class="math display">\text{where: } \quad \mu_p^{i,j} = \left(\beta_p^{i,j{\small -}1} - \beta_p^{i,j} \right) - \left(\beta_p^{i{\small -}1,j{\small -}1} - \beta_p^{i{\small -}1,j} \right) \quad </span></p>
-</div>
-<div class="fragment">
-<p><em>Fundamental Lemma of Persistent Homology</em> shows diagrams characterize their ranks <span class="math display">\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j &gt; l} \mu_p^{i,j}</span></p>
-</div>
-<div>
-<ul>
-<li class="fragment"><em>Persistence measures</em> <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span> extend (1,2) naturally when <span class="math inline">\mathbb{F} = \mathbb{R}</span></li>
-<li class="fragment">Stability in context of multidimensional persistence <span class="citation" data-cites="cerri2013betti">(<a href="#/references" role="doc-biblioref" onclick="">Cerri et al. 2013</a>)</span></li>
-<li class="fragment">Generalizations of rank invariant via Möbius inversion <span class="citation" data-cites="mccleary2022edit">(<a href="#/references" role="doc-biblioref" onclick="">McCleary and Patel 2022</a>)</span> and via zigzag persistence<span class="citation" data-cites="dey2021computing">(<a href="#/references" role="doc-biblioref" onclick="">Tamal K. Dey, Kim, and Mémoli 2021</a>)</span></li>
-</ul>
-</div>
-</section>
-<section id="this-talk" class="slide level2">
-<h2>This Talk</h2>
-<p><br></p>
-<p><br></p>
-<p><br></p>
-<div>
-<div class="fragment fade-in" style="text-align: left">
-<p>In <strong>this talk</strong> we introduce a <em>spectral-relaxation</em> of the rank invariant that:</p>
-<div style="margin-left:2.5em;">
-<ol type="1">
-<li class="fragment">is smooth + differentiable on <span class="math inline">\mathbf{S}_+</span></li>
-<li class="fragment"><span class="math inline">(1{\textstyle -}\epsilon)</span> approximates <span class="math inline">\beta_p^{i,j}</span> for any <span class="math inline">\epsilon &gt; 0</span> + essentially <span class="math inline">O(n^2)</span> time</li>
-<li class="fragment">Vectorizes non-harmonic spectra of Laplacian operators</li>
-<li class="fragment">Is computable in a “matrix-free” fashion in <span class="math inline">O(n)</span> memory <!-- 5. Continuously interpolates the rank function --></li>
-</ol>
-</div>
-</div>
-</div>
-</section>
-<section id="application-optimizing-filtrations" class="slide level2">
-<h2>Application: optimizing filtrations</h2>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="codensity_dgm_ex.png" style="width:68.0%;height:100.0%"></p>
-</figure>
-</div>
-<div class="fragment">
-<p><span class="math display"> \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) </span></p>
-</div>
-</section>
-<section id="the-rank-invariants-with-pictures" class="slide level2">
-<h2>The rank invariants with pictures</h2>
-<div class="columns">
-<div class="column">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="dgm_pbn.png" width="400" height="400"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p><span class="math display"> \beta_p^{i,j}(K)</span></p>
-</div>
-</div><div class="column">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="dgm_mu.png" width="400" height="400"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p><span class="math inline">\mu_p^R(K)</span></p>
-</div>
-</div>
-</div>
-</section>
 <section id="revisiting-the-rank-computation" class="slide level2">
 <h2>Revisiting the rank computation</h2>
 <p><span class="math display"> \beta_p^{i,j} : \mathrm{rank}(H_p(K_i) \to H_p(K_j))</span></p>
@@ -890,7 +895,7 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <p><br></p>
 <div class="fragment fade-in" style="text-align: left">
 <div style="text-align: center; font-size: 35px;">
-<p><strong>Question: Can we exploit some of these?</strong></p>
+<p><strong>Q: Can we exploit some of these to speed up the computation?</strong></p>
 </div>
 </div>
 </section>
@@ -934,6 +939,9 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 </div>
 </div>
 <div class="fragment" style="text-align: center;">
+<p>Replacing <span class="math inline">S \mapsto \mathcal{S}</span> ensures <span class="math inline">\partial_p^{i,j}(\alpha)</span> is element-wise continuous</p>
+</div>
+<div class="fragment" style="text-align: center;">
 <p><strong>Note</strong>: <span class="math inline">\partial_p^{i,j}(\alpha)</span> has rank <span class="math inline">= \mathrm{rank}(R_p^{i,j}(\alpha))</span> for all <span class="math inline">\alpha \in \mathbb{R}</span>.</p>
 </div>
 </section>
@@ -946,24 +954,29 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <div style="list-style-type: none; align=center;">
 <div class="columns">
 <div class="column" style="width:50%;">
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0</span> <!-- ::: --></p>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="1" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad\quad \mathrm{rank}(X) = \lVert \mathbf{\sigma} \rVert_0</span></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: left"} -->
 <p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)} = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)</span> <!-- ::: --></p>
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)</span> <!-- ::: --></p>
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: left"} -->
-<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast \vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="2" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}\approx \sum\limits_{i=1}^n \, \phi(\sigma_i, \epsilon)</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="3" style="text-align: left">
+<p><span class="math inline">\quad\quad\quad\quad \hphantom{\mathrm{rank}(X)}=\lVert \Phi_\epsilon(X) \rVert_\ast \vphantom{\sum\limits_{i=1}^n}</span></p>
+</div>
 </div><div class="column">
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=1 style="text-align: right"} -->
+<div class="fragment fade-in-then-semi-out" data-fragment-index="1" style="text-align: right">
 <p>where <span class="math inline">\quad\quad</span> <span class="math inline">X = U \mathrm{Diag}(\mathbf{\sigma})V^T</span> <!-- ::: --></p>
 <!-- ::: {.fragment .fade-in-then-semi-out fragment-index=2 style="text-align: right"} -->
-<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x &gt; 0)\vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=3 style="text-align: right"} -->
-<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz\vphantom{\sum\limits_{i=1}^n}</span> <!-- ::: --></p>
-<!-- ::: {.fragment .fade-in-then-semi-out fragment-index=4 style="text-align: right"} -->
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\mathrm{sgn}_{+}(x) \triangleq \mathbf{1}(x &gt; 0)\vphantom{\sum\limits_{i=1}^n}</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="2" style="text-align: right">
+<p>where <span class="math inline">\quad\quad</span> <span class="math inline">\phi(x, \epsilon) \triangleq \int\limits_{-\infty}^x\hat{\delta}(z, \epsilon) dz\vphantom{\sum\limits_{i=1}^n}</span></p>
+</div>
+<div class="fragment fade-in-then-semi-out" data-fragment-index="3" style="text-align: right">
 <p>where <span class="math inline">\quad\quad</span> <span class="math inline">\Phi_\epsilon(X) \triangleq \sum_{i=1}^n \phi(\sigma_i, \epsilon) u_i v_i^T</span></p>
-<!-- ::: -->
+</div>
 </div>
 </div>
 <div class="fragment fade-in" style="text-align: center">
@@ -1034,7 +1047,7 @@ Easy fix: $\mathrm{rank}(A) = \mathrm{rank}(A^T A) = \mathrm{rank}(A A^T)$  -->
 <p><span class="math display"> \Delta_p = \underbrace{\partial_{p+1} \partial_{p+1}^T}_{L_p^{\mathrm{up}}}  + \underbrace{\partial_{p}^T \partial_{p}}_{L_p^{\mathrm{dn}}} </span></p>
 <p><span class="math inline">f_\alpha</span> is 1-to-1 correspondence with inner products on cochain groups <span class="math inline">C^p(K, \mathbb{R})</span></p>
 <p><span class="math display">L_p^{i,j}(\alpha) \Leftrightarrow \langle \; f,\, g \; \rangle_{\alpha} \text{ on } C^{p+1}(K)</span></p>
-<p>Has closed-form linear and quadratic forms, e.g.: <span class="math display">
+<p>Have “nice” linear and quadratic forms, e.g.: <span class="math display">
 L_p^{\text{up}}(\tau, \tau')= \begin{cases}
          \mathrm{deg}_f(\tau) \cdot f^{+/2}(\tau) &amp; \text{ if } \tau = \tau' \\
 %       \mathrm{deg}(\tau_i) &amp; \text{ if } i = j \\
@@ -1047,6 +1060,62 @@ L_p^{\text{up}}(\tau, \tau')= \begin{cases}
 </div>
 <!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
 </section>
+<section id="regularization-interpretation" class="slide level2">
+<h2>Regularization interpretation</h2>
+<div class="fragment" data-fragment-index="1">
+<p>Instead of solving <span class="math inline">Ax = b</span>, consider the “regularized” least-squares objective:</p>
+</div>
+<div class="fragment" data-fragment-index="2">
+<p><span class="math display">
+x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert_1
+</span></p>
+</div>
+<div class="fragment" data-fragment-index="3">
+<p>The minimizer is given in closed-form by the regularized pseudo-inverse:</p>
+<p><span class="math display">
+x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
+</span></p>
+</div>
+<div class="fragment" data-fragment-index="4">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="lasso.png" style="width:50.0%"></p>
+</figure>
+</div>
+</div>
+<div class="footer">
+
+</div>
+</section>
+<section id="regularization-interpretation-1" class="slide level2">
+<h2>Regularization interpretation</h2>
+<div class="fragment" data-fragment-index="1">
+<p><span class="math display">
+x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2 = (A^T A + \epsilon I)^{-1} A^T b
+</span></p>
+</div>
+<div class="fragment" data-fragment-index="2">
+<div style="text-align: center;">
+<p>Under the appropriate hyper-parameter settings<sup>1</sup>, <span class="math inline">\phi</span> takes the form:</p>
+</div>
+<p><span class="math display">
+\phi(x, \epsilon) = \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz = \frac{x^2}{x^2 + \epsilon}
+</span></p>
+</div>
+<div class="fragment" data-fragment-index="3">
+<div style="text-align: center;">
+<p>The corresponding Lowner operator and its Schatten <span class="math inline">1</span>-norm is given by:</p>
+</div>
+<p><span class="math display">
+\Phi_\epsilon(X) = (X^T X + \epsilon \, I_n)^{-1} X^T X, \quad \quad \lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(X)^2}{\sigma_i(X)^2 + \epsilon}
+</span></p>
+</div>
+<div class="fragment" data-fragment-index="3">
+<div style="text-align: center;">
+<p>This the <em>Tikhonov regularization</em> in standard form used in <span class="math inline">\ell_1</span>-regression (LASSO)</p>
+</div>
+</div>
+<aside><ol class="aside-footnotes"><li id="fn3"><p>This <span class="math inline">\phi</span> corresponds to setting <span class="math inline">\nu(\epsilon) = \sqrt{\epsilon}</span> and <span class="math inline">p(x) = 2x (x^2 + 1)^{-2}</span>.</p></li></ol></aside></section>
 
 <section id="overview-1" class="slide level2">
 <h2>Overview</h2>
@@ -1192,6 +1261,20 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </section>
 <section id="experiment-2-intrinsic-signatures" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
+<div style="text-align: center;">
+<p><strong>Dataset:</strong> 3D meshes of animals in different poses <span class="citation" data-cites="chazal2009gromov">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2009</a>)</span></p>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="gh_data_pose.png" style="height:100.0%" width="425"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p><strong>Challenge:</strong> Recognize intrinsic shape categories (via a distance metric)</p>
+</div>
+</section>
+<section id="experiment-2-intrinsic-signatures-1" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
 <p>The <em>Gromov-Hausdorff</em> distance yields a metric on the set of compact metric spaces <span class="math inline">\mathcal{X}</span></p>
 <p><span class="math display">
 d_{GH}(d_X, d_Y) = \sup_{x \in X, y \in Y} \lvert d_X(x, \psi(y)) - d_Y(y, \phi(x))\rvert
@@ -1202,9 +1285,13 @@ d_{GH}(d_X, d_Y) = \sup_{x \in X, y \in Y} \lvert d_X(x, \psi(y)) - d_Y(y, \phi(
 </figure>
 </div>
 <p>Using intrinsic metric makes <span class="math inline">d_{\mathrm{GH}}</span> blind to e.g.&nbsp;shapes represented in different <em>poses</em></p>
-<p>Unfortunately, the GH distance is NP-hard to compute</p>
+<div class="fragment">
+<div style="text-align: center;">
+<p>Unfortunately, the GH distance is NP-hard to compute <span class="citation" data-cites="memoli2012some">(<a href="#/references" role="doc-biblioref" onclick="">Mémoli 2012</a>)</span></p>
+</div>
+</div>
 </section>
-<section id="experiment-2-intrinsic-signatures-1" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-2" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
 <div style="text-align: center;">
 <p>It’s known <span class="math inline">d_B</span> (<span class="math inline">d_W</span>) on Rips filtrations <span class="math inline">\mathcal{R}(X, d_X)</span> lower bound GH (GW) distance</p>
@@ -1227,7 +1314,7 @@ d_B(\mathrm{dgm}_p(\mathcal{R}(X, d_X)), \mathrm{dgm}_p(\mathcal{R}(Y, d_Y))) \;
 <p>Motivates use of persistence in metric settings for e.g.&nbsp;shape classification!</p>
 </div>
 </section>
-<section id="experiment-2-intrinsic-signatures-2" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-3" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
 <div style="text-align: center;">
 <p><strong>Issue:</strong> Diagrams are far from injective, cannot distinguish e.g.&nbsp;stretched shapes</p>
@@ -1241,27 +1328,36 @@ d_B(\mathrm{dgm}_p(\mathcal{R}(X, d_X)), \mathrm{dgm}_p(\mathcal{R}(Y, d_Y))) \;
 <p>The lower bound on <span class="math inline">d_{\mathrm{GH}}</span> could be totally useless!</p>
 </div>
 </section>
-<section id="experiment-2-intrinsic-signatures-3" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-4" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
+<div class="fragment">
 <p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
 <p><span class="math display">
 \mathcal{R}(f) \triangleq \mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha &gt; 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
 </span></p>
+</div>
+<div class="fragment">
 <p>The diagrams from <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span> represent <em>stable signatures</em> for each <span class="math inline">\lambda &gt; 0</span>:</p>
 <p><span class="math display">
 d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
 </span></p>
+</div>
 <!-- <div style="text-align: center;">  -->
-<p><span style="color: red;"> NOTE: </span> Size of <span class="math inline">L</span> depends on the choice of <span class="math inline">f</span> + each <span class="math inline">\lambda</span> produces a new signature!</p>
 <!-- </div>  -->
-<hr>
+<!-- <hr>  -->
+<div class="fragment">
 <p>Chazal showed these bounds extend to metrics on <em>augmented</em> metric spaces:</p>
 <p><span class="math display">
 \mathcal{X}_1 = \{ (X, d_X, f_X) \mid (X, d_X, f_X) \in \mathcal{X}, f_X: X \to \mathbb{R} \text{ continuous }\}
 </span></p>
-<p>These signatures also extend to measure metric spaces, see <span class="citation" data-cites="chazal2016structure">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2016</a>)</span></p>
+<p>These signatures also extend to measure metric spaces, see <span class="citation" data-cites="chazal2009gromov">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2009</a>)</span></p>
+</div>
+<div class="fragment">
+<p><br></p>
+<p><span style="color: red;"> NOTE: </span> Size of <span class="math inline">L</span> depends on the choice of <span class="math inline">f</span> + each <span class="math inline">\lambda</span> produces a new signature!</p>
+</div>
 </section>
-<section id="experiment-2-intrinsic-signatures-4" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-5" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
 <div style="text-align: center;">
 <p><strong>Ex:</strong> The <em>eccentricity</em> function <span class="math inline">e_X^1(x) = \max_{x' \in X} d_X(x,x')</span> has <span class="math inline">L = 2</span></p>
@@ -1275,11 +1371,11 @@ d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1,
 <p>Augmenting via a fraction of <span class="math inline">e_X^1</span> modifies the diagrams of the ellipsoid significantly <!-- , while the ones for the sphere hardly change due to the fact that the eccentricity is constant --></p>
 </div>
 </section>
-<section id="experiment-2-intrinsic-signatures-5" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-6" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
 <p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
 <p><span class="math display">
-\mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha &gt; 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
+d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
 </span></p>
 <!-- $$
 d_B(d_X^\mathcal{R}, d_Y^\mathcal{R}) \; \leq 
@@ -1317,28 +1413,140 @@ $$ -->
 </div>
 </div>
 </div>
+<div style="text-align: center;">
+<p>Larger values of <span class="math inline">\lambda</span> yield worse bounds, but can lead to simpler diagrams</p>
+</div>
 <!-- Extra structure combines stability of persistence with flexibility of metrics -->
 </section>
-<section id="experiment-2-intrinsic-signatures-6" class="slide level2">
+<section id="experiment-2-intrinsic-signatures-7" class="slide level2">
 <h2>Experiment #2: Intrinsic signatures</h2>
-<p>[1] show <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span> yields <em>stable signatures</em> for each <span class="math inline">\lambda &gt; 0</span>, satisfying:</p>
-<p><span class="math display">
-d_B(\mathrm{dgm} \mathcal{R}(\lambda \cdot f_X), \mathrm{dgm} \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
-</span></p>
+<div style="text-align: center;">
+<p>Each choice of <span class="math inline">\lambda &gt; 0</span> yields a <em>stable signature</em> via <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span></p>
+</div>
+<div style="text-align: center;">
+<p>Which value of <span class="math inline">\lambda</span> to choose?</p>
+</div>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="camel1_interp1.png" style="height:100.0%" width="950"></p>
 </figure>
 </div>
-<p>Larger <span class="math inline">\lambda</span> <span class="math inline">\leftrightarrow</span> worse LB on <span class="math inline">d_{\mathrm{GH}}</span>,</p>
 </section>
-<section id="experiment-3" class="slide level2">
-<h2>Experiment #3:</h2>
+<section id="experiment-2-intrinsic-signatures-8" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<div style="text-align: center;">
+<p>Each choice of <span class="math inline">\lambda &gt; 0</span> yields a <em>stable signature</em> via <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span></p>
+</div>
+<div style="text-align: center;">
+<p>Which value of <span class="math inline">\lambda</span> to choose?</p>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="camel1_interp2.png" style="height:100.0%" width="950"></p>
+</figure>
+</div>
+<div style="text-align: center;">
+<p>We sample from <span class="math inline">\Delta_+</span> randomly, retaining signatures with sufficient topological activity</p>
+</div>
+</section>
+<section id="experiment-2-intrinsic-signatures-9" class="slide level2">
+<h2>Experiment #2: Intrinsic signatures</h2>
+<p>…and compared the computed spectral signatures under the relative distance metric:</p>
+<!-- \partial_p^\ast = U \Sigma V^T -->
+<p><span class="math display">
+\Lambda(\mu_p^R) = \{\sigma_1, \sigma_2, \dots, \sigma_n \}, \quad \quad \chi(\mathbf{\sigma}, \mathbf{\tilde{\sigma}}) = \sum\limits_{i=1}^n \frac{\lvert \sigma_i - \tilde{\sigma}_i \rvert}{\sqrt{\sigma_i + \tilde{\sigma}_i}}
+</span></p>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dw_chi_comp.png" style="height:100.0%" width="750"></p>
+</figure>
+</div>
+<!-- ## Experiment \#3: Filtration optimization -->
+<!-- ![](smoothed_mu.png){width=55% height=100%} -->
+</section>
+<section id="experiment-3-filtration-optimization" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="column quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<p><img data-src="vineyard.gif"></p>
+</div>
+<div class="column quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="dgm_opt.png"></p>
+</figure>
+</div>
+</div>
+<div class="column quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
+<p><img data-src="complex_plain.gif"></p>
+</div>
+</div>
+</div>
+<p><span class="math display">
+\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big)
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-1" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+<div class="quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="column quarto-layout-cell" style="flex-basis: 66.7%;justify-content: center;">
+<p><img data-src="codensity_mult.png"></p>
+</div>
+<div class="column quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<p><img data-src="optimal_codensity_complex.png"></p>
+</div>
+</div>
+</div>
+<p><span class="math display">
+\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big)
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-2" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
 
-<img data-src="codensity_mult.png" class="r-stretch"></section>
-<section id="experiment-3-1" class="slide level2">
-<h2>Experiment #3:</h2>
-<p><img data-src="smoothed_mu.png" style="width:55.0%;height:100.0%"> <img data-src="optimal_codensity_complex.png" style="width:35.0%;height:100.0%"></p>
+<img data-src="codensity_ex1.png" class="r-stretch quarto-figure-center"><p><span class="math display">
+\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \, \mathrm{sgn}_+(\sigma_i)
+</span></p>
+<p><span class="math display">
+\mu_p^{R} = \mathrm{rank}(\partial_{p+1}^{j + 1, k})  - \mathrm{rank}(\partial_{p+1}^{i + 1, k})  - \mathrm{rank}(\partial_{p+1}^{j + 1, l}) + \mathrm{rank}(\partial_{p+1}^{i + 1, l})  
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-3" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+
+<img data-src="codensity_ex2.png" class="r-stretch quarto-figure-center"><p><span class="math display">
+\lVert X \rVert_\ast = \sum\limits_{i=1}^{n} \, \lvert \sigma_i \rvert
+</span></p>
+<p><span class="math display">
+\hat{\mu}_p^{R} = \lVert \partial_{p+1}^{j + 1, k}\rVert_\ast  -  \lVert \partial_{p+1}^{i + 1, k}\rVert_\ast  -  \lVert \partial_{p+1}^{j + 1, l}\rVert_\ast +  \lVert \partial_{p+1}^{i + 1, l} \rVert_\ast
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-4" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+
+<img data-src="codensity_ex3.png" class="r-stretch quarto-figure-center"><p><span class="math display">
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon = 0.30
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-5" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+<p><img data-src="combinatorial_explosion.png" data-fig-align="center"><sup>1</sup></p>
+<aside><ol class="aside-footnotes"><li id="fn4"><p>Xu, Weiyu, and Babak Hassibi. “Precise Stability Phase Transitions for $_1 $ Minimization: A Unified Geometric Framework.” IEEE transactions on information theory (2011)</p></li></ol></aside></section>
+<section id="experiment-3-filtration-optimization-6" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+
+<img data-src="codensity_ex4.png" class="r-stretch quarto-figure-center"><p><span class="math display">
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon = 0.10
+</span></p>
+</section>
+<section id="experiment-3-filtration-optimization-7" class="slide level2">
+<h2>Experiment #3: Filtration optimization</h2>
+
+<img data-src="codensity_ex5.png" class="r-stretch quarto-figure-center"><p><span class="math display">
+\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^{n} \, \phi(\lvert \sigma_i \rvert, \epsilon), \quad \quad \epsilon \to 0^+
+</span></p>
 </section>
 <section id="time-permitting-computation" class="slide level2">
 <h2>Time permitting: Computation</h2>
@@ -1433,6 +1641,9 @@ Bubenik, Peter. 2020. <span>“The Persistence Landscape and Some of Its Propert
 <div id="ref-cerri2013betti" class="csl-entry" role="doc-biblioentry">
 Cerri, Andrea, Barbara Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia Landi. 2013. <span>“Betti Numbers in Multidimensional Persistent Homology Are Stable Functions.”</span> <em>Mathematical Methods in the Applied Sciences</em> 36 (12): 1543–57.
 </div>
+<div id="ref-chazal2009gromov" class="csl-entry" role="doc-biblioentry">
+Chazal, Frédéric, David Cohen-Steiner, Leonidas J Guibas, Facundo Mémoli, and Steve Y Oudot. 2009. <span>“Gromov-Hausdorff Stable Signatures for Shapes Using Persistence.”</span> In <em>Computer Graphics Forum</em>, 28:1393–403. 5. Wiley Online Library.
+</div>
 <div id="ref-chazal2016structure" class="csl-entry" role="doc-biblioentry">
 Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. <em>The Structure and Stability of Persistence Modules</em>. Vol. 10. Springer.
 </div>
@@ -1465,6 +1676,9 @@ Komzsik, Louis. 2003. <em>The Lanczos Method: Evolution and Application</em>. SI
 </div>
 <div id="ref-mccleary2022edit" class="csl-entry" role="doc-biblioentry">
 McCleary, Alexander, and Amit Patel. 2022. <span>“Edit Distance and Persistence Diagrams over Lattices.”</span> <em>SIAM Journal on Applied Algebra and Geometry</em> 6 (2): 134–55.
+</div>
+<div id="ref-memoli2012some" class="csl-entry" role="doc-biblioentry">
+Mémoli, Facundo. 2012. <span>“Some Properties of Gromov–Hausdorff Distances.”</span> <em>Discrete &amp; Computational Geometry</em> 48: 416–40.
 </div>
 <div id="ref-memoli2022persistent" class="csl-entry" role="doc-biblioentry">
 Mémoli, Facundo, Zhengchao Wan, and Yusu Wang. 2022. <span>“Persistent Laplacians: Properties, Algorithms and Implications.”</span> <em>SIAM Journal on Mathematics of Data Science</em> 4 (2): 858–84.

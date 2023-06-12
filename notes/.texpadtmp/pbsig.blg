@@ -6,45 +6,45 @@ Database file #1: ../pbsig_bib.bib
 Warning--empty journal in lanczos1950iteration
 Warning--empty institution in mangasarian1994class
 Warning--empty school in newman2001laplacian
-You've used 24 entries,
+You've used 25 entries,
             2118 wiz_defined-function locations,
-            634 strings with 7807 characters,
-and the built_in function-call counts, 7902 in all, are:
-= -- 785
-> -- 329
+            640 strings with 7967 characters,
+and the built_in function-call counts, 8230 in all, are:
+= -- 820
+> -- 342
 < -- 9
-+ -- 136
-- -- 106
-* -- 495
-:= -- 1289
-add.period$ -- 74
-call.type$ -- 24
-change.case$ -- 120
++ -- 141
+- -- 110
+* -- 518
+:= -- 1344
+add.period$ -- 77
+call.type$ -- 25
+change.case$ -- 125
 chr.to.int$ -- 0
-cite$ -- 27
-duplicate$ -- 332
-empty$ -- 644
-format.name$ -- 106
-if$ -- 1679
+cite$ -- 28
+duplicate$ -- 343
+empty$ -- 670
+format.name$ -- 110
+if$ -- 1746
 int.to.chr$ -- 0
-int.to.str$ -- 24
-missing$ -- 28
-newline$ -- 123
-num.names$ -- 48
-pop$ -- 150
+int.to.str$ -- 25
+missing$ -- 29
+newline$ -- 128
+num.names$ -- 50
+pop$ -- 153
 preamble$ -- 1
-purify$ -- 101
+purify$ -- 105
 quote$ -- 0
-skip$ -- 241
+skip$ -- 249
 stack$ -- 0
-substring$ -- 488
-swap$ -- 81
+substring$ -- 518
+swap$ -- 82
 text.length$ -- 9
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 84
+type$ -- 88
 warning$ -- 3
-while$ -- 80
-width$ -- 26
-write$ -- 260
+while$ -- 84
+width$ -- 27
+write$ -- 271
 (There were 3 warnings)

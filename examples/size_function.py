@@ -1,9 +1,18 @@
+# %% Imports
 import numpy as np
 from numpy.fft import fft, ifft
 import matplotlib.pyplot as plt
 from scipy.interpolate import interp1d
 from csaps import CubicSmoothingSpline
 from scipy.spatial.distance import pdist 
+
+# %% Bokeh configuration 
+import bokeh
+from bokeh.plotting import show, figure 
+from bokeh.models import Range1d
+from bokeh.layouts import row, column
+from bokeh.io import output_notebook
+output_notebook()
 
 np.random.seed(170)
 movement = np.random.uniform(size=50, low=-0.55, high=0.55)
@@ -60,15 +69,112 @@ plt.hlines(y_cuts[0], xmin=0, xmax=1, color='green')
 plt.hlines(y_cuts[1], xmin=0, xmax=1, color='orange')
 plt.hlines(y_cuts[2], xmin=0, xmax=1, color='purple')
 
-from pbsig.betti import persistent_betti, lower_star_betti_sig
+from pbsig.betti import persistent_betti, Sieve
+from splex import *
 nv = len(x)
 E = np.array(list(zip(range(nv-1), range(1, nv))))
-lower_star_betti_sig([y], E, nv=nv, a=y_cuts[1], b=y_cuts[2], method="rank", keep_terms=True)
-lower_star_betti_sig([y], E, nv=nv, a=y_cuts[0], b=y_cuts[2], method="rank", keep_terms=False) ## why isn't this 2?
-lower_star_betti_sig([y], E, nv=nv, a=y_cuts[3], b=y_cuts[0], method="rank", keep_terms=False) ## why isn't this 2?
+S, filter_f = SimplexTree(E), lower_star_weight(y)
+sieve = Sieve(S, family=[filter_f], form='lo')
 
-from pbsig.persistence import lower_star_ph_dionysus
-bar0, bar1 = lower_star_ph_dionysus(y, E, [])
+from pbsig.persistence import ph
+K = filtration(S, filter_f)
+bar0 = ph(K, engine='dionysus')[0]
+
+from pbsig.vis import figure_dgm
+show(figure_dgm(bar0))
+
+from pbsig.linalg import spectral_rank, eigvalsh_solver
+from functools import partial
+machine_eps = np.sqrt(np.finfo(np.float32).eps)
+inessential = ~np.isinf(bar0['death'])
+b,d = bar0[inessential]['birth'], bar0[inessential]['death']
+
+sieve.pattern = np.c_[b,d]
+# sieve.pattern = np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps]
+# sieve.pattern = np.array([(0.4, 0.6, 0.6, 0.8)])
+
+sieve.solver = eigvalsh_solver(sieve.laplacian, laplacian=True)
+sieve.sift(pp=1.0, tol=0, w=0.0)
+rank = partial(spectral_rank, method=0, shape=sieve.laplacian.shape)
+nucl = lambda x: np.sum(np.abs(x))
+sieve.summarize(rank)
+
+
+from pbsig.betti import mu_query
+# %% 
+mu_query(S, f=lower_star_weight(y), p=0, R=np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps][0], form='array', terms=True, smoothing=True, w=0.01, normed=True)
+
+rect = np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps][0]
+p = figure_dgm(bar0)
+p.rect(x=b[0],y=d[0],width=80*machine_eps,height=80*machine_eps, color='#ff000028')
+show(p)
+
+
+## From scratch: 
+from pbsig.linalg import up_laplacian
+D1 = boundary_matrix(K, p=1)
+i,j = rect[1], rect[2] # term 0 
+i,j = rect[0], rect[2] # term 1 
+i,j = rect[1], rect[3] # term 2
+i,j = rect[0], rect[3] # term 3 
+p_weights = np.array([1 if f.value > i else 0 for f in faces(K,0)])
+q_weights = np.array([1 if f.value <= j else 0 for f in faces(K,1)])
+
+np.linalg.matrix_rank(np.diag(p_weights) @ D1 @ np.diag(q_weights))
+
+rank(sieve.spectra[0]['eigenvalues'])
+rank(sieve.spectra[1]['eigenvalues'])
+rank(sieve.spectra[2]['eigenvalues'])
+rank(sieve.spectra[3]['eigenvalues'])
+
+# 11, -11, -12, 13
+# face_weights = np.array([f(s) for i,s in K])
+# [sum(sieve.spectra[cc]['eigenvalues']) for cc in [0,1,2,3]]
+# [sum(sieve.spectra[cc]['eigenvalues']) for cc in [4,5,6,7]]
+
+# %% Make the contour map 
+from bokeh.palettes import Sunset10
+f_values = np.array(list(K.indices()))
+hp_bins = np.linspace(np.min(f_values), np.max(f_values), 50)
+delta = np.diff(hp_bins)[0]/2
+sieve.pattern = np.array([(b-delta, b+delta, d-delta, d+delta) for b,d in product(hp_bins, hp_bins) if b < d])
+sieve.sift(pp=1.0, tol=0, w=1.15)
+
+rect_centers = np.array([(b,d) for b,d in product(hp_bins, hp_bins) if b < d])
+rect_tiles = np.array([(b-delta, b+delta, d-delta, d+delta) for b,d in product(hp_bins, hp_bins) if b < d])
+
+
+from pbsig.linalg import sgn_approx
+# reduce_f = lambda x: np.sum(np.abs(sgn_approx(x, eps=1.65)))
+reduce_f = lambda x: np.sum(np.abs(x))
+r_colors = bin_color(np.ravel(sieve.summarize(reduce_f)), 'viridis')
+p = figure(width=300, height=300)
+p.rect(x=rect_centers[:,0], y=rect_centers[:,1], width=2*delta, height=2*delta, color=r_colors)
+show(p)
+
+
+## Not much difference change w... should try on a larger complex that has curvature in its PL form
+## i..e instead of using simple PL lines for function graph should use one that is smooth 
+
+
+
+## One way... 
+xi, yi = np.meshgrid(np.linspace(np.min(f_values), np.max(f_values),50), np.linspace(np.min(f_values), np.max(f_values),50))
+z = squareform(np.ravel(sieve.summarize(nucl)))
+
+p = figure(width=300, height=300)
+levels = np.unique(np.quantile(np.ravel(z[z!=0]), q=np.linspace(0.0,1.0,10)))
+# levels = np.array([0,0.25,0.5,0.75,1.0])
+p.x_range = Range1d(0,1)
+p.y_range = Range1d(0,1)
+p.contour(xi, yi, z, levels=levels, fill_color=Sunset10, line_color="black")
+p.scatter(*np.c_[b,d].T, color="green")
+show(p)
+
+
+
+
+
 #sum(np.logical_and(bar0[:,0] <= y_cuts[0], bar0[:,1] > y_cuts[2])) # this is one right?
 
 from pbsig import plot_dgm
