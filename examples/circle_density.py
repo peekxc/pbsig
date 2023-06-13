@@ -156,7 +156,7 @@ show(p)
 # %% Verify multiplicity matches with persistence diagram visually
 from pbsig.betti import MuFamily
 R = (0.2, 0.4, 0.6, 0.8)
-mu_f = MuFamily(S, codensity_family, p = 1, form='array')
+mu_f = MuFamily(S, codensity_family, p = 1, form='lo')
 
 # %% 
 mu_f.precompute(R, w=0.0, normed=True, pp=1.0)
