@@ -1000,7 +1000,7 @@ def up_laplacian(S: ComplexLike, p: int = 0, weight: Union[Callable, ArrayLike] 
       # p_faces = list(faces(S, p))        ## need to make a view 
       p_simplices = list(faces(S, p+1))  ## need to make a view 
       _lap_cls = eval(f"UpLaplacian{int(p)}D")
-      lo = _lap_cls(p_simplices, card(S, 0))
+      lo = _lap_cls(p_simplices, card(S, 0), card(S, p))
       if normed:
         if not(symmetric):
           import warnings
@@ -1124,44 +1124,44 @@ class LaplacianOperator:
 
 
 class UpLaplacian0D(laplacian.UpLaplacian0D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     UpLaplacianBase.__init__(S, nv) ## does error checking on S 
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian0D.__init__(self, S, nv)
+    laplacian.UpLaplacian0D.__init__(self, S, nv, _np)
     self.precompute_degree()
 
 class UpLaplacian0F(laplacian.UpLaplacian0F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian0F.__init__(self, S, nv)
+    laplacian.UpLaplacian0F.__init__(self, S, nv, _np)
     self.precompute_degree()
 
 class UpLaplacian1D(laplacian.UpLaplacian1D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     UpLaplacianBase.__init__(S, nv)
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian1D.__init__(self, S, nv)
+    laplacian.UpLaplacian1D.__init__(self, S, nv, _np)
     self.precompute_degree()
 
-class UpLaplacian1D(laplacian.UpLaplacian1F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+class UpLaplacian1F(laplacian.UpLaplacian1F, UpLaplacianBase):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     UpLaplacianBase.__init__(S, nv)
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian1F.__init__(self, S, nv)
+    laplacian.UpLaplacian1F.__init__(self, S, nv, _np)
     self.precompute_degree()
     
 class UpLaplacian2D(laplacian.UpLaplacian2D, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     UpLaplacianBase.__init__(S, nv)
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian2D.__init__(self, S, nv)
+    laplacian.UpLaplacian2D.__init__(self, S, nv, _np)
     self.precompute_degree()
     
 class UpLaplacian2F(laplacian.UpLaplacian2F, UpLaplacianBase):
-  def __init__(self, S: Iterable['SimplexLike'], nv: int):
+  def __init__(self, S: Iterable['SimplexLike'], nv: int, _np: int = 0):
     UpLaplacianBase.__init__(S, nv)
     S = np.fromiter(collapse(S), dtype=np.uint16)
-    laplacian.UpLaplacian2F.__init__(self, S, nv)
+    laplacian.UpLaplacian2F.__init__(self, S, nv, _np)
     self.precompute_degree()
 
 ## From: https://github.com/cvxpy/cvxpy/blob/master/cvxpy/interface/matrix_utilities.py

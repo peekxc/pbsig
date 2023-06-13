@@ -92,10 +92,10 @@ struct UpLaplacian {
   vector< F > degrees;                    // weighted degrees; pre-computed
   vector< uint32_t > face_indices;        // precomputed face indices  
 
-  UpLaplacian(S_Iterable S, const size_t nv_) 
+  UpLaplacian(S_Iterable S, const size_t nv_, const size_t np_ = 0) // np is needed for p-faces having no codim-1 faces! 
     : nv(nv_), nq(std::distance(S.begin(), S.end())), simplices(S)  {
     auto pr = unique_face_ranks(simplices, false); // NEED colex or lex ordering to ensure sign pattern is constant
-    np = pr.size();
+    np = std::max(pr.size(), np_);
     shape = { np, np };
     y = vector< F >(np); // todo: experiment with local _alloca allocation
     fpl = vector< F >(np, 1.0);
@@ -133,9 +133,28 @@ struct UpLaplacian {
         face_indices.push_back(jj);
         face_indices.push_back(kk);
       }
-    } else {
-      // auto p_ind = array< uint64_t, dim+2 >();
-      // s_it.boundary_ranks([this, &cc, &p_ind](auto face_rank){ p_ind[cc++] = index_map[face_rank]; });
+    } 
+    // else if constexpr(p == 2) {
+    //   face_indices.clear();
+    //   face_indices.reserve(4*nq);
+    //   for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
+    //     const auto [i,j,k,l] = s_it.boundary_ranks();
+    //     const auto ii = index_map[i], jj = index_map[j], kk = index_map[k], ll = index_map[l];
+    //     face_indices.push_back(ii);
+    //     face_indices.push_back(jj);
+    //     face_indices.push_back(kk);
+    //     face_indices.push_back(ll);
+    //   }
+    else {
+      size_t cc = 0; 
+      face_indices.clear();
+      face_indices.reserve((dim+2)*nq);
+      auto p_ind = array< uint64_t, dim+2 >();
+      for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
+        cc = 0; 
+        s_it.boundary_ranks([this, &cc, &p_ind](auto face_rank){ p_ind[cc++] = index_map[face_rank]; });
+        face_indices.insert(face_indices.end(), p_ind.begin(), p_ind.end()); 
+      }
     }
   }
 

@@ -8,23 +8,43 @@ from pbsig.utility import *
 from pbsig.linalg import *
 from splex import simplicial_complex
 from splex import ComplexLike
-
 from itertools import chain
 import networkx as nx
-
 from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh
 
-G = nx.Graph()
-while (len(list(nx.connected_components(G))) != 1):
-  G = nx.random_geometric_graph(100, radius=0.15, dim=2)
-S = simplicial_complex(chain(G.nodes(), G.edges()))
-fv = np.random.uniform(size=card(S,0), low=0, high=0.01)
+def test_operators():
+  G = nx.Graph()
+  while (len(list(nx.connected_components(G))) != 1):
+    G = nx.random_geometric_graph(100, radius=0.15, dim=2)
+  S = simplicial_complex(chain(G.nodes(), G.edges()), form="tree")
+  S.expand(2)
+  fv = np.random.uniform(size=card(S,0), low=0, high=0.01)
 
-## Normalized Laplacians are quite stable
-LM = up_laplacian(S, p=0, form='array', weight=lower_star_weight(fv), normed=True)
-LO = up_laplacian(S, p=0, form='lo', weight=lower_star_weight(fv), normed=True)
-ew0 = eigsh(LO, k=30)[0]
+  ## Normalized Laplacians are quite stable
+  LM = up_laplacian(S, p=0, form='array', weight=lower_star_weight(fv), normed=True)
+  LO = up_laplacian(S, p=0, form='lo', weight=lower_star_weight(fv), normed=True)
+  ew0_ar = eigsh(LM, k=30)[0]
+  ew0_lo = eigsh(LO, k=30)[0]
+  assert np.allclose(ew0_ar - ew0_lo, 0.0)
+
+  LM = up_laplacian(S, p=1, form='array', weight=lower_star_weight(fv), normed=True)
+  LO = up_laplacian(S, p=1, form='lo', weight=lower_star_weight(fv), normed=True)
+  ew0_ar = eigsh(LM, k=30)[0]
+  ew0_lo = eigsh(LO, k=30)[0]
+  assert np.allclose(ew0_ar - ew0_lo, 0.0)
+
+def test_matvec():
+  for i in range(30):
+    G = nx.Graph()
+    while (len(list(nx.connected_components(G))) != 1):
+      G = nx.random_geometric_graph(100, radius=0.15, dim=2)
+    S = simplicial_complex(chain(G.nodes(), G.edges()))
+    LO = up_laplacian(S, p = 0, form='lo')
+    LM = up_laplacian(S, p = 0, form='array').tocsr()
+    for i in range(1000):
+      x = np.random.uniform(low=0, high=1, size=LO.shape[0])
+      assert max(abs((LM @ x) - (LO @ x))) <= 1e-14
 
 
 fe = np.array([lower_star_weight(fv)(e) for e in faces(S,1)])

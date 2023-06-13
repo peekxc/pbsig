@@ -114,11 +114,11 @@ void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
   using array_t_FF = py::array_t< F, py::array::f_style | py::array::forcecast >;
   py::class_< Class >(m, pyclass_name.c_str())
     // .def(py::init< const vector< uint16_t >, size_t, size_t >())
-    .def(py::init([](vector< uint16_t > simplices, const size_t n) {
+    .def(py::init([](vector< uint16_t > simplices, const size_t n, const size_t np) {
       combinatorial::sort_contiguous(simplices, p+2, std::less< uint16_t>());
       auto rng = SimplexRange< p+1, false >(simplices, n);
       combinatorial::keep_table_alive = true; // needed for fast binomial coefficients
-      return std::unique_ptr< Class >(new Class(rng, n));
+      return std::unique_ptr< Class >(new Class(rng, n, np));
     }))
     .def_readwrite("shape", &Class::shape)
     .def_readonly("nv", &Class::nv)

@@ -565,11 +565,14 @@ class MuFamily:
     
     ## Construct a single operator or matrix for iteration
     if self.form == "array":
-      D = boundary_matrix(self.S, p=self.p+1) if self.form == "array" else None
+      D = boundary_matrix(self.S, p=self.p+1).astype(np.float64) if self.form == "array" else None
+      solver = eigvalsh_solver(D @ D.T)
     elif self.form == "lo":
       L = up_laplacian(self.S, p=self.p, form="lo")
+      solver = eigvalsh_solver(L) 
     else: 
       raise ValueError("Unknown type") 
+    
 
     ## Traverse the family 
     for i, f in family_it:
@@ -587,7 +590,6 @@ class MuFamily:
             I_norm = pseudo(np.sqrt(I))
             L = diags(I_norm) @ D @ diags(J) @ D.T @ diags(I_norm)
             # L = D @ diags(J) @ D.T
-          solver = eigvalsh_solver(L, **kwargs) ## TODO: change behavior to not be matrix specific! or to transform based on matrix
           self._terms[cc][i] = solver(L, **kwargs)
           # ew_ext = np.sort(np.append(np.repeat(0, len(I)-len(ew)), ew))
           # self._terms[cc][i] = ew_ext * np.sort(I)
@@ -595,13 +597,13 @@ class MuFamily:
         for cc, (I,J) in enumerate([(self._fj, self._fk), (self._fi, self._fk), (self._fj, self._fl), (self._fi, self._fl)]):
           if normed:
             I_sgn = np.sign(abs(I)) # I 
+            # I_sgn = np.where(np.isclose(I, 0), 0.0, 1.0)
             L.set_weights(I_sgn, J, I_sgn) ## TODO: PERHAPS don't set face weights to None, as that defaults to identity. Use entries in {0,1}
             I_norm = pseudo(np.sqrt(L.diagonal())) # degree computation
             L.set_weights(I_norm, J, I_norm)
           else:
             I_norm = pseudo(np.sqrt(I))
             L.set_weights(I_norm, J, I_norm)
-          solver = eigvalsh_solver(L, **kwargs)
           self._terms[cc][i] = solver(L, **kwargs)
       else: 
         raise ValueError("Unknown type")  
@@ -854,7 +856,7 @@ class Sieve:
         for jj,ew in enumerate(ew_split):
           values[ii,jj] = f(ew)
     else:
-      raise NotImplementedError("Haven't implemented yet")
+      raise NotImplementedError("Haven't implemented yet element-wise function yet")
     # or np.allclose(f(np.zeros(10)), np.zeros(10)), 
 
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
@@ -882,6 +884,22 @@ class Sieve:
     else:
       raise NotImplementedError("Array form of projection not implemented")
 
+  def operator_at(self, family_index: int, i: float, j: float, w: float = 0.0, **kwargs):
+    assert family_index < len(self.family) and family_index >= 0, "Invalid family index (out of bounds)"
+    f = self.family[family_index]
+    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+    fp, fq = si(f(self.p_faces)), sj(f(self.q_faces))
+    if self.form == 'lo':
+      I = np.where(np.isclose(fp,0),0.0,1.0)
+      self.laplacian.set_weights(I,fq,I)
+      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
+      if any(np.isnan(d)):
+        nan_ind = np.flatnonzero(np.isnan(d))
+        raise ValueError(f"Failed to project ({i:.5f},{j:.5f}); nan detected in pseudo-inverse of {self.laplacian.degrees[nan_ind[0]]}.")
+      self.laplacian.set_weights(d,fq,d)
+      return self.laplacian
+    else:
+      raise NotImplementedError("Array form of projection not implemented")
   
   def partition_rect():
     """ Increases the discrimatory power by adding two interior points to the pattern"""

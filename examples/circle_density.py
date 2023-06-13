@@ -80,12 +80,15 @@ show(row(p, q, r, s))
 
 # %% Parameterized the weight function
 import functools
+from splex.geometry import lower_star_weight
 def codensity(alpha: float):
   """Codensity of a point set _X_ with some bandwidth _alpha_."""
   x_density = gaussian_kde(X.T, bw_method=alpha).evaluate(X.T)
   x_density /= max(x_density)
   x_codensity = max(x_density) - x_density
-  return functools.partial(lambda s, c: max(c[s]), c=x_codensity)
+  return lower_star_weight(x_codensity)
+  # return functools.partial(lambda s, c: max(c[s]), c=x_codensity)
+
 
 
 # %% Change density parameter
@@ -154,23 +157,49 @@ show(p)
 from pbsig.betti import MuFamily
 R = (0.2, 0.4, 0.6, 0.8)
 mu_f = MuFamily(S, codensity_family, p = 1, form='array')
-mu_f.precompute(R, w=1.30, normed=True)
 
-# %% Compare
+# %% 
+mu_f.precompute(R, w=0.0, normed=True, pp=1.0)
+# mu_f()
+
+# [len(mu_f._terms[0][i]) for i in range(4)]
+ 
+# %% Sieve 
+from pbsig.betti import Sieve
+from pbsig.linalg import spectral_rank
+sieve = Sieve(S, codensity_family, p = 1, form='lo')
+sieve.pattern = np.array([R])
+sieve.sift(w=0.0, pp=1.0)
+
+sieve.spectra[0]
+
+np.array(sieve.spectra[2]['eigenvalues'][:25]) - mu_f._terms[0][0]
+
+L = sieve.operator_at(family_index=len(codensity_family)-1, i=0.2, j=0.4)
+sieve.solver(L, pp=1.0)
+
+mu_f._terms[0][99]
+
+sieve_summary = np.ravel(sieve.summarize(f=spectral_rank))
+
+p = figure(width=250, height=250)
+p.line(alpha_family, mu_f(), color='purple')
+p.line(alpha_family, sieve_summary, color='orange')
+show(p)
+
+# %% Check the multiplicity queries match the correct rank 
 p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=300, height=300)
 p.scatter(family_dgms[:,1], family_dgms[:,2], color=bin_color(family_dgms[:,0]))
 r_width, r_height = R[1]-R[0], R[3]-R[2]
 p.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, alpha=1.0, fill_alpha=0.0)
 q = figure(width=300, height=300, title="Multiplicity")
 q.step(alpha_family, mu_f(smoothing=None))
-q.step(alpha_family, mu_f(smoothing=True), color='red')
+# q.step(alpha_family, mu_f(smoothing=True), color='red')
 p.toolbar_location = None 
 q.toolbar_location = None
 q.xaxis.axis_label = r"$$\alpha$$"
 show(row(p,q))
 
-
-top10  = lambda x: np.append(np.sort(x)[-10:], [0]*(len(x)-10))
 
 # %% Look at the other relaxations
 from scipy.signal import savgol_filter
