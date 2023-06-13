@@ -171,15 +171,7 @@ sieve = Sieve(S, codensity_family, p = 1, form='lo')
 sieve.pattern = np.array([R])
 sieve.sift(w=0.0, pp=1.0)
 
-sieve.spectra[0]
-
-np.array(sieve.spectra[2]['eigenvalues'][:25]) - mu_f._terms[0][0]
-
-L = sieve.operator_at(family_index=len(codensity_family)-1, i=0.2, j=0.4)
-sieve.solver(L, pp=1.0)
-
-mu_f._terms[0][99]
-
+sieve_summary = np.ravel(sieve.summarize(f=np.sum))
 sieve_summary = np.ravel(sieve.summarize(f=spectral_rank))
 
 p = figure(width=250, height=250)
