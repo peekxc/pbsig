@@ -911,7 +911,12 @@ class Sieve:
     """ Increases the discrimatory power by adding two interior points to the pattern"""
     pass
 
-  def gradient_fd(self, f: Callable, phi: Callable, alpha0: float, i: float, j: float, w: float = 0.0, da: float = 1e-5, n_coeff: int = 2, obj: bool = False, **kwargs) -> np.ndarray:
+  def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:
+    import numdifftools as nd
+    np.array([self.gradient_fd(f=f, phi=phi, alpha0=a0, n_coeff=4, obj=True) for a0 in alpha])
+    # nd.Derivative(exp, full_output=True)
+
+  def gradient_fd(self, f: Callable, phi: Callable, alpha0: float, da: float = 1e-5, n_coeff: int = 2, obj: bool = False, i: float = None, j: float = None, w: float = 0.0, **kwargs) -> np.ndarray:
     """Computes a uniform finite-difference approximation of the gradient of _f_ at the point _alpha0_ w.r.t fixed parameters (i,j,w).
     
     Parameters:
@@ -944,24 +949,34 @@ class Sieve:
     else: 
       raise ValueError(f"Invalid number of coefficients '{n_coeff}' supplied ")
     
-    def _f_grad(i: float, j: float):
-      grad = np.sum([coeff*np.sum(phi(self.project(i=i, j=j, w=w, f=f(alpha0 + s*da), **kwargs))) for s, coeff in zip(increments, coeffs)])
+    ## Objective + gradient
+    def _f_grad(_i: float, _j: float):
+      grad = np.sum([coeff*np.sum(phi(self.project(i=_i, j=_j, w=w, f=f(alpha0 + s*da), **kwargs))) for s, coeff in zip(increments, coeffs)])
       if obj: 
-        f_val = np.sum(phi(self.project(i=i, j=j, w=w, f=f(alpha0), **kwargs)))
+        f_val = np.sum(phi(self.project(i=_i, j=_j, w=w, f=f(alpha0), **kwargs)))
         return f_val, grad
       else: 
         return grad
 
-
+    ## Combine the gradients per rectlinear pattern, if warranted
     if isinstance(i, Number) and isinstance(j, Number):
-      
+      return _f_grad(i,j)
     elif i is None and j is None:
       corner_it = zip(self.pattern['i'], self.pattern['j'])
-      for i,j in corner_it: 
+      G = np.array([_f_grad(i,j) for i,j in corner_it])
+      n_grads = len(np.unique(self._pattern['index']))
+      if obj: 
+        f_obj, grads = np.zeros(n_grads), np.zeros(n_grads)
+        np.add.at(f_obj, self._pattern['index'], self._pattern['sign']*G[:,0])
+        np.add.at(grads, self._pattern['index'], self._pattern['sign']*G[:,1])
+        return f_obj, grads 
+      else: 
+        grads = np.zeros(n_grads)
+        np.add.at(grads, self._pattern['index'], self._pattern['sign']*np.ravel(G))
+        return grads
+    else: 
+      raise ValueError(f"Invalid parameters {i}, {j}")
 
-
-
-# E: Union[ArrayLike, Iterable],
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
   """
   Returns the multiplicity values of a set of rectangles in the upper half-plane evaluated on the 0-th dim. persistence 

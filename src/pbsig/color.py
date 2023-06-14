@@ -93,6 +93,7 @@ def hist_equalize(x, number_bins=100000):
 	return(np.interp(x.flatten(), bins[:-1], cdf))
 
 ## What should this do? 
+## Something like this for equalization: https://scikit-image.org/docs/stable/auto_examples/color_exposure/plot_equalize.html#sphx-glr-auto-examples-color-exposure-plot-equalize-py
 def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] = None, max_x: Optional[float] = None, **kwargs):
 	"""
 	Scales 
@@ -102,6 +103,8 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 	
 	## Convert to numpy array 
 	x = np.asarray(list(x))
+	if min_x is None and max_x is None and len(np.unique(x)) == 1:
+		return 
 
 	## Detect if scaled output interval is desired; if not use existing range
 	out_min = float(np.min(x)) if min_x is None else float(min_x)
@@ -145,7 +148,7 @@ def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb
 		# color_pal = cm.get_cmap(color_pal).colors
 	# else: 
 	# 	raise ValueError("Unknown color map")
-	x = scale_interval(x, **kwargs)
+	# x = scale_interval(x, **kwargs)
 	lb = float(np.min(x)) if lb is None else float(lb)
 	ub = float(np.max(x)) if ub is None else float(ub)
 	ind = np.digitize(np.clip(x, a_min=lb, a_max=ub), bins=np.linspace(lb, ub, len(color_pal)))

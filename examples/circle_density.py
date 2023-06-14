@@ -277,13 +277,35 @@ p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=2.0))[0], color='cy
 show(p)
 
 ## Plot the sign's of the gradient calculations
+from pbsig.color import bin_color
+color_pal = bokeh.palettes.interp_palette(['red', 'purple', 'blue'], 100)
+
+p = figure(width=350, height=150)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='purple')
+
+grad_rank = np.array([sieve.gradient_fd(f=codensity, phi=spectral_rank, alpha0=a, w=0.15, n_coeff=2, obj=False) for a in alpha_family])
+pt_col = hex_to_rgb(bin_color(np.ravel(grad_rank), color_pal, lb=-1, ub=1))
+p.scatter(alpha_family, sieve.summarize(spectral_rank)[0], color=pt_col, size=1.5)
+show(p)
+
+phi = sgn_approx(eps=0.3, p=2.0)
+grad_phi = np.array([sieve.gradient_fd(f=codensity, phi=phi, alpha0=a, w=0.15, n_coeff=4, obj=False, da=1e-2) for a in alpha_family])
+pt_col = hex_to_rgb(bin_color(np.ravel(grad_phi), color_pal))
+print((np.min(grad_phi), np.max(grad_phi)))
+
+
+p = figure(width=450, height=250)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='blue')
+p.line(alpha_family, sieve.summarize(phi)[0], color='orange')
+p.scatter(alpha_family, sieve.summarize(phi)[0], color=pt_col, size=2.5)
+show(p)
+
+sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.3, p=2.0), alpha0=0.59, w=0.15, n_coeff=2, obj=False)
+sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.001, p=2.0), alpha0=0.41, w=0.15, n_coeff=2, obj=True)
 
 
 from scipy.optimize import minimize
 minimize()
-
-sieve.gradient_fd(f=codensity, phi=np.sum, alpha0=0.50, i=0.20, j=0.40, w=0.15, n_coeff=8, obj=True)
-
 
 
 
