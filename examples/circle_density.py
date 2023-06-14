@@ -293,7 +293,7 @@ grad_phi = np.array([sieve.gradient_fd(f=codensity, phi=phi, alpha0=a, w=0.15, n
 pt_col = hex_to_rgb(bin_color(np.ravel(grad_phi), color_pal))
 print((np.min(grad_phi), np.max(grad_phi)))
 
-
+from bokeh.models import Span
 p = figure(width=450, height=250)
 p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='blue')
 p.line(alpha_family, sieve.summarize(phi)[0], color='orange')
@@ -305,10 +305,13 @@ sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.001, p=2.0), alpha0=0.41, w=
 
 
 from scipy.optimize import minimize
-minimize()
+phi = sgn_approx(eps=0.3, p=2.0)
+inv_obj = lambda t: (-t[0], t[1])
+jac = lambda a: inv_obj(sieve.gradient_fd(f=codensity, phi=phi, alpha0=float(a), w=0.15, n_coeff=2, obj=True))
+res = minimize(fun=jac, jac=True, x0=0.52, bounds=[(0.0001, 2.0)], method="trust-constr", tol=1e-9)
 
-
-
+p.add_layout(Span(location=float(res.x), dimension='height', line_color='red', line_width=2))
+show(p)
 
 
 
