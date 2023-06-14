@@ -860,8 +860,8 @@ These functions interpolate the discontinuous step portion of $S$ along a fixed 
 %Our motivation to use them here is based on the observations shown in Figure~\ref{fig:smoothstep}: by substituting $\mathcal{S}_n^{\omega}$ for the step functions 	in~\eqref{eq:param_boundary_matrix} and adding a small translation, we may replace the step functions in the parameterized boundary matrix with entries varies continuously in $\mathcal{A}$ and retain the correct sign. 
 Since smoothstep functions retain the sign of their input, composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ yields a continuously-varying $\epsilon$-approximation of the rank function, which we call a \emph{spectral rank function}. 
 \begin{definition}[Spectral Rank]\label{def:smooth_mu}
-Given the same inputs as Proposition~\ref{prop:mu_betti_1}
-Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized \emph{spectral persistent betti number} and \emph{spectral multiplicity} of $R$ as:
+Given the same inputs as Proposition~\ref{prop:mu_betti_1},
+let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized \emph{spectral persistent Betti number} and \emph{spectral multiplicity} of $R$ as:
 	\begin{equation}\label{eq:bett_cont}
 \hat{\beta}_p^{i,j}(\alpha) = 
 \lVert \Phi_\epsilon^\alpha(\,\hat{I}_{p}^i\,)\rVert_\ast -
@@ -1108,7 +1108,7 @@ $$ \lVert \Phi( \partial_p 	) \rVert_\ast = \sum\limits_{i = 1}^n \phi_{\epsilon
 $$
 under some choice of regularization $(\Phi, \phi)$ and $\epsilon > 0$. Our focus is on the \emph{relative} perturbation model, which seeks to describe perturbations of the form: 
 $$ \tilde{A} = Q^T A Q $$
-where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, given by Li~\cite{}. 
+where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, as summarized by Li~\cite{}. 
  $$ \lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $$
  Thus, if 
  
@@ -1293,7 +1293,7 @@ L = D - A = \partial_1 \circ \partial_1^T \, , \quad\quad
 	\end{cases}
 \end{equation}
 %It is well known that $L$ is symmetric, positive semi-definite, and has a combinatorial structure that captures the connectivity structure of $G$~\cite{newman2001laplacian}. 
-Furthermore, by using the path-connected relation $i \sim j$ as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed as:
+Furthermore, by using the adjacency relation $i \sim j$ as in~\cite{chung1997spectral}, the linear and quadratic forms of $L$ may be succinctly expressed as:
 \begin{flalign}\label{eq:lap_quad_from}
 	(\, \forall \, x \in \mathbb{R}^n \,)  & & \quad\quad\quad 
 	(Lx)_i = \mathrm{deg}(v_i) \cdot x_i - \sum\limits_{i \sim j} x_j \, , \quad \quad &

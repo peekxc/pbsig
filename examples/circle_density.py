@@ -259,6 +259,37 @@ max_supp = max(alpha_family[mu_sa > 0.0001])
 
 alpha_family[np.argmax(mu_sa)]
 
+
+
+# %% Gradient calculation
+sieve = Sieve(S, codensity_family, p = 1, form='lo')
+sieve.pattern = np.array([R])
+sieve.sift(w=0.15, pp=1.0) #pp=1.0
+
+## Plot the objective function first to see what it should look like 
+p = figure(width=350, height=150)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='purple')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=2.0))[0], color='orange')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.03, p=2.0))[0], color='red')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.01, p=2.0))[0], color='green')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.005, p=2.0))[0], color='blue')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=2.0))[0], color='cyan')
+show(p)
+
+## Plot the sign's of the gradient calculations
+
+
+from scipy.optimize import minimize
+minimize()
+
+sieve.gradient_fd(f=codensity, phi=np.sum, alpha0=0.50, i=0.20, j=0.40, w=0.15, n_coeff=8, obj=True)
+
+
+
+
+
+
+
 ## Just rn optimization
 from scipy.optimize import minimize
 

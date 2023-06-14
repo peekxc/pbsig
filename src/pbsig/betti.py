@@ -848,16 +848,22 @@ class Sieve:
     f = np.sum if f is None else f
     assert isinstance(f, Callable), "reduce function must be Callable"
     r = f(np.zeros(10))
-    if isinstance(r, Number):
+    if isinstance(r, Container) and len(r) == 10:
+      assert np.allclose(r, 0.0), "elementwise function must map [0,...,0] -> [0,...,0]"
+      values = np.zeros(shape=(n_pts, n_family))
+      for ii,d in enumerate(self.spectra.values()):
+        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+        for jj,ew in enumerate(ew_split):
+          values[ii,jj] = np.sum(f(ew))
+    elif isinstance(r, Number):
       assert np.isclose(r, 0.0), "reduction function must map [0,...,0] -> 0"
       values = np.zeros(shape=(n_pts, n_family))
       for ii,d in enumerate(self.spectra.values()):
         ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
         for jj,ew in enumerate(ew_split):
           values[ii,jj] = f(ew)
-    else:
-      raise NotImplementedError("Haven't implemented yet element-wise function yet")
-    # or np.allclose(f(np.zeros(10)), np.zeros(10)), 
+    else: 
+      raise ValueError("Unknown type of output of function _f_.")
 
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
     n_summaries = len(np.unique(self._pattern['index']))
@@ -905,10 +911,54 @@ class Sieve:
     """ Increases the discrimatory power by adding two interior points to the pattern"""
     pass
 
-  def gradient(index: int):
-    """Computes the derivative of the summar"""
-    from numdifftools import Derivative, Jacobian
-    assert self.family 
+  def gradient_fd(self, f: Callable, phi: Callable, alpha0: float, i: float, j: float, w: float = 0.0, da: float = 1e-5, n_coeff: int = 2, obj: bool = False, **kwargs) -> np.ndarray:
+    """Computes a uniform finite-difference approximation of the gradient of _f_ at the point _alpha0_ w.r.t fixed parameters (i,j,w).
+    
+    Parameters:
+      f: alpha-parameterized Callable that returns a filter-function anywhere in the neighborhood of _alpha0_
+      phi: vector- or scalar-valued regularizer to apply to the spectra of the Laplacian operators. 
+      alpha0: coordinate to compute the gradient at
+      i,j: fixed upper half-plane points to restrict the Laplacians too. If not supplied (or None), all of gradients of _pattern_ are computed and coombined.
+      w: smoothing/continuity parameter, see project(...) for more details. 
+      da: uniform-spacing value for the finite-difference calculation(s). Defaults to 1e-5. 
+      n_coeff: number of coefficients to use in the finite-difference calculation(s). Must be positive even number (defaults to 2). Larger values yield more precise differences. 
+      obj: boolean whether to return the gradient alone (default) or both the objective and the gradient. 
+
+    Returns: 
+      The gradient _g_, if obj == False, else a pair (f,g) where _f_ is the objective and _g_ is the gradient. 
+    """
+    # from numdifftools import Derivative, Jacobian
+    assert isinstance(f, Callable), "_f_ must be a Callable."
+    assert isinstance(n_coeff, Integral) and n_coeff % 2 == 0, f"Number of coefficients must be even."
+    assert isinstance(f(alpha0), Callable), "_f_ must yield a filter function (callable)"
+    increments = np.setdiff1d(np.arange(-(n_coeff >> 1), (n_coeff >> 1)+1), [0])
+    coeffs = []  
+    if n_coeff == 2:
+      coeffs.extend([-1/2, 1/2])
+    elif n_coeff == 4: 
+      coeffs.extend([1/12, -2/3, 2/3, -1/12])
+    elif n_coeff == 6: 
+      coeffs.extend([-1/60, 3/20, -3./4., 3/4, -3/20, 1/60])
+    elif n_coeff == 8: 
+      coeffs.extend([1/280, -4/105, 1/5, -4/5, 4/5, -1/5, 4/105, -1/280])
+    else: 
+      raise ValueError(f"Invalid number of coefficients '{n_coeff}' supplied ")
+    
+    def _f_grad(i: float, j: float):
+      grad = np.sum([coeff*np.sum(phi(self.project(i=i, j=j, w=w, f=f(alpha0 + s*da), **kwargs))) for s, coeff in zip(increments, coeffs)])
+      if obj: 
+        f_val = np.sum(phi(self.project(i=i, j=j, w=w, f=f(alpha0), **kwargs)))
+        return f_val, grad
+      else: 
+        return grad
+
+
+    if isinstance(i, Number) and isinstance(j, Number):
+      
+    elif i is None and j is None:
+      corner_it = zip(self.pattern['i'], self.pattern['j'])
+      for i,j in corner_it: 
+
 
 
 # E: Union[ArrayLike, Iterable],
