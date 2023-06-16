@@ -311,6 +311,16 @@ def isotonic_regress(y: ArrayLike, w: Optional[ArrayLike] = None):
   z = np.flip(np.minimum.accumulate(np.flip(p)))  # right_to_left_cumulative_min
   return z
 
+def profile_f(f: Callable, *args):
+  import line_profiler
+  profile = line_profiler.LineProfiler()
+  profile.add_function(f)
+  profile.enable_by_count()
+  f(*args)
+  profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+
+
 
 def spectral_bound(V, E, type: str = ["graph", "laplacian"]):
   """

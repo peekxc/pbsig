@@ -916,6 +916,24 @@ class Sieve:
     np.array([self.gradient_fd(f=f, phi=phi, alpha0=a0, n_coeff=4, obj=True) for a0 in alpha])
     # nd.Derivative(exp, full_output=True)
 
+  def __call__(self, filter_f: Callable, phi: Callable, i: float = None, j: float = None, w: float = 0.0, **kwargs):
+    """Computes the spectral rank invariant for a specified filter function _filter_. 
+    
+    Optionally regularized by _phi_. If a corner point _(i,j)_ are supplied, then the spectral function is evaluated 
+    at that point; otherwise all of the spectral invariants are computed for the stored _pattern_ and then they are 
+    combined according to the inclusion/exclusion aggregation rule. 
+    """
+    if isinstance(i, Number) and isinstance(j, Number):
+      return np.sum(phi(self.project(i=i, j=j, w=w, f=filter_f, **kwargs)))
+    elif i is None and j is None:
+      corner_it = zip(self.pattern['i'], self.pattern['j'])
+      F = np.array([np.sum(phi(self.project(i=i, j=j, w=w, f=filter_f, **kwargs))) for i,j in corner_it])
+      f_obj = np.zeros(len(np.unique(self._pattern['index'])))
+      np.add.at(f_obj, self._pattern['index'], self._pattern['sign']*F)
+      return f_obj
+    else: 
+      raise ValueError(f"Invalid parameters {i}, {j}")
+
   def gradient_fd(self, f: Callable, phi: Callable, alpha0: float, da: float = 1e-5, n_coeff: int = 2, obj: bool = False, i: float = None, j: float = None, w: float = 0.0, **kwargs) -> np.ndarray:
     """Computes a uniform finite-difference approximation of the gradient of _f_ at the point _alpha0_ w.r.t fixed parameters (i,j,w).
     

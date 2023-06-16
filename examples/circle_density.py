@@ -262,17 +262,23 @@ alpha_family[np.argmax(mu_sa)]
 
 
 # %% Gradient calculation
+alpha_family = np.linspace(0.15, 0.70, 1000)
+codensity_family = [codensity(a) for a in alpha_family]
 sieve = Sieve(S, codensity_family, p = 1, form='lo')
 sieve.pattern = np.array([R])
-sieve.sift(w=0.15, pp=1.0) #pp=1.0
+sieve.sift(w=1.00, pp=1.0) #pp=1.0
 
 ## Plot the objective function first to see what it should look like 
-p = figure(width=350, height=150)
-p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='purple')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=2.0))[0], color='orange')
+p = figure(width=450, height=250)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='black')
+p.step(alpha_family, sieve.summarize(np.sum)[0], color='gray')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=2.0))[0], color='yellow')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.1, p=2.0))[0], color='orange')
 p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.03, p=2.0))[0], color='red')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.02, p=2.0))[0], color='pink')
 p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.01, p=2.0))[0], color='green')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.005, p=2.0))[0], color='blue')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.0075, p=2.0))[0], color='blue')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.005, p=2.0))[0], color='purple')
 p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=2.0))[0], color='cyan')
 show(p)
 
@@ -297,22 +303,97 @@ from bokeh.models import Span
 p = figure(width=450, height=250)
 p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='blue')
 p.line(alpha_family, sieve.summarize(phi)[0], color='orange')
-p.scatter(alpha_family, sieve.summarize(phi)[0], color=pt_col, size=2.5)
+# p.scatter(alpha_family, sieve.summarize(phi)[0], color=pt_col, size=2.5)
 show(p)
 
-sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.3, p=2.0), alpha0=0.59, w=0.15, n_coeff=2, obj=False)
-sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.001, p=2.0), alpha0=0.41, w=0.15, n_coeff=2, obj=True)
+# sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.3, p=2.0), alpha0=0.59, w=0.15, n_coeff=2, obj=False)
+# sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=0.001, p=2.0), alpha0=0.41, w=0.15, n_coeff=2, obj=True)
 
 
 from scipy.optimize import minimize
 phi = sgn_approx(eps=0.3, p=2.0)
 inv_obj = lambda t: (-t[0], t[1])
-jac = lambda a: inv_obj(sieve.gradient_fd(f=codensity, phi=phi, alpha0=float(a), w=0.15, n_coeff=2, obj=True))
-res = minimize(fun=jac, jac=True, x0=0.52, bounds=[(0.0001, 2.0)], method="trust-constr", tol=1e-9)
+jac = lambda a: inv_obj(sieve.gradient_fd(f=codensity, phi=phi, alpha0=float(a), w=0.35, n_coeff=2, obj=True))
 
-p.add_layout(Span(location=float(res.x), dimension='height', line_color='red', line_width=2))
+states = []
+def trust_cb(xk, state) -> bool:
+  states.append(xk)
+  return False 
+
+phi = sgn_approx(eps=0.3, p=2.0)
+obj_f = lambda a: -sieve(codensity(float(a)), phi=phi)
+res = minimize(fun=obj_f, jac=False, x0=0.53, bounds=[(0.0001, 0.70)], method="trust-constr", tol=1e-9, callback=trust_cb, options=dict(xtol=1e-8, gtol=1e-8, initial_tr_radius=0.10))
+
+# %% Try the iterative thresholding idea
+x0 = 0.53
+states = []
+def trust_cb(xk, state) -> bool:
+  states.append(xk)
+  return False 
+opt_params = dict(xtol=1e-10, gtol=1e-8, initial_tr_radius=0.35) # finite_diff_rel_step="3-point"
+EPS_SHRINK = np.flip(np.linspace(0.001, 0.15, 15))
+for eps in EPS_SHRINK:
+  phi = sgn_approx(eps=eps, p=2.0)
+  # obj_f = lambda a: -sieve(codensity(float(a)), phi=phi)
+  obj_f = lambda a: sieve.gradient_fd(f=codensity, phi=phi, alpha0=float(a), da=0.005, w=1.0, n_coeff=4, obj=True)
+  res = minimize(fun=obj_f, x0=x0, jac=True, bounds=[(0.0001, 0.70)], method="trust-constr", tol=1e-9, callback=trust_cb, options=opt_params)
+  print(f"x0: {float(res.x):0.3f}, eps: {eps:3f}, reason: {res.message}")
+  x0 = res.x
+
+x0 = 0.497
+
+# %% 
+from functools import partial
+p = figure(width=450, height=250)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='black')
+# p.line(alpha_family, sieve.summarize(lambda x: huber(x, delta=3))[0], color='blue')
+p.line(alpha_family, sieve.summarize(np.square)[0], color='purple')
+p.line(alpha_family, sieve.summarize(lambda x: np.sqrt(np.abs(np.where(np.isclose(x, 0.0), 0.0, x))))[0], color='red')
+
+eps_col = (bin_color(EPS_SHRINK)*255).astype(np.uint8)
+for eps, ec in zip(EPS_SHRINK, eps_col):
+  p.line(alpha_family, sieve.summarize(sgn_approx(eps=eps, p=2.0))[0], line_color=tuple(ec[:3]))
+
+# p.line(alpha_family, sieve.summarize(sgn_approx(eps=EPS_SHRINK[22], p=2.0))[0], line_color='red')
+p.add_layout(Span(location=float(x0), dimension='height', line_color='red', line_width=2))
+# p.scatter(np.ravel(np.array(states)), np.repeat(1, len(states)), color='red')
 show(p)
 
+# Why is gradient 0 at eps 22 ? 
+sieve.gradient_fd(f=codensity, phi=sgn_approx(eps=EPS_SHRINK[22], p=2.0), alpha0=float(x0), da=0.005, w=1.0, n_coeff=8, obj=True)
+
+
+# %%  Show the objectives 
+p = figure(width=450, height=250)
+p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='black')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=2.0))[0], color='yellow')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.1, p=2.0))[0], color='orange')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.03, p=2.0))[0], color='red')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.01, p=2.0))[0], color='green')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.005, p=2.0))[0], color='blue')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.004, p=2.0))[0], color='purple')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=2.0))[0], color='cyan')
+p.add_layout(Span(location=float(x0), dimension='height', line_color='red', line_width=2))
+# p.scatter(np.ravel(np.array(states)), np.repeat(1, len(states)), color='red')
+show(p)
+
+
+
+
+## Profile the gradient calculation
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(codensity)
+profile.add_function(sieve.sift)
+profile.add_function(sieve.project)
+profile.add_function(sieve.gradient_fd)
+profile.add_function(sieve.solver.__call__)
+profile.add_function(sieve.solver.solver)
+profile.add_function(sieve.laplacian.matvec)
+profile.add_function(sieve.laplacian.matmat)
+profile.enable_by_count()
+sieve.gradient_fd(f=codensity, phi=phi, alpha0=float(a), w=0.15, n_coeff=2, obj=True)
+profile.print_stats(output_unit=1e-3, stripzeros=True)
 
 
 ## Just rn optimization
