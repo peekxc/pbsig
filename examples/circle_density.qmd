@@ -1,24 +1,25 @@
-# ---
-# title: Circle optimization of varying density
-# format: html
-# editor:
-#   render-on-save: true
-# jupyter:
-#   jupytext:
-#     cell_metadata_filter: title,-all
-#     custom_cell_magics: kql
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.11.2
-#   kernelspec:
-#     display_name: pbsig
-#     language: python
-#     name: python3
-# ---
+---
+title: Circle optimization of varying density
+format: html
+editor:
+  render-on-save: true
+jupyter:
+  jupytext:
+    cell_metadata_filter: title,-all
+    custom_cell_magics: kql
+    text_representation:
+      extension: .py
+      format_name: percent
+      format_version: '1.3'
+      jupytext_version: 1.11.2
+  kernelspec:
+    display_name: pbsig
+    language: python
+    name: python3
+---
 
-# %% Dependencies
+```{python}
+#| label: Imports
 import numpy as np
 from splex import *
 from pbsig import * 
@@ -30,24 +31,21 @@ from bokeh.layouts import row
 from scipy.spatial.distance import pdist, squareform
 from scipy.stats import gaussian_kde
 output_notebook(verbose=False)
+```
 
+## Setting up the data 
 
-# %% Generate a noisy circle
+```{python}
+#| label: Generate a noisy circle
+from splex.geometry import delaunay_complex
 from pbsig.datasets import noisy_circle
 np.random.seed(1234)
-X = noisy_circle(40, n_noise=10, perturb=0.10) # 80, n_noise=30, perturb=0.15
-# X = noisy_circle(70, n_noise=30, perturb=0.15)
+X = noisy_circle(80, n_noise=30, perturb=0.15) # 80, n_noise=30, perturb=0.15
 S = delaunay_complex(X)
-# r = enclosing_radius(X)
-# K = rips_filtration(X, r, p=2)
+```
 
-p = figure(width=300, height=300, match_aspect=True)
-p.scatter(*X.T, color="red", size=10)
-q = figure_complex(S, pos=X)
-show(row(p, q))
-
-# %% Color points by density + diameter
-from splex.geometry import delaunay_complex
+```{python}
+#| label: Color points by density + diameter
 diam_f = flag_weight(pdist(X))
 kde = gaussian_kde(X.T)
 x_density = kde.evaluate(X.T)
@@ -60,25 +58,25 @@ p.scatter(*X.T, color=bin_color(x_density), size=8)
 q = figure(width=200, height=200, match_aspect=True,  title="Scatter by codensity")
 q.scatter(*X.T, color=bin_color(x_codensity), size=8)
 r = figure_complex(S, pos=X, color=x_codensity, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=200, height=200)
-s = figure_complex(S, pos=X, color=s_diam, title="Complex by diameter", simplex_kwargs={0: {'size': 8}}, width=200, height=200) # bin_kwargs={'scaling': 'equalize'})
+s = figure_complex(S, pos=X, color=s_diam, title="Complex by diameter", simplex_kwargs={0: {'size': 8}}, width=200, height=200)
 show(row(p, q, r, s))
+```
 
+## Choosing a parameterized family
 
-# %% [markdown]
-# ## Generate a parameterized family of weight functions
-#
-# Given a fixed simplicial complex $K$ with size $N = \lvert K \rvert$, the following function generates a parameterized family $\{f_\alpha(K)\}_{\alpha \in \mathbb{R}}$
-#
-# $$ 
-# \begin{align*}
-# f \; : \; &\alpha &\to & \; \mathbb{R}_{+}^{N}  \\
-#     & \mathbb{R} &\mapsto & \; f_\alpha(K)
-# \end{align*}
-# $$
-#
-# where $\alpha \in \mathbb{R}$ parameterizes the bandwidth of a kernel-density estimate on a point $X \subset \mathbb{R}^n$ from which $K$ was constructed.  
+Given a fixed simplicial complex $K$ with size $N = \lvert K \rvert$, the following function generates a parameterized family $\{f_\alpha(K)\}_{\alpha \in \mathbb{R}}$
 
-# %% Parameterized the weight function
+$$ 
+\begin{align*}
+f \; : \; &\alpha &\to & \; \mathbb{R}_{+}^{N}  \\
+     & \mathbb{R} &\mapsto & \; f_\alpha(K)
+\end{align*}
+$$
+
+where $\alpha \in \mathbb{R}$ parameterizes the bandwidth of a kernel-density estimate on a point $X \subset \mathbb{R}^n$ from which $K$ was constructed.   
+
+```{python}
+#| label: Bandwidth-parameterized codensity filter family
 import functools
 from splex.geometry import lower_star_weight
 def codensity(alpha: float):
@@ -87,157 +85,141 @@ def codensity(alpha: float):
   x_density /= max(x_density)
   x_codensity = max(x_density) - x_density
   return lower_star_weight(x_codensity)
-  # return functools.partial(lambda s, c: max(c[s]), c=x_codensity)
+```
 
-# %% Change density parameter
-figures = []
+```{python}
+#| label: Color dataset by codensity
+codensity_figures = []
 for a in np.linspace(0.05, 0.70, 6): 
   p = figure(width=200, height=200, title=f"Density: {a:.2f}")
   f = codensity(a)
   x_codensity = np.array([f(Simplex(i)) for i in range(X.shape[0])])
   p.scatter(*X.T, color=bin_color(x_codensity, lb=0, ub=0.70), size=8)
-  figures.append(p)
-show(row(figures))
+  codensity_figures.append(p)
+show(column(row(codensity_figures[:3]), row(codensity_figures[3:])))
+```
 
-# %% Show three plots
+```{python}
+#| label: Codensity complexes + persistence diagrams
 from bokeh.models import Range1d
 from pbsig.vis import figure_complex, figure_dgm
 complex_figures, dgm_figures = [], []
-for a in [0.10, 0.414, 0.75]: 
-  p = figure(width=250, height=250, title=f"Density: {a:.2f}")
+
+K = filtration(S)
+for a in np.linspace(0.15, 0.70, 5): 
   f = codensity(a)
-  s_codensity = np.array([f(s) for s in faces(S)])
-  p = figure_complex(S, pos=X, color=s_codensity, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=250, height=250)
-  # ?p.scatter(*X.T, color=bin_color(x_codensity, lb=0, ub=0.70), size=9)
+  K.reindex(f)
+  dgm = ph(K, engine="dionysus")[1]
+
+  p = figure_complex(S, pos=X, color=f(S), title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=150, height=150)
   p.toolbar_location = None
   complex_figures.append(p)
-  K = filtration(S, f)
-  q = figure_dgm(ph(K, engine="dionysus")[1], pt_size=10, width=250, height=250)
+  
+  q = figure_dgm(dgm, pt_size=10, width=150, height=150)
   q.x_range = Range1d(0,0.90)
   q.y_range = Range1d(0,0.90)
   q.toolbar_location = None
-  R = (0.2, 0.4, 0.6, 0.8)
-  r_width, r_height = R[1]-R[0], R[3]-R[2]
-  q.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, color="orange", alpha=1.0, fill_alpha=0.0, line_width=2.0)
   dgm_figures.append(q)
 
-
 show(column(row(complex_figures), row(dgm_figures)))
-# export_png(column(row(complex_figures), row(dgm_figures)), filename="/Users/mpiekenbrock/pbsig/notes/presentation/codensity_pers_ex.png")
+```
 
-# %% single plot 
-f = codensity(0.404)
-s_codensity = np.array([f(s) for s in S])
-p = figure_complex(S, pos=X, color=s_codensity, title="Complex with optimal codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
-p.toolbar_location = None
-show(p)
+## Vineyards
 
-
-# %% [markdown]
-# ## Vineyards
-
-# %% Compute the the vineyards
+```{python}
+#| label: Compute the vineyards
 alpha_family = np.linspace(0.15, 0.70, 100)
 codensity_family = [codensity(a) for a in alpha_family]
-dgms = []
+K, dgms = filtration(S), []
 for f in codensity_family:
-  K = filtration(S, f)
+  K.reindex(f)
   dgms.append(ph(K, engine="dionysus")[1])
 family_dgms = np.vstack([np.array((np.repeat(i, d.shape[0]), d['birth'], d['death'])).T for i,d in enumerate(dgms)])
+```
 
-# %% Plot the vineyards
-p = figure_dgm(x_range = (0, 1), y_range = (0, 1))
-p.scatter(family_dgms[:,1], family_dgms[:,2], color=bin_color(family_dgms[:,0]))
-show(p)
-
-
-# %% Verify multiplicity matches with persistence diagram visually
-from pbsig.betti import MuFamily
-R = (0.2, 0.4, 0.6, 0.8)
-mu_f = MuFamily(S, codensity_family, p = 1, form='lo')
-mu_f.precompute(R, w=0.0, normed=True, pp=1.0)
- 
-# %% Sieve 
+```{python}
+#| label: Compute the sieve 
 from pbsig.betti import Sieve
 from pbsig.linalg import spectral_rank
 sieve = Sieve(S, codensity_family, p = 1, form='lo')
 sieve.pattern = np.array([R])
-sieve.sift(w=0.0, pp=1.0)
+sieve.sift(w=1.0, pp=1.0)
+```
 
-sieve_summary = np.ravel(sieve.summarize(f=np.sum))
-sieve_summary = np.ravel(sieve.summarize(f=spectral_rank))
 
-p = figure(width=250, height=250)
-p.line(alpha_family, mu_f(), color='purple')
-p.line(alpha_family, sieve_summary, color='orange')
-show(p)
-
-# %% Check the multiplicity queries match the correct rank 
-p = figure_dgm(x_range=(0, 1), y_range=(0, 1), width=300, height=300)
+```{python}
+#| label: Plot comparison of vines vs the sieve pattern and multiplicity
+p = sieve.figure_pattern(x_range = (0,1), y_range = (0,1), width=300, height=300)
 p.scatter(family_dgms[:,1], family_dgms[:,2], color=bin_color(family_dgms[:,0]))
-r_width, r_height = R[1]-R[0], R[3]-R[2]
-p.rect(R[0]+r_width/2, R[2]+r_height/2, r_width, r_height, alpha=1.0, fill_alpha=0.0)
-q = figure(width=300, height=300, title="Multiplicity")
-q.step(alpha_family, mu_f(smoothing=None))
-# q.step(alpha_family, mu_f(smoothing=True), color='red')
-p.toolbar_location = None 
-q.toolbar_location = None
-q.xaxis.axis_label = r"$$\alpha$$"
-show(row(p,q))
 
-# %% 
+q = figure(width=450, height=300)
+q.line(alpha_family, np.ravel(sieve.summarize(f=spectral_rank)), color='black')
+show(row(p, q))
+```
+
+
+## Optimizing the filtration
+
+```{python}
+#| label: Plot sign-relaxations in unit ball
 dom = np.linspace(-1,1,1500)
-q = figure(width=375, height=300, title="Sign approx. (φ)")
-# q.line(dom, [1 if x != 0 else 0 for x in dom ], color='black')
+q = figure(width=400, height=300, title="Sign approx. (φ)")
 q.line([-1,0.001], [1,1], color='black', legend_label="sgn+")
 q.line([0.001,1], [1,1], color='black')
 q.scatter([0], [0], color='black', size=5)
+q.scatter([0], [1], fill_color='white', size=5, line_color='black')
 q.line(dom, np.abs(dom)**1.0, color="red", legend_label="l1")
+q.line(dom, huber(np.abs(dom), delta=1), color="purple", legend_label="Huber (1)")
 q.line(dom, sgn_approx(eps=0.3, p=1.0)(np.abs(dom)), color="orange", legend_label="φ (0.30)")
 q.line(dom, sgn_approx(eps=0.10, p=1.0)(np.abs(dom)), color="green", legend_label="φ (0.10)")
 q.line(dom, sgn_approx(eps=0.05, p=1.0)(np.abs(dom)), color="blue", legend_label="φ (0.05)")
 q.line(dom, sgn_approx(eps=0.01, p=1.0)(np.abs(dom)), color="gray", legend_label="φ (0.01)")
-# q.line(dom, sgn_approx(eps=0.001, p=1.0)(np.abs(dom)), color="darkgray", legend_label="φ (0.001)")
+q.line(dom, sgn_approx(eps=0.001, p=1.0)(np.abs(dom)), color="darkgray", legend_label="φ (0.01)")
 q.x_range = Range1d(-1.8,1.0)
 q.y_range = Range1d(-0.05,1.05)
-# show(q)
 q.legend.location = 'bottom_left'
 q.toolbar_location = None 
-show(row(p,q))
+show(q)
+```
 
-
-# %% Gradient calculation
-alpha_family = np.linspace(0.15, 0.70, 1000)
-codensity_family = [codensity(a) for a in alpha_family]
-sieve = Sieve(S, codensity_family, p = 1, form='lo')
-sieve.pattern = np.array([R])
-sieve.sift(w=1.00, pp=1.0) #pp=1.0
-
-# %%  Plot the objective function first to see what it should look like 
+```{python}
+#| label: Sign-relaxations + their interpretations
 p = figure(width=450, height=300)
 p.step(alpha_family, sieve.summarize(lambda x: spectral_rank(x, method=0, shape=sieve.laplacian.shape, prec=1e-12))[0], color='black')
-p.step(alpha_family, sieve.summarize(lambda x: np.sqrt(np.where(np.isclose(x, 0), 0.0, np.abs(x))))[0], color='gray')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=2.0))[0], color='yellow')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.1, p=2.0))[0], color='orange')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.03, p=2.0))[0], color='red')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.02, p=2.0))[0], color='pink')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.01, p=2.0))[0], color='green')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.0075, p=2.0))[0], color='blue')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.005, p=2.0))[0], color='purple')
-p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=2.0))[0], color='cyan')
-show(p)
+p.line(alpha_family, sieve.summarize(lambda x: np.sqrt(np.where(np.isclose(x, 0), 0.0, np.abs(x))))[0], color='red')
+p.line(alpha_family, sieve.summarize(huber)[0], color='purple')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.3, p=1.0))[0], color='orange')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.10, p=1.0))[0], color='green')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.05, p=1.0))[0], color='blue')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.01, p=1.0))[0], color='gray')
+p.line(alpha_family, sieve.summarize(sgn_approx(eps=0.001, p=1.0))[0], color='darkgray')
+show(row(q,p))
+```
 
-# %%  Plot the sign's of the gradient calculations
+```{python}
+#| label: Gradient sign calculations
+phi_blue, phi_gray = sgn_approx(eps=0.05, p=1.0),  sgn_approx(eps=0.01, p=1.0)
+grad_blue = np.array([sieve.gradient_fd(f=codensity, phi=phi_blue, alpha0=a, w=1.0, n_coeff=2, obj=False) for a in alpha_family])
+grad_gray = np.array([sieve.gradient_fd(f=codensity, phi=phi_gray, alpha0=a, w=1.0, n_coeff=2, obj=False) for a in alpha_family])
+```
+
+```{python}
+#| label: Gradient plots
 from pbsig.color import bin_color
 color_pal = bokeh.palettes.interp_palette(['red', 'purple', 'blue'], 100)
 
+col_blue = hex_to_rgb(bin_color(np.ravel(grad_blue), color_pal))
+col_gray = hex_to_rgb(bin_color(np.ravel(grad_gray), color_pal))
+
 p = figure(width=350, height=150)
 p.step(alpha_family, sieve.summarize(spectral_rank)[0], color='purple')
-
-grad_rank = np.array([sieve.gradient_fd(f=codensity, phi=spectral_rank, alpha0=a, w=1.0, n_coeff=2, obj=False) for a in alpha_family])
-pt_col = hex_to_rgb(bin_color(np.ravel(grad_rank), color_pal, lb=-1, ub=1))
-p.scatter(alpha_family, sieve.summarize(spectral_rank)[0], color=pt_col, size=1.5)
+p.scatter(alpha_family, sieve.summarize(blue_phi)[0], color=col_blue, size=1.5)
+p.scatter(alpha_family, sieve.summarize(gray_phi)[0], color=col_gray, size=1.5)
 show(p)
+``` 
+
+## Robust gradient calculation 
+```{python}
 
 phi = sgn_approx(eps=0.3, p=2.0)
 grad_phi = np.array([sieve.gradient_fd(f=codensity, phi=phi, alpha0=a, w=0.15, n_coeff=4, obj=False, da=1e-2) for a in alpha_family])

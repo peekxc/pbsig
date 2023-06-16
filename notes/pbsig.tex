@@ -298,9 +298,9 @@ Moreover, inspired by a relationship established between the persistent Betti nu
 \subsection*{Outline: Relaxing the rank invariant}\label{sec:rank_invariant_summary}
 So as to not leave the reader in suspense, we first outline the proposed relaxation informally. The rest of the paper discusses the theoretical and practical details associated with using and implementing the relaxation. At a high level, we propose a family of vector-valued mappings over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
 \begin{equation}\label{eq:relaxation_mapping}
-	(X_\alpha, \mathcal{R}, \epsilon, \omega) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
+	(X_\alpha, \mathcal{R}, \epsilon, \tau) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
 \end{equation}
-where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \omega) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
+where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \tau) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
 %The intuition is that that are many situations where one has a data set 
 The intuition is that $\mathcal{R}$ is used to filter and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
 % sifts through ... something like vineyards, limits towards multiplicity, A x W
@@ -321,11 +321,11 @@ The steps to produce this mapping are as follows:
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-	\item Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \omega ) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
+	\item Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \tau ) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
 	\begin{equation}\label{eq:mu_alpha}
 		\mu_p(\mathcal{R} \times \mathcal{A}) \triangleq \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
 	\end{equation}
-	We will show in section~\ref{sec:spri_properties}, letting both $\omega \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
+	We will show in section~\ref{sec:spri_properties}, letting both $\tau \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
 	\item Choose a combinatorial Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
@@ -339,7 +339,7 @@ The choice of $\mathcal{L}$ determines how the geometric and topological informa
 	$$
 	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}, \quad \quad v \in \mathrm{span}(\textbf{1})^\perp
 	$$
-	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $(\epsilon, \lambda)$-approximation\footnote{Depending on the amount of memory available,  step (5) may be accelerated along similar $\alpha \in \mathcal{A}$ by storing the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ (see section~\ref{sec:lanczos_it} for details).} of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
+	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $(\epsilon, \tau)$-approximation\footnote{Depending on the amount of memory available,  step (5) may be accelerated along similar $\alpha \in \mathcal{A}$ by storing the largest $k \geq 0$ eigenvectors of $T$ at each corner point $(i,j) \in \partial(\mathcal{R})$ (see section~\ref{sec:lanczos_it} for details).} of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
 \end{enumerate}
 \end{boxedenumerate}
 
@@ -366,11 +366,11 @@ Moreover, the differentiability of our relaxation enables learning applications 
 %The fact that the proposed relaxation satisfies the same inclusion-exclusion formula obeyed by the rank invariant implies that we may recover a $(1-\epsilon)$-approximation of~\eqref{eq:mu_alpha} simply by obtaining $(1-\epsilon)$-approximations of $\mu_p$ at every corner point $(i,j) \in \partial(\mathcal{R})$. We defer discussion of the details of the computation to section~\ref{sec:computational_imp}.
 \noindent 
 \textbf{Contributions:}
-Our primary contribution is an iterative ($\epsilon$, $\lambda$)-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
+Our primary contribution is an iterative ($\epsilon$, $\tau$)-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
 % TODO: explicitly mention multiplicity and betti in hyphened-text
 % exact arithmetic + empirical 
 The approximation is spectral-based and is particularly efficient when executed on parameterized families of inputs. 
-When the parameters $\epsilon$ and $\lambda$ made small enough, both invariants are recovered exactly. 
+When the parameters $\epsilon$ and $\tau$ made small enough, both invariants are recovered exactly. 
 In deriving the approximation, we obtain families of continuous rank invariants which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. 
 Unlike existing dynamic persistence algorithms, our approach is simple in that it requires no complicated data structures or maintenance procedures to implement. 
 %require explicitly filtered complexes $K$ to reside in memory .
@@ -401,12 +401,12 @@ Technical details, illustrative examples, and pseudocode have been relegated to 
 \section{Notation \& Background}\label{sec:background_notation}
 \subfile{background}
 
-\subsection{Background}\label{sec:betti_derivation}
+\subsection{Technical background}\label{sec:betti_derivation}
 %In what follows, we briefly outline the computation of the 
-We now derive lesser known expression of the persistent Betti number, which serves as the key technical observation motivating this work. 
+The following results will be used in proofs and serve as the primary technical motivations for this effort, beginning with a derivation of a lesser known expression of the persistent Betti number.
 %\footnote{To the authors knowledge, only two works have } 
 % For the moment, we omit the subscript $t \in \mathrm{T}$ and focus on a fixed instance of time. 
-Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^N$, where $\Delta_+^N  := \{ \, (i,j) \in [N] \times [N] : i < j \, \}$, is defined as follows: 
+Given a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, its $p$-th persistent Betti number $\beta_p^{i,j}$ at index $(i,j) \in \Delta_+^N$ is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
 	\beta_p^{i,j} &= \mathrm{dim} \left ( Z_p(K_i) / B_p(K_j) \right ) \\
@@ -421,7 +421,7 @@ By definition, the boundary and cycle groups $B_p(K_j)$ and $Z_p(K_i)$ are subsp
 Now, consider computing $\beta_p^{i,j}$ via~\eqref{eq:pbn_simple} from matrix representatives $\partial_p \in \mathbb{F}^{n \times m}$.
 %$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
 Since the nullity of an operator may be reduced to a rank computation, the complexity of first term may be reduced to the complexity of computing the rank of a (sparse) $n \times m$ matrix. 
-In contrast, the second term---the persistence part---typically requires finding a basis in intersection of the two subspaces via either column reductions or projection-based techniques. In general,  direct methods that accomplish this require $\Omega(N^3)$ time and $\Omega(N^2)$ memory~\cite{golub2013matrix}.
+In contrast, the second term---the persistence term---typically requires finding a basis in intersection of the two subspaces via either column reductions or projection-based techniques. In general, direct methods that accomplish this require $\Omega(N^3)$ time and $\Omega(N^2)$ memory~\cite{golub2013matrix}.
 
 % Golub and Van Loan 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
