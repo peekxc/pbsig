@@ -1549,10 +1549,6 @@ Looking for collaborators! In particular:
   };
 </script>
 
-
-
-
-
 ## Permutation Invariance {visibility="hidden"}
 
 Consider the setting where $f_\alpha : \mathbb{R} \to \mathbb{R}^N$ is an $\alpha$-parameterized filter function: 

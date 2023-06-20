@@ -17,35 +17,45 @@
 \gdef\HyperFirstAtBeginDocument#1{#1}
 \providecommand\HyField@AuxAddToFields[1]{}
 \providecommand\HyField@AuxAddToCoFields[2]{}
+\citation{edelsbrunner2000topological}
 \citation{cohen2005stability}
 \citation{cohen2005stability}
-\citation{edelsbrunner2022computational}
+\citation{chazal2009gromov}
+\citation{kim2021spatiotemporal}
+\citation{scoccola2023fibered}
+\citation{perea2016persistent}
+\citation{adams2017persistence}
+\citation{bubenik2015statistical}
+\citation{perea2022approximating}
+\citation{pun2018persistent}
+\citation{piekenbrock2021move}
+\citation{cerri2013betti}
 \citation{chazal2016structure}
+\citation{edelsbrunner2022computational}
+\citation{chen2011output}
 \@writefile{toc}{\contentsline {section}{\numberline {1}Introduction}{1}{section.1}\protected@file@percent }
 \newlabel{sec:intro}{{1}{1}{Introduction}{section.1}{}}
 \newlabel{eq:dgm}{{1.1}{1}{Introduction}{equation.1.1}{}}
+\newlabel{eq:measure}{{1.2}{1}{Introduction}{equation.1.2}{}}
 \citation{kim2021spatiotemporal}
-\newlabel{sec:rank_invariant_summary}{{1}{2}{}{equation.1.1}{}}
-\newlabel{eq:relaxation_mapping}{{1.2}{2}{}{equation.1.2}{}}
-\newlabel{eq:rect_sieve}{{1.4}{2}{}{equation.1.4}{}}
-\newlabel{eq:mu_alpha}{{1.5}{2}{}{equation.1.5}{}}
-\newlabel{eq:laplace_intro}{{1.6}{2}{}{equation.1.6}{}}
-\citation{chen2011output}
+\newlabel{eq:relaxation_mapping}{{1.3}{2}{Introduction}{equation.1.3}{}}
+\newlabel{eq:mu_alpha}{{1.5}{2}{Introduction}{equation.1.5}{}}
 \citation{bauer2021ripser}
+\newlabel{fig:overview}{{1}{3}{Introduction}{Item.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right: Vineyards analogy of diagrams at `snapshots' over time; vineyard curves flattened with a sieve $\mathcal  {R} \subset \Delta _+$; (right) the integer-valued multiplicity function $\mu _p^{\mathcal  {R}}(\alpha )$ as a function of time $\alpha \in \mathbb  {R}$ (top) and a real-valued spectral relaxation (bottom) }}{3}{figure.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Notation \& Background}{3}{section.2}\protected@file@percent }
 \newlabel{sec:background_notation}{{2}{3}{Notation \& Background}{section.2}{}}
-\newlabel{eq:oriented_simplex}{{2.2}{3}{Notation \& Background}{equation.2.2}{}}
-\newlabel{eq:alt_sum}{{2.3}{3}{Notation \& Background}{equation.2.3}{}}
+\newlabel{eq:alt_sum}{{2.2}{3}{Notation \& Background}{equation.2.2}{}}
 \citation{zomorodian2004computing}
 \citation{golub2013matrix}
-\newlabel{eq:boundary_matrix}{{2.4}{4}{Notation \& Background}{equation.2.4}{}}
-\newlabel{eq:hom_map}{{2.6}{4}{Notation \& Background}{equation.2.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Technical background}{4}{subsection.2.1}\protected@file@percent }
-\newlabel{sec:betti_derivation}{{2.1}{4}{Technical background}{subsection.2.1}{}}
-\newlabel{eq:pbn}{{{2.8}}{4}{Technical background}{AMS.2}{}}
-\newlabel{eq:pbn_simple}{{2.9}{4}{Technical background}{equation.2.9}{}}
 \citation{zomorodian2004computing}
 \citation{edelsbrunner2000topological}
+\newlabel{eq:boundary_matrix}{{2.3}{4}{Notation \& Background}{equation.2.3}{}}
+\newlabel{eq:hom_map}{{2.5}{4}{Notation \& Background}{equation.2.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Technical background}{4}{subsection.2.1}\protected@file@percent }
+\newlabel{sec:betti_derivation}{{2.1}{4}{Technical background}{subsection.2.1}{}}
+\newlabel{eq:pbn}{{{2.7}}{4}{Technical background}{AMS.2}{}}
+\newlabel{eq:pbn_simple}{{2.8}{4}{Technical background}{equation.2.8}{}}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
 \citation{bauer2022keeping}
@@ -54,15 +64,15 @@
 \citation{dey2022computational}
 \citation{chen2011output}
 \citation{chen2011output}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{5}{figure.1}\protected@file@percent }
-\newlabel{fig:mult}{{1}{5}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.1}{}}
-\newlabel{eq:uniq_pivot}{{2.10}{5}{Technical background}{equation.2.10}{}}
+\citation{edelsbrunner2000topological}
+\citation{chen2011output}
+\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm  {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of\nobreakspace  {}\ref  {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}}{5}{figure.2}\protected@file@percent }
+\newlabel{fig:mult}{{2}{5}{From left to right, $\beta _p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm {dgm}_p(K_\bullet )$, where $i,j \in \Delta _+^N$; the same $\beta _p^{i,j}$ with $i,j \in \Delta _+$; the additivity of $\beta _p^{\ast }$ implies $\mu _p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref {eq:uniq_pivot}---in this case $\mu _p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$}{figure.2}{}}
+\newlabel{eq:uniq_pivot}{{2.9}{5}{Technical background}{equation.2.9}{}}
 \newlabel{lemma:rank}{{1}{5}{}{lemma.1}{}}
-\newlabel{eq:lower_left_rank}{{2.11}{5}{}{equation.2.11}{}}
+\newlabel{eq:lower_left_rank}{{2.10}{5}{}{equation.2.10}{}}
 \newlabel{prop:rank_reduction}{{2}{5}{Dey \& Wang~\cite {dey2022computational}}{proposition.2}{}}
-\newlabel{eq:betti_four}{{2.12}{5}{Dey \& Wang~\cite {dey2022computational}}{equation.2.12}{}}
-\citation{edelsbrunner2000topological}
-\citation{chen2011output}
+\newlabel{eq:betti_four}{{2.11}{5}{Dey \& Wang~\cite {dey2022computational}}{equation.2.11}{}}
 \citation{edelsbrunner2022computational}
 \citation{zomorodian2004computing}
 \citation{chen2011output}
@@ -71,7 +81,7 @@
 \citation{chazal2016structure}
 \citation{cohen2006vines}
 \newlabel{prop:mu_reduction}{{3}{6}{Chen \& Kerber~\cite {chen2011output}}{proposition.3}{}}
-\newlabel{eq:mu_four}{{2.13}{6}{Chen \& Kerber~\cite {chen2011output}}{equation.2.13}{}}
+\newlabel{eq:mu_four}{{2.12}{6}{Chen \& Kerber~\cite {chen2011output}}{equation.2.12}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3}Spectral relaxation and its implications}{6}{section.3}\protected@file@percent }
 \newlabel{sec:spectral_relax}{{3}{6}{Spectral relaxation and its implications}{section.3}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {3.1}Parameterized boundary operators}{6}{subsection.3.1}\protected@file@percent }
@@ -99,8 +109,8 @@
 \newlabel{eq:lowner}{{{3.10}}{8}{Spectral rank relaxation}{AMS.8}{}}
 \newlabel{def:cont_rank}{{3.11}{8}{Spectral Rank Approximation}{equation.3.11}{}}
 \newlabel{eq:smoothstep}{{3.12}{8}{Spectral rank relaxation}{equation.3.12}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {2}{\ignorespaces From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde  {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt  {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition\nobreakspace  {}\ref  {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal  {S}_i^{\omega }$ from\nobreakspace  {}\textup  {\hbox {\mathsurround \z@ \normalfont  (\ignorespaces \ref  {eq:smoothstep}\unskip \@@italiccorr )}}. }}{9}{figure.2}\protected@file@percent }
-\newlabel{fig:smoothstep}{{2}{9}{From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition~\ref {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal {S}_i^{\omega }$ from~\eqref {eq:smoothstep}}{figure.2}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde  {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt  {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition\nobreakspace  {}\ref  {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal  {S}_i^{\omega }$ from\nobreakspace  {}\textup  {\hbox {\mathsurround \z@ \normalfont  (\ignorespaces \ref  {eq:smoothstep}\unskip \@@italiccorr )}}. }}{9}{figure.3}\protected@file@percent }
+\newlabel{fig:smoothstep}{{3}{9}{From left to right---the $\ell _1$ norm (red) forms a convex envelope over the $\ell _0$ (black) pseudo-norm on the interval $[-1, 1]$; $\tilde {\phi }(\cdot , \epsilon )$ at various values of $\epsilon $, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu (\epsilon ) = \sqrt {\epsilon }$ (red) and at $\epsilon = 0$ (black); the step function $S_i(x)$ from definition~\ref {def:time_boundary_matrix}; the smoothstep relaxation $\mathcal {S}_i^{\omega }$ from~\eqref {eq:smoothstep}}{figure.3}{}}
 \newlabel{def:smooth_mu}{{3}{9}{Spectral Rank}{definition.3}{}}
 \newlabel{eq:bett_cont}{{{3.13}}{9}{Spectral Rank}{AMS.9}{}}
 \newlabel{eq:mu_cont}{{{3.14}}{9}{Spectral Rank}{AMS.10}{}}
@@ -143,19 +153,20 @@
 \citation{goldberg2002combinatorial}
 \newlabel{eq:up_laplace_theory}{{4.8}{15}{The combinatorial Laplacian \texttt {matvec}}{equation.4.8}{}}
 \newlabel{eq:l_up_matvec}{{4.9}{15}{The combinatorial Laplacian \texttt {matvec}}{equation.4.9}{}}
+\newlabel{prop:spectral_rank}{{10}{15}{}{proposition.10}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Applications \& Experiments}{16}{section.5}\protected@file@percent }
 \newlabel{sec:applications}{{5}{16}{Applications \& Experiments}{section.5}{}}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.1}Rank computation}{16}{subsection.5.1}\protected@file@percent }
-\@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Random Watts-Strogatz ``Small world'' graph example}}{16}{figure.3}\protected@file@percent }
-\newlabel{fig:watts_strogatz}{{3}{16}{Random Watts-Strogatz ``Small world'' graph example}{figure.3}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces Random Watts-Strogatz ``Small world'' graph example}}{16}{figure.4}\protected@file@percent }
+\newlabel{fig:watts_strogatz}{{4}{16}{Random Watts-Strogatz ``Small world'' graph example}{figure.4}{}}
 \citation{cohen2006vines}
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.2}Shape comparison}{17}{subsection.5.2}\protected@file@percent }
 \@writefile{toc}{\contentsline {subsection}{\numberline {5.3}Filtration optimization}{17}{subsection.5.3}\protected@file@percent }
 \newlabel{eq:mult_opt}{{5.1}{17}{Filtration optimization}{equation.5.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. }}{18}{figure.4}\protected@file@percent }
-\newlabel{fig:codensity}{{4}{18}{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle}{figure.4}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces (Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure\nobreakspace  {}\ref  {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm  {e}{-3}$.}}{19}{figure.5}\protected@file@percent }
-\newlabel{fig:vineyard_codensity}{{5}{19}{(Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure~\ref {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm {e}{-3}$}{figure.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {5}{\ignorespaces A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. }}{18}{figure.5}\protected@file@percent }
+\newlabel{fig:codensity}{{5}{18}{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha $. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle}{figure.5}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {6}{\ignorespaces (Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure\nobreakspace  {}\ref  {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm  {e}{-3}$.}}{19}{figure.6}\protected@file@percent }
+\newlabel{fig:vineyard_codensity}{{6}{19}{(Left) Vineyard of of the codensity $\alpha $-parameterized filtration from figure~\ref {fig:codensity}. (Right) The exact multiplicity $\mu _1(K, f_\alpha )$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm {e}{-3}$}{figure.6}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {A}Appendix}{19}{appendix.A}\protected@file@percent }
 \citation{chung1997spectral}
 \newlabel{sec:inner_products}{{A}{21}{}{appendix.A}{}}
@@ -186,41 +197,50 @@
 \newlabel{eq:s1}{{A.12}{26}{}{equation.A.12}{}}
 \newlabel{eq:s2}{{A.13}{26}{}{equation.A.13}{}}
 \bibdata{pbsig_bib}
-\bibcite{bauer2021ripser}{1}
-\bibcite{bauer2020persistence}{2}
-\bibcite{bauer2022keeping}{3}
-\bibcite{bhatia2013matrix}{4}
-\bibcite{bi2013approximation}{5}
-\bibcite{chazal2016structure}{6}
-\bibcite{chen2011output}{7}
-\bibcite{chung1997spectral}{8}
-\bibcite{cohen2005stability}{9}
-\bibcite{cohen2006vines}{10}
-\bibcite{dey2022computational}{11}
-\bibcite{ding2018spectral}{12}
-\bibcite{edelsbrunner2022computational}{13}
-\bibcite{edelsbrunner2000topological}{14}
-\bibcite{goldberg2002combinatorial}{15}
+\bibcite{adams2017persistence}{1}
+\bibcite{bauer2021ripser}{2}
+\bibcite{bauer2020persistence}{3}
+\bibcite{bauer2022keeping}{4}
+\bibcite{bhatia2013matrix}{5}
+\bibcite{bi2013approximation}{6}
+\bibcite{bubenik2015statistical}{7}
+\bibcite{cerri2013betti}{8}
+\bibcite{chazal2009gromov}{9}
+\bibcite{chazal2016structure}{10}
+\bibcite{chen2011output}{11}
+\bibcite{chung1997spectral}{12}
+\bibcite{cohen2005stability}{13}
+\bibcite{cohen2006vines}{14}
 \newlabel{eq:s3}{{A.14}{27}{}{equation.A.14}{}}
-\bibcite{golub2013matrix}{16}
-\bibcite{gu1995divide}{17}
-\bibcite{kim2021spatiotemporal}{18}
-\bibcite{lanczos1950iteration}{19}
-\bibcite{mangasarian1994class}{20}
-\bibcite{memoli2022persistent}{21}
-\bibcite{newman2001laplacian}{22}
-\bibcite{parlett1994we}{23}
-\bibcite{simon1984analysis}{24}
-\bibcite{zomorodian2004computing}{25}
+\bibcite{dey2022computational}{15}
+\bibcite{ding2018spectral}{16}
+\bibcite{edelsbrunner2022computational}{17}
+\bibcite{edelsbrunner2000topological}{18}
+\bibcite{goldberg2002combinatorial}{19}
+\bibcite{golub2013matrix}{20}
+\bibcite{gu1995divide}{21}
+\bibcite{kim2021spatiotemporal}{22}
+\bibcite{lanczos1950iteration}{23}
+\bibcite{mangasarian1994class}{24}
+\bibcite{memoli2022persistent}{25}
+\bibcite{newman2001laplacian}{26}
+\bibcite{parlett1994we}{27}
+\bibcite{perea2016persistent}{28}
+\bibcite{perea2022approximating}{29}
+\bibcite{piekenbrock2021move}{30}
+\bibcite{pun2018persistent}{31}
+\bibcite{scoccola2023fibered}{32}
+\bibcite{simon1984analysis}{33}
+\bibcite{zomorodian2004computing}{34}
 \bibstyle{plain}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{28}{appendix.A}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{28}{appendix.B}\protected@file@percent }
-\newlabel{eq:lap_rayleigh}{{B.2}{28}{Laplacian facts}{equation.B.2}{}}
 \citation{chung1997spectral}
-\citation{goldberg2002combinatorial}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{29}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{29}{appendix.B}\protected@file@percent }
+\newlabel{eq:lap_rayleigh}{{B.2}{29}{Laplacian facts}{equation.B.2}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{29}{appendix.C}\protected@file@percent }
 \newlabel{sec:up_laplace_matvec}{{C}{29}{Laplacian \texttt {matvec} products}{appendix.C}{}}
-\newlabel{alg:lap_matvec}{{C}{29}{Laplacian \texttt {matvec} products}{appendix.C}{}}
-\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{29}{algorithm.1}\protected@file@percent }
+\citation{goldberg2002combinatorial}
+\newlabel{alg:lap_matvec}{{C}{30}{Laplacian \texttt {matvec} products}{appendix.C}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{30}{algorithm.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{30}{appendix.D}\protected@file@percent }
-\gdef \@abspage@last{31}
+\gdef \@abspage@last{32}

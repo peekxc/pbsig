@@ -24,10 +24,10 @@ Note that any filtration may be converted into a simplexwise filtration via \emp
 \\
 \\
 %As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level of homology. Though we consider primarily Rips filtrations in this effort, we will at times keep the notation simple and general by letting $K_\bullet$ denote any simplicial filtration. 
-Given a simplicial complex $K \subseteq \mathcal{P}(V)$ and a strictly increasing subset $\sigma = \{v_1, v_2, \dots, v_{p+1}\} \subseteq V$ satisfying $v_1 < v_2 < \dots < v_{p+1}$, an \emph{oriented $p$-simplex} $[\sigma] = [v_1, v_2, \dots, v_{p+1}]$ is defined as: 
-\begin{equation}\label{eq:oriented_simplex}
-	[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]
-\end{equation}
+Given a simplicial complex $K \subseteq \mathcal{P}(V)$ and a strictly increasing subset $\sigma = \{v_1, v_2, \dots, v_{p+1}\} \subseteq V$ satisfying $v_1 < v_2 < \dots < v_{p+1}$, an \emph{oriented $p$-simplex} $[\sigma]$ is defined as $[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]$,
+%\begin{equation}\label{eq:oriented_simplex}
+%	[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]
+%\end{equation}
 where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ is the number of inversions of that permutation. The $p$-boundary $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
 \begin{equation}\label{eq:alt_sum}
 	\partial_p[\sigma] := \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
@@ -64,8 +64,8 @@ For every such pair $(i,j) \in \Delta_{+}^N$, the sequence of inclusions $K_i \s
 \begin{equation}\label{eq:hom_map}
 	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_N) = H_p(K_\bullet) 
 \end{equation}
-When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decomposes $K_\bullet$ into a pairing of simplices $(\sigma_i, \sigma_j)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
-The $p$-th persistent homology groups are the images of these transformations and the $p$-th persistent Betti numbers are their dimensions:
+When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decompose $K_\bullet$ into a pairing $(\sigma_i, \sigma_j)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
+The persistent homology groups are the images of these maps and the persistent Betti numbers are their dimensions:
 \begin{equation}
 	H_{p}^{i,j} = \begin{cases}
 	H(K_i) & i = j \\ 

@@ -3,48 +3,49 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: /Users/mpiekenbrock/pbsig/notes/.texpadtmp/pbsig.aux
 The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
+Warning--can't use both volume and number fields in chazal2009gromov
 Warning--empty journal in lanczos1950iteration
 Warning--empty institution in mangasarian1994class
 Warning--empty school in newman2001laplacian
-You've used 25 entries,
+You've used 34 entries,
             2118 wiz_defined-function locations,
-            640 strings with 7967 characters,
-and the built_in function-call counts, 8230 in all, are:
-= -- 820
-> -- 342
-< -- 9
-+ -- 141
-- -- 110
-* -- 518
-:= -- 1344
-add.period$ -- 77
-call.type$ -- 25
-change.case$ -- 125
+            691 strings with 9918 characters,
+and the built_in function-call counts, 11751 in all, are:
+= -- 1171
+> -- 533
+< -- 13
++ -- 216
+- -- 176
+* -- 766
+:= -- 1920
+add.period$ -- 107
+call.type$ -- 34
+change.case$ -- 184
 chr.to.int$ -- 0
-cite$ -- 28
-duplicate$ -- 343
-empty$ -- 670
-format.name$ -- 110
-if$ -- 1746
+cite$ -- 38
+duplicate$ -- 475
+empty$ -- 919
+format.name$ -- 176
+if$ -- 2489
 int.to.chr$ -- 0
-int.to.str$ -- 25
-missing$ -- 29
-newline$ -- 128
-num.names$ -- 50
-pop$ -- 153
+int.to.str$ -- 34
+missing$ -- 38
+newline$ -- 173
+num.names$ -- 68
+pop$ -- 214
 preamble$ -- 1
-purify$ -- 105
+purify$ -- 155
 quote$ -- 0
-skip$ -- 249
+skip$ -- 350
 stack$ -- 0
-substring$ -- 518
-swap$ -- 82
-text.length$ -- 9
+substring$ -- 715
+swap$ -- 123
+text.length$ -- 13
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 88
-warning$ -- 3
-while$ -- 84
-width$ -- 27
-write$ -- 271
-(There were 3 warnings)
+type$ -- 124
+warning$ -- 4
+while$ -- 115
+width$ -- 36
+write$ -- 371
+(There were 4 warnings)

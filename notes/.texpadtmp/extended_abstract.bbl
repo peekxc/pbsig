@@ -1,0 +1,71 @@
+\begin{thebibliography}{10}
+
+\bibitem{bauer2022keeping}
+Ulrich Bauer, Talha~Bin Masood, Barbara Giunti, Guillaume Houry, Michael
+  Kerber, and Abhishek Rathod.
+\newblock Keeping it sparse: Computing persistent homology revised.
+\newblock {\em arXiv preprint arXiv:2211.09075}, 2022.
+
+\bibitem{cerri2013betti}
+Andrea Cerri, Barbara~Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia
+  Landi.
+\newblock Betti numbers in multidimensional persistent homology are stable
+  functions.
+\newblock {\em Mathematical Methods in the Applied Sciences},
+  36(12):1543--1557, 2013.
+
+\bibitem{chazal2016structure}
+Fr{\'e}d{\'e}ric Chazal, Vin De~Silva, Marc Glisse, and Steve Oudot.
+\newblock {\em The structure and stability of persistence modules}, volume~10.
+\newblock Springer, 2016.
+
+\bibitem{chen2011output}
+Chao Chen and Michael Kerber.
+\newblock An output-sensitive algorithm for persistent homology.
+\newblock In {\em Proceedings of the twenty-seventh annual symposium on
+  Computational geometry}, pages 207--216, 2011.
+
+\bibitem{cohen2005stability}
+David Cohen-Steiner, Herbert Edelsbrunner, and John Harer.
+\newblock Stability of persistence diagrams.
+\newblock In {\em Proceedings of the twenty-first annual symposium on
+  Computational geometry}, pages 263--271, 2005.
+
+\bibitem{dey2022computational}
+Tamal~Krishna Dey and Yusu Wang.
+\newblock {\em Computational topology for data analysis}.
+\newblock Cambridge University Press, 2022.
+
+\bibitem{edelsbrunner2022computational}
+Herbert Edelsbrunner and John~L Harer.
+\newblock {\em Computational topology: an introduction}.
+\newblock American Mathematical Society, 2022.
+
+\bibitem{edelsbrunner2000topological}
+Herbert Edelsbrunner, David Letscher, and Afra Zomorodian.
+\newblock Topological persistence and simplification.
+\newblock In {\em Proceedings 41st annual symposium on foundations of computer
+  science}, pages 454--463. IEEE, 2000.
+
+\bibitem{golub2013matrix}
+Gene~H Golub and Charles~F Van~Loan.
+\newblock {\em Matrix computations}.
+\newblock JHU press, 2013.
+
+\bibitem{kim2021spatiotemporal}
+Woojin Kim and Facundo M{\'e}moli.
+\newblock Spatiotemporal persistent homology for dynamic metric spaces.
+\newblock {\em Discrete \& Computational Geometry}, 66:831--875, 2021.
+
+\bibitem{parlett1994we}
+Beresford~N Parlett.
+\newblock Do we fully understand the symmetric lanczos algorithm yet.
+\newblock {\em Brown et al}, 3:93--107, 1994.
+
+\bibitem{zomorodian2004computing}
+Afra Zomorodian and Gunnar Carlsson.
+\newblock Computing persistent homology.
+\newblock In {\em Proceedings of the twentieth annual symposium on
+  Computational geometry}, pages 347--356, 2004.
+
+\end{thebibliography}
