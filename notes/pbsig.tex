@@ -164,12 +164,13 @@ Matrix-free spectral relaxations of \\ persistence rank invariants
 \begin{abstract}
 Using a duality result between persistence diagrams and persistence measures, we introduce a framework for constructing families of continuous relaxations of the persistent rank invariant for persistence modules indexed over the real line. 
 Like the rank invariant, these families obey inclusion-exclusion, are derived from simplicial boundary operators, and encode all the information needed to construct a persistence diagram. 
-Unlike the rank invariant, these spectrally-derived relaxations enjoy a number of stability and continuity properties typically reserved for persistence diagrams, such as smoothness and differentiability over the positive semi-definite cone. 
+Unlike the rank invariant, these spectrally-derived families enjoy a number of stability and continuity properties typically reserved for persistence diagrams, such as smoothness and differentiability over the positive semi-definite cone. 
 %Key to achieving a $(1-\epsilon)$-approximation is the use of spectral L{\"o}wner decompositions 
 %Our proposed $(1-\epsilon)$-approximation relies on uses nonconvex spectral functions  composition with the spectral decomposition relax boundary operators with L{\"o}wner operators. 
 %equipping the space of cochains over $\mathbb{R}$ with an inner product. 
 %Fundamental to the family we propose is their characterization as spectral functions.
-By exploiting a connection to combinatorial Laplacian operators, we find that the non-harmonic spectra from which our interpolation derives encodes rich geometric information about the underlying space, providing several avenues for geometric data analysis. 
+%By exploiting a connection to combinatorial Laplacian operators, we find that the non-harmonic spectra from which our interpolation derives encodes rich geometric information about the underlying space, providing several avenues for geometric data analysis. 
+By leveraging its relationship with combinatorial Laplacian operators, we find the non-harmonic spectra of our proposed relaxation encode valuable geometric information about the underlying space, prompting several avenues for geometric data analysis.
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
 We investigate the utility of our relaxation with exemplary applications in topological data analysis and machine learning, such as hyper-parameter optimization and shape classification.
 
@@ -269,7 +270,7 @@ Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone\footnote{This is 
 We seek to shift the computational paradigm on persistence while retaining its application potential: rather than first constructing diagrams and then endowing them with additional structure, we devise a spectral method that performs both steps, simultaneously and approximately. 
 %Our strategy is natural in that it extracts persistence information ~\cite{}.
 % include words: without constructing diagrams 
-Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
+Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm (\cite{edelsbrunner2022computational}) entirely.  
 Our strategy is motivated by both a measure-theoretic perspective on $\mathbb{R}$-indexed persistence modules~\cite{chazal2016structure} and by a technical observation that suggests several computational advantages to working with the rank invariant directly (see section~\ref{sec:betti_derivation} for details). 
 %?between the persistent Betti numbers and combinatorial Laplacian operators
 As the vectorization we propose continuously interpolates between the rank invariant and a spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
@@ -483,7 +484,7 @@ Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{equation}
 \end{proposition}
-\noindent For more geometric intuition of these propositions, see Figure~\ref{fig:mult}. Note the differences between these two quantities: whereas $\beta_p^{i,j}$ captures points on the diagram that may have unbounded persistence (``essential'' classes~\cite{edelsbrunner2000topological}), the multiplicity function $\mu_p^{R}$ by definition is restricted to classes with bounded persistence (though one may always \emph{cone} the filtration to remedy this, see~\cite{chen2011output}).
+\noindent For more geometric intuition of these propositions, see Figure~\ref{fig:mult}. Note the differences between these two quantities: whereas $\beta_p^{i,j}$ captures points on the diagram that may have unbounded persistence (``essential'' classes~\cite{edelsbrunner2000topological}), the multiplicity function $\mu_p^{R}$ by definition is restricted to classes with bounded persistence\footnote{One may always \emph{cone} the filtration to extend $\mu_p^{R}$ to the unbounded case, see~\cite{chen2011output}}.
 
 Compared to the classical reduction methods~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage of the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, the operation $x \mapsto \partial x$ can be implemented without actually constructing $\partial$ in memory, enabling the use of e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we} for their computation. 
@@ -569,8 +570,8 @@ Again exploiting the inclusion-exclusion property known for real-valued persiste
 % mention DMSs 
 %In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 %To see the utility of this fact, consider a filtration $(K_\bullet, f)$ equipped with a \emph{parameterized} filter function $f : \mathcal{A} \times K \to \mathbb{R}$ with respect to some set $\mathcal{A}$.
-In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), the boundary matrix $\partial(K_\bullet)$ must maintain a simplexwise filtration order to preserve the inclusion structure of $(K_\bullet, f_\alpha)$ (w.r.t $f_\alpha$).
-In contrast, the rank function is permutation invariant for any $X \in \mathbb{R}^{n \times n}$ and permutation $P$: 
+In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), the boundary matrix $\partial(K_\bullet)$ must maintain a simplexwise filtration order (w.r.t $f_\alpha$) to preserve the inclusion structure of $(K_\bullet, f_\alpha)$.
+In contrast, the rank function is permutation invariant, i.e. for any $X \in \mathbb{R}^{n \times n}$ and permutation $P$ we have: 
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
 % In contrast, the permutation invariance of the rank function suggests $\partial$
@@ -579,7 +580,7 @@ This suggests rank invariant computations need not maintain this order---as long
 %Permutation invariance is a useful property for computation in parameterized setting. 
 We now show how to adapt the rank  the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} to exploit this permutation invariance, beginning with a definition.
 \begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
-Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex of size $\lvert K^p \rvert = n$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. Define the $\mathcal{A}$-\emph{parameterized} \emph{boundary matrix} $\partial_p(\alpha)$ of $(K, f_\alpha)$ as the $n \times n$ matrix ordered by $\preceq^\ast$ for all $\alpha \in \mathcal{A}$ whose entries $(k,l)$ satisfy:
+Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex of size $\lvert K^p \rvert = n$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. Define the $\mathcal{A}$-\emph{parameterized} \emph{boundary matrix} $\partial_p(\alpha) \in \mathbb{R}^{n \times n}$ of $(K, f_\alpha)$ as the $n \times n$ matrix ordered by $\preceq^\ast$ for all $\alpha \in \mathcal{A}$ whose entries $(k,l)$ satisfy:
 \begin{equation}\label{eq:param_boundary_matrix}
 	\partial_p(\alpha)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
@@ -602,15 +603,15 @@ Observe that (1) the non-zero entries of the boundary operator from definition~\
 We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
 Exploiting this decoupling, we can rewrite any term of the form from~\eqref{eq:lower_left_rank} as:
 \begin{equation}\label{eq:rank_equiv_param}
-	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = \mathrm{rank}(\, \partial_p^{i,j}(\alpha) \, ) \triangleq \mathrm{rank}\!\left( \, D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(S_j \circ f_\alpha) \, \right)
+%	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = 
+	\mathrm{rank}(\, \partial_p^{i,j}(\alpha) \, ) \triangleq \mathrm{rank}\!\left( \, D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(S_j \circ f_\alpha) \, \right)
 \end{equation}
 where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down \emph{step functions}, respectively, given by: 
 \begin{equation}\label{eq:step_functions}
 	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 \end{equation}
-Note in~\eqref{eq:rank_equiv_param} we write $\partial_p^\ast(K_\bullet)$ and $\partial_p^\ast(K)$ to make the distinction that the former is explicitly filtered in the traditional simplexwise manner by $f_\ast$, whereas the latter is ordered arbitrarily according to $\preceq^\ast$. 
-Since these operators have the same rank, we may replace the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} appropriately using their parameterized versions from definition~\ref{def:time_boundary_matrix} to obtaining expressions that are permutation invariant. 
-
+In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K)$ (as opposed to $\partial_p(K_\bullet)$) to emphasize $\partial_p$ is ordered arbitrarily according to the ordering $(K, \preceq^\ast)$. Note that, in contrast, the boundary terms in proposition~\ref{prop:mu_reduction} are explicitly filtered in the traditional simplexwise manner by $f_\ast$. 
+As a result, expressions of persistent rank invariants obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using their parameterized versions from definition~\ref{def:time_boundary_matrix} are permutation invariant. 
 %Computationally, note that the element-wise definition of $\hat{\partial}_p^{i,j}$ from~\eqref{eq:param_boundary_matrix} corresponds to the product: 
 %\begin{equation}
 %	\hat{\partial}_p^{i,j}(h) := V_p^i(h)^+ \circ \partial_p \circ W_{p+1}^j(h)
@@ -1053,7 +1054,7 @@ For all the reasons given above, we exclusively consider the normalized combinat
 % Laplacian Energy
 We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants~\cite{}. 
 For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
-$$ \lVert \Phi(\mathcal{L}_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
+$$ \lVert \Phi(\partial_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
 where we use the notation $\mathcal{L}_p^{i,j}$ to indicate...
 We have, as its very basic properties: 
 \begin{enumerate}
@@ -1150,7 +1151,7 @@ In this sense, the spectral rank invariants proposed in definition~\ref{def:smoo
  \begin{remark}
  One interpretation of the relaxation parameter $\epsilon$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
 Larger values of $\epsilon$ smooth out $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\epsilon$ lead to a more faithful approximation of the rank.
-This can be seen directly by~\eqref{eq:tikhonov_soln} as well, as increasing $\epsilon$  lowers the condition number of $A^T A + \epsilon I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
+This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\epsilon$  lowers the condition number of $A^T A + \epsilon I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
  \end{remark}
  
 \section{Computational Implications}\label{sec:computational_imp}

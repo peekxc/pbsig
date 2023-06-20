@@ -199,8 +199,8 @@ show(row(q,p))
 ```{python}
 #| label: Gradient sign calculations
 phi_blue, phi_gray = sgn_approx(eps=0.05, p=1.0),  sgn_approx(eps=0.01, p=1.0)
-grad_blue = np.array([sieve.gradient_fd(f=codensity, phi=phi_blue, alpha0=a, w=1.0, n_coeff=2, obj=False) for a in alpha_family])
-grad_gray = np.array([sieve.gradient_fd(f=codensity, phi=phi_gray, alpha0=a, w=1.0, n_coeff=2, obj=False) for a in alpha_family])
+grad_blue = np.array([sieve.gradient_fd(f=codensity, phi=phi_blue, alpha0=a, w=1.0, n_coeff=2, obj=False, da=0.005) for a in alpha_family])
+grad_gray = np.array([sieve.gradient_fd(f=codensity, phi=phi_gray, alpha0=a, w=1.0, n_coeff=2, obj=False, da=0.005) for a in alpha_family])
 ```
 
 ```{python}
@@ -220,11 +220,28 @@ show(p)
 
 ## Robust gradient calculation 
 ```{python}
+import numdifftools as nd
+d_sieve = nd.Derivative(lambda a: sieve(filter_f=codensity(float(a)), phi=blue_phi, w=1.0), full_output=True, n=1, method='central')
+d_sieve(0.47)
+# val, info = d_sieve(0.47)
+# info.final_step == 0.0625
 
-phi = sgn_approx(eps=0.3, p=2.0)
-grad_phi = np.array([sieve.gradient_fd(f=codensity, phi=phi, alpha0=a, w=0.15, n_coeff=4, obj=False, da=1e-2) for a in alpha_family])
-pt_col = hex_to_rgb(bin_color(np.ravel(grad_phi), color_pal))
-print((np.min(grad_phi), np.max(grad_phi)))
+d0 = sieve.gradient_fd(f=lambda a: codensity(float(a)), phi=blue_phi, alpha0=float(0.47), w=1.0, n_coeff=2, obj=False, da=info.final_step)
+d1 = sieve.gradient_fd(f=lambda a: codensity(float(a)), phi=blue_phi, alpha0=float(0.47), w=1.0, n_coeff=2, obj=False, da=info.final_step/2)
+d2 = sieve.gradient_fd(f=lambda a: codensity(float(a)), phi=blue_phi, alpha0=float(0.47), w=1.0, n_coeff=2, obj=False, da=info.final_step/4)
+
+(1/3)*d0 - 2*d1 + (8/3)*d2
+```
+
+
+
+
+
+```{python}
+# phi = sgn_approx(eps=0.3, p=2.0)
+# grad_phi = np.array([sieve.gradient_fd(f=codensity, phi=phi, alpha0=a, w=0.15, n_coeff=4, obj=False, da=1e-2) for a in alpha_family])
+# pt_col = hex_to_rgb(bin_color(np.ravel(grad_phi), color_pal))
+# print((np.min(grad_phi), np.max(grad_phi)))
 
 from bokeh.models import Span
 p = figure(width=450, height=250)

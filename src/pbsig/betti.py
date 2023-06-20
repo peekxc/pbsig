@@ -969,7 +969,7 @@ class Sieve:
     
     ## Objective + gradient
     def _f_grad(_i: float, _j: float):
-      grad = np.sum([coeff*np.sum(phi(self.project(i=_i, j=_j, w=w, f=f(alpha0 + s*da), **kwargs))) for s, coeff in zip(increments, coeffs)])
+      grad = np.sum([coeff*np.sum(phi(self.project(i=_i, j=_j, w=w, f=f(float(alpha0 + s*da)), **kwargs))) for s, coeff in zip(increments, coeffs)])
       if obj: 
         f_val = np.sum(phi(self.project(i=_i, j=_j, w=w, f=f(alpha0), **kwargs)))
         return f_val, grad

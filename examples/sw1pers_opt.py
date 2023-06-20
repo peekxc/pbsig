@@ -5,7 +5,7 @@ from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
 from bokeh.layouts import row
 output_notebook(verbose=False)
-from pbsig.vis import plot_complex
+# from pbsig.vis import 
 
 sw_f = lambda t: np.cos(t) + np.cos(3*t)
 dom = np.linspace(0, 12*np.pi, 1200)

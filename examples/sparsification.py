@@ -54,7 +54,8 @@ def sparse_weight(X: np.ndarray, radii: np.ndarray, eps: float) -> Callable:
       return np.max([_weight(f, alpha) for f in faces(s, p=1)])
   return _weight
 
-## Fix alpha, optimize epsilon
+# %%  Fix alpha, optimize epsilon
+# TODO: insert points one at a time by non-zero additions to matvec operator...
 from functools import partial
 ir = np.array(insert_rad)[np.argsort(pi)] # 
 wf = sparse_weight(X, ir, eps=1-1e-12)
@@ -68,6 +69,9 @@ from pbsig.vis import figure_dgm
 dgm = ph(K, engine="dionysus")
 p = figure_dgm(dgm[1])
 show(p)
+
+
+# %% 
 
 
 

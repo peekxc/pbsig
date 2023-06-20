@@ -29,6 +29,7 @@ format:
       data-background-size: contain
       data-background-opacity: "0.25"
     # csl: csl.csl
+  pdf: default
 revealjs-plugins:
   - spotlight
 html: 
