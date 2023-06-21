@@ -8,7 +8,7 @@
 \usepackage{enumitem}
 \usepackage{setspace}
 \usepackage{scalefnt}
-
+\usepackage{bbm}
 \usepackage{mdframed}
 \newenvironment{boxedenumerate}
   {\begin{mdframed}[font=\small, linewidth=1pt]}
@@ -282,11 +282,11 @@ Our strategy is motivated both by a technical observation that suggests several 
 	\restr{\mathrm{dgm}_p(f)}{R} \,
 	\right), \quad \mu_p^{\hat\imath, \hat\jmath}(x) \triangleq \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
 \end{equation}
-A notable feature of our approach is that it not only avoids explicitly constructing diagrams, but it in fact avoids omits the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
+A notable feature of our approach is that it not only avoids explicitly constructing diagrams, but it in fact circumvents the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 %?between the persistent Betti numbers and combinatorial Laplacian operators
 %As a way to continuously interpolates between the rank function and the spectrum of certain linear operator, we elucidate connections between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, iterative subspace methods.
 %Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
-In fact, the proposed relaxation is also \emph{matrix-free}, requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$. Moreover, the spectral quality of the and is particularly efficient when executed on parameterized families of inputs. 
+In fact, the proposed relaxation is \emph{matrix-free}, requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$. Moreover, the spectral quality of the and is particularly efficient when executed on parameterized families of inputs. 
 \\
 \\
 \noindent 
@@ -480,7 +480,7 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 %\noindent \textbf{Remark: } Though Lemma~\ref{lemma:rank} is defined over the full boundary matrix $\partial$, there is no loss in generality in its restriction to $p$-dimensional homology exclusively, for any fixed $p \geq 0$. To see this, note that since the reduction algorithm only adds $p$-chains to $p$-chains. Hence, if we set all columns corresponding to simplices of dimension $q \neq p$ to $0$ in the $m \times m$ boundary matrix $\partial$, then $\partial$ recovers the $p$-th boundary operator $\partial_p : C_p(K_\bullet) \to C_{p-1}(K_\bullet)$. 
 %In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
 An explicit proof of this can be found in~\cite{dey2022computational}, though it was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It can be shown by combining~\eqref{eq:uniq_pivot} with the fact that left-to-right column operations preserves the ranks of these ``lower-left'' submatrices.
-Though this observation is typically viewed as a minor fact, it implications are quite general, as recently noted by~\cite{bauer2022keeping}:
+Though this observation is typically viewed as a minor fact needed to prove the correctness of the reduction algorithm, its implications are quite general, as recently noted by~\cite{bauer2022keeping}:
 \begin{proposition}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
 \end{proposition}
@@ -596,14 +596,15 @@ In contrast, the rank function is permutation invariant, i.e. for any $X \in \ma
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
 % In contrast, the permutation invariance of the rank function suggests $\partial$
-This suggests rank invariant computations need not maintain this order---as long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
+This suggests rank computations need not maintain this order---as long as each constitutive term has the same non-zero pattern as its filtration-ordered counterpart, their ranks will be identical.
+In this section, we show how to adapt the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} to exploit this permutation invariance.
 
 %Permutation invariance is a useful property for computation in parameterized setting. 
-We now show how to adapt the rank  the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} to exploit this permutation invariance, beginning with a definition.
-\begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
-Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex of size $\lvert K^p \rvert = n$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. Define the $\mathcal{A}$-\emph{parameterized} \emph{boundary matrix} $\partial_p(\alpha) \in \mathbb{R}^{n \times n}$ of $(K, f_\alpha)$ as the $n \times n$ matrix ordered by $\preceq^\ast$ for all $\alpha \in \mathcal{A}$ whose entries $(k,l)$ satisfy:
+%\begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
+Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex of size $\lvert K^p \rvert = n$. Fix an arbitrary linear extension $(K, \preceq^\ast)$ of the face poset of $K$. 
+Define the $\mathcal{A}$-\emph{parameterized} \emph{boundary operator} $\hat{\partial}_p(\alpha) \in \mathbb{R}^{n \times n}$ of $(K, f_\alpha)$ as the $n \times n$ matrix ordered by $\preceq^\ast$ for all $\alpha \in \mathcal{A}$ whose entries $(k,l)$ satisfy:
 \begin{equation}\label{eq:param_boundary_matrix}
-	\partial_p(\alpha)[k,l] = \begin{cases}
+	\hat{\partial}_p(\alpha)[k,l] = \begin{cases}
 	% \pm \, S_{i,j}(\sigma_k, \sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l) \\
 s_{kl} \cdot f_\alpha(\sigma_k) \cdot f_\alpha(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l)\\
 %	s_{kl} \cdot (\bar{S}_{i} \circ f_h)(\sigma_k)^+ \cdot (S_{j} \circ f_h)(\sigma_l) & \text{if } \sigma_k \in \partial_p(\sigma_l)\\
@@ -614,50 +615,60 @@ s_{kl} \cdot f_\alpha(\sigma_k) \cdot f_\alpha(\sigma_l) & \text{if } \sigma_k \
 %where $S_{i} : \mathbb{R} \to \{0, 1\}$ is a \emph{step} function satisfying $S_i(x) = 0$ if $x > i$ and $1$ otherwise, $\bar{S}_{i} = 1 - S_i$, $f_h(\sigma) = f(\sigma, h)$, 
 where $s_{kl} = \mathrm{sgn}([\sigma_k], \partial [\sigma_l])$ is the sign of the oriented face $[\sigma_k]$ in $\partial[\sigma_l]$.
 % and the quantity $x^{+} = x^{-1}$ if $x > 0$ and $0$ otherwise.
-\end{definition}
+%\end{definition}
 \noindent
-Observe that (1) the non-zero entries of the boundary operator from definition~\ref{eq:param_boundary_matrix} vary continuously in $f_\alpha$ and (2) $\partial_p(\alpha)$ decouples into a product of diagonal matrices $D_\ast(f_\alpha)$: 
+Observe that (1) the non-zero entries from~\eqref{eq:param_boundary_matrix} vary continuously in $f_\alpha$ and (2) $\partial_p(\alpha)$ decouples into a product of diagonal matrices $D_\ast(f_\alpha)$: 
 	\begin{equation}\label{eq:decouple}
-		\partial_p(\alpha) = D_p(f_\alpha) \circ \partial_p \circ D_{p+1}(f_\alpha) 
+		\hat{\partial}_p(\alpha) = D_p(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) 
 	\end{equation}
 	where the non-zero entries of $D_p(f_\alpha)$ and  $D_{p+1}(f_\alpha)$ depend on restrictions of $f_\alpha$ to $K^p$ and $K^{p+1}$, respectively.
 We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
-Exploiting this decoupling, we can rewrite any term of the form from~\eqref{eq:lower_left_rank} as:
+Exploiting this decoupling, note that we have an equivalence between the constitutive terms from~\eqref{eq:lower_left_rank} and matrices of the form:
 \begin{equation}\label{eq:rank_equiv_param}
 %	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = 
-	\mathrm{rank}(\, \partial_p^{i,j}(\alpha) \, ) \triangleq \mathrm{rank}\!\left( \, D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(S_j \circ f_\alpha) \, \right)
+	\mathrm{rank}(\, \partial_p^{i,j}(K, f_\alpha) \, ) \Leftrightarrow \mathrm{rank}\!\left( \, D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(S_j \circ f_\alpha) \, \right)
 \end{equation}
-where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down \emph{step functions}, respectively, given by: 
-\begin{equation}\label{eq:step_functions}
-	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
-\end{equation}
-In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K)$ (as opposed to $\partial_p(K_\bullet)$) to emphasize $\partial_p$ is ordered arbitrarily according to the ordering $(K, \preceq^\ast)$. Note that, in contrast, the boundary terms in proposition~\ref{prop:mu_reduction} are explicitly filtered in the traditional simplexwise manner by $f_\ast$. 
-As a result, expressions of persistent rank invariants obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using their parameterized versions from definition~\ref{def:time_boundary_matrix} are permutation invariant. 
-%Computationally, note that the element-wise definition of $\hat{\partial}_p^{i,j}$ from~\eqref{eq:param_boundary_matrix} corresponds to the product: 
-%\begin{equation}
-%	\hat{\partial}_p^{i,j}(h) := V_p^i(h)^+ \circ \partial_p \circ W_{p+1}^j(h)
+where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down step functions, respectively, of the form $\bar{S}_i(x) = \mathbbm{1}_{x > i}(x)$ and $S_j(x) = \mathbbm{1}_{x \leq j}(x)$.
+%\begin{equation}\label{eq:step_functions}
+%	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 %\end{equation}
-%where $W_p^x(h)$ denote an $\mathcal{H}$-parameterized diagonal ``weight'' matrix $\mathrm{diag}(\{\, g_h(\sigma_i) \, \})_{i=1}^{N}$ obtained by setting $g_h(\sigma) = (S_x \circ f_h)(\sigma)$ if $\mathrm{dim}(\sigma) = p$ for all $\sigma \in K$ and $g_h(\sigma) = 0$ otherwise. The definition of $V_p^x$ synonymous, where $\tilde{g}_h(\sigma) = 1 - (S_x \circ f_h)(\sigma)$ and $A^+$ denotes the pseudo-inverse of $A$. Thus, definition~\ref{def:time_boundary_matrix} corresponds to a \emph{fixed} $p$-th boundary matrix $\partial_p$ whose rows and columns are weighted by $V_p^i(h)$ and $W_{p+1}^j(h)$, respectively. As a result, there is no need to explicitly maintain an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of simplices as a function of $\mathcal{H}$ to obtain persistence-related information, as is done by the vineyards algorithm~\cite{cohen2006vines}---it is enough to simply preserve the correct sign pattern.
+Since these are discontinuous functions, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ of the form: 
+%In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
+\begin{equation}\label{eq:smoothstep}
+\mathcal{S}_a^{\omega} (x) = \begin{cases}
+	0 & x \leq a \\
+	P_n\big( \omega^{-1}((a + \omega) - x) \big) & a < x < a + \omega \\
+	1 & a + \omega \leq x
+\end{cases}
+\end{equation} 
+where $P_n: [0,1] \to [0,1]$ is a $n$-th order polynomial satisfying $P_n(0) = 0$ and $P_n(1) = 1$.
+These functions simply interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$ (see Figure~\ref{fig:smoothstep}).
+%\\
+%\\
+%\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
 
-We summarize the observations above with a proposition. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$, and we write $q = p + 1$. 
-Without loss in generality, we also assume the orientation of the simplices induced by $(K, \preceq^\ast)$ is inherited from the order on the vertex set $V$. 
+We summarize these observations with a proposition. Without loss in generality, assume the orientation of the simplices induced by $(K, \preceq^\ast)$ is inherited from the order on the vertex set $V$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$. 
 %We also write $r(A) = \mathrm{rank}(A)$.
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
 \begin{proposition}\label{prop:mu_betti_1}
-	Let $\delta > 0$ denote the number from~\eqref{eq:pbn_cont} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, define the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ by: 
+	Let $\delta > 0$ denote the number from~\eqref{eq:measure} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, define the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ by: 
 	\begin{align*}\label{eq:pbn_parameterized}
-		\beta_p^{i,j}(\alpha) = \lvert K_i^{p}(\alpha) \rvert - \mathrm{rank}\big(\,\partial_{p}^{i}(\alpha)\,\big) - \mathrm{rank}\big(\,\partial_{q}^{j}(\alpha)\,\big) + \mathrm{rank}\big(\,\partial_{q}^{i \+ \delta, j}(\alpha)\,\big) \numberthis
+		\beta_p^{i,j}(\alpha) = \lvert K_i^{p}(\alpha) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(\alpha)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{j}(\alpha)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{i \+ \delta, j}(\alpha)\,\big) \numberthis
 	\end{align*}
 	\vspace{-2.1em}
 	\begin{align*}\label{eq:mu_parameterized}
-	\mu_p^{R}(\alpha) = \mathrm{rank}\big(\, \partial_{q}^{j \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \partial_{q}^{i \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \partial_{q}^{j \+ \delta, l}(\alpha)\,\big) + \mathrm{rank}\big(\, \partial_{q}^{i \+ \delta, l}(\alpha)\,\big) \numberthis
+	\mu_p^{R}(\alpha) = \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{j \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{i \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{j \+ \delta, l}(\alpha)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{i \+ \delta, l}(\alpha)\,\big) \numberthis
 	\end{align*}
 	yield the correct quantities $\mu_p(R) = $
 	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(f_\alpha)}{R} \, \right)$ and 
-	$\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}(K))$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, respectively, for all $\alpha \in \mathcal{A}$.
+	$\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}(K))$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, respectively, for all $\alpha \in \mathcal{A}$. Moreover, the entries of $\hat{\partial}_p^\ast(\alpha)$ vary continuously in $\mathcal{A}$.
 \end{proposition}
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
+\begin{remark}
+	In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq^\ast})$ (as opposed to $\partial_p(K_\bullet)$ or $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq^\ast})$ is ordered  according to the [arbitrary] linear ordering $(K, \preceq^\ast)$. Note that, in contrast, the boundary terms in proposition~\ref{prop:mu_reduction} are explicitly filtered in the traditional simplexwise manner by $f_\ast$ (which varies in $\mathcal{A}$). 
+As a result, expressions of persistent rank invariants obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using their parameterized versions from definition~\ref{eq:rank_equiv_param} are permutation invariant. 
+\end{remark}
 %% TODO: proof of sign pattern stuff 
 
 %In the following sections, we will exploit the continuity of the entries in  of~\eqref{eq:param_boundary_matrix} to ease the computation of both counting invariants in parameterized settings.
@@ -799,43 +810,40 @@ Building off the seminal work of Chen \& Mangasarian~\cite{mangasarian1994class}
 \end{flalign}
 where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\epsilon) > 0$. 
 In contrast to the $\mathrm{sgn}_+$ function, if $p$ is continuous on $\mathbb{R}_+$ then $\phi(\cdot, \epsilon)$ is continuously differentiable on $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
-Moreover, note that $\phi(0, \epsilon) = 0$ and: 
-\begin{flalign}\label{eq:phi2}
-(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
-\end{flalign}
+Moreover, note that $\phi(0, \epsilon) = 0$ and ${\textstyle \lim_{\epsilon \to 0^{+}} } \phi(x, \epsilon) = \mathrm{sgn}_+(x)$ for any $x \geq 0$ and 
 for any choice of $(p, \nu)$ satisfying the assumptions above. 
 Varying the relaxation parameter $\epsilon > 0$ in~\eqref{eq:phi} yields an $\epsilon$-parameterized family of continuous $\mathrm{sgn}_+$ relaxations $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, where $\epsilon > 0$ controls the accuracy of the relaxation. 
+%\begin{flalign}\label{eq:phi2}
+%(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
+%\end{flalign}
 
-Many of the properties of~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}.
+Many properties of the sign approximation~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}.
 In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every $\sigma \in \Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\epsilon$: 
+\begin{definition}[Spectral Rank Approximation]
+	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\epsilon > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ via: 
+	\begin{equation}\label{def:lowner}%\label{eq:lowner}
+	\Phi_\epsilon (X) = \sum\limits_{i=1}^{n} \phi(\sigma_i, \epsilon) u v^T, \quad \quad 
+		\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \epsilon)
+	\end{equation}
+% \Phi_\epsilon (X) & = U \, \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon)) \, V^T \\ 
+%	where $\sigma_\ast$ are the singular values $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$ of $X$. 
+\end{definition}
 % $f$ is continuous differentiable at every eigenvalue of $X$
 %This is done and mapping $X$ as follows: %$\sigma \mapsto \phi(\sigma, \epsilon)$
 %$X \mapsto U \tilde{\Sigma} V^T = \tilde{X}$ where $\tilde{\Sigma} = \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon))$, 
-\begin{align*}\label{eq:lowner}
- \Phi_\epsilon (X) & = U \, \mathrm{diag}( \phi(\sigma_1, \epsilon), \phi(\sigma_2, \epsilon), \dots, \phi(\sigma_n, \epsilon)) \, V^T \\
- & = \sum\limits_{i=1}^{n} \phi(\sigma_i, \epsilon) u v^T\numberthis
-\end{align*}
+
 %\begin{align*}\label{eq:lowner}
 % \Phi_\epsilon : \quad \mathbb{R}^{n \times m}  & \; \to \; \mathbb{R}^{n \times m}  \\
 %						           X & \; \mapsto \; U \, \mathrm{diag}( \tilde{\phi}(\sigma_1, \epsilon), \tilde{\phi}(\sigma_2, \epsilon), \dots, \tilde{\phi}(\sigma_n, \epsilon)) \, V^T \numberthis
 %\end{align*}
-It may be shown that $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ for any $\epsilon > 0$. 
+\noindent It may be shown that $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ for any $\epsilon > 0$ and is twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$~\cite{ding2018spectral}.  
 %The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
-In fact, if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$, then~\eqref{eq:lowner} is also twice continuously differentiable at $X$~\cite{ding2018spectral}. 
-Before summarizing additional properties of $\Phi_\epsilon$ and its relationship with~\eqref{eq:rank_def}, we connect $\Phi_\epsilon$ and $\phi$ with a definition:
-\begin{definition}[Spectral Rank Approximation]
-	Given $X \in \mathbb{R}^{n \times m}$ with singular value decomposition $X = U \Sigma V^T$ and a fixed $\epsilon > 0$, any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi} defines a \emph{spectral rank approximation} $\lVert \Phi_\epsilon(X) \rVert_\ast$ of $X$ via: 
-	\begin{equation}\label{def:cont_rank}
-		\lVert \Phi_\epsilon(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \epsilon)
-	\end{equation}
-%	where $\sigma_\ast$ are the singular values $\Sigma = \mathrm{diag}(\sigma_1, \sigma_2, \dots, \sigma_n)$ of $X$. 
-\end{definition}
+%The formal connection between $\Phi_\epsilon$ and $\phi$ is characterized by the following definition:
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
-\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability.
+\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
-A few such properties are recorded below. 
-\begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{eq:lowner} satisfies: 
+\begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\epsilon: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
 	\begin{enumerate}
 		\item For any $\epsilon \leq \epsilon'$, $\lVert \Phi_{\epsilon}(X) \rVert_\ast \geq \lVert \Phi_{\epsilon'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$, if $\epsilon$ satisfies $0 < \epsilon \leq \sigma_r / r$, then: 
@@ -851,31 +859,19 @@ A few such properties are recorded below.
 %\begin{remark}
 %	% TODO: Gauge function remark
 %\end{remark}
-\\
-\\
-\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
+
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
 	\includegraphics[width=0.90\textwidth]{cont_relax}
 	\caption{From left to right---the $\ell_1$ norm (red) forms a convex envelope over the $\ell_0$ (black) pseudo-norm on the interval $[-1, 1]$; 
 	$\tilde{\phi}(\cdot, \epsilon)$ at various values of $\epsilon$, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu(\epsilon) = \sqrt{\epsilon}$ (red) and at $\epsilon = 0$ (black); 
-	the step function $S_i(x)$ from definition~\ref{def:time_boundary_matrix}; 
+	the step function $S_i(x)$ from~\eqref{eq:rank_equiv_param}; 
 	the smoothstep relaxation $\mathcal{S}_i^{\omega}$ from~\eqref{eq:smoothstep}.
 	}
 	\label{fig:smoothstep}
 \end{figure}
-We exchange $S : \mathbb{R} \to \{ 0, 1\}$ with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ of the form: 
-%In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
-\begin{equation}\label{eq:smoothstep}
-\mathcal{S}_a^{\omega} (x) = \begin{cases}
-	0 & x \leq a \\
-	P_n\big( \omega^{-1}((a + \omega) - x) \big) & a < x < a + \omega \\
-	1 & a + \omega \leq x
-\end{cases}
-\end{equation} 
-where $P_n: [0,1] \to [0,1]$ is a $n$-th order polynomial satisfying $P_n(0) = 0$ and $P_n(1) = 1$.
-These functions interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$ (see Figure~\ref{fig:smoothstep}). 
+
 %\begin{equation}
 %S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
 %\end{equation} 
@@ -898,9 +894,9 @@ let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satis
 		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
 		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
 \end{equation}
-where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from definition~\ref{def:time_boundary_matrix} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
+where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from~\eqref{eq:rank_equiv_param} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
 \end{definition}
-\noindent Since the sum of two Lipshitz functions $g$ and $h$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever the filter function $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:cont_rank}. 
+\noindent Since the sum of two Lipshitz functions $g$ and $h$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever the filter function $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner}. 
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
 %
@@ -1160,7 +1156,7 @@ $\phi$ by $\nu(\epsilon) = \sqrt{\epsilon}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one 
 \begin{equation}
 	\phi(x, \epsilon) = \int\limits_{-\infty}^x \hat{\delta}(z, \epsilon) dz = \frac{x^2}{x^2 + \epsilon}
 \end{equation}
-Substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:cont_rank}, the corresponding spectral rank approximation reduces to:
+Substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces to:
 \begin{equation}\label{eq:tikhonov_1}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
 	\lVert \Phi_\epsilon(A) \rVert_\ast = \mathrm{Tr}\left[(A^T A + \epsilon \, I_n)^{-1} A^T A \right]  = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \epsilon} 
@@ -1972,7 +1968,7 @@ Observing the final matrices in~\eqref{eq:s3} are \emph{lower-left} submatrices 
 
 \subsubsection*{Proof of boundary matrix properties}
 \begin{proof}
-First, consider property (1). For any $t \in T$, applying the boundary operator $\partial_p$ to $K_t = \mathrm{Rips}_\epsilon(\delta_{\mathcal{X}}(t))$ with non-zero entries satisfying~\eqref{eq:matrix_pchain} by definition yields a matrix $\partial_p$ satisfying $\mathrm{rank}(\partial_p) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$. In contrast, definition~\eqref{def:time_boundary_matrix} always produces $p$-boundary matrices of $\Delta_n$; however, notice that the only entries which are non-zero are precisely those whose simplices $\sigma$ that satisfy $\mathrm{diam}(\sigma) < \epsilon$. Thus, $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ for all $t \in T$. 
+First, consider property (1). For any $t \in T$, applying the boundary operator $\partial_p$ to $K_t = \mathrm{Rips}_\epsilon(\delta_{\mathcal{X}}(t))$ with non-zero entries satisfying~\eqref{eq:matrix_pchain} by definition yields a matrix $\partial_p$ satisfying $\mathrm{rank}(\partial_p) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$. In contrast, operators of the from~\eqref{eq:rank_equiv_param} always produce $p$-boundary matrices of $\Delta_n$; however, notice that the only entries which are non-zero are precisely those whose simplices $\sigma$ that satisfy $\mathrm{diam}(\sigma) < \epsilon$. Thus, $\mathrm{rank}(\partial_p^t) = \mathrm{dim}(\mathrm{B}_{p-1}(K_t))$ for all $t \in T$. 
 $<$ (show proof of (2))$>$
 Property (3) follows from the construction of $\partial_p$ and from the inequality $\lVert A \rVert_2 \leq \sqrt{m} \lVert A \rVert_1$ for an $n \times m$ matrix $A$, as $\lVert \partial_p^t \rVert_1 \leq (p+1) \, \epsilon$ for all $t \in T$.
 
