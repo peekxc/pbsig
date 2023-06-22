@@ -145,7 +145,7 @@
 Spectral relaxations of persistent rank invariants
 \vspace{-0.5em}}
 
-\author{Matt Piekenbrock\thanks{Northeastern University} \, and Jose Perea\thanks{Testing}}
+\author{Matt Piekenbrock\thanks{Khoury College of Computer Sciences, Northeastern University.} \, and Jose Perea\thanks{Department of Mathematics and Khoury College of Computer Sciences, Northeastern University.}}
 \date{}
 
 \begin{document}
@@ -181,118 +181,111 @@ Persistence is the de facto connection between homology and the application fron
 
 Though theoretically sound, diagrams suffer from several practical issues: they are sensitive to strong outliers, far from injective, expensive to compute, and expensive to compare. 
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
-Practitioners have tackled some of these issues by equipping diagrams with additional structure by way of maps to function spaces---examples include persistence images~\cite{}, persistence landscapes~\cite{}, and template functions~\cite{}. 
-These diagram vectorizations have proven useful for learning applications due to their stability and  metric configurability~\cite{}.
+Practitioners have tackled some of these issues by equipping diagrams with additional structure by way of maps to function spaces---examples include persistence landscapes~\cite{bubenik2015statistical} and references therein. 
+These diagram vectorizations have proven useful for learning applications due to their stability and  metric configurability.
 The scalability issue remains exacerbated though, as these vectorizations require diagrams as part of their input. %moves
 \\
 \\
 \noindent \textbf{Approach:}
-Rather than adding structure to precomputed diagrams, we devise a spectral method that performs both steps, simultaneously and approximately. 
+Rather than adding structure to precomputed diagrams, we propose a spectral method that performs both steps, simultaneously and approximately. 
 Our approach constructs a vector-valued mappings over a \emph{parameter space} $\mathcal{A} \subset \mathbb{R}^d$: 
 \begin{equation*}\label{eq:relaxation_mapping}
 	(X_\alpha, \mathcal{R}, \epsilon, \tau) \mapsto \mathbb{R}^{O(\lvert \mathcal{R} \rvert)}
 \end{equation*}
 where $X_\alpha$ is an $\mathcal{A}$-parameterized input data set, $\mathcal{R} \subset \Delta_+$ a \emph{sieve} over the upper half-plane $\Delta_+$, and $(\epsilon, \tau) \in \mathbb{R}_+^2$ are approximation/smoothness parameters, respectively.
-The intuition is that $\mathcal{R}$ is used to filter and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
-Our strategy is motivated both by a technical observation that suggests several advantages exist for the rank invariant computation (see section~\ref{sec:betti_derivation}) and by measure-theoretic perspectives on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize~\eqref{eq:dgm} to arbitrary \emph{corner points} $(\, \hat\imath, \hat\jmath \,) \in \Delta_+$:
+%The intuition is that $\mathcal{R}$ is used to filter and summarize the topological and geometric behavior exhibited by $X_\alpha$ for all $\alpha \in \mathcal{A}$, thereby \emph{sifting} the space $\mathcal{A} \times \Delta_+$. 
+Our strategy is motivated by measure-theoretic perspectives on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize $\mu_p^{i,j}$ to arbitrary \emph{corner points} $(\, \hat\imath, \hat\jmath \,) \in \Delta_+$:
 %= \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
 \begin{multline*}\label{eq:measure}
-	\mu_p(f; R) \triangleq \mathrm{card}\left( \,
-	%\mathrm{dgm}_p(M)\restriction_R 
-	\restr{\mathrm{dgm}_p(f)}{R} \,
-	\right) \\
-	= \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath \shortminus \delta} \shortminus \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) \shortminus \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} \shortminus \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
+\mu_p^{\hat\imath, \hat\jmath} = \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath \shortminus \delta} \shortminus \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) \shortminus \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} \shortminus \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
 \end{multline*}
-
-In the full paper, we show that in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
-The approximation is spectral-based and is particularly efficient when executed on parameterized families of inputs. 
-When the parameters $\epsilon$ and $\tau$ made small enough, both invariants are recovered exactly. 
-In deriving the approximation, we obtain families of continuous rank invariants which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. 
-Unlike existing dynamic persistence algorithms, our approach is simple in that it requires no complicated data structures or maintenance procedures to implement. 
+and also by a technical observation that suggests the multiplicity function can be expressed as a sum of \emph{unfactored} boundary operators---that is, given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size $N = \lvert K \rvert$, and a rectangle $R = [i,j] \times [k,l] \subset \Delta_+$, the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
+	\begin{equation*}
+	\mu_p^{R} = 
+	\mathrm{rank}\begin{bmatrix} \partial_{p\+1}^{j \+ 1, k} & 0 \\
+	0 & \partial_{p\+1}^{i \+ 1, l}
+	\end{bmatrix}
+	- 
+	\mathrm{rank}\begin{bmatrix} \partial_{p\+1}^{i \+ 1, k} & 0 \\
+	0 & \partial_{p\+1}^{j \+ 1, l}
+	\end{bmatrix}
+%	\\
+%	\mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}() + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
+	\end{equation*}
+\noindent 
+where $\partial_p^{i, j}$ denotes the lower-left submatrix defined by the first $j$ columns and the last $m - i + 1$ rows.
+%In the full paper, we show that in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively. 
+An explicit proof of this can be found in~\cite{dey2022computational}, though it was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}---it can proved by combining the Pairing Uniqueness Lemma with the fact that left-to-right column operations preserves the ranks of ``lower-left'' submatrices.
+Though often used to show the correctness of the reduction algorithm, the implications of this fact are quite general, as noted recently by Bauer et al.~\cite{bauer2022keeping}:
+\begin{proposition}[\cite{bauer2022keeping}]\label{prop:bauer}
+	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
+\end{proposition}
+\end{multicols}
 %require explicitly filtered complexes $K$ to reside in memory .
-The proposed relaxation is also \emph{matrix-free}, requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$.
 %breaking away from the reduction paradigm of algorithms.
 %We find the approximation to also be efficient in practice: the complexity reduction does not use Zigzag persistent homology~\cite{milosavljevic2011zigzag} nor does it rely on Strassen-like reductions to the matrix multiplication time $O(n^\omega)$.
-\end{multicols}
-
-
-%The intuition is that that are many situations where one has a data set 
-
-%Our strategy is natural in that it extracts persistence information ~\cite{}.
-% include words: without constructing diagrams 
-Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm (\cite{edelsbrunner2022computational}) entirely.  
-%Our strategy is motivated by both a measure-theoretic perspective on $\mathbb{R}$-indexed persistence modules~\cite{chazal2016structure} and by a technical observation that suggests several computational advantages to working with the rank invariant directly.
-%?between the persistent Betti numbers and combinatorial Laplacian operators
-As the vectorization we propose continuously interpolates between the rank invariant and a spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
-Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
-
-Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing $\Gamma$-persistence pairs with at least ($\Gamma >0$)-persistence (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
-
-\subsection*{Relaxing rank invariant}\label{sec:rank_invariant_summary}
-
-% sifts through ... something like vineyards, limits towards multiplicity, A x W
-%We interpret $\mathcal{A}$ \emph{parameter space} 
-
-Let $K$ denote a fixed simplicial complex constructed from the data set $X$ and $\mathcal{A} \subset \mathbb{R}^d$ a \emph{parameter space} which indexes a continuously-varying filter function $f_\alpha$ of $K$:
-	\begin{equation}
-		(K, f_\alpha) \triangleq \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma) \}
-	\end{equation}
-	for all $\tau \subseteq \sigma \in K, \alpha \in \mathcal{A}$.
-Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as density filtrations or time-varying filtrations over dynamic metric spaces~\cite{kim2021spatiotemporal}. % TODO: mention bifiltrations?
-
 \begin{figure}[t!]\label{fig:overview}
 \centering
-\includegraphics[width=0.95\textwidth]{spectral_spri_overview}	
-\caption{From left to right: Vineyards analogy of diagrams at `snapshots' over time; 
-vineyard curves flattened with a sieve $\mathcal{R} \subset \Delta_+$; 
-(right) the integer-valued multiplicity function $\mu_p^{\mathcal{R}}(\alpha)$ 
+\includegraphics[width=0.85\textwidth]{spectral_spri_overview}	
+\caption{ (Left) Vineyards analogy of diagrams at `snapshots' over time; 
+(middle) vineyard curves flattened with a sieve $\mathcal{R} \subset \Delta_+$; 
+(right) the integer-valued multiplicity function $\mu_p^{\mathcal{R}}(f_\alpha)$ 
 as a function of time $\alpha \in \mathbb{R}$ (top) and a real-valued spectral relaxation (bottom)
 }
 \end{figure}
 
-Select a \emph{sieve} $\mathcal{R} \subset \Delta_+ = \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$ that is decomposable to a disjoint set of rectangles:
-	\begin{equation}\label{eq:rect_sieve}
-		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h
-	\end{equation} 
-	This choice typically requires a priori knowledge and is application-dependent. In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes, when $\mathcal{R}$ is unknown.
+\begin{multicols}{2}
+\noindent 
+\textbf{Spectral rank invariant: }
+Our proposed mapping exploits proposition~\ref{prop:bauer} via spectral $(\epsilon, \tau)$-approximation of $\mu_p^R$. 
+%Using the duality between rank functions and diagrams, we not only avoid explicitly constructing diagrams, but we in fact avoid using the reduction algorithm (\cite{edelsbrunner2022computational}) entirely.  
+%As the vectorization we propose continuously interpolates between the rank invariant and a spectral operator, we elucidate a connection between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, and iterative subspace  methods.
+%Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
+%Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing $\Gamma$-persistence pairs with at least ($\Gamma >0$)-persistence (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 
+% sifts through ... something like vineyards, limits towards multiplicity, A x W
+%We interpret $\mathcal{A}$ \emph{parameter space} 
+In particular, let $K$ denote a fixed simplicial complex constructed from the data set $X$ and $\mathcal{A} \subset \mathbb{R}^d$ a \emph{parameter space} indexing, for all $\alpha \in \mathcal{A}$, a continuous filter $f_\alpha$ of $K$:
+	\begin{equation*}
+		(K, f_\alpha) \triangleq \{ \, f_\alpha : K \to \mathbb{R} \mid f_\alpha(\tau) \leq f_\alpha(\sigma)  , \tau \subseteq \sigma \in K\}
+	\end{equation*}
+The inputs to our method are $(K, f_\alpha)$, a sieve $\mathcal{R}$, 
+%Exemplary choices of $f_\alpha$ include filtrations geometrically realized from methods that themselves are have parameters, such as time-varying filtrations~\cite{kim2021spatiotemporal} or restrictions of bifiltrations.
+%Select a rectilinear \emph{sieve} $\mathcal{R} \subset \Delta_+ = \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}$ that is decomposable to a disjoint set of rectangles.
+%	\begin{equation}\label{eq:rect_sieve}
+%		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h
+%	\end{equation} 
+%	This choice typically requires a priori knowledge and is application-dependent. 
+	%In section~\ref{sec:applications} we give evidence random sampling may be sufficient for vectorization or exploratory purposes, when $\mathcal{R}$ is unknown.
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
-	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
-Fix a homology dimension $p\geq 0$ and parameters $(\epsilon, \tau ) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
-	\begin{equation}\label{eq:mu_alpha}
-		\mu_p(\mathcal{R} \times \mathcal{A}) \triangleq \{ \, \mathrm{card}(\mathcal{R} \, \cap \, \mathrm{dgm}(K, f_\alpha)) \mid \alpha \in \mathcal{A} \, \}
-	\end{equation}
-	We will show in section~\ref{sec:spri_properties}, letting both $\tau \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
-Choose a combinatorial Laplacian operator $\mathcal{L}$ to associate to $\mathcal{R}$: 
-	% TODO: change Phi to phi, reflect the functional nature
-%$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
-\begin{equation}\label{eq:laplace_intro}
-\mathcal{L} : C^p(K, \mathbb{R}) \times \mathcal{A} \to C^p(K, \mathbb{R})
-\end{equation}
-%	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-The choice of $\mathcal{L}$ determines how the geometric and topological information about $(K, f_\alpha)$ is encoded.
-%and $\Phi$ determines how this information is incorporated into the mapping. 
-For each corner point $(i,j)$ in the boundary of $\mathcal{R}$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
-	$$
-	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}, \quad \quad v \in \mathrm{span}(\textbf{1})^\perp
-	$$
-	The eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $(\epsilon, \tau)$-approximation of~\eqref{eq:mu_alpha} (see section~\ref{sec:spectral_relax}).
+and parameters $(\epsilon, \tau ) \in \mathbb{R}_+^2$ representing how \emph{closely} and \emph{smoothly} the relaxation should model the quantity: 
+	\begin{equation*}\label{eq:mu_alpha}
+		\mu_p^{\mathcal{R}}(f_\alpha) \triangleq \{ \, 
+	\mathrm{card}\left(\restr{\mathrm{dgm}_p(f_\alpha)}{\mathcal{R}} \right) \mid \alpha \in \mathcal{A} \, \}
+	\end{equation*}
+Our proposed approximation first associates a \emph{normalized combinatorial Laplacian} operator $\mathcal{L} : C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})$ to the corner points on the boundary of $\mathcal{R}$. Then, we restrict and project $\mathcal{L}$ onto a Krylov subspace of the form: 
+	\begin{equation*}
+	\mathcal{K}_n(\mathcal{L}, v) \triangleq \mathrm{span}\{ v, \mathcal{L}v, \mathcal{L}^2 v, \dots, \mathcal{L}^{n-1}v \}
+	\end{equation*}
+	for some $v \in \mathrm{span}(\textbf{1})^\perp$. One can show that (1) the eigenvalues of $T = \mathrm{proj}_{\mathcal{K}} \restr{\mathcal{L}}{\mathcal{K}}$ form the basis of the $(\epsilon, \tau)$-approximation of $\mu_p^{\mathcal{R}}(f_\alpha)$, 
+	%, converging towards $\mu_p^{\mathcal{R}}(f_\alpha)$ as both $(\epsilon, \tau)$ decrease towards $0^+$.
+	and (2) that varying $\tau > 0$ yields a family of rank invariant approximations which are Lipshitz continuous, stable under perturbations, and differentiable on the positive semi-definite cone. As the parameters $\epsilon$ and $\tau$ approach zero, the multiplicity $\mu_p^{i,j}$ is recovered exactly. 
 
+Unlike existing dynamic persistence algorithms, our approach requires no complicated data structures or maintenance procedures to implement, can be made \emph{matrix-free}, and is particularly efficient to compute over parameterized families of inputs.
+We defer the formal proofs, properties, and example applications of the method to the full paper. 
+%The proposed relaxation is also , requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$.
 
-\noindent \textbf{Future Remarks:} The remaining steps of the relaxation depend on the application in mind. 
-The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation.
-The differentiability of our relaxation enables learning applications seeking to optimize persistence information, such as filtration optimization, incorporating topological priors into loss functions, and automated filtration sparsification.
-
-
-
-Compared to the classical reduction methods~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage of the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
-Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, the operation $x \mapsto \partial x$ can be implemented without actually constructing $\partial$ in memory, enabling the use of e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we} for their computation. 
-%Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
-Indeed, this line of thought suggests other algebraic properties of the rank function---such as invariance under permutations and adjoint multiplication---may simplify these rank-based expressions even further.
-%By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
-The full version of this abstract explores these questions and their ramifications in detail. 
- 
+%\noindent \textbf{Future Remarks:} The remaining steps of the relaxation depend on the application in mind. 
+%The duality between diagrams and rank functions suggests any application exploiting vectorized persistence information may benefit from our relaxation.
+%The differentiability of our relaxation enables learning applications seeking to optimize persistence information, such as filtration optimization, incorporating topological priors into loss functions, and automated filtration sparsification.
+%Compared to the classical reduction methods~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage of the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
+%Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, the operation $x \mapsto \partial x$ can be implemented without actually constructing $\partial$ in memory, enabling the use of e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we} for their computation. 
+%%Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
+%Indeed, this line of thought suggests other algebraic properties of the rank function---such as invariance under permutations and adjoint multiplication---may simplify these rank-based expressions even further.
+%%By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
+%The full version of this abstract explores these questions and their ramifications in detail. 
 \bibliography{pbsig_bib}
 \bibliographystyle{plain}
  
- \end{document}
+\end{multicols}
+\end{document}

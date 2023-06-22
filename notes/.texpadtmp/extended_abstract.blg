@@ -3,44 +3,44 @@ Capacity: max_strings=200000, hash_size=200000, hash_prime=170003
 The top-level auxiliary file: /Users/mpiekenbrock/pbsig/notes/.texpadtmp/extended_abstract.aux
 The style file: plain.bst
 Database file #1: ../pbsig_bib.bib
-You've used 9 entries,
+You've used 7 entries,
             2118 wiz_defined-function locations,
-            552 strings with 5582 characters,
-and the built_in function-call counts, 3289 in all, are:
-= -- 323
-> -- 141
-< -- 4
-+ -- 57
-- -- 46
-* -- 209
-:= -- 521
-add.period$ -- 27
-call.type$ -- 9
-change.case$ -- 47
+            541 strings with 5433 characters,
+and the built_in function-call counts, 2704 in all, are:
+= -- 260
+> -- 146
+< -- 3
++ -- 58
+- -- 50
+* -- 191
+:= -- 445
+add.period$ -- 22
+call.type$ -- 7
+change.case$ -- 43
 chr.to.int$ -- 0
-cite$ -- 9
-duplicate$ -- 138
-empty$ -- 270
-format.name$ -- 46
-if$ -- 707
+cite$ -- 7
+duplicate$ -- 102
+empty$ -- 199
+format.name$ -- 50
+if$ -- 567
 int.to.chr$ -- 0
-int.to.str$ -- 9
-missing$ -- 12
-newline$ -- 48
-num.names$ -- 18
-pop$ -- 64
+int.to.str$ -- 7
+missing$ -- 9
+newline$ -- 38
+num.names$ -- 14
+pop$ -- 54
 preamble$ -- 1
-purify$ -- 41
+purify$ -- 38
 quote$ -- 0
-skip$ -- 105
+skip$ -- 75
 stack$ -- 0
-substring$ -- 221
-swap$ -- 40
-text.length$ -- 4
+substring$ -- 153
+swap$ -- 28
+text.length$ -- 3
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 30
+type$ -- 24
 warning$ -- 0
-while$ -- 33
-width$ -- 10
-write$ -- 99
+while$ -- 24
+width$ -- 8
+write$ -- 78

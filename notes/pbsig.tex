@@ -626,8 +626,8 @@ We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as
 Exploiting this decoupling, note that we have an equivalence between the constitutive terms from~\eqref{eq:lower_left_rank} and matrices of the form:
 \begin{equation}\label{eq:rank_equiv_param}
 %	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = 
-	\mathrm{rank}(\, \partial_p^{i,j}(K, f_\alpha) \, ) \Leftrightarrow \mathrm{rank}\!\left( \, D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(S_j \circ f_\alpha) \, \right)
-\end{equation}
+	\mathrm{rank}\big(\, \partial_p^{i,j}(K, f_\alpha) \, \big) \Leftrightarrow \mathrm{rank}\big(\,\hat{\partial}_p^{i,j}(\alpha)\,\big), \quad \hat{\partial}_p^{i,j}(\alpha) \triangleq D_p(\bar{S}_i \circ f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(S_j \circ f_\alpha) 
+	\end{equation}
 where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down step functions, respectively, of the form $\bar{S}_i(x) = \mathbbm{1}_{x > i}(x)$ and $S_j(x) = \mathbbm{1}_{x \leq j}(x)$.
 %\begin{equation}\label{eq:step_functions}
 %	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
@@ -667,7 +667,7 @@ We summarize these observations with a proposition. Without loss in generality, 
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 \begin{remark}
 	In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq^\ast})$ (as opposed to $\partial_p(K_\bullet)$ or $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq^\ast})$ is ordered  according to the [arbitrary] linear ordering $(K, \preceq^\ast)$. Note that, in contrast, the boundary terms in proposition~\ref{prop:mu_reduction} are explicitly filtered in the traditional simplexwise manner by $f_\ast$ (which varies in $\mathcal{A}$). 
-As a result, expressions of persistent rank invariants obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using their parameterized versions from definition~\ref{eq:rank_equiv_param} are permutation invariant. 
+As a result, it is clear that the expressions of persistent rank invariants from~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized} obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using their parameterized forms from~\eqref{eq:rank_equiv_param} are permutation invariant. 
 \end{remark}
 %% TODO: proof of sign pattern stuff 
 
@@ -835,8 +835,7 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 %\begin{align*}\label{eq:lowner}
 % \Phi_\epsilon : \quad \mathbb{R}^{n \times m}  & \; \to \; \mathbb{R}^{n \times m}  \\
 %						           X & \; \mapsto \; U \, \mathrm{diag}( \tilde{\phi}(\sigma_1, \epsilon), \tilde{\phi}(\sigma_2, \epsilon), \dots, \tilde{\phi}(\sigma_n, \epsilon)) \, V^T \numberthis
-%\end{align*}
-\noindent It may be shown that $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ for any $\epsilon > 0$ and is twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$~\cite{ding2018spectral}.  
+%\end{align*} 
 %The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
 %The formal connection between $\Phi_\epsilon$ and $\phi$ is characterized by the following definition:
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
@@ -855,11 +854,9 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
 	\end{enumerate}
 \end{proposition}
-\noindent Note that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, which is sufficient for our purposes here. 
 %\begin{remark}
 %	% TODO: Gauge function remark
 %\end{remark}
-
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
@@ -871,32 +868,32 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 	}
 	\label{fig:smoothstep}
 \end{figure}
-
-%\begin{equation}
-%S_n(x)  = a_n x^n + a_{n-1} x^{n-1} + \dots + a_1 x + a_0
-%\end{equation} 
-%Our motivation to use them here is based on the observations shown in Figure~\ref{fig:smoothstep}: by substituting $\mathcal{S}_n^{\omega}$ for the step functions 	in~\eqref{eq:param_boundary_matrix} and adding a small translation, we may replace the step functions in the parameterized boundary matrix with entries varies continuously in $\mathcal{A}$ and retain the correct sign. 
-Since smoothstep functions retain the sign of their input, composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ yields a continuously-varying $\epsilon$-approximation of the rank function, which we call a \emph{spectral rank function}. 
-\begin{definition}[Spectral Rank]\label{def:smooth_mu}
-Given the same inputs as Proposition~\ref{prop:mu_betti_1},
-let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized \emph{spectral persistent Betti number} and \emph{spectral multiplicity} of $R$ as:
-	\begin{equation}\label{eq:bett_cont}
-\hat{\beta}_p^{i,j}(\alpha) = 
-\lVert \Phi_\epsilon^\alpha(\,\hat{I}_{p}^i\,)\rVert_\ast -
-\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p}^{1, i}) \rVert_\ast - 
-\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{1, j}) \rVert_\ast + 
-\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{i\+\delta, j}) \rVert_\ast \numberthis
-	\end{equation}
-	\begin{equation}\label{eq:mu_cont}
-	\hat{\mu}_{p,\epsilon}^R(\alpha) = 
-		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
-		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
-		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
-		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
-\end{equation}
-where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from~\eqref{eq:rank_equiv_param} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
-\end{definition}
+%Since smoothstep functions retain the sign of their input, composing with~\eqref{eq:mu_four} and substituting $\mathrm{rank}(\cdot)$ with $\Phi(\cdot, \epsilon)$ yields a continuously-varying $\epsilon$-approximation of the rank function, which we call a \emph{spectral rank function}. 
+%\begin{definition}[Spectral Rank]\label{def:smooth_mu}
+%Given the same inputs as Proposition~\ref{prop:mu_betti_1},
+%let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized \emph{spectral persistent Betti number} and \emph{spectral multiplicity} of $R$ as:
+%	\begin{equation}\label{eq:bett_cont}
+%\hat{\beta}_p^{i,j}(\alpha) = 
+%\lVert \Phi_\epsilon^\alpha(\,\hat{I}_{p}^i\,)\rVert_\ast -
+%\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p}^{1, i}) \rVert_\ast - 
+%\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{1, j}) \rVert_\ast + 
+%\lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p+1}^{i\+\delta, j}) \rVert_\ast \numberthis
+%	\end{equation}
+%	\begin{equation}\label{eq:mu_cont}
+%	\hat{\mu}_{p,\epsilon}^R(\alpha) = 
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
+%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
+%\end{equation}
+%where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from~\eqref{eq:rank_equiv_param} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
+%\end{definition}
 \noindent Since the sum of two Lipshitz functions $g$ and $h$ is also Lipshitz, it is easy to verify both $\hat{\mu}_p^R$ and $\hat{\beta}_p^{i,j}$ are Lipshitz continuous functions in $\alpha$ whenever the filter function $f$ is Lipshitz by combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner}. 
+\begin{remark}
+	It may be shown that $\Phi_\epsilon$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ for any $\epsilon > 0$ and is twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$ for all $i = 1, \dots, n$~\cite{ding2018spectral}. 
+However, note that $\lVert\Phi_\epsilon(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}, but it is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$. This is addressed in the following section. 
+\end{remark}
+ 
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
 %
@@ -919,11 +916,15 @@ where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ 
 %In section~\ref{sec:param_boundary}, we exploited permutation invariance to simplify the persistence rank invariants~\eqref{eq:betti_four} and~\eqref{eq:mu_four} and in section~\ref{sec:spectral_relax} we used the fact\footnote{
 %This fact can be proven using the spectral theorem or observed directly due to the inertia theorem~\cite{bhatia2013matrix}. %Section I.2 of stewart 
 %} that $\sigma_i(X) > 0$ whenever $\mathrm{rank}(X) \leq i$ to derive a spectral relaxation of the rank function. 
-Continuing the theme of studying invariances of the rank function to simplify expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four}, in this section we exploit another well known identity of the rank function: 
+% 3.1 gives permutation invariance + continuous boundary operators, 
+% 3.2 gives Lipshitz-smooth boundary operators + continuous rank approximations
+% 3.3 gives ingredients necessary to reduce complexity from O(n^3) to (n^2), and different geometry
+Continuing the theme of studying invariances of the rank function to simplify expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four}, in this section we exploit another well known identity of the rank function for zero characteristic fields: 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
 On the spectral side, it is well-known the square roots of the non-zero eigenvalues of either $XX^T$ or $X^T X$ yield the singular values of $X$. Since $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we may consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators.  
 %Towards revealing  
 % "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
+% TODO: rewrite somehow to avoid bloat? talk about endowing differentiability and reducing runtime complexity
 
 The natural extension of the graph Laplacian $L$ to simplicial complexes is the \emph{$p$-th combinatorial Laplacian} $\Delta_p$, whose explicit matrix representation is given by: 
 \begin{equation}\label{eq:comb_lap}
@@ -1071,7 +1072,7 @@ For all the reasons given above, we exclusively consider the normalized combinat
 % Laplacian Energy
 We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants~\cite{}. 
 For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
-$$ \lVert \Phi(\partial_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
+$$ \lVert \Phi(\hat{\partial}_p^{i,j} \circ \hat{\partial}_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
 where we use the notation $\mathcal{L}_p^{i,j}$ to indicate...
 We have, as its very basic properties: 
 \begin{enumerate}
@@ -1195,7 +1196,8 @@ In the following sections, we (1) recall the method of minimized iterations in s
 Computing eigen-decompositions $A = V \Lambda V^T$ of symmetric matrices $A \in S_n$ generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
 While the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using traditional (i.e. non-Strassen) matrix operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
-Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. As it is the central tool we use to convert the spectral rank computation into an iterative procedure, we review it below. 
+Lanczos~\cite{lanczos1950iteration} proposed the \emph{method of minimized iterations}---now known as the \emph{Lanczos method}---as an attractive alternative for reducing $A$ into a tridiagonal form and thus revealing its spectrum. 
+%As it is the central tool we use to convert the spectral rank computation into an iterative procedure, we review it below. 
 % Mention reflectors destroy sparsity 
 % orthogonally diagonalizable 
 %The eigen-decomposition of a symmetric $A$ not only produces an orthogonal basis for $A$, but for every $1 \leq r \leq \mathrm{rank}(A)$, the matrix $A_{(r)} = V_r \, \mathrm{diag}(\{\sigma_1, \dots, \sigma_r\}) \, V^T_r$ is the closest matrix to $A$ in the Frobenius norm: 
@@ -1318,7 +1320,7 @@ Furthermore, by using the adjacency relation $i \sim j$ as in~\cite{chung1997spe
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 %	  x^T L x = \sum\limits_{i \sim j} f(v_i, v_j) (x_i - x_j)^2  & &&
 \end{flalign}
-If $G$ has $m$ edges and $n$ vertices taking labels in the set $[n]$, computing the matrix-vector product from~\eqref{eq:lap_quad_from} requires just $O(m)$ time and $O(n)$ storage via two edge traversals: one to accumulate vertex degrees and one to remove components from incident edges. By precomputing the degrees, the operation reduces further to a single $O(n)$ product and $O(m)$ edge pass, which is useful when repeated evaluation for varying $x$ is necessary. 
+If $G$ has $m$ edges and $n$ vertices taking labels in the set $[n]$, computing the product from~\eqref{eq:lap_quad_from} requires just $O(m)$ time and $O(n)$ storage via two edge traversals: one to accumulate vertex degrees and one to remove components from incident edges. By precomputing the degrees, the operation reduces further to a single $O(n)$ product and $O(m)$ edge pass, which is useful when repeated evaluation for varying $x$ is necessary. 
 %As we show below, generalizing this procedure when $p > 0$ requires .
 %, as the orientations of $[\sigma] \in K^{p+1}$ change the sign of the off-diagonal entries in $L_p^\ast$. 
 %In particular, writing down a succinct expression for $x \mapsto L_p^{\textrm{up}} x$ (or $x \mapsto L_p^{\textrm{dn}} x$) requires a generalization of the notion of path-connectedness between $p$-simplices, as well as knowledge of the orientation of every simplex to evaluate the sign..
@@ -1344,19 +1346,16 @@ where $s_{\tau, \tau'} = \mathrm{sgn}([\tau], \partial[\sigma]) \, \cdot \, \mat
 Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass algorithm as described for the graph Laplacian if the simplices of $K^{p+1}$ can be quickly enumerated and the indexing function $h$ can be efficiently evaluated. We summarize this with a lemma. 
 %Since a $p+1$-simplex has $p$ proper faces in its boundary, and we need to iterate through the $p+1$ simplices $\sigma \in K^{p+1}$ just once in the case of the $\mathrm{up}$-Laplacian,
 %We combine the above observations into a proposition. 
-\begin{lemma}
-	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists an indexing function $h: K^p \to [n]$ with $O(k)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(mk(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
+\begin{lemma}\label{lemma:matvec_lap}
+	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists an indexing function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{lemma}
 \noindent From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---implying the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
 As more concrete statements about the computation require moving beyond asymptotic analysis, we delegate the practical details---along with pseudocode of the two-phase algorithm---to appendix~\ref{sec:up_laplace_matvec}, for the computationally-minded reader.
-
-Combining Lemma~\ref{} with proposition~\ref{lemma:exact_arith_lanczos}, 
+Combining lemma~\ref{lemma:matvec_lap} with proposition~\ref{lemma:exact_arith_lanczos}, 
 \begin{proposition}\label{prop:spectral_rank}
-	For any $p \geq 0$, given a rank-$r$ combinatorial Laplacian operator $L: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$,  
-	
-	whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
+	For any small constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration when computation is done in exact arithmetic. 
 \end{proposition}
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
 
