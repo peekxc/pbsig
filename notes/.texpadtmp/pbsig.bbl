@@ -123,6 +123,11 @@ Ming Gu and Stanley~C Eisenstat.
 \newblock {\em SIAM Journal on Matrix Analysis and Applications},
   16(1):172--191, 1995.
 
+\bibitem{horak2013spectra}
+Danijela Horak and J{\"u}rgen Jost.
+\newblock Spectra of combinatorial laplace operators on simplicial complexes.
+\newblock {\em Advances in Mathematics}, 244:303--336, 2013.
+
 \bibitem{kim2021spatiotemporal}
 Woojin Kim and Facundo M{\'e}moli.
 \newblock Spatiotemporal persistent homology for dynamic metric spaces.

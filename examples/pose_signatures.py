@@ -266,6 +266,7 @@ def bottleneck_loss(alpha: np.ndarray):
     diff[dc==cl] = con*diff[dc==cl]
   return np.sum(diff**1.8)
 
+## TODO: just formulate a linear program ?
 from scipy.optimize import minimize, LinearConstraint
 sum_to_one = LinearConstraint(np.ones(n_corner_pts)[np.newaxis,:], lb=1.0, ub=1.0)
 res = minimize(bottleneck_loss, x0=np.ones(n_corner_pts)/n_corner_pts, constraints=sum_to_one, method="trust-constr", bounds=[(0,1)], options={'verbose': 1})
