@@ -98,7 +98,7 @@ S_sparse = simplicial_complex()
 S_sparse.update([[i] for i in range(card(S,0))])
 S_sparse.update(sparse_weight(S, insert_rad, 0.90, er)[0])
 
-p2 = figure_complex(S_sparse, pos=X)
+
 
 from gudhi import RipsComplex
 S = RipsComplex(points=X, max_edge_length=er, sparse=0.90)
@@ -106,6 +106,7 @@ st = S.create_simplex_tree()
 
 S_sparse = simplicial_complex([Simplex(s[0]) for s in st.get_simplices()])
 
+p2 = figure_complex(S_sparse, pos=X)
 
 # f_sparse = sparse_weight(X, insert_rad, 0.1)
 
