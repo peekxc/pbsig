@@ -1,0 +1,207 @@
+\begin{thebibliography}{10}
+
+\bibitem{adams2017persistence}
+Henry Adams, Tegan Emerson, Michael Kirby, Rachel Neville, Chris Peterson,
+  Patrick Shipman, Sofya Chepushtanova, Eric Hanson, Francis Motta, and Lori
+  Ziegelmeier.
+\newblock Persistence images: A stable vector representation of persistent
+  homology.
+\newblock {\em Journal of Machine Learning Research}, 18, 2017.
+
+\bibitem{bauer2021ripser}
+Ulrich Bauer.
+\newblock Ripser: efficient computation of vietoris--rips persistence barcodes.
+\newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
+  2021.
+
+\bibitem{bauer2020persistence}
+Ulrich Bauer and Michael Lesnick.
+\newblock Persistence diagrams as diagrams: A categorification of the stability
+  theorem.
+\newblock In {\em Topological Data Analysis}, pages 67--96. Springer, 2020.
+
+\bibitem{bauer2022keeping}
+Ulrich Bauer, Talha~Bin Masood, Barbara Giunti, Guillaume Houry, Michael
+  Kerber, and Abhishek Rathod.
+\newblock Keeping it sparse: Computing persistent homology revised.
+\newblock {\em arXiv preprint arXiv:2211.09075}, 2022.
+
+\bibitem{bhatia2013matrix}
+Rajendra Bhatia.
+\newblock {\em Matrix analysis}, volume 169.
+\newblock Springer Science \& Business Media, 2013.
+
+\bibitem{bi2013approximation}
+Shujun Bi, Le~Han, and Shaohua Pan.
+\newblock Approximation of rank function and its application to the nearest
+  low-rank correlation matrix.
+\newblock {\em Journal of Global Optimization}, 57(4):1113--1137, 2013.
+
+\bibitem{bubenik2015statistical}
+Peter Bubenik et~al.
+\newblock Statistical topological data analysis using persistence landscapes.
+\newblock {\em J. Mach. Learn. Res.}, 16(1):77--102, 2015.
+
+\bibitem{cerri2013betti}
+Andrea Cerri, Barbara~Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia
+  Landi.
+\newblock Betti numbers in multidimensional persistent homology are stable
+  functions.
+\newblock {\em Mathematical Methods in the Applied Sciences},
+  36(12):1543--1557, 2013.
+
+\bibitem{chazal2009gromov}
+Fr{\'e}d{\'e}ric Chazal, David Cohen-Steiner, Leonidas~J Guibas, Facundo
+  M{\'e}moli, and Steve~Y Oudot.
+\newblock Gromov-hausdorff stable signatures for shapes using persistence.
+\newblock In {\em Computer Graphics Forum}, volume~28, pages 1393--1403. Wiley
+  Online Library, 2009.
+
+\bibitem{chazal2016structure}
+Fr{\'e}d{\'e}ric Chazal, Vin De~Silva, Marc Glisse, and Steve Oudot.
+\newblock {\em The structure and stability of persistence modules}, volume~10.
+\newblock Springer, 2016.
+
+\bibitem{chen2011output}
+Chao Chen and Michael Kerber.
+\newblock An output-sensitive algorithm for persistent homology.
+\newblock In {\em Proceedings of the twenty-seventh annual symposium on
+  Computational geometry}, pages 207--216, 2011.
+
+\bibitem{chung1997spectral}
+Fan~RK Chung.
+\newblock {\em Spectral graph theory}, volume~92.
+\newblock American Mathematical Soc., 1997.
+
+\bibitem{cohen2005stability}
+David Cohen-Steiner, Herbert Edelsbrunner, and John Harer.
+\newblock Stability of persistence diagrams.
+\newblock In {\em Proceedings of the twenty-first annual symposium on
+  Computational geometry}, pages 263--271, 2005.
+
+\bibitem{cohen2006vines}
+David Cohen-Steiner, Herbert Edelsbrunner, and Dmitriy Morozov.
+\newblock Vines and vineyards by updating persistence in linear time.
+\newblock In {\em Proceedings of the twenty-second annual symposium on
+  Computational geometry}, pages 119--126, 2006.
+
+\bibitem{dey2022computational}
+Tamal~Krishna Dey and Yusu Wang.
+\newblock {\em Computational topology for data analysis}.
+\newblock Cambridge University Press, 2022.
+
+\bibitem{ding2018spectral}
+Chao Ding, Defeng Sun, Jie Sun, and Kim-Chuan Toh.
+\newblock Spectral operators of matrices.
+\newblock {\em Mathematical Programming}, 168(1):509--531, 2018.
+
+\bibitem{edelsbrunner2022computational}
+Herbert Edelsbrunner and John~L Harer.
+\newblock {\em Computational topology: an introduction}.
+\newblock American Mathematical Society, 2022.
+
+\bibitem{edelsbrunner2000topological}
+Herbert Edelsbrunner, David Letscher, and Afra Zomorodian.
+\newblock Topological persistence and simplification.
+\newblock In {\em Proceedings 41st annual symposium on foundations of computer
+  science}, pages 454--463. IEEE, 2000.
+
+\bibitem{goldberg2002combinatorial}
+Timothy~E Goldberg.
+\newblock Combinatorial laplacians of simplicial complexes.
+\newblock {\em Senior Thesis, Bard College}, 6, 2002.
+
+\bibitem{golub2013matrix}
+Gene~H Golub and Charles~F Van~Loan.
+\newblock {\em Matrix computations}.
+\newblock JHU press, 2013.
+
+\bibitem{gu1995divide}
+Ming Gu and Stanley~C Eisenstat.
+\newblock A divide-and-conquer algorithm for the symmetric tridiagonal
+  eigenproblem.
+\newblock {\em SIAM Journal on Matrix Analysis and Applications},
+  16(1):172--191, 1995.
+
+\bibitem{horak2013spectra}
+Danijela Horak and J{\"u}rgen Jost.
+\newblock Spectra of combinatorial laplace operators on simplicial complexes.
+\newblock {\em Advances in Mathematics}, 244:303--336, 2013.
+
+\bibitem{kim2021spatiotemporal}
+Woojin Kim and Facundo M{\'e}moli.
+\newblock Spatiotemporal persistent homology for dynamic metric spaces.
+\newblock {\em Discrete \& Computational Geometry}, 66:831--875, 2021.
+
+\bibitem{lanczos1950iteration}
+Cornelius Lanczos.
+\newblock An iteration method for the solution of the eigenvalue problem of
+  linear differential and integral operators.
+\newblock 1950.
+
+\bibitem{mangasarian1994class}
+Olvi Mangasarian and Chunhui Chen.
+\newblock A class of smoothing functions for nonlinear and mixed
+  complementarity problems.
+\newblock Technical report, 1994.
+
+\bibitem{memoli2022persistent}
+Facundo M{\'e}moli, Zhengchao Wan, and Yusu Wang.
+\newblock Persistent laplacians: Properties, algorithms and implications.
+\newblock {\em SIAM Journal on Mathematics of Data Science}, 4(2):858--884,
+  2022.
+
+\bibitem{newman2001laplacian}
+Michael~William Newman.
+\newblock The laplacian spectrum of graphs.
+\newblock Master's thesis, 2001.
+
+\bibitem{parlett1994we}
+Beresford~N Parlett.
+\newblock Do we fully understand the symmetric lanczos algorithm yet.
+\newblock {\em Brown et al}, 3:93--107, 1994.
+
+\bibitem{perea2016persistent}
+Jose~A Perea.
+\newblock Persistent homology of toroidal sliding window embeddings.
+\newblock In {\em 2016 IEEE International Conference on Acoustics, Speech and
+  Signal Processing (ICASSP)}, pages 6435--6439. IEEE, 2016.
+
+\bibitem{perea2022approximating}
+Jose~A Perea, Elizabeth Munch, and Firas~A Khasawneh.
+\newblock Approximating continuous functions on persistence diagrams using
+  template functions.
+\newblock {\em Foundations of Computational Mathematics}, pages 1--58, 2022.
+
+\bibitem{piekenbrock2021move}
+Matthew Piekenbrock and Jose~A Perea.
+\newblock Move schedules: Fast persistence computations in coarse dynamic
+  settings.
+\newblock {\em arXiv preprint arXiv:2104.12285}, 2021.
+
+\bibitem{pun2018persistent}
+Chi~Seng Pun, Kelin Xia, and Si~Xian Lee.
+\newblock Persistent-homology-based machine learning and its applications--a
+  survey.
+\newblock {\em arXiv preprint arXiv:1811.00252}, 2018.
+
+\bibitem{scoccola2023fibered}
+Luis Scoccola and Jose~A Perea.
+\newblock Fibered: Fiberwise dimensionality reduction of topologically complex
+  data with vector bundles.
+\newblock In {\em 39th International Symposium on Computational Geometry (SoCG
+  2023)}. Schloss Dagstuhl-Leibniz-Zentrum f{\"u}r Informatik, 2023.
+
+\bibitem{simon1984analysis}
+Horst~D Simon.
+\newblock Analysis of the symmetric lanczos algorithm with reorthogonalization
+  methods.
+\newblock {\em Linear algebra and its applications}, 61:101--131, 1984.
+
+\bibitem{zomorodian2004computing}
+Afra Zomorodian and Gunnar Carlsson.
+\newblock Computing persistent homology.
+\newblock In {\em Proceedings of the twentieth annual symposium on
+  Computational geometry}, pages 347--356, 2004.
+
+\end{thebibliography}
