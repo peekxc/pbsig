@@ -179,12 +179,6 @@ Matthew Piekenbrock and Jose~A Perea.
   settings.
 \newblock {\em arXiv preprint arXiv:2104.12285}, 2021.
 
-\bibitem{pun2018persistent}
-Chi~Seng Pun, Kelin Xia, and Si~Xian Lee.
-\newblock Persistent-homology-based machine learning and its applications--a
-  survey.
-\newblock {\em arXiv preprint arXiv:1811.00252}, 2018.
-
 \bibitem{scoccola2023fibered}
 Luis Scoccola and Jose~A Perea.
 \newblock Fibered: Fiberwise dimensionality reduction of topologically complex
@@ -197,6 +191,12 @@ Horst~D Simon.
 \newblock Analysis of the symmetric lanczos algorithm with reorthogonalization
   methods.
 \newblock {\em Linear algebra and its applications}, 61:101--131, 1984.
+
+\bibitem{zhao2012approximation}
+Yun-Bin Zhao.
+\newblock An approximation theory of matrix rank minimization and its
+  application to quadratic equations.
+\newblock {\em Linear Algebra and its Applications}, 437(1):77--93, 2012.
 
 \bibitem{zomorodian2004computing}
 Afra Zomorodian and Gunnar Carlsson.

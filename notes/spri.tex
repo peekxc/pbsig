@@ -16,6 +16,9 @@
   
 \usepackage{tcolorbox}
 
+\usepackage{lineno}
+\linenumbers
+
 \numberwithin{equation}{section}
 
 %\usepackage{titlesec}
@@ -156,14 +159,14 @@
 Spectral relaxations of persistent rank invariants
 \vspace{-0.5em}}
 
-\author{Matt Piekenbrock \& Jose Perea}
+\author{Matt Piekenbrock \& Jose A. Perea}
 \date{}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-Using a duality result between persistence diagrams and persistence measures, we introduce a framework for constructing families of continuous relaxations of the persistent rank invariant for persistence modules indexed over the real line. 
+Using the fact that the persistent rank invariant determines the persistence diagram and vice versa, we introduce a framework for constructing families of continuous relaxations of the persistent rank invariant for persistence modules indexed over the real line. 
 Like the rank invariant, these families obey inclusion-exclusion, are derived from simplicial boundary operators, and encode all the information needed to construct a persistence diagram. 
 Unlike the rank invariant, these spectrally-derived families enjoy a number of stability and continuity properties typically reserved for persistence diagrams, such as smoothness and differentiability over the positive semi-definite cone. 
 %Key to achieving a $(1-\epsilon)$-approximation is the use of spectral L{\"o}wner decompositions 
@@ -173,25 +176,31 @@ Unlike the rank invariant, these spectrally-derived families enjoy a number of s
 %By exploiting a connection to combinatorial Laplacian operators, we find that the non-harmonic spectra from which our interpolation derives encodes rich geometric information about the underlying space, providing several avenues for geometric data analysis. 
 By leveraging its relationship with combinatorial Laplacian operators, we find the non-harmonic spectra of our proposed relaxation encode valuable geometric information about the underlying space, prompting several avenues for geometric data analysis.
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
-We investigate the utility of our relaxation with exemplary applications in topological data analysis and machine learning, such as hyper-parameter optimization and shape classification.
+We investigate the utility of our relaxation with applications in topological data analysis and machine learning, such as parameter optimization and shape classification.
 
 \end{abstract}
 
 \section{Introduction}\label{sec:intro}
 % History of persistence: shape descriptor, homology inference, stability => homology is useful for application domains
 Persistent homology~\cite{edelsbrunner2000topological} (PH) is the most widely deployed tool for data analysis and learning applications within the topological data analysis (TDA) community. 
-Persistence-related pipelines typically follow a common pattern: given input data set $X$, construct a filtration $(K, f)$ from $X$ such that useful topological or geometric information may be profitably gleaned from its \emph{persistence diagram}---a 
+Persistence-related pipelines often follow a common pattern: given a data set $X$ as input, construct a simplicial complex $K$ and an order-preserving function $f: K \to \mathbb{R}$ such that useful topological/geometric information may be gleaned from its \emph{persistence diagram}---a 
 %given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$,
 %its $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is the 
-multiset summary of $f$ constructed by pairing homological critical values $\{ a_i \}_{i=1}^n$ with non-zero \emph{multiplicities} $\mu_p^{i,j}$~\cite{cohen2005stability}: 
+multiset summary of $f$ formed by pairing homological critical values $\{ a_i \}_{i=1}^N$ with \emph{multiplicities} $\mu_p^{i,j}$~\cite{cohen2005stability}:
+%defined over the integer upper halfplane $\Delta_+^N \triangleq \{\, (i,j) : 1 \leq i \leq j \leq n \, \}$: 
 \begin{equation}\label{eq:dgm}
-\mathrm{dgm}_p(f) \triangleq \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0 \, \} \; \cup \; \Delta, \quad \quad \mu_p^{i,j} \triangleq \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
+\mathrm{dgm}_p(K, f) \triangleq \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0  \, \}  
+%\cup \Delta_+^{N}
+%,\quad \quad \Delta_+^{\lvert K \rvert} \triangleq \{\, (i,j) : 1 \leq i \leq j \leq N \, \}
+%i \leq j
+% \quad \quad \mu_p^{i,j} \triangleq \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
 % \{(x,x): x \in \mathbb{R}, \mu_p^{x,x} = \infty \}
+%\cup \Delta_+^N  
 \end{equation}
 %where $\Delta$ denotes the diagonal, measured with infinite multiplicity.  
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
 %Historically, persistence diagrams were first used as \emph{shape descriptors} due to their effectiveness in tackling the homology inference problem~\cite{perea2018brief}: 
-By pairing simplices using homomorphisms between homology groups, diagrams demarcate homological features succinctly.
+%By pairing simplices using homomorphisms between homology groups, diagrams demarcate homological features succinctly.
 %The connection between the persistent homology (PH) groups and their corresponding persistent Betti numbers (PBNs) has long been studied from multiple perspectives~\cite{cerri2013betti, chazal2016structure, cohen2005stability, zomorodian2004computing}.
 %We recall a few characterizations which are illuminating in this effort.
 %From an algebraic perspective, Carlsson et al.~\cite{zomorodian2004computing} observed that the PH groups over a filtration may be viewed as the standard homology groups of a particular graded module $M$ over a polynomial ring. 
@@ -221,9 +230,13 @@ On the issue of injectivity, Turner et al. propose the \emph{persistent homology
 %rather than compute one diagram, compute many, each diagram representing a different perspective. 
 %The main result of~\cite{} shows this collection of diagrams is 
 sufficient to reconstruct $X$, sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
-Though these diagram vectorizations have proven useful for learning applications due to their stability and metric configurability~\cite{pun2018persistent},
+Though these extensions have proven useful in learning applications,
+%~\cite{pun2018persistent},
 %however, their scalability is limited as diagrams are prerequisite to their computation.
-their scalability issue remains limited---not only are diagrams difficult to compute individually, but extending the persistence computation to parameterized settings has proven non-trivial~\cite{piekenbrock2021move}. %moves
+individual diagrams can still be quite difficult to obtain, and generalizing their computation to parameterized settings has proven non-trivial~\cite{piekenbrock2021move}.
+%not only is the standard PH computation expensive statistically, 
+%not only are diagrams difficult to compute individually, but extending the persistence computation to parameterized settings has proven non-trivial~\cite{piekenbrock2021move}. 
+%moves
 %Indeed, achieving rotation invariance in~\eqref{eq:pht1} alone\footnote{This is often a necessary post-processing step of the PHT.} involves a quadratic number of bottleneck computations. 
  
   %For any $i,j \in \Delta_+$, define the \emph{multiplicity} $\mu_p^{i,j}$ of the pair $p = (i,j)$ by: 
@@ -279,7 +292,7 @@ we devise a spectral method
 that performs both steps, simultaneously and approximately. 
 %Our strategy is natural in that it extracts persistence information ~\cite{}.
 % include words: without constructing diagrams 
-Our strategy is motivated both by a technical observation that suggests advantages exist for the rank invariant computation (section~\ref{sec:betti_derivation}) and by measure-theoretic results on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize~\eqref{eq:dgm} to arbitrary \emph{corner points} $(\, \hat\imath, \hat\jmath \,) \in \Delta_+$:
+Our strategy is motivated both by a technical observation that suggests advantages exist for the rank invariant computation (section~\ref{sec:betti_derivation}) and by measure-theoretic results on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize~\eqref{eq:dgm} to arbitrary \emph{corner points} $(\, \hat\imath, \hat\jmath \,) \in \mathbb{R}^2$:
 %= \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
 \begin{equation}\label{eq:measure}
 %	\mu_p^R(f) \triangleq \mathrm{card}\left( \,
@@ -287,14 +300,18 @@ Our strategy is motivated both by a technical observation that suggests advantag
 %	\restr{\mathrm{dgm}_p(f)}{R} \,
 %	\right), \quad 
 	\mu_p^{\hat\imath, \hat\jmath}(K,f) \triangleq \; \min_{\delta > 0} \left(\beta_p^{\hat\imath \+ \delta, \hat\jmath  \shortminus \delta} - \beta_p^{\hat\imath \+ \delta, \hat\jmath  \+ \delta} \right) - \left(\beta_p^{\hat\imath \shortminus \delta, \hat\jmath \shortminus \delta} - \beta_p^{\hat\imath \shortminus \delta, \hat\jmath  \+ \delta} \right)
+%	, \quad \hat\imath \leq \hat\jmath
 \end{equation}
+where $\beta_p^{a,b}$ is the rank of the linear map in homology induced by the inclusion $f^{\shortminus1}(-\infty, a] \hookrightarrow f^{\shortminus1}(-\infty, b]$.
+% \mathrm{rank}(H_p(K_{\hat\imath})\to)
 A notable feature of our approach is that it not only avoids explicitly constructing diagrams, but it circumvents the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 %?between the persistent Betti numbers and combinatorial Laplacian operators
 %As a way to continuously interpolates between the rank function and the spectrum of certain linear operator, we elucidate connections between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, iterative subspace methods.
 %Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
-Moreover, our proposed relaxation is \emph{matrix-free}, 
+Moreover, our proposed relaxation is \emph{matrix-free}, has a space complexity that is linear in $\lvert K \rvert$, 
 %requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$, 
-can be iteratively approximated, is continuously differentiable, and is particularly efficient to compute over parameterized families of inputs due to its spectral formulation. 
+can be iteratively approximated, is continuously differentiable, and is particularly efficient to compute over parameterized families of inputs. 
+%due to its spectral formulation. 
 \\
 \\
 \noindent 
@@ -362,14 +379,15 @@ The steps to produce this mapping are as follows:
 	\mathrm{card}\left(\restr{\mathrm{dgm}_p(f_\alpha)}{\mathcal{R}} \right) \mid \alpha \in \mathcal{A} \, \big \}
 	\end{equation}
 	We will show in section~\ref{sec:spri_properties}, letting both $\tau \to 0$ and and $\epsilon \to 0$ yields the multiplicity function $\mu_p$ exactly.
-	\item Choose a Laplacian operator $\mathcal{L}: C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})$ to associate to $\mathcal{R}$, such as the \emph{up}-, \emph{down}-, or \emph{combinatorial} Laplacian (optionally normalized~\cite{horak2013spectra}). 
+	\item Choose a Laplacian operator $\mathcal{L}: C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})$ and $\tau$-parameterized spectral function $\phi: \mathbb{R} \to \mathbb{R}$ to associate to $\mathcal{R}$.
+%	\item such as the \emph{up}-, \emph{down}-, or \emph{combinatorial} Laplacian (optionally normalized~\cite{horak2013spectra}). 
 	% TODO: change Phi to phi, reflect the functional nature
 %$$ \mathcal{L}_\Phi: \mathcal{R} \times \Phi \; \to \; C_1(\mathcal{A}, \mathbb{R}^{\lvert \mathcal{A}\rvert})  $$
 %\begin{equation}\label{eq:laplace_intro}
 %\mathcal{L} : C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})
 %\end{equation}
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-The choice of $\mathcal{L}$ determines how the geometric and topological information about $(K, f_\alpha)$ is encoded.
+The choice of $\mathcal{L}$ determines the kind of geometric/topological information to extract from $(K, f_\alpha)$, and the choice of $\phi$ determines how that information is encoded.
 %and $\Phi$ determines how this information is incorporated into the mapping. 
 	\item For each corner point $(i,j)$ in the boundary of $\mathcal{R}$, restrict and project $\mathcal{L}$ onto a Krylov subspace: 
 	$$
@@ -448,23 +466,23 @@ By definition, the boundary and cycle groups $B_p(K_j)$ and $Z_p(K_i)$ are subsp
 %The dimension of the boundary group $B_{p-1}(K_i)$ may be directly inferred from the rank of $\partial_p^{i}$, and the dimension of $C_p(K_i)$ is simply the number of $p$-simplices with filtration values $f(\sigma) \leq i$. 
 Now, consider computing $\beta_p^{i,j}$ via~\eqref{eq:pbn_simple} from matrix representatives $\partial_p \in \mathbb{F}^{n \times m}$.
 %$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
-Since the nullity of an operator may be reduced to a rank computation via rank-nullity, the complexity of first term may be reduced to the complexity of computing the rank of a (sparse) $n \times m$ matrix. 
-In contrast, the second [persistence] term typically requires finding a basis in intersection of the two subspaces via either column reductions or projection-based techniques. In general, direct methods that accomplish this require $\Omega(N^3)$ time and $\Omega(N^2)$ memory~\cite{golub2013matrix}.
+Since the nullity of an operator may be reduced to a rank computation via rank-nullity, the complexity of first term may be reduced to the complexity of computing the rank of a sparse $n \times m$ matrix. 
+In contrast, the persistence term typically requires finding a basis in intersection of the two subspaces via matrix reduction or projector-based techniques. In general, direct methods accomplishing this require $\Omega(N^3)$ time and $\Omega(N^2)$ space~\cite{golub2013matrix}.
 
 % Golub and Van Loan 
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 %In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
-There is an alternative approach to computing $\beta_p^{i,j}$ that exploits the structure theorem from~\cite{zomorodian2004computing}. In particular, since 1-parameter persistence modules can be decomposed in an \emph{essentially unique} way into indecomposables,
+There is an alternative approach to computing $\beta_p^{i,j}$ that exploits the structure of persistence. In particular, the structure theorem~\cite{zomorodian2004computing} shows 1-parameter persistence modules decompose in an \emph{essentially unique} way---computationally, 
 \begin{figure}
 \centering
 %	\includegraphics[width=0.45\textwidth]{mult_both}
 	\includegraphics[width=0.85\textwidth]{betti_add}
-	\caption{From left to right, $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$, where $i,j \in \Delta_+^N$; the same $\beta_p^{i,j}$  with $i,j \in \Delta_+$; the additivity of $\beta_p^{\ast}$ implies $\mu_p^{R}$ over a box $R=[i,j] \times [k,l]$ is given as the sum of four PBNs; generalization of~\ref{eq:uniq_pivot}---in this case $\mu_p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$.}
+	\caption{From left to right, $\beta_p^{i,j}$ counts the number of points (3) in upper left-corner of $\mathrm{dgm}_p(K_\bullet)$, where $(i,j) \in \Delta_+^N$; the same $\beta_p^{\hat\imath, \hat\jmath}$  with $(\hat\imath, \hat\jmath) \in \Delta_+$; the additivity of $\beta_p^{\ast}$ illustrates the form of $\mu_p^{R}$ over $R=[i,j] \times [k,l]$; $\mu_p^R = 4 - 1 - 0 + 0 = 3$ counts pivot entries in the reduced matrix $R = \partial V$ using fact~\eqref{eq:uniq_pivot}.}
 	%$r_R(i,j) = 3 - 2 + 1 - 2 = 0$ yields whether the entry $R[i,j]$ is non-zero.}
 	\label{fig:mult}
 \end{figure}
-the Pairing Uniqueness Lemma~\cite{edelsbrunner2000topological} asserts that if $R = \partial V$ decomposes the boundary matrix $\partial$ to a \emph{reduced} matrix $R \in \mathbb{R}^{m \times n}$ using left-to-right column operations, then:
+the corresponding Pairing Uniqueness Lemma~\cite{edelsbrunner2000topological} asserts that if $R = \partial V$ decomposes the boundary matrix $\partial$ to a \emph{reduced} matrix $R \in \mathbb{R}^{m \times n}$ using left-to-right column operations, then:
 %whose lowest non-zero entries satisfy $\mathrm{low}_R(i) \neq \mathrm{low}_R(j)$ whenever both $\mathrm{col}_i(R) \neq 0$ and $\mathrm{col}_j(R) \neq 0$, then:  
 \begin{equation}\label{eq:uniq_pivot}
 R[i,j] \neq 0 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0 
@@ -488,38 +506,46 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 %In what follows, we will use $\partial_p$ and $R_p$ to refer to matrices of $\partial$ and $R$ whose $q$-chains are set to $0$, for $q \neq p $. 
 An explicit proof of this can be found in~\cite{dey2022computational}, though it was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. It can be shown by combining~\eqref{eq:uniq_pivot} with the fact that left-to-right column operations preserves the ranks of these ``lower-left'' submatrices.
 Though this observation is typically viewed as a minor fact needed to prove the correctness of the reduction algorithm, its implications are quite general, as recently noted by~\cite{bauer2022keeping}:
-\begin{proposition}[Bauer et al.~\cite{bauer2022keeping}]
+\begin{corollary}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K_\bullet)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
-\end{proposition}
-\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. As pointed out in~\cite{dey2022computational},~\eqref{eq:lower_left_rank} in turn enables $\beta_p^{i,j}$ to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
-\begin{proposition}[Dey \& Wang~\cite{dey2022computational}]\label{prop:rank_reduction}
-Given a fixed $p \geq 0$, a filtration $K_\bullet$ of size $N = \lvert K_\bullet \rvert$, and any pair $(i,j) \in \Delta_+^N$, the persistent Betti number $\beta_p^{i,j}(K_\bullet)$ at $(i,j)$ is given by:
-	\begin{equation}\label{eq:betti_four}
+\end{corollary}
+\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Indeed,~\eqref{eq:lower_left_rank} in turn enables both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
+\begin{corollary}[\cite{dey2022computational, chen2011output}]\label{cor:rank_reduction}
+Given a fixed $p \geq 0$, a filtration $(K_\bullet, f)$ of size $N = \lvert K_\bullet \rvert$, and a rectangle $R =  [i,j] \times [k,l] \subset \Delta_+$, the persistent Betti number $\beta_p^{i,j}$ at $(i,j)$ and multiplicity $\mu_p^{R}$ of $R$ is given by:
+	\begin{align*}\label{eq:betti_four}
 	% \mathrm{rank}(I_p^{1,i})
-	\beta_p^{i,j}(K_\bullet) = \lvert K_i^p \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} )
+	\beta_p^{i,j}(K_\bullet, f) &= \lvert K_i^p \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} ) \numberthis  \\
+	\mu_p^{R}(K_\bullet, f) &= \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) \numberthis 
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
-	\end{equation}
+	\end{align*}
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
-\end{proposition}
-\noindent For completeness, we give our own detailed proof of Proposition~\ref{prop:rank_reduction} in the appendix. 
-By combining Proposition~\ref{prop:rank_reduction} with~\eqref{eq:dgm}, we recover a submatrix-rank-based $p$-th multiplicity function $\mu_p^{R}(\cdot)$, which to the authors knowledge was first pointed out by Chen \& Kerber~\cite{chen2011output}: 
-\begin{proposition}[Chen \& Kerber~\cite{chen2011output}]\label{prop:mu_reduction}
-Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size $N = \lvert K \rvert$, and a rectangle $R = [i,j] \times [k,l] \subset \Delta_+$,
-%whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, 
-the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
-	\begin{equation}\label{eq:mu_four}
-	\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
-	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
-	\end{equation}
-\end{proposition}
-\noindent For more geometric intuition of these propositions, see Figure~\ref{fig:mult}. Note the differences between these two quantities: whereas $\beta_p^{i,j}$ captures points on the diagram that may have unbounded persistence (``essential'' classes~\cite{edelsbrunner2000topological}), the multiplicity function $\mu_p^{R}$ by definition is restricted to classes with bounded persistence\footnote{One may always \emph{cone} the filtration to extend $\mu_p^{R}$ to the unbounded case, see~\cite{chen2011output}}.
+\end{corollary}
+%Dey \& Wang
+\noindent These rank-based expressions seem not well known or widely used---to the authors knowledge, the expression for $\mu_p^{R}(K_\bullet)$ was first pointed out by Chen \& Kerber~\cite{chen2011output}. A more recent and explicit derivation is given by Dey \& Wang~\cite{dey2022computational}. For completeness, we give our own detailed proof of corollary~\ref{cor:rank_reduction} in the appendix. 
+%By combining Proposition~\ref{prop:rank_reduction} with~\eqref{eq:dgm}, we recover a submatrix-rank-based $p$-th multiplicity function $\mu_p^{R}(\cdot)$, which to the authors knowledge was first pointed out by Chen \& Kerber~\cite{chen2011output}: 
+%\begin{proposition}[Chen \& Kerber~\cite{}]\label{prop:mu_reduction}
+%Given a fixed $p \geq 0$, a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size $N = \lvert K \rvert$, and a rectangle $R = [i,j] \times [k,l] \subset \Delta_+$,
+%%whose indices $(i,j,k,l)$ satisfy $0 \leq i < j \leq k < l \leq N$, 
+%the $p$-th multiplicity $\mu_p^{R}$ of $K_\bullet$ is given by:
+%	\begin{equation}\label{eq:mu_four}
+%	\mu_p^{R}(K_\bullet) = \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) 
+%	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
+%	\end{equation}
+%\end{proposition}
+\noindent To gain some intuition of the computational nature of these facts, see Figure~\ref{fig:mult}.
+%Note the differences between these two quantities: whereas $\beta_p^{i,j}$ captures points on the diagram that may have unbounded persistence (``essential'' classes~\cite{edelsbrunner2000topological}), the multiplicity function $\mu_p^{R}$ by definition is restricted to classes with bounded persistence\footnote{One may always \emph{cone} the filtration to extend $\mu_p^{R}$ to the unbounded case, see~\cite{chen2011output}}.
 
-Compared to the classical reduction methods~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage of the rank-based expressions from~\eqref{eq:betti_four}-\eqref{eq:mu_four} is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
-Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, the operation $x \mapsto \partial x$ can be implemented without actually constructing $\partial$ in memory, enabling the use of e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we} for their computation. 
+Compared to the classical methods~\cite{edelsbrunner2022computational, zomorodian2004computing}, the primary advantage of these expressions is that (1) they involve strictly \emph{rank} computations, and (2) these computations involve \emph{unfactored} boundary (sub)matrices.
+% is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
+%Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
+The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
-Indeed, this line of thought suggests other algebraic properties of the rank function---such as invariance under permutations and adjoint multiplication---may simplify these rank-based expressions even further.
+Moreover, the structure of $\partial$ and other properties of the rank function
+%---such as invariance under permutations and adjoint multiplication---
+%may lead to interesting overlap in other popular areas of applied mathematics, such as compressive sensing, 
+suggest tools from spectral theory and ``The Laplacian Paradigm''~\cite{} may be readily transferred to the persistence setting. 
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
-The rest of the paper explores these questions and their ramifications in detail. 
+The rest of the paper is dedicated to exploring these connections and their ramifications in detail. 
 
 \begin{remark}
 % Change index set
@@ -659,7 +685,7 @@ We summarize these observations with a proposition. Without loss in generality, 
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
 \begin{proposition}\label{prop:mu_betti_1}
-	Let $\delta > 0$ denote the number from~\eqref{eq:measure} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, define the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ by: 
+	Let $\delta > 0$ denote the number from~\eqref{eq:measure} satisfying $i + \delta < j - \delta$. Given $(K, f_\alpha)$ and any rectangle $R = [i,j] \times [k,l] \subset \Delta_{+}$ satisfying $i < j \leq k < l$, the $\mathcal{A}$-parameterized invariants $\beta_p^{i,j} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ defined by: 
 	\begin{align*}\label{eq:pbn_parameterized}
 		\beta_p^{i,j}(\alpha) = \lvert K_i^{p}(\alpha) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{i}(\alpha)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{j}(\alpha)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{i \+ \delta, j}(\alpha)\,\big) \numberthis
 	\end{align*}
@@ -667,9 +693,7 @@ We summarize these observations with a proposition. Without loss in generality, 
 	\begin{align*}\label{eq:mu_parameterized}
 	\mu_p^{R}(\alpha) = \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{j \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{i \+ \delta, k}(\alpha)\,\big) - \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{j \+ \delta, l}(\alpha)\,\big) + \mathrm{rank}\big(\, \hat{\partial}_{p+1}^{i \+ \delta, l}(\alpha)\,\big) \numberthis
 	\end{align*}
-	yield the correct quantities $\mu_p(R) = $
-	$\mathrm{card} \left( \, \restr{\mathrm{dgm}_p(f_\alpha)}{R} \, \right)$ and 
-	$\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}(K))$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, respectively, for all $\alpha \in \mathcal{A}$. Moreover, the entries of $\hat{\partial}_p^\ast(\alpha)$ vary continuously in $\mathcal{A}$.
+	yield the correct quantities $\mu_p(R) = \mathrm{card} \left( \, \restr{\mathrm{dgm}_p(f_\alpha)}{R} \, \right)$ and $\beta_p^{i,j} = \mathrm{dim}(H_p^{i,j}(K))$ from~\eqref{eq:measure} and~\eqref{eq:pbn}, respectively, for all $\alpha \in \mathcal{A}$. Moreover, the entries of $\hat{\partial}_p^\ast(\alpha)$ vary continuously in $\mathcal{A}$.
 \end{proposition}
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 \begin{remark}
@@ -1086,11 +1110,11 @@ $$ \hat{\mu}_{p,\tau}^R(K, f)= \hat{\beta}_{p,\tau}^{j,k} - \hat{\beta}_{p,\tau}
 % $$ \lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $$ 
 % Connections to Laplacian Energy
 \noindent \textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
-For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\epsilon > 0$:
+For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
  \begin{equation}\label{eq:tikhonov}
-	x_\epsilon^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \epsilon \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
+	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
 \end{equation}
-When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\epsilon > 0$ solutions $x^\ast$ with small norm are favored. 
+When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\tau > 0$ solutions $x_\tau^\ast$ with small norm are favored. 
 %\begin{equation}\label{eq:least_squares}
 %	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
 %\end{equation}
@@ -1106,26 +1130,27 @@ $\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains 
 \begin{equation}
 	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
 \end{equation}
-Substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces to:
+By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
 \begin{equation}\label{eq:tikhonov_1}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
-	\lVert \Phi_\epsilon(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \epsilon} = \mathrm{Tr}\left[(A^T A + \epsilon \, I_n)^{-1} A^T A \right]
+	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
 	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
-The connection between the TR and the right hand side of~\eqref{eq:tikhonov_1} is now clear: obtaining $ \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
-In this sense, the spectral rank invariants proposed in definition~\ref{def:smooth_mu} can be viewed as regularized rank invariant approximations.
+The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectra of the inverse of the up- (or down-) Laplacian; 
+%$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
+in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
  
  \begin{remark}
  One interpretation of the relaxation parameter $\tau$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
-Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximation of the rank.
+Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximations of the rank.
 This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
  \end{remark}
  
 \section{Computational Implications}\label{sec:computational_imp}
 %\subsection*{An quadratic-time rank computation}
-%In this section, we discuss the computational advantages that stem from replacing the counting invariants with their spectral-based approximations from definition~\ref{def:smooth_mu}.
+In this section, we discuss several of the computational advantages that arise by using a spectral approach to approximating the rank function.
+In particular, we focus on iterative subspace acceleration methods that decouple explicit matrix representations from the computation.
 %As the singular values of boundary operators can be obtained are the square roots of eigenvalues of an appropriate Laplacian operator, we focus on spectral methods specialized for symmetric positive semi-definite operators.
-%Moreover, we focus on \emph{iterative} methods which only require matrix-vector products as their primary operations for estimating the spectrum, as this enables us to decouple any simplicial-based representation of the Laplacian operator from an explicit matrix representation.
 %In the following sections, we (1) recall the method of minimized iterations in section~\ref{sec:lanczos_it}, (2) explore the efficiencies and subtleties of simplicial Laplacian $\mathtt{matvec}$ operators, and (3) discuss the modern advances to estimating spectral quantities of combinatorial Laplacians efficiently, such as preconditioning methods and convergence rates. 
 
 %In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
@@ -1193,25 +1218,25 @@ As these extensions are complex, multifaceted, and beyond the scope of the prese
 \subsection{The combinatorial Laplacian \texttt{matvec}}\label{sec:comb_lap}
 The efficiency of the Lanczos method depends crucially on the existence of the three-term recurrence and a fast matrix-vector (\texttt{matvec}) operator, the former of which arises in the decomposition of symmetric matrices while the latter depends on the structure of $A$. 
 For general symmetric matrices $A \in \mathbb{R}^{n \times n}$, Lanczos requires $O(n\nu r)$ operations per iteration when $A$ has an average of $\nu$ nonzeros per row~\cite{golub2013matrix}. 
-When $A$ is a graph Laplacian $L = \partial_1 \partial_1^T$ this is markedly improved, as the $x \mapsto L x$ operation is linear in $\lvert E \rvert$ due to the graph structure.
-It is not immediately clear whether these improvements generalize to combinatorial Laplacian operators derived from simplicial complexes---our first result of of this section generalizes this algorithm.
+This is markedly improved when $A$ is a graph Laplacian $L = \partial_1 \partial_1^T$ as the complexity of the $x \mapsto L x$ operation is linear in $\lvert E \rvert$ due to the graph structure.
+It is not immediately clear whether a similar result generalizes to combinatorial Laplacian operators derived from simplicial complexes---our first result of this section affirms this.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 %Since a $p+1$-simplex has $p$ proper faces in its boundary, and we need to iterate through the $p+1$ simplices $\sigma \in K^{p+1}$ just once in the case of the $\mathrm{up}$-Laplacian,
 %We combine the above observations into a proposition. 
 \begin{lemma}\label{lemma:matvec_lap}
-	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists an indexing function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
+	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists a hash function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{lemma}
 %\begin{proof}
 %	See appendix section~\ref{app:lap_matvec}
 %\end{proof}
-\noindent The algorithm and proof are given in appendix section~\ref{app:lap_matvec}. From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---implying the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
-As more concrete statements about the computation require moving beyond asymptotic analysis, we delegate the practical details---along with pseudocode of the two-phase algorithm---to appendix~\ref{sec:up_laplace_matvec}, for the computationally-minded reader.
-Combining lemma~\ref{lemma:matvec_lap} with proposition~\ref{lemma:exact_arith_lanczos}, 
+\noindent The algorithm and proof are given in appendix section~\ref{app:lap_matvec}. From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
+We delegate more practical issues regarding the computation to appendix~\ref{sec:up_laplace_matvec}.
+Combining lemmas~\ref{lemma:matvec_lap} and~\ref{lemma:exact_arith_lanczos} 
 \begin{proposition}\label{prop:spectral_rank_complexity}
-	For any small constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration when carried out in exact arithmetic. 
+	For any constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
 \end{proposition}
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
 
@@ -1232,7 +1257,7 @@ Combining lemma~\ref{lemma:matvec_lap} with proposition~\ref{lemma:exact_arith_l
 To demonstrate this empirically, we sampled $30$ random graphs according to the Watts-Strogatz~\cite{} rules with parameters $n=500, k=10, p=0.15$. These graphs tend to exhibit `small world' characteristics inherited by many real-world networks, such as social networks, gene networks, and transportation networks.  
 For our purposes, since the graph distance between pairs of nodes scale logarithmically with the size of the graph, we ensure the sampled random graphs to be uniformly sparse. 
 The corresponding incidence matrix $\partial_1 \in \mathbb{R}^{n \times m}$ and up-Laplacians $L_0^{\mathrm{up}} \in \mathbb{R}^{n \times n}$ would have $\approx 5,000$ and  $\approx 5,500$ non-zero entries, were they to be formed explicitly, which are weighted according randomly by embedding the graph in the plane and filtering  graph via its sublevel sets in a random direction. 
-A much smaller Watts-Strogatz graph of the same type (but with only $50$ nodes) is shown on the left-side of figure~\ref{fig:watts_strogatz}, colored by the filtering of its lower stars. 
+%A much smaller Watts-Strogatz graph of the same type (but with only $50$ nodes) is shown on the left-side of figure~\ref{fig:watts_strogatz}, colored by the filtering of its lower stars. 
 \begin{figure}[t]
 	\includegraphics[width=\textwidth]{presentations/watts_strogatz_perf.png}
 	\caption{Random Watts-Strogatz ``Small world'' graph example}
@@ -1241,14 +1266,12 @@ A much smaller Watts-Strogatz graph of the same type (but with only $50$ nodes) 
 To test the scability of the laplacian operator studied here, we computed various percentages of the spectra of these $30$ graphs via iterative methods discussed in section~\ref{} and reported various of their time- and storage- related statistics in figure~\ref{fig:watts_strogatz}. 
 All statistics reported are the average statistics collected from all 30 random graphs, which were collected using  various iterative methods implemented the PRIMME software~\cite{}. 
 On the far left of figure~\ref{fig:watts_strogatz}, we display a random metric embedding of a small Watts-Strogatz graph to convey the structure of the type of graphs we consider. 
-
-\textbf{Storage requirements}: On the left side of figure~\ref{fig:watts_strogatz} next to the example network model, we record the ratio of $\mathtt{matvec}$ operations (relative to $n$) needed to compute $p\%$ of the spectrum as a function of the maximum number basis vectors kept in-memory for reorthogonalization purposes. 
+On the left side of figure~\ref{fig:watts_strogatz} next to the example network model, we record the ratio of $\mathtt{matvec}$ operations (relative to $n$) needed to compute $p\%$ of the spectrum as a function of the maximum number basis vectors kept in-memory for reorthogonalization purposes. 
 The ideal Lanczos method needs just $3$ such vectors in exact arithmetic due to the three-term recurrence, justifying the space complexity record in~\ref{lemma:exact_arith_lanczos}; in contrast, with finite-precision arithmetic, one needs additional basis vector to ensure the orthonormality of the eigenvectors to machine precision.
 Each additional basis vector simultaneously increases both the cost of performing a Lanczos step and the accuracy of the orthogonalization, which subsequently decreases the number of total \texttt{matvec} operations needed. 
 As one can see from the plot, having $\approx 20-25$ basis vectors is more than enough to ensure the ratio of $\mathtt{matvec}$ operations is kept to a small constant (in this case, less than $5$) when approximating any portion of the spectra. 
 This justifies our claim that combinatorial Laplacian operators, for many real-world data sets, requires just $O(m)$ memory complexity to compute eigenvalues (and thus, the persistent rank invariants).
- 
- \textbf{Time requirements}: The remaining two figures on the right side of figure~\ref{fig:watts_strogatz} show the same ratio of $\mathtt{matvecs}/n$---effectively the constant associated with quadratic time complexity statement in~\ref{lemma:exact_arith_lanczos}
+ The remaining two figures on the right side of figure~\ref{fig:watts_strogatz} show the same ratio of $\mathtt{matvecs}/n$---effectively the constant associated with quadratic time complexity statement in~\ref{lemma:exact_arith_lanczos}
 
 
 %Since we are free to choose the permutation of $\hat{L}_P^{\text{up}}$ ahead of time, we may order the $p+1$ simplices $\{\sigma\}$ in such a way as to minimize the latency associated with memory access to $K^{p+1}$.

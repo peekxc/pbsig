@@ -9,43 +9,43 @@ Warning--empty institution in mangasarian1994class
 Warning--empty school in newman2001laplacian
 You've used 35 entries,
             2118 wiz_defined-function locations,
-            697 strings with 10068 characters,
-and the built_in function-call counts, 12079 in all, are:
-= -- 1206
-> -- 546
+            700 strings with 10078 characters,
+and the built_in function-call counts, 12089 in all, are:
+= -- 1211
+> -- 535
 < -- 13
-+ -- 221
-- -- 180
-* -- 789
-:= -- 1975
++ -- 218
+- -- 176
+* -- 792
+:= -- 1971
 add.period$ -- 110
 call.type$ -- 35
-change.case$ -- 189
+change.case$ -- 187
 chr.to.int$ -- 0
 cite$ -- 39
-duplicate$ -- 486
-empty$ -- 945
-format.name$ -- 180
-if$ -- 2556
+duplicate$ -- 487
+empty$ -- 953
+format.name$ -- 176
+if$ -- 2560
 int.to.chr$ -- 0
 int.to.str$ -- 35
 missing$ -- 39
 newline$ -- 178
 num.names$ -- 70
-pop$ -- 217
+pop$ -- 213
 preamble$ -- 1
-purify$ -- 159
+purify$ -- 157
 quote$ -- 0
 skip$ -- 358
 stack$ -- 0
-substring$ -- 745
+substring$ -- 765
 swap$ -- 124
 text.length$ -- 13
 text.prefix$ -- 0
 top$ -- 0
 type$ -- 128
 warning$ -- 4
-while$ -- 119
+while$ -- 121
 width$ -- 37
-write$ -- 382
+write$ -- 383
 (There were 4 warnings)
