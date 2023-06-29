@@ -1,14 +1,17 @@
 %\section{Background \& Notation}\label{sec:background_notation}
-An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \implies \tau \in K$.
+An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \Rightarrow \tau \in K$.
+%$p$-simplices are denoted with $K^p$.
 %The $p$-skeleton of $\mathrm{skel}_p(K)$ is the the restriction of $K$ to its simplices with dimension $\leq p$. 
-We denote with $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$ and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
-A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ of a simplicial complexes indexed by a totally ordered set $I$ is a family of complexes such that $i< j \in I \implies K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$:
+%We denote with $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$. 
+%and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
+A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ is a family of complexes indexed by a totally ordered set $I$  such that $i< j \in I \Rightarrow K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$:
 %Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
 \begin{equation}
 	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
 \end{equation} 
-Equivalently, we may at times define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over a totally ordered index set $I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. Here, we consider two index sets: $[n] = \{ 1, \dots, n\}$ and $\mathbb{R}$. 
-Note that any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}. For simplicity, but without loss of generality, we exclusively consider simplexwise filtrations and for brevity refer to them as filtrations.
+We will often equivalently define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over an index set $I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. Here, we consider two index sets: $[n] = \{ 1, \dots, n\}$ and $\mathbb{R}$. 
+Since any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}, without loss of generality we consider them exclusively here. 
+%but for brevity refer to them simply as filtrations.
 %\\
 %\\
 %\noindent
@@ -24,13 +27,15 @@ Note that any filtration may be converted into a simplexwise filtration via \emp
 \\
 \\
 %As in equation~\eqref{eq:hom_map}, these inclusions induce linear maps at level of homology. Though we consider primarily Rips filtrations in this effort, we will at times keep the notation simple and general by letting $K_\bullet$ denote any simplicial filtration. 
-Given a simplicial complex $K \subseteq \mathcal{P}(V)$ and a strictly increasing subset $\sigma = \{v_1, v_2, \dots, v_{p+1}\} \subseteq V$ satisfying $v_1 < v_2 < \dots < v_{p+1}$, an \emph{oriented $p$-simplex} $[\sigma]$ is defined as $[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]$,
+Given a simplicial complex $K \subseteq \mathcal{P}(V)$ and a strictly increasing subset $\sigma = \{v_1, v_2, \dots, v_{p+1}\} \subseteq V$,
+%satisfying $v_1 < v_2 < \dots < v_{p+1}$, 
+an \emph{oriented $p$-simplex} $[\sigma]$ is defined as $[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]$,
 %\begin{equation}\label{eq:oriented_simplex}
 %	[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]
 %\end{equation}
-where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ is the number of inversions of that permutation. The $p$-boundary $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
+where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ the number of its inversions. The \emph{$p$-boundary} $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
 \begin{equation}\label{eq:alt_sum}
-	\partial_p[\sigma] := \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
+	\partial_p[\sigma] \triangleq \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
 \end{equation}
 Generalizing beyond simplices, given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$ whose boundary $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. 
 We denote with $\partial$ the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of $K_\bullet$:
@@ -45,11 +50,13 @@ With a small abuse in notation, we will freely use both $\partial$ and $\partial
 
 For any fixed field $\mathbb{F}$, the collection of $p$-chains under addition yields an $\mathbb{F}$-vector space $C_p(K)$, whose elements $c \in \partial_p[c']$ are called \emph{boundaries} unless $\partial_p[c] = 0$, in which case they are called \emph{cycles}.
 %We assume every $p$-chain is \emph{oriented} such that $K$ is an \emph{oriented simplicial complex}.
- Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $Z_p(K) / B_{p}(K)$ is a well-defined group called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$:
- \begin{equation}
- 	H_p(K) \triangleq Z_p(K) / B_{p}(K), \quad \quad \beta_p(K) = \mathrm{dim}(H_p(K))
- \end{equation}
- The dimension of the $p$-th homology group $\beta_p(K)$ is called the \emph{$p$-th Betti number} of $K$.
+ Together, the collection of $p$-boundaries and $p$-cycles forms the groups $B_p(K) = \mathrm{Im}\,\partial_{p+1}$ and $Z_p(K) = \mathrm{Ker}\,\partial_p$, respectively. Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, the quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is 
+ %a well-defined group 
+ called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$ and its dimension $\beta_p$ is called the \emph{$p$-th Betti number} of $K$.
+% \begin{equation}
+% 	H_p(K) \triangleq Z_p(K) / B_{p}(K), \quad \quad \beta_p(K) \triangleq \mathrm{dim}(H_p(K))
+% \end{equation}
+% The dimension of the $p$-th homology group $\beta_p(K)$ is called the \emph{$p$-th Betti number} of $K$.
  %TODO: insert sentence about betti == rank invariant, mention Mobius inversion 
 % $\beta_p(K) = \mathrm{dim}(H_p(K))$ of $K$ is called the \emph{$p$-th Betti number} of $K$. 
 

@@ -20,7 +20,7 @@ output_notebook()
 
 # %%  Data set 
 from pbsig.datasets import noisy_circle
-X = noisy_circle(150, n_noise=20, perturb=0.10, r=0.10)
+X = noisy_circle(50, n_noise=10, perturb=0.10, r=0.10)
 p = figure(width=250, height=250)
 p.scatter(*X.T)
 show(p)
@@ -42,18 +42,16 @@ dgm = ph(K, engine="dionysus")
 p = figure_dgm(dgm[1])
 show(p)
 
-
 # %% Test sparse complexes
 dgms_sparse = [ph(rips_filtration(X[pi[:i]], radius=er, p=2), engine="dionysus") for i in range(10, 60, 5)]
 dgm_figs = []
 for dgm in dgms_sparse:
   p = figure_dgm(dgm[1], width=200, height=200)
-  p.x_range = Range1d(0, 1)
-  p.y_range = Range1d(0, 1)
+  p.x_range = Range1d(0, 1.1)
+  p.y_range = Range1d(0, 1.1)
   dgm_figs.append(p)
 
 show(row(*dgm_figs))
-
 
 # %% Compute the weights for each vertex
 # https://arxiv.org/pdf/1306.0039.pdf
@@ -80,33 +78,45 @@ from scipy.spatial.distance import pdist
 def sparse_weight(G: ComplexLike, L: np.ndarray, epsilon: float, alpha: float):
   """Sparse rips complex """
   assert epsilon > 0, "epsilon parameter must be positive"
-  eps = ((1.0+epsilon)**2)/epsilon
+  eps = ((1.0-epsilon)/2) * epsilon # gudhi's formulation
   edges = np.array(faces(G, 1))
-  edge_sparse_ind = np.flatnonzero(~((L[edges]*eps).max(axis=1) <= alpha))
+  edge_weights = (L[edges]).max(axis=1)
+  edge_sparse_ind = np.flatnonzero(edge_weights >= alpha)
   edge_weights = (L[edges[edge_sparse_ind]]).min(axis=1)*eps
   return edges[edge_sparse_ind], edge_weights
 
+# ([0, 1], 0.14069064627395436) == pdist(X[[0,1],:])
+
 # %% Test sparsified complexes 
-R = (0, 0.3, 0.6, 1.0)
-ES_edges, ES_weight = sparse_weight(S, insert_rad, 0.90, er)
+from gudhi import RipsComplex
+S_rips = RipsComplex(points=X, max_edge_length=er/2, sparse=0.90)
+st = S_rips.create_simplex_tree()
+S_sparse = simplicial_complex([Simplex(s[0]) for s in st.get_simplices()])
+
+
+ES_edges, ES_weight = sparse_weight(S, insert_rad, 0.90, 2*er)
 
 card(S,1)
 len(sparse_weight(S, insert_rad, 0.50, er)[0])
 len(sparse_weight(S, insert_rad, 0.50, er)[0])
-len(sparse_weight(S, insert_rad, 0.90, er)[0])
+len(sparse_weight(S, insert_rad, 0.90, 2*er)[0])
 S_sparse = simplicial_complex()
 S_sparse.update([[i] for i in range(card(S,0))])
 S_sparse.update(sparse_weight(S, insert_rad, 0.90, er)[0])
 
 
 
-from gudhi import RipsComplex
-S = RipsComplex(points=X, max_edge_length=er, sparse=0.90)
-st = S.create_simplex_tree()
 
-S_sparse = simplicial_complex([Simplex(s[0]) for s in st.get_simplices()])
 
-p2 = figure_complex(S_sparse, pos=X)
+
+# %% Show the sparsified complex
+from pbsig.vis import figure_complex
+p = figure_complex(S_sparse, pos=X)
+show(p)
+
+# %% Run exponential search 
+R = (0, 0.3, 0.6, 1.0)
+
 
 # f_sparse = sparse_weight(X, insert_rad, 0.1)
 
