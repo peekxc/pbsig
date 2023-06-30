@@ -421,9 +421,9 @@ The differentiability of our relaxation also prompts immediate questions of imme
 %The fact that the proposed relaxation satisfies the same inclusion-exclusion formula obeyed by the rank invariant implies that we may recover a $(1-\epsilon)$-approximation of~\eqref{eq:mu_alpha} simply by obtaining $(1-\epsilon)$-approximations of $\mu_p$ at every corner point $(i,j) \in \partial(\mathcal{R})$. We defer discussion of the details of the computation to section~\ref{sec:computational_imp}.
 \noindent 
 \textbf{Organization: } The paper is organized as follows. 
-Section~\ref{sec:background_notation} introduces the notation and background theory on which the rest of the paper depends, including an illuminating derivation of a relatively little-known expression of the persistent Betti number $\beta_p(K)$ in section~\ref{sec:betti_derivation}, which is a key technical ingredient for much of the work presented here.
-Section~\ref{sec:spectral_relax} contains the main results: a family of spectral relaxations of the rank invariants, their properties and interpretations, and their connections to other areas of mathematics. 
-Section~\ref{sec:computational_imp} compares and contrasts the computational differences between the proposed relaxation and the traditional persistence computation.
+Section~\ref{sec:background_notation} introduces the notation and technical background on which the rest of the paper depends, including an illuminating derivation of a relatively lesser-known expression of the persistent Betti number in section~\ref{sec:betti_derivation}.
+Section~\ref{sec:spectral_sec} contains the main results: a family of spectral relaxations of the rank invariants, their properties, interpretations, and a few immediate implications. 
+Section~\ref{sec:computational_imp} discusses the computational characteristics of the relaxation.
 Section~\ref{sec:applications} demonstrates some of the prototypical use cases of the proposed framework.
 Technical details, illustrative examples, and pseudocode have been relegated to the appendix for readability.
 
@@ -605,7 +605,7 @@ For simplicity of notation, we will exploit the inclusion-exclusion property of 
 %\end{corollary} 
 
 % --- Generic Rank approximation via eigenvalues --- 
-\section{Spectral relaxation and its implications}\label{sec:spectral_relax}
+\section{Spectral relaxation and its implications}\label{sec:spectral_sec}
 
 % This subsection shows the benefits of rank(P^T A P) = rank(A)
 \subsection{Parameterized boundary operators}\label{sec:param_boundary}
@@ -702,8 +702,8 @@ We summarize these observations with a proposition. Without loss in generality, 
 \end{proposition}
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 \begin{remark}
-	In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq^\ast})$ (as opposed to $\partial_p(K_\bullet)$ or $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq^\ast})$ is ordered  according to a fixed linear ordering $(K, \preceq^\ast)$. Note that, in contrast, evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require explicitly filtered $\partial$ in the traditional simplexwise manner by $f_\ast$ (which varies in $\mathcal{A}$). 
-As the persistent rank invariants from~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized} obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} using~\eqref{eq:rank_equiv_param} are permutation invariant, they need no longer maintain a simplexwise ordering. 
+	In~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq^\ast})$ (as opposed to $\partial_p(K_\bullet)$ or $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq^\ast})$ is ordered  according to a fixed linear ordering $(K, \preceq^\ast)$. Note that evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the simplexwise ordering induced by $f_\ast$---which varies in $\mathcal{A}$. 
+In contrast, replacing the constitutive terms in~\eqref{eq:betti_four}/\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized}/\eqref{eq:mu_parameterized} yields equivalent persistent rank invariant expressions that are permutation invariant and thus no longer need to maintain a simplexwise ordering. 
 \end{remark}
 %% TODO: proof of sign pattern stuff 
 
@@ -818,7 +818,9 @@ As the persistent rank invariants from~\eqref{eq:pbn_parameterized} and~\eqref{e
 %Paired with the observation that the rank function can be equivalently expressed as composing the singular value function with the $\ell_0$ \emph{pseudo-norm} (as in~\eqref{eq:pseudo_norm}), replacing rank optimization problems with nuclear norm minimization problems has become an active area of research which has lead to many fruitful results in the areas of compressed sensing and matrix completion. 
  
 \subsection{Spectral rank relaxation}\label{sec:spectral_relax}
-Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. Our approach exploits the ranks spectral characterization: given a matrix $X \in \mathbb{R}^{n \times m}$ and its singular value decomposition (SVD) $X = U \Sigma V^T$, the \emph{rank} of $X$ is given by the composition:
+%Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
+The results from the previous section lay the groundwork for continuous relaxations of $\mu_p^\ast$/$\beta_p^\ast$, as the only noncontinuous aspect of $\mu_p^\ast(\alpha)$/$\beta_p^\ast(\alpha)$ is the rank function. 
+To address this, we exploit the spectral characterization of the rank function: given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -826,7 +828,7 @@ Extending from the previous section, we now outline a continuous approximation f
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-where $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ are the singular values  of $X$ and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
+where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from $X$'s singular value decomposition (SVD) $X = U \Sigma V^T$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
  
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
@@ -976,7 +978,7 @@ Thus, from a rank-based perspective, it suffices to consider any one of these op
 
 Without loss of generality, we now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
 $$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
-Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using smoothstep functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. Unlike $\partial_p(\alpha)$, however, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
+Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using smoothstep functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. Unlike $\partial_p(\alpha)$, however, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
  
 %Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized  \emph{spectral multiplicity} of $R$ as:
 %	\begin{equation}\label{eq:mu_cont_lap}
@@ -1115,7 +1117,7 @@ $$ \hat{\mu}_{p,\tau}^R(K, f)= \hat{\beta}_{p,\tau}^{j,k} - \hat{\beta}_{p,\tau}
 %where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, as summarized by Li~\cite{}. 
 % $$ \lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $$ 
 % Connections to Laplacian Energy
-\noindent \textbf{Regularization:} A common approach used in sparse inverse problems to relax the rank function is to impose a regularization scheme. 
+\noindent \textbf{Interpretation:} A common approach used in sparse inverse problems is to impose a regularization scheme. 
 For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
  \begin{equation}\label{eq:tikhonov}
 	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
@@ -1823,21 +1825,21 @@ Note that if $A$ is singular and we encounter $\beta_j = 0$ for some $j < n$, th
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
 
- The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' spectral methods---the only aspect of the computation that depends on $A$ is the matrix-vector product operator $v \mapsto Av$. 
-Indeed, as $A$ is not modified during the computation, the iteration may be executed without explicitly storing $A$ in memory. 
-Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, justifying the following proposition:
-\begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
-	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
-\end{proposition}
-\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
-Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method: any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic must require $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
+% The Lanczos iteration and its many variants are part of a family of so-called ``matrix free'' spectral methods---the only aspect of the computation that depends on $A$ is the matrix-vector product operator $v \mapsto Av$. 
+%Indeed, as $A$ is not modified during the computation, the iteration may be executed without explicitly storing $A$ in memory. 
+%Moreover, the three-term recurrence from~\eqref{eq:three_term_rec} implies each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, justifying the following proposition:
+%\begin{proposition}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
+%	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
+%\end{proposition}
+%\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
+%Although this assumption is unrealistic in practical settings, it gives us a grounded expectation of what is possible to achieve with any \emph{finite-precision} algorithm based on the Lanczos method: any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic must require $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
 %\begin{corollary}\label{cor:finite_arith_lanczos}
 %	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
 %\end{corollary}
 
-In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the methods convergence rate towards an invariant subspace, but in fact they muddle the termination condition entirely. 
-As a result, several decades of research have been dedicated to developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or space complexities by non-trivial factors. 
-As these extensions are complex, multifaceted, and beyond the scope of the present work, we defer their discussion to the appendix~\ref{subsec:rounding} and refer the curious reader to~\cite{golub2013matrix, parlett1994we, simon1984analysis} and references therein for an overview. 
+%In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the methods convergence rate towards an invariant subspace, but in fact they muddle the termination condition entirely. 
+%As a result, several decades of research have been dedicated to developing orthogonality-enforcement schemes that retain the simplicity of the Lanczos iteration without increasing either the time or space complexities by non-trivial factors. 
+%As these extensions are complex, multifaceted, and beyond the scope of the present work, we defer their discussion to the appendix~\ref{subsec:rounding} and refer the curious reader to~\cite{golub2013matrix, parlett1994we, simon1984analysis} and references therein for an overview. 
 
 %Independent of orthogonality-enforcement scheme of choice,
 
@@ -1949,7 +1951,7 @@ A variety of orthogonality enforcement schemes have been introduced over years, 
 \subsection{Laplacian Interpretation}
 In what follows we make a connection between boundary matrices and the graph Laplacian to illustrate how the Laplacian captures the ``connectivity'' aspects of the underlying simplicial complex. 
  \begin{example}[Adapted from~\cite{newman2001laplacian}]\label{ex:laplacian}
-Suppose the vertices of $G$ are ordered and labeled from $1$ to $n$ arbitrarily such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Given such a set $X \subseteq V$, let $X' = V \setminus X$ denote its complement set. By $L$'s definition, we have:
+Suppose the ordered vertices of $G$ are labeled from $1$ to $n$ such that, given any subset $X \subseteq V$, we may define column vector $x = (\, x_i\, )$ whose components $x_i = 1$ indicate $i \in X$ and $x_i = 0$ otherwise. Then, given $X \subseteq V$ and its complement set $X' = V \setminus X$, we have:
 \begin{align*}
 	(Lx)_i > 0 &\Longleftrightarrow i \in X \text{ and } \lvert c_i(X) \rvert = (Lx)_i  \\
 	(Lx)_i < 0 &\Longleftrightarrow i \in X' \text{ and } \lvert c_i(X') \rvert = \lvert (Lx)_i \rvert \\

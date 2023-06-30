@@ -19,7 +19,7 @@ from .simplicial import *
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 def _package_data(path: str = ""):
-    return os.path.join(_ROOT, 'data', path)
+  return os.path.join(_ROOT, 'data', path)
 
 def random_lower_star(n: int = 50, v: list = [0,1]):
   """ 
@@ -41,29 +41,6 @@ def shrec20():
   nv = len(scene.vertices)
   S = simplicial_complex(triangles)
   return scene.vertices, S 
-
-
-# class FiltrationFamily:
-#   """ Constructs a parameterized family of filtration-like objects derived from a fixed simplicial complex. """
-
-#   def __init__(self):
-#     pass
-
-#   def __call__(self, bw: float):
-#     pass
-
-# class DensityFiltration(FiltrationFamily):
-#   """ Constructs a bandwidth-parameterized family of density-filtered complexes """
-#   def __init__(self, X: ArrayLike):
-#     pass
-
-#   def __call__(self, bw: float):    
-#     self.K
-#     return self.K 
-
-#   def __iter__(self):
-#     for bw in self.bandwidths:
-#       yield self.K
 
 
 def noisy_circle(n: int = 32, n_noise: int = 10, perturb: float = 0.05, r: float = 0.20):
@@ -105,8 +82,7 @@ def animal_svgs():
   return(dict(zip([os.path.splitext(fn)[0] for fn in SVG_fns], SVG_paths)))
 
 def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"], nwide=51):
-  """
-  Generates a letter image 
+  """Generates a grayscale image of a letter in a given font.
   """
   base_dir = _package_data('fonts')
   fonts = ['lato-bold','opensans','ostrich', 'oswald','roboto']

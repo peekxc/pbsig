@@ -10,5 +10,6 @@ def gradient_descent(
     bounds: List[tuple] = None, 
     tol: float = None
   ) -> dict:
-  
   pass
+
+
