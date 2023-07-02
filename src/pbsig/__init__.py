@@ -12,7 +12,7 @@ from numpy.typing import ArrayLike
 from .persistence import *
 from .betti import *
 from .linalg import *
-from .fast_pbn import *
+# from .fast_pbn import *
 from splex import *
 
 # def plot_dgm(dgm: ArrayLike):

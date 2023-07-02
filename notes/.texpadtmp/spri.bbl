@@ -156,6 +156,11 @@ Michael~William Newman.
 \newblock The laplacian spectrum of graphs.
 \newblock Master's thesis, 2001.
 
+\bibitem{nigmetov2022topological}
+Arnur Nigmetov and Dmitriy Morozov.
+\newblock Topological optimization with big steps.
+\newblock {\em arXiv preprint arXiv:2203.16748}, 2022.
+
 \bibitem{parlett1994we}
 Beresford~N Parlett.
 \newblock Do we fully understand the symmetric lanczos algorithm yet.

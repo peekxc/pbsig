@@ -213,3 +213,38 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
         dataset[(st, sn)] = img_gray
   return(dataset)
   
+
+def pose_meshes(simplify: int = None):
+  """3-D mesh data of animals / humans in different poses.
+
+  Parameters: 
+    simplify: number of triangles desired from the loaded mesh. By default no simplification is done.  
+  """
+  assert isinstance(simplify, Integral) or simplify is None, "If supplied, simplify must be an integer representing the desired number of triangles"
+  import open3d as o3
+  mesh_dir = _package_data("mesh_poses")
+  pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses"] # "cat-poses", "lion-poses"
+  get_pose_objs = lambda pd: np.array(list(filter(lambda s: s[-3:] == "obj", sorted(os.listdir(mesh_dir+"/"+pd)))))
+  pose_objs = [get_pose_objs(pose_type)[[0,1,2,3,7,8]] for pose_type in pose_dirs]
+  pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_dirs, pose_objs)]
+  pose_objs = list(collapse(pose_objs))
+  pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
+
+  import networkx as nx
+  from pbsig.itertools import LazyIterable
+  from pbsig.pht import normalize_shape, stratify_sphere
+  def load_mesh(i: int):
+    mesh_in = o3.io.read_triangle_mesh(pose_paths[i])
+    mesh_in.compute_vertex_normals()
+    if simplify is not None: 
+      mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=simplify)
+      return mesh_smp
+    # mesh_smp = mesh_in
+    return mesh_in
+    # mesh_smp = mesh_in.simplify_quadric_decimation(target_number_of_triangles=5000)
+    # X = np.asarray(mesh_smp.vertices)
+    # V = stratify_sphere(2, 64)
+    # X_norm = normalize_shape(X, V=V, translate="hull")
+    # return X_norm, mesh_smp
+  meshes = LazyIterable(load_mesh, len(pose_paths))
+  return meshes

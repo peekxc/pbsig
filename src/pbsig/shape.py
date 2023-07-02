@@ -94,7 +94,7 @@ def landmarks(a: ArrayLike, k: Optional[int] = 15, eps: Optional[float] = -1.0, 
 			a = a.astype(np.float64)
 		indices, radii = lm.maxmin(a, eps, k, True, seed)
 	elif metric == "euclidean" and is_point_cloud(a):
-		indices, radii = lm.maxmin(a.T, eps, k, False, seed)
+		indices, radii = lm.maxmin(a, eps, k, False, seed)
 		radii = np.sqrt(radii)
 	else:
 		raise ValueError("Unknown input type detected. Must be a matrix of points, a distance matrix, or a set of pairwise distances.")
@@ -102,7 +102,6 @@ def landmarks(a: ArrayLike, k: Optional[int] = 15, eps: Optional[float] = -1.0, 
 	## Check is a valid cover 
 	is_monotone = np.all(np.diff(-np.array(radii)) >= 0.0)
 	assert is_monotone, "Invalid metric: non-monotonically decreasing radii found."
-
 	return(indices, radii)
 
 def PL_path(path, k: int, close_path: bool = False, output_path: bool = False): 
@@ -192,7 +191,20 @@ def normalize_shape(X: ArrayLike, V: Iterable[np.ndarray] = None, scale = "direc
     return X 
   else: 
     raise ValueError(f"Invalid scale given '{scale}'")
-                               
+
+
+def geodesic_dist(X: ArrayLike, mesh: ComplexLike):
+  from scipy.sparse.csgraph import floyd_warshall
+  from scipy.spatial.distance import squareform, cdist
+  import networkx as nx
+  mesh.compute_adjacency_list()
+  G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
+  A = nx.adjacency_matrix(G, dtype='coo')
+  ind = np.fromiter(zip(*A.nonzero()), dtype=(np.uint32, np.uint32))
+  #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+  AG = floyd_warshall(A)
+  return squareform(AG)
+               
 def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
   """
   Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 

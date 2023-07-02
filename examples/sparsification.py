@@ -79,15 +79,38 @@ assert np.all([exponential_search(x, x[i]) == i for i in range(len(x))])
 # %% Problem: using landmark points for subsampled rips is still a rips complex, which is intractable....
 # Need an alternative complex or data set... maybe delaunay...
 # Or just use the given sparse mesh. Take an elephant, choose landmarks/greedypermutation, then...
-# 1) Consider problem of generating a sparse filtered complex from a point set---start with the true diagram, and 
-# then use exp search on landmark points until a given multiplicity is satisfied (say, w/ geodesic eccentricity filter)
+# 1) Consider problem of *generating* a sparse filtered complex from a *point set alone*---start with the true diagram, and 
+# then use exp search on landmark points until a given multiplicity is satisfied (say, w/ geodesic eccentricity filter + delaunay complex)
 # 2) Reverse problem: You have a mesh + it's true diagram (from mesh!), you wish to sparsify (say w/ quadric simplification) 
 # as much as possible, but under the constraint it preserves a given topology. Again, eccentricity + elephant constraint. 
 # could also *perhaps* formulate a rips/based or spectra based objective for sparsification
 
+# %% (1)
+from pbsig.datasets import pose_meshes
+from pbsig.shape import landmarks
+mesh_loader = pose_meshes()
+elephant_mesh = mesh_loader[6]
+# elephant_mesh.euler_poincare_characteristic() # 2 
+# elephant_mesh.is_watertight() # False 
+
+elephant_pos = np.asarray(elephant_mesh.vertices)
+lm_ind, lm_radii = landmarks(elephant_pos, k=len(elephant_pos))
+
+from scipy.sparse.csgraph import floyd_warshall
+from scipy.spatial.distance import squareform, cdist
+import networkx as nx
+elephant_mesh.compute_adjacency_list()
+G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(elephant_mesh.adjacency_list) })
+A = nx.adjacency_matrix(G).tocoo()
+A.data = np.linalg.norm(elephant_pos[A.row] - elephant_pos[A.col], axis=1)
+#A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+AG = floyd_warshall(A.tocsr())
 
 
-
+# %% Precompute eccentricities
+mesh_ecc = [squareform(gd).max(axis=1) for gd in mesh_geodesics]
+ecc_f = [[max(mesh_ecc[cc][i], mesh_ecc[cc][j]) for (i,j) in combinations(range(X.shape[0]), 2)] for cc, (X, mesh) in enumerate(meshes)]
+eff_f = [np.array(ecc) for ecc in ecc_f]
 
 
 # %% Use gudhi's sparse rips 
