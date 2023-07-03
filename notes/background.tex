@@ -73,15 +73,17 @@ The persistent homology groups are the images of these maps and the persistent B
  \end{cases}
 \end{equation}
 For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}. Conceptually, $\beta_p^{i,j}$ counts the number of persistent pairs lying inside the box $(-\infty, i\,] \times (\,j, \infty)$ (see Figure~\ref{fig:mult})---the number of persistent homology groups born at or before $i$ that died sometime after $j$. 
+When a given quantity depends on fixed parameters that are irrelevant or unknown, we use an asterisk. Thus, $H_p^\ast(K)$ refers to any homology group of $K$. 
+%% Boundary matrix section --- since consistency in notation / avoidance of contrasting ideas is preferred over explicitness, this part has been dropped 
+%With a small abuse in notation, we use both $\partial$ and $\partial_p$ to represent both boundary operators and their matrix representatives, i.e. $\partial$ may refer to either a generic boundary operator or the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of a filtration $K_\bullet$:
+%\begin{equation}\label{eq:boundary_matrix}
+%	\partial[i,j] = \begin{cases}
+%		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j], \; \text{where } s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])  \\
+%		0 & \text{otherwise}
+%	\end{cases}
+%\end{equation}
+%Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$,   the matrix representative of $\partial_p$ is obtained by setting all columns of $\partial$ corresponding to simplices of dimension $q \neq p$ to $0$. 
 
-With a small abuse in notation, we use both $\partial$ and $\partial_p$ to represent both boundary operators and their matrix representatives, i.e. $\partial$ may refer to either a generic boundary operator or the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of a filtration $K_\bullet$:
-\begin{equation}\label{eq:boundary_matrix}
-	\partial[i,j] = \begin{cases}
-		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j], \; \text{where } s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])  \\
-		0 & \text{otherwise}
-	\end{cases}
-\end{equation}
-Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $K_\bullet$,   the matrix representative of $\partial_p$ is obtained by setting all columns of $\partial$ corresponding to simplices of dimension $q \neq p$ to $0$. When a given quantity depends on fixed parameters that are irrelevant or unknown, we use an asterisk. Thus, $H_p^\ast(K)$ refers to any homology group of $K$. 
 
 %\begin{remark}
 	We will often equivalently define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over an index set $I$---here, either $[n] = \{ 1, \dots, n\}$ or $\mathbb{R}$---satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. 

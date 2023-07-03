@@ -186,16 +186,13 @@ Persistent homology~\cite{edelsbrunner2000topological} (PH) is the most widely d
 Persistence-related pipelines often follow a common pattern: given a data set $X$ as input, construct a simplicial complex $K$ and an order-preserving function $f: K \to \mathbb{R}$ such that useful topological/geometric information may be gleaned from its \emph{persistence diagram}---a 
 %given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$,
 %its $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is the 
-multiset summary of $f$ formed by pairing homological critical values $\{ a_i \}_{i=1}^N$ with \emph{multiplicities} $\mu_p^{i,j}$~\cite{cohen2005stability}:
+multiset summary of $f$ formed by 
+%pairing homological critical values with \emph{multiplicities} $\mu_p^{a,b}$~\cite{cohen2005stability}:
 %defined over the integer upper halfplane $\Delta_+^N \triangleq \{\, (i,j) : 1 \leq i \leq j \leq n \, \}$: 
 \begin{equation}\label{eq:dgm}
-\mathrm{dgm}_p(K, f) \triangleq \{ \, (a_i, a_j) :  \mu_p^{i,j} \neq 0  \, \},  
-%\cup \Delta_+^{N}
-%,\quad \quad \Delta_+^{\lvert K \rvert} \triangleq \{\, (i,j) : 1 \leq i \leq j \leq N \, \}
-%i \leq j
-\quad \quad \mu_p^{i,j} \triangleq \left(\beta_p^{i,j\shortminus1} - \beta_p^{i,j} \right) - \left(\beta_p^{i\shortminus1,j\shortminus1} - \beta_p^{i\shortminus1,j} \right)
-% \{(x,x): x \in \mathbb{R}, \mu_p^{x,x} = \infty \}
-%\cup \Delta_+^N  
+\mathrm{dgm}_p(K, f) \triangleq \{ \, (a, b) :  \mu_p^{a,b} \neq 0  \, \},  
+%\quad \quad \mu_p^{a,b} \triangleq \left(\beta_p^{a,b\shortminus1} - \beta_p^{a,b} \right) - \left(\beta_p^{a\shortminus1,b\shortminus1} - \beta_p^{a\shortminus1,b} \right)
+\quad \quad  \mu_p^{a, b} \triangleq \; \min_{\delta > 0} \left(\beta_p^{a \+ \delta, b  \shortminus \delta} \shortminus \beta_p^{a \+ \delta, b  \+ \delta} \right) \shortminus \left(\beta_p^{a\shortminus \delta, b \shortminus \delta} \shortminus \beta_p^{a \shortminus \delta, b \+ \delta} \right)
 \end{equation}
 %where $\Delta$ denotes the diagonal, measured with infinite multiplicity.  
 %$$ \mathrm{dgm}(K, f) = \{ (i,j) \in \mathbb{R}^2 : i < j \}$$ 
@@ -214,7 +211,7 @@ multiset summary of $f$ formed by pairing homological critical values $\{ a_i \}
 %\end{equation}
 %given a finite data $X$ sampled from a topological space $\mathcal{X}$, can one infer the homology of $\mathcal{X}$ from $X$ with high confidence?
 %One of the key properties of persistence is its multi-layered representation: just as homology categorifies the Euler characteristic via alternating sum of its Betti numbers, persistent homology categorifies persistent rank invariant through a similar alternating sum. 
-where $\beta_p^{i,j}$ is the rank of the linear map in homology induced by the inclusion $f^{\shortminus1}(-\infty, a_i) \hookrightarrow f^{\shortminus1}(-\infty, a_j)$.
+where $\beta_p^{a,b}$ is the rank of the linear map in homology induced by the inclusion $f^{\shortminus1}(-\infty, a] \hookrightarrow f^{\shortminus1}(-\infty, b]$.
 % TODO: check this w/ steiner paper 
 The surprising and essential quality of persistence is that these pairings exist, are unique, and are stable under additive perturbations~\cite{cohen2005stability}.
 Whether for shape recognition~\cite{chazal2009gromov}, 
@@ -222,7 +219,7 @@ Whether for shape recognition~\cite{chazal2009gromov},
 dimensionality reduction~\cite{scoccola2023fibered}, or time series analysis~\cite{perea2016persistent}, persistence is the de facto connection between homology and the application frontier.
 %researchers have found ways of exploiting the rich information contained in persistence diagrams (see~\cite{pun2018persistent} for a survey).
 
-Though theoretically sound, diagrams suffer from many practical issues: they are sensitive to outliers, far from injective, expensive to compute \emph{and} to compare. 
+Though theoretically sound, diagrams suffer from many practical issues: they are sensitive to outliers, far from injective, and expensive both to compute \emph{and} compare. 
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
 Towards ameliorating some of these issues, practitioners have equipped diagrams with additional structure by way of maps to function spaces; examples include persistence images~\cite{adams2017persistence}, persistence landscapes~\cite{bubenik2015statistical}, and template functions~\cite{perea2022approximating}. 
 %Along a separate thread of research 
@@ -303,11 +300,11 @@ Our strategy is motivated both by a technical observation that suggests advantag
 	%\mathrm{dgm}_p(M)\restriction_R 
 %	\restr{\mathrm{dgm}_p(f)}{R} \,
 %	\right), \quad 
-	\mu_p^{a, b}(K,f) \triangleq \; \min_{\delta > 0} \left(\beta_p^{a \+ \delta, b  \shortminus \delta} - \beta_p^{a \+ \delta, b  \+ \delta} \right) - \left(\beta_p^{a\shortminus \delta, b \shortminus \delta} - \beta_p^{a \shortminus \delta, b \+ \delta} \right)%, \quad \quad \beta_p^{}
-%	, \quad \hat\imath \leq \hat\jmath
+% 
+%\mu_p^{a, b}(K,f) \triangleq \; \min_{\delta > 0} \left(\beta_p^{a \+ \delta, b  \shortminus \delta} - \beta_p^{a \+ \delta, b  \+ \delta} \right) - \left(\beta_p^{a\shortminus \delta, b \shortminus \delta} - \beta_p^{a \shortminus \delta, b \+ \delta} \right)
 \end{equation}
-where $\beta_p^{a, b }$ is the rank of the lienar map in $f^{\shortminus1}(-\infty, a) \hookrightarrow f^{\shortminus1}(-\infty, b)$.
-Note that $(a,b)$ are not necessarily homological critical values in the range of $f$, but rather are arbitrary. 
+where $\beta_p^{a, b}$ is the rank of the linear map in $f^{\shortminus1}(-\infty, a) \hookrightarrow f^{\shortminus1}(-\infty, b)$.
+Note that in this setting, $(a,b)$ are arbitrarynot necessarily homological critical values in the range of $f$, but rather are arbitrary. 
 % \mathrm{rank}(H_p(K_{\hat\imath})\to)
 A notable feature of our approach is that it not only avoids explicitly constructing diagrams, but it entirely \emph{matrix-free}, circumventing the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 %?between the persistent Betti numbers and combinatorial Laplacian operators
@@ -373,7 +370,7 @@ The steps to produce this mapping are as follows:
 	\item Select a \emph{sieve} $\mathcal{R} = R_1 \cup \dots \cup R_h \subset \Delta_+$. %	\begin{equation}\label{eq:rect_sieve}
 %		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
 %	\end{equation} 
-	This choice is application-dependent and typically requires a priori knowledge, though in section~\ref{sec:applications} we give evidence that random sampling may be sufficient for vectorization purposes when $\mathcal{R}$ is unknown.
+	This choice is application-dependent and typically requires a priori knowledge, though in section~\ref{sec:applications} we give evidence that random sampling may be sufficient for vectorization or data exploration purposes when $\mathcal{R}$ is unknown.
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
