@@ -7,45 +7,45 @@ Warning--can't use both volume and number fields in chazal2009gromov
 Warning--empty journal in lanczos1950iteration
 Warning--empty institution in mangasarian1994class
 Warning--empty school in newman2001laplacian
-You've used 37 entries,
+You've used 36 entries,
             2118 wiz_defined-function locations,
-            708 strings with 10373 characters,
-and the built_in function-call counts, 12600 in all, are:
-= -- 1259
-> -- 566
+            703 strings with 10224 characters,
+and the built_in function-call counts, 12303 in all, are:
+= -- 1227
+> -- 559
 < -- 13
-+ -- 230
-- -- 186
-* -- 821
-:= -- 2067
-add.period$ -- 116
-call.type$ -- 37
-change.case$ -- 198
++ -- 227
+- -- 184
+* -- 799
+:= -- 2018
+add.period$ -- 113
+call.type$ -- 36
+change.case$ -- 194
 chr.to.int$ -- 0
-cite$ -- 41
-duplicate$ -- 507
-empty$ -- 987
-format.name$ -- 186
-if$ -- 2661
+cite$ -- 40
+duplicate$ -- 496
+empty$ -- 960
+format.name$ -- 184
+if$ -- 2600
 int.to.chr$ -- 0
-int.to.str$ -- 37
-missing$ -- 41
-newline$ -- 188
-num.names$ -- 74
-pop$ -- 224
+int.to.str$ -- 36
+missing$ -- 40
+newline$ -- 183
+num.names$ -- 72
+pop$ -- 222
 preamble$ -- 1
-purify$ -- 166
+purify$ -- 163
 quote$ -- 0
-skip$ -- 373
+skip$ -- 366
 stack$ -- 0
-substring$ -- 775
-swap$ -- 126
+substring$ -- 745
+swap$ -- 125
 text.length$ -- 13
 text.prefix$ -- 0
 top$ -- 0
-type$ -- 136
+type$ -- 132
 warning$ -- 4
-while$ -- 125
-width$ -- 39
-write$ -- 403
+while$ -- 121
+width$ -- 38
+write$ -- 392
 (There were 4 warnings)

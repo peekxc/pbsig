@@ -8,12 +8,6 @@ Henry Adams, Tegan Emerson, Michael Kirby, Rachel Neville, Chris Peterson,
   homology.
 \newblock {\em Journal of Machine Learning Research}, 18, 2017.
 
-\bibitem{bauer2021ripser}
-Ulrich Bauer.
-\newblock Ripser: efficient computation of vietoris--rips persistence barcodes.
-\newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
-  2021.
-
 \bibitem{bauer2020persistence}
 Ulrich Bauer and Michael Lesnick.
 \newblock Persistence diagrams as diagrams: A categorification of the stability

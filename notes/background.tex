@@ -47,32 +47,39 @@ The quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is
 
 %Let $B_p(K_\bullet) \subseteq Z_p(K_\bullet) \subseteq C_p(K_\bullet)$ denote the $p$-th boundary, cycle, and chain groups of a given filtration $K_\bullet$, respectively, and let $\partial_p : C_p( K_{\bullet}) \to C_{p-1}(K_{\bullet})$ denote the $p$-th boundary operator. 
 
-A \emph{filtration} $K_\bullet = \{K_i\}_{i\in I}$ is a family of complexes indexed by a totally ordered set $I$  such that $i< j \in I \Rightarrow K_i \subseteq K_j$. $K_\bullet$ is called \emph{simplexwise} if $K_j \smallsetminus K_i = \{\sigma_j\}$ whenever $j$ is the immediate successor of $i$ in $I$:
+%A \emph{filtration} $K_\bullet = \{K_a\}_{a\in I}$ is a family of complexes indexed by a 
+%% NOTE: can't say totally ordered any more with (a,b) notation. 
+%%totally ordered
+%set $I$ such that $a \leq b \in I \Rightarrow K_a \subseteq K_b$. 
+A \emph{filtration} is a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over an index set $I$ satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. 
+% Note: Since the index set may be \mathbb{R} and we're avoiding integer indices to avoid contrast, simplexwise notation no longer make sense. So we just have to make things super ambiguous and hope the reader will understand
+%$K_\bullet$ is called \emph{simplexwise} if $K_b \smallsetminus K_a = \{\sigma_b\}$ whenever $b$ is the immediate successor of $a$ in $I$:
 %Connecting a sequence of simplices $[\sigma_i]_{i=1, \dots, m}$ ordered increasingly by $f$ by inclusion yields such a family of complexes:
-\begin{equation}
-	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
-\end{equation} 
-Given a filtration $K_\bullet = \{K_i\}_{i\in [N]}$ of size $\lvert K_\bullet \rvert = N$,  
+%\begin{equation}
+%	\emptyset = K_0 \subsetneq K_1 \subsetneq \dots \subsetneq K_m  = K_\bullet, \quad K_i  = K_{i-1} \cup \{\sigma_i\}
+%\end{equation} 
+%% Note: again, we have to abandon the nice integer notation
+%Given a filtration $K_\bullet = \{K_a\}_{a\in I}$ of size $\lvert K_\bullet \rvert = N$,  
 %let $\Delta_{+} = \{ (i,j) : i < j, i, j \in \mathbb{R} \}$ denote the upper half-plane, 
-let $\Delta_{+}^N = \{ (i,j) : 0 \leq i \leq j \leq N \}$ denote the set of filtration index pairs. 
-For every such pair $(i,j) \in \Delta_{+}^N$, the sequence of inclusions $K_i \subsetneq K_{i+1} \subsetneq \dots \subsetneq K_j$ induce linear transformations $h_p^{i,j} :  H_p(K_i) \to H_p(K_j)$ at the level of homology:
-\begin{equation}\label{eq:hom_map}
-	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_N) = H_p(K_\bullet) 
-\end{equation}
-When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decompose $K_\bullet$ into a pairing $(\sigma_i, \sigma_j)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_i$ marks the creation of a homology class, $\sigma_j$ marks its destruction, and the difference $\lvert i - j \rvert$ records the lifetime of the class, called its \emph{persistence}.
+%let $\Delta_{+}^N = \{ (i,j) : 0 \leq i \leq j \leq N \}$ denote the set of filtration index pairs. 
+For every pair $(a,b) \in I \times I$ satisfying $a \leq b$, the sequence of inclusions $K_a \subseteq \dots \subseteq K_b$ induce linear transformations $h_p^{a,b} :  H_p(K_a) \to H_p(K_b)$ at the level of homology.
+%\begin{equation}\label{eq:hom_map}
+%	0 = H_p(K_0) \to \dots \to H_p(K_i) \underbracket[0.5pt]{\to \dots \to}_{h_p^{i,j}} H_p(K_j) \to \dots \to H_p(K_N) = H_p(K_\bullet) 
+%\end{equation}
+When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decompose $(K,f)$ into a pairing $(\sigma_a, \sigma_b)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_a$ marks the creation of a homology class, $\sigma_b$ marks its destruction, and the difference $\lvert a - b \rvert$ records the lifetime of the class, called its \emph{persistence}.
 The persistent homology groups are the images of these maps and the persistent Betti numbers are their dimensions:
 \begin{equation}
-	H_{p}^{i,j} = \begin{cases}
-	H_p(K_i) & i = j \\ 
- 	\mathrm{Im}\,h_p^{i,j} & i < j
+	H_{p}^{a,b} = \begin{cases}
+	H_p(K_a) & a = b \\ 
+ 	\mathrm{Im}\,h_p^{a,b} & a < b
  \end{cases}
 , \quad \quad 
-\beta_p^{i,j} = \begin{cases}
- 	\beta_p(K_i) & i = j \\
- 	\mathrm{dim}(H_{p}^{i,j}) & i < j
+\beta_p^{a,b} = \begin{cases}
+ 	\beta_p(K_a) & a = b \\
+ 	\mathrm{dim}(H_{p}^{a,b}) & a < b
  \end{cases}
 \end{equation}
-For a fixed $p \geq 0$, the collection of persistent pairs $(i, j)$ together with unpaired simplices $(l, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}. Conceptually, $\beta_p^{i,j}$ counts the number of persistent pairs lying inside the box $(-\infty, i\,] \times (\,j, \infty)$ (see Figure~\ref{fig:mult})---the number of persistent homology groups born at or before $i$ that died sometime after $j$. 
+For a fixed $p \geq 0$, the collection of persistent pairs $(a, b)$ together with unpaired simplices $(c, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}. Conceptually, $\beta_p^{a,b}$ counts the number of persistent pairs lying inside the box $(-\infty, a\,] \times (\,b, \infty)$---the number of persistent homology groups born at or before $a$ that died sometime after $b$. % (see Figure~\ref{fig:mult}) 
 When a given quantity depends on fixed parameters that are irrelevant or unknown, we use an asterisk. Thus, $H_p^\ast(K)$ refers to any homology group of $K$. 
 %% Boundary matrix section --- since consistency in notation / avoidance of contrasting ideas is preferred over explicitness, this part has been dropped 
 %With a small abuse in notation, we use both $\partial$ and $\partial_p$ to represent both boundary operators and their matrix representatives, i.e. $\partial$ may refer to either a generic boundary operator or the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of a filtration $K_\bullet$:
@@ -86,10 +93,25 @@ When a given quantity depends on fixed parameters that are irrelevant or unknown
 
 
 %\begin{remark}
-	We will often equivalently define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over an index set $I$---here, either $[n] = \{ 1, \dots, n\}$ or $\mathbb{R}$---satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. 
-Since any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}, without loss of generality we consider them exclusively.
+%	We will often equivalently define a filtration $K_\bullet$ as a pair $(K, f)$ where $f : K \to I$ is a \emph{filter function} over an index set $I$---here, either $[n] = \{ 1, \dots, n\}$ or $\mathbb{R}$---satisfying $f(\tau) \leq f(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$. 
+%Since any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}, without loss of generality we consider them exclusively.
 
-Define: Time varying filtration is a family of monotone functions. 
+% NOTE: Time varying filtration is a family of monotone functions 
+We will at times need to generalize the notation given thus far to the \emph{parameterized} setting. Toward this end, for some $\mathcal{A} \subset \mathbb{R}^d$, define a $\mathcal{A}$-parameterized as the pair $(K, f_\alpha)$ where $K$ is a simplicial complex and $f : K \times \mathcal{A} \to \mathbb{R}$ an $\mathcal{A}$-parameterized filter function satisfying:
+$$	 
+f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K  \;\; \text{ and } \; \; f_\alpha(\sigma) \text{ is continuous in } \alpha \in \mathcal{A} \text{ for every } \sigma \in K
+$$
+%\begin{enumerate}
+%	\item For every $\alpha \in \mathcal{A}$, $(K, f_\alpha)$ is a filtration satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$
+%	\item For every $\sigma \in K$, $f_\alpha(\sigma) : \mathbb{R} \to \mathbb{R}$ is a continuous function in $\alpha \in \mathcal{A}$
+%\end{enumerate}
+We will often refer to $\alpha$ as the \emph{time} parameter. Examples of parameterized filtrations include:
+\begin{enumerate}
+	\item (Constant filtration) Given a filtration $(K, f)$, declaring $f_\alpha = f$ for all $\alpha \in \mathcal{A}$ recovers definition of filtration in the non-parameterized setting
+	\item (Dynamic Rips) When $f = \mathrm{diam}$ is the diameter function over subsets of a metric space $(X,d_X)$ and $\mathcal{A} = \mathbb{R}$, the pair $(K, f_\alpha)$ recovers a natural filtered-equivalent of the dynamic metric space studied in~\cite{kim2021spatiotemporal}  
+	\item ($\mathbb{R}^d$-indexed Multi-filtrations) By filtering $K$ along several functions spanning $\mathbb{R}^d$, we recover... 
+\end{enumerate} 
+
 %\end{remark} 
 %\begin{remark}
 %\end{remark}
