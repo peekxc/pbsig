@@ -26,10 +26,20 @@ An \emph{oriented $p$-simplex} $[\sigma]$ is an ordered set $[\sigma] = (-1)^{\l
 %\end{equation}
 where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ the number of its inversions. 
 %Any ordering defines the same oriented simplex if the permutation transforming one ordering into the other is even. 
-The \emph{$p$-boundary} $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces:
+The \emph{$p$-boundary} $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces, which collectively are represented in the $p$-th \emph{boundary matrix} of $K$:
 \begin{equation}\label{eq:alt_sum}
-	\partial_p[\sigma] \triangleq \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]
+%\begin{equation}\label{eq:boundary_matrix}
+%\end{equation}
+	\partial_p[\sigma] \triangleq \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}], \quad \quad  
+		\partial_p[i,j] = \begin{cases}
+		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j]  \\
+		0 & \text{otherwise}
+	\end{cases}
 \end{equation}
+where $s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])$ records the orientation. Extending~\eqref{eq:alt_sum} to all simplices in $\sigma \in K$ for all $p \leq \mathrm{dim}(K)$ yields the \emph{full boundary matrix} $\partial$. 
+With a small abuse in notation, we use $\partial_p$ to denote both the boundary operator and its ordered matrix representative. We will clarify which representation is intended, when it is not clear from the context. 
+%Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $(K, f)$, a matrix representative of $\partial_p$ can be obtained by setting all columns of $\partial$ corresponding to simplices of dimension $q \neq p$ to $0$. 
+
 Generalizing beyond simplices, given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$ whose boundary $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. 
 The collection of $p$-chains under addition yields an $\mathbb{F}$-vector space $C_p(K)$ whose boundaries $c \in \partial_p[c']$ satisfying $\partial_p[c] = 0$ are called \emph{cycles}.
 %We assume every $p$-chain is \emph{oriented} such that $K$ is an \emph{oriented simplicial complex}.
@@ -37,7 +47,7 @@ The collection of $p$-chains under addition yields an $\mathbb{F}$-vector space 
 % Since $\partial_p \circ \partial_{p+1} = 0$ for all $p\geq 0$, 
 The quotient space $H_p(K) = Z_p(K) / B_{p}(K)$ is 
  %a well-defined group 
- called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$ and its dimension $\beta_p$ is called the \emph{$p$-th Betti number} of $K$.
+ called the \emph{$p$-th homology group of $K$} with coefficients in $\mathbb{F}$ and its dimension $\beta_p$ is the \emph{$p$-th Betti number} of $K$.
 % \begin{equation}
 % 	H_p(K) \triangleq Z_p(K) / B_{p}(K), \quad \quad \beta_p(K) \triangleq \mathrm{dim}(H_p(K))
 % \end{equation}
@@ -79,8 +89,9 @@ The persistent homology groups are the images of these maps and the persistent B
  	\mathrm{dim}(H_{p}^{a,b}) & a < b
  \end{cases}
 \end{equation}
-For a fixed $p \geq 0$, the collection of persistent pairs $(a, b)$ together with unpaired simplices $(c, \infty)$ form a summary representation $\mathrm{dgm}_p(K_\bullet)$ called the \emph{$p$-th persistence diagram of $K_\bullet$}. Conceptually, $\beta_p^{a,b}$ counts the number of persistent pairs lying inside the box $(-\infty, a\,] \times (\,b, \infty)$---the number of persistent homology groups born at or before $a$ that died sometime after $b$. % (see Figure~\ref{fig:mult}) 
+For a fixed $p \geq 0$, the collection of persistent pairs $(a, b)$ together with unpaired simplices $(c, \infty)$ form a summary representation $\mathrm{dgm}_p(K,f)$ called the \emph{$p$-th persistence diagram of $(K,f)$}. Conceptually, $\beta_p^{a,b}$ counts the number of persistent pairs lying inside the box $(-\infty, a\,] \times (\,b, \infty)$---the number of persistent homology groups born at or before $a$ that died sometime after $b$. % (see Figure~\ref{fig:mult}) 
 When a given quantity depends on fixed parameters that are irrelevant or unknown, we use an asterisk. Thus, $H_p^\ast(K)$ refers to any homology group of $K$. 
+
 %% Boundary matrix section --- since consistency in notation / avoidance of contrasting ideas is preferred over explicitness, this part has been dropped 
 %With a small abuse in notation, we use both $\partial$ and $\partial_p$ to represent both boundary operators and their matrix representatives, i.e. $\partial$ may refer to either a generic boundary operator or the $N \times N$ filtered boundary matrix with respect to an ordered basis $(\sigma_i)_{1 \leq i \leq N}$ of a filtration $K_\bullet$:
 %\begin{equation}\label{eq:boundary_matrix}
@@ -97,21 +108,22 @@ When a given quantity depends on fixed parameters that are irrelevant or unknown
 %Since any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}, without loss of generality we consider them exclusively.
 
 % NOTE: Time varying filtration is a family of monotone functions 
-We will at times need to generalize the notation given thus far to the \emph{parameterized} setting. Toward this end, for some $\mathcal{A} \subset \mathbb{R}^d$, define a $\mathcal{A}$-parameterized as the pair $(K, f_\alpha)$ where $K$ is a simplicial complex and $f : K \times \mathcal{A} \to \mathbb{R}$ an $\mathcal{A}$-parameterized filter function satisfying:
-$$	 
+We will at times need to generalize the notation given thus far to the \emph{parameterized} setting. Towards this end, for some $\mathcal{A} \subset \mathbb{R}^d$, we define an \emph{$\mathcal{A}$-parameterized filtration} as a pair $(K, f_\alpha)$ where $K$ is a simplicial complex and $f : K \times \mathcal{A} \to \mathbb{R}$ an $\mathcal{A}$-parameterized filter function satisfying:
+\begin{equation}
 f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K  \;\; \text{ and } \; \; f_\alpha(\sigma) \text{ is continuous in } \alpha \in \mathcal{A} \text{ for every } \sigma \in K
-$$
+\end{equation}
 %\begin{enumerate}
 %	\item For every $\alpha \in \mathcal{A}$, $(K, f_\alpha)$ is a filtration satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$
 %	\item For every $\sigma \in K$, $f_\alpha(\sigma) : \mathbb{R} \to \mathbb{R}$ is a continuous function in $\alpha \in \mathcal{A}$
 %\end{enumerate}
-We will often refer to $\alpha$ as the \emph{time} parameter. Examples of parameterized filtrations include:
-\begin{enumerate}
+We will often refer to $\alpha$ as the \emph{time} parameter. Intuitively, one can think of each $f_\alpha(\sigma)$ as tracing a curve in $\mathbb{R}^d$ parameterized by $\mathcal{A}$.  Examples of parameterized filtrations include:
+\begin{itemize}[itemsep=0.25em, parsep=0.25em]
 	\item (Constant filtration) Given a filtration $(K, f)$, declaring $f_\alpha = f$ for all $\alpha \in \mathcal{A}$ recovers definition of filtration in the non-parameterized setting
-	\item (Dynamic Rips) When $f = \mathrm{diam}$ is the diameter function over subsets of a metric space $(X,d_X)$ and $\mathcal{A} = \mathbb{R}$, the pair $(K, f_\alpha)$ recovers a natural filtered-equivalent of the dynamic metric space studied in~\cite{kim2021spatiotemporal}  
-	\item ($\mathbb{R}^d$-indexed Multi-filtrations) By filtering $K$ along several functions spanning $\mathbb{R}^d$, we recover... 
-\end{enumerate} 
+	\item (Dynamic Rips) When $K$ derives from a metric space $(X,d_X)$ via $f(\sigma) = \max_{x, x' \in \sigma} d_X(x,x')$ and $\mathcal{A} = \mathbb{R}$, the pair $(K, f_\alpha)$ is akin to a time-varying Rips filtration over a dynamic metric space~\cite{kim2021spatiotemporal}  
+	\item (Multi-filtrations) By filtering $K$ along several functions spanning $\mathbb{R}^d$, such as a density and distance, we recover the notion of a $\mathbb{R}^d$-indexed multi-filtration.  
+\end{itemize} 
 
+%In many such settings, it is of interest to ``exclude'' certain simplices $\tau \in K$ once they reach a certain threshold---we encapsulate this scenario by setting $f_\alpha(\tau) = 0$.
 %\end{remark} 
 %\begin{remark}
 %\end{remark}
