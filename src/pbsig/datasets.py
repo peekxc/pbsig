@@ -15,6 +15,7 @@ from splex import filtration
 from .utility import *
 from .combinatorial import *
 from .simplicial import *
+from .shape import simplify_outline
 # from .__init__ import _package_data
 
 _ROOT = os.path.abspath(os.path.dirname(__file__))
@@ -170,9 +171,6 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
 
 def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
   base_dir = _package_data('mpeg7')
-  if simplify == 150 and contour == True and which == "default":
-    mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
-    return mpeg7
   mpeg7 = []
   _all_shapes = ['Bone', 'Comma', 'Glas', 'HCircle', 'Heart', 'Misk', 'apple', 'bat', 
        'beetle', 'bell', 'bird', 'bottle', 'brick', 'butterfly', 
@@ -187,12 +185,20 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
        'sea_snake', 'shapedata', 'shapedata.eps', 'shapedata.fig', 'shoe',
        'spoon', 'spring', 'stef', 'teddy', 'tree', 'truck', 'turtle',
        'watch']
+  _all_shapes = [s.lower() for s in _all_shapes]
   default_shapes = [
     "turtle", "watch", "bird", "bone", "bell", "bat", "beetle", "butterly", 
     "car", "cup", "teddy", "spoon", "shoe", "ray", "sea_snake", "personal_car", 
     "key", "horse", "hammer", "frog", "fork", "flatfish", "elephant"
   ]
-  shape_types = default_shapes if which == "default" else _all_shapes
+  if isinstance(which, str) and which == "default":
+    shape_types = default_shapes
+  else:
+    assert all([s in _all_shapes for s in which]), "Invalid set of shapes given"
+    shape_types = which
+  if simplify == 150 and contour == True:
+    mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
+    return { k : v for k,v in mpeg7.items() if k[0] in shape_types }
   shape_nums = range(20) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
   normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
   dataset = {}

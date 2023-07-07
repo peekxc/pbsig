@@ -23,8 +23,8 @@ output_notebook(verbose=False)
 #| label: Load shape data
 from pbsig.datasets import mpeg7
 from operator import itemgetter
-X = mpeg7(simplify=150)
-labels = np.array(list(map(itemgetter(0), X.keys())))
+X_data = mpeg7(simplify=150, which=["turtle", "watch", "bird", "bone", "bell"])
+labels = np.array(list(map(itemgetter(0), X_data.keys())))
 classes = np.sort(np.unique(labels))
 y = np.searchsorted(classes, labels)
 ```
@@ -48,7 +48,11 @@ p = figure(height=150, width=275)
 p.line(np.arange(32), np.ravel(sieve.summarize()))
 p.y_range = Range1d(-1, 1)
 show(p)
+```
 
+
+Benchmarking 
+```{python}
 def _bench():
   ## For a given feature, create a reference mean curve for each class, phase aligned
   from pbsig.dsp import phase_align
@@ -57,7 +61,7 @@ def _bench():
   sieve.randomize_pattern(1, lb=0, ub=3, area=(0.05**2, 0.15**2), max_asp=5)
   i = 0
   for x_pc, y_label in progressbar(zip(X.values(), y), len(y)):
-    sieve.family = parameterize_dt(x_pc, dv = 32)
+    sieve.family = parameterize_dt(x_pc, dv = 16)
     sieve.sift(w=1, progress=False)
     feature_summary = np.ravel(sieve.summarize())
     if y_label in mean_curves: 
@@ -101,20 +105,54 @@ profiler.print_stats(output_unit=1e-3)
 
 ```{python}
 # | name: idi
-class WeakLearner:
+class ShellsLearner:
   # Should all be keyword arguments with a default value, should correspond to an attribute on the instance, w/ no input validation 
-  def __init__(p: int):
-    self.p = p
-    pass
-
-  def fit(X: ArrayLike, y: ArrayLike, **kwargs):
+  def __init__(self, k: int, d: int):
+    self.k = k  # size of the vector signature
+    self.d = d  # ambient dimension of the point cloud 
+  
+  def fit(self, X: ArrayLike, y: ArrayLike, **kwargs):
+    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
+    self.n_classes_ = len(self.classes_)
+    mean_curves = { cl : np.zeros(self.k) for cl in self.classes_ }
+    for x, label in zip(X, y): 
+      x_pc = x.reshape((len(x) // self.d, self.d))
+      shells_sig = shells(x_pc, self.k)
+      mean_curves[label] += shells_sig # phase_align(shells_sig, mean_curves[label])
+    self.mean_curves = { cl : ts / sum(y == cl) for cl, ts in mean_curves.items() }
     return self
   
-  def predict_proba(X: ArrayLike):
-    pass
+  def predict_proba(self, X: ArrayLike) -> ArrayLike:
+    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
+    P = np.empty(shape=(X.shape[0], self.n_classes_))
+    for i,x in enumerate(X):
+      x_pc = x.reshape((len(x) // self.d, self.d))
+      shells_sig = shells(x_pc, self.k)
+      d = np.array([np.sum(np.abs(curve-shells_sig)) for cl, curve in self.mean_curves.items()])
+      s = np.exp(-d**1)
+      P[i,:] = s / np.sum(s)
+    return P
 
-  def predict(X: ArrayLike):
+  def predict(self, X: ArrayLike):
     P = self.predict_proba(X)
+    return self.classes_[P.argmax(axis=1)]
+
+weak_learner = ShellsLearner(k=10, d=2)
+
+
+from sklearn.ensemble import AdaBoostClassifier
+from pbsig.shape import shells
+X_train = np.array([np.ravel(x) for x in X_data.values()])
+weak_learner = ShellsLearner(k=10, d=2)
+weak_learner.fit(X_train, y)
+weak_learner.predict_proba(X_train)
+weak_learner.predict(X_train)
+
+
+
+from sklearn.ensemble import AdaBoostRegressor
+
+
 
 
 class SieveWeakClassifier:
@@ -129,9 +167,6 @@ class SieveWeakClassifier:
     curve = np.ravel(sieve.summarize())
     curve - 
 
-
-for 
-eigen_dist(mean_curves[0], np.ravel(sieve.summarize()))
 
 
 import timeit

@@ -871,6 +871,19 @@ class Sieve:
     np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
     
+
+  ## Compute the spectrum of a normalized version of the given combinatorial laplacian operator
+  ## This method augments the weights of the outer and inner diagonal terms directly
+  def _project(self, fpi: ArrayLike, fqj: ArrayLike, **kwargs):
+    I = np.where(np.isclose(fpi, 0.0), 0.0, 1.0)
+    self.laplacian.set_weights(I,fqj,I)
+    d = np.sqrt(pseudoinverse(self.laplacian.degrees))
+    # self.laplacian.set_weights(d, fqj, d)
+    self.laplacian.face_right_weights = d
+    self.laplacian.face_left_weights = d
+    self.laplacian.precompute_degree()
+    return self.solver(self.laplacian, **kwargs)
+  
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
     """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
     # if i > j: return
@@ -878,14 +891,15 @@ class Sieve:
     fp, fq = f(self.p_faces), f(self.q_faces)
     fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
     if self.form == 'lo':
-      I = np.where(np.isclose(fp,0),0,1)
-      self.laplacian.set_weights(I,fq,I)
-      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
-      if any(np.isnan(d)):
-        nan_ind = np.flatnonzero(np.isnan(d))
-        raise ValueError(f"Failed to project ({i:.5f},{j:.5f}); nan detected in pseudo-inverse of {self.laplacian.degrees[nan_ind[0]]}.")
-      self.laplacian.set_weights(d,fq,d)
-      return self.solver(self.laplacian, **kwargs)
+      self._project(fp, fq, **kwargs)
+    else:
+      raise NotImplementedError("Array form of projection not implemented")
+    
+  def project_corner(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):
+    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+    fp, fq = si(fp), sj(fq) 
+    if self.form == 'lo':
+      self._project(fp, fq, **kwargs)
     else:
       raise NotImplementedError("Array form of projection not implemented")
 
