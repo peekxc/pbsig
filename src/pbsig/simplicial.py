@@ -1,10 +1,10 @@
 from splex import * 
 from .utility import *
 
-def cycle_graph(X: ArrayLike):
+def cycle_graph(n: int):
   "Creates a cycle graph from a set of ordered points" 
-  E = np.array(list(cycle_window(range(X.shape[0]))))
-  V = np.fromiter(range(X.shape[0]), dtype=np.int32)
+  E = np.array(list(cycle_window(range(n))))
+  V = np.fromiter(range(n), dtype=np.int32)
   S = simplicial_complex(chain(iter(V), iter(lexsort_rows(E))))
   return S
 

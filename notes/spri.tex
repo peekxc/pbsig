@@ -506,7 +506,7 @@ Though this observation is typically viewed as a minor fact needed to prove the 
 \begin{corollary}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K, f)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
 \end{corollary}
-\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Thus,~\eqref{eq:lower_left_rank} in turn enables both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
+\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Moreover, due to~\eqref{eq:lower_left_rank}, both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
 \begin{corollary}[\cite{chen2011output, dey2022computational}]\label{cor:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $(K,f)$ with filtration values $\{ \, a_i \, \}_{i=1}^N$, and a rectangle $R =  [a_i,a_j] \times [a_k,a_l] \subset \Delta_+$,
 %satisfying $1 \leq i < j \leq k < l \leq N$, 
@@ -520,7 +520,7 @@ the persistent Betti number and multiplicity functions may be written as:
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{corollary}
 %Dey \& Wang
-\noindent These rank-based expressions seem neither well known nor widely used---to the authors knowledge, the expression for $\mu_p^{R}(K,f)$ from~\eqref{eq:mu_four} was first pointed out by Chen \& Kerber~\cite{chen2011output}. A more recent and explicit derivation of~\eqref{eq:betti_four} is given by Dey \& Wang~\cite{dey2022computational}. For completeness, we give our own detailed proof of corollary~\ref{cor:rank_reduction} in the appendix. 
+\noindent These rank-based expressions seem neither well known nor widely used---to the authors knowledge, the expression for~\eqref{eq:mu_four} was first pointed out by Chen \& Kerber~\cite{chen2011output}, though a more recent and explicit derivation of both expressions is given by Dey \& Wang~\cite{dey2022computational}. For completeness, we give our own detailed proof of corollary~\ref{cor:rank_reduction} in the appendix. 
 %If $K$ is finite and $f$ is injective with values $a_j$, ordered, then we can use $\beta_p^{a_i, a_j}(K ,f)$ on the left-hand side of 2.7 and 2.8, and the integers (i,j) on the right. 
 
 %By combining Proposition~\ref{prop:rank_reduction} with~\eqref{eq:dgm}, we recover a submatrix-rank-based $p$-th multiplicity function $\mu_p^{R}(\cdot)$, which to the authors knowledge was first pointed out by Chen \& Kerber~\cite{chen2011output}: 
@@ -543,10 +543,11 @@ the persistent Betti number and multiplicity functions may be written as:
 %For a given $(K, f)$, if $f$ is injective, then every $a_i$ from Corollary~\ref{cor:rank_reduction} will be a homological critical value, as adding a simplex creates or removes a class.  
 %it is natural to consider their generalizations under the \emph{persistent measures} setting~\cite{chazal2016structure}.
 
-Observe both~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) comprised strictly of \emph{rank} computations, and (2) involve \emph{unfactored} boundary (sub)matrices.
+Two important observations stemming from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) that they are comprised strictly of \emph{rank} computations, and (2) that these computations are carried out on \emph{unfactored} boundary (sub)matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-The former suggests relaxations of the rank function---such as those used often in $\ell_1$ minimization and compressive sensing~\cite{zhao2012approximation} applications---may be extended in the persistence setting through these expressions. The latter suggests these quantities may be iteratively approximated in a matrix-free fashion using e.g. randomized approaches~\cite{chen2011output} or iterative subspace methods~\cite{golub2013matrix, parlett1994we}, as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
+The former suggests techniques from sparse recovery or compressive sensing~\cite{zhao2012approximation} may find utility in the persistence setting, while the latter suggest these quantities may be iteratively approximated in a matrix-free fashion using e.g. randomized algorithms~\cite{chen2011output} or iterative subspace methods~\cite{golub2013matrix, parlett1994we}. 
+%as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
 %The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
 Moreover, the structure of $\partial$ and the spectral characterization of the rank function
@@ -624,9 +625,8 @@ Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ define
 %\begin{equation}\label{eq:pbn_simple}
 %	\beta_p^{a,b} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \cap \mathrm{Im}(\partial_{p+1}(K_b)) \; \big) 
 %\end{equation}
-Computing $\beta_p^{a,b}$ via~\eqref{eq:pbn_simple} reduces to two rank computations: one nullity computation and one computation that typically requires finding a basis in intersection of the two subspaces.
-% via matrix reduction or projector-based techniques 
-While the former is easily solved, in general, direct methods accomplishing the latter rely on reduction or expensive projector-based techniques that require $\Omega(N^3)$ time and $\Omega(N^2)$ space~\cite{golub2013matrix}.
+Thus, computing $\beta_p^{a,b}$ via~\eqref{eq:pbn} reduces to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
+While the former is easily solved, direct methods that solve the latter typically do so in $\Omega(N^3)$ time and $\Omega(N^2)$ space by finding a basis via reduction or projector-based techniques~\cite{golub2013matrix}.
 These methods have proven challenging to efficiently extend to the parameterized setting~\cite{piekenbrock2021move}, prompting questions of whether alternative expressions (e.g.~\eqref{eq:mu_four}) have any potential computational benefits.
 
 %$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
@@ -652,7 +652,7 @@ These methods have proven challenging to efficiently extend to the parameterized
 % mention DMSs 
 %In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 %To see the utility of this fact, consider a filtration $(K_\bullet, f)$ equipped with a \emph{parameterized} filter function $f : \mathcal{A} \times K \to \mathbb{R}$ with respect to some set $\mathcal{A}$.
-In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), the boundary matrix $\partial$ must maintain a total order with respect to $f_\alpha$, which results in a frequent need to permute matrices.  
+In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), a decomposition $R = \partial V$ of the boundary matrix $\partial$ must be permuted and modified frequently to maintain a total order with respect to $f_\alpha$.  %$P R P^T = (P \partial P^T)(P V P^T)$
 In contrast, the rank function is permutation invariant, i.e. for any $X \in \mathbb{R}^{n \times n}$ and permutation $P$ we have: 
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
@@ -1206,7 +1206,7 @@ By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular va
 	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
 	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
-The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectra of the inverse of the up- (or down-) Laplacian; 
+The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectrum of the inverse of a given Laplacian; 
 %$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
 in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
 

@@ -29,6 +29,13 @@ def phase_align(s1: Sequence, s2: Sequence, return_offset: bool = False):
   r_ind = np.argmin([np.linalg.norm(s2 - np.roll(s1, ind+i)) for i in offsets])
   return(ind+offsets[r_ind] if return_offset else np.roll(s1, ind+offsets[r_ind]))
 
+def phase_align2(s1: Sequence, s2: Sequence, return_offset: bool = False):
+  from scipy.signal import correlate
+  # dx = np.mean(np.diff(s1))
+  shift = (np.argmax(correlate(s1, s2)) - (len(s2)-1))
+  return np.roll(s1, shift)
+
+
 
 ## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
 def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
@@ -54,7 +61,7 @@ def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reve
   elif method == "rmse":
     d = np.sqrt(min(np.mean(np.power(d1,2)), np.mean(np.power(d2,2))))
   elif method == "euc":
-    d = min(np.sum(np.abs(d1)), np.sum(np.abs(d1)))
+    d = np.sqrt(min(np.sum(np.abs(d1)**2), np.sum(np.abs(d1)**2)))
   elif method == "convolve":
     base_area = np.trapz(np.convolve(a,a))
     d = np.linalg.norm(base_area - np.trapz(np.convolve(b, phase_align(a,b))))

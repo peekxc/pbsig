@@ -23,7 +23,7 @@ def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: 
 
   Parameters: 
     X: point cloud in euclidean space. 
-    nd: number of directions to filter _X_ by.
+    dv: direction vectors filter view X from, or the number indicating the of equi-spaced such vectors to filter _X_.
     normalize: whether to translate and scale _X_ using the direction vectors. Defaults to True.
     nonnegative: whether to shift the filter function to ensure its non-negative. Defaults to True. 
   
@@ -32,7 +32,7 @@ def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: 
   """
   X = X if isinstance(X, np.ndarray) else np.array(X)
   V = stratify_sphere(X.shape[1]-1, dv) if isinstance(dv, Integral) else dv
-  assert isinstance(dv, np.ndarray) and dv.ndim == 2 and dv.shape[1] == X.shape[1], "Invalid direction vectors given. Must be 2-d arrays matching the dimension of _X_."
+  assert isinstance(V, np.ndarray) and V.ndim == 2 and V.shape[1] == X.shape[1], "Invalid direction vectors given. Must be 2-d arrays matching the dimension of _X_."
   X = normalize_shape(X, V) if normalize else X
   max_radius = 0.5*np.max(pdist(X)) if nonnegative else 0.0
   # def _dt_iterable() -> Generator:

@@ -23,6 +23,7 @@ from scipy.linalg import eigh, eig as dense_eig
 from scipy.spatial import KDTree
 from scipy.sparse import csc_matrix, csr_matrix
 from scipy.sparse.csgraph import minimum_spanning_tree, connected_components, floyd_warshall
+from scipy.sparse.linalg import LinearOperator
 
 def cmds(D: ArrayLike, d: int = 2, coords: bool = True, pos: bool = True):
   '''Classical Multidimensional Scaling (CMDS).
@@ -192,6 +193,7 @@ class PsdSolver:
       solver = 'irl' if solver == 'default' else solver
       assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
       if solver == 'irl':
+        from scipy.sparse.linalg import eigsh
         self.params = dict(which='LM', tol=self.tolerance, return_eigenvectors=return_eigenvectors) | kwargs
         self.solver = eigsh
       else:

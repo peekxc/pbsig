@@ -825,8 +825,8 @@ class Sieve:
     n_pts, n_family = len(self.pattern), len(self.family)
     pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
     corner_it = zip(self.pattern['i'], self.pattern['j'])
-    #main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
-    main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
+    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
+    # main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
 
     ## Sets up progress bar, if requested 
     if progress: 
@@ -874,10 +874,9 @@ class Sieve:
   def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
     """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
     # if i > j: return
-    si = smooth_upstep(lb=i, ub=i+w)
-    sj = smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp = si(f(self.p_faces))
-    fq = sj(f(self.q_faces))
+    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+    fp, fq = f(self.p_faces), f(self.q_faces)
+    fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
     if self.form == 'lo':
       I = np.where(np.isclose(fp,0),0,1)
       self.laplacian.set_weights(I,fq,I)

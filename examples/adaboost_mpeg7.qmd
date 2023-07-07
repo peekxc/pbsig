@@ -1,0 +1,153 @@
+---
+title: "AdaBoost w/ SPRI on MPEG7 dataset"
+format: html
+jupyter: python3
+editor: 
+  render-on-save: true
+---
+
+```{python}
+#| label: Imports 
+import numpy as np
+from splex import *
+from pbsig import * 
+from pbsig.linalg import * 
+from pbsig.vis import figure_complex
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+from bokeh.layouts import row
+output_notebook(verbose=False)
+```
+
+```{python}
+#| label: Load shape data
+from pbsig.datasets import mpeg7
+from operator import itemgetter
+X = mpeg7(simplify=150)
+labels = np.array(list(map(itemgetter(0), X.keys())))
+classes = np.sort(np.unique(labels))
+y = np.searchsorted(classes, labels)
+```
+
+```{python}
+#| label: Create a "weak learner"
+from pbsig.betti import Sieve
+from pbsig.simplicial import cycle_graph
+from pbsig.pht import parameterize_dt
+X_train = X[('turtle',1)]
+K = cycle_graph(len(X_train))
+dt_filters = parameterize_dt(X_train, dv = 32)
+sieve = Sieve(K, family = dt_filters)
+sieve.randomize_pattern(1, lb=0, ub=3, area=(0.05**2, 0.15**2), max_asp=5)
+sieve.solver.params['tol'] = 1e-4 
+sieve.sift(w=1.0, k=10, progress=False)
+np.allclose(np.ravel(sieve.summarize()), 0.0, atol=1e-9)
+
+from bokeh.models import Range1d
+p = figure(height=150, width=275)
+p.line(np.arange(32), np.ravel(sieve.summarize()))
+p.y_range = Range1d(-1, 1)
+show(p)
+
+def _bench():
+  ## For a given feature, create a reference mean curve for each class, phase aligned
+  from pbsig.dsp import phase_align
+  from pbsig.utility import progressbar
+  mean_curves = {}
+  sieve.randomize_pattern(1, lb=0, ub=3, area=(0.05**2, 0.15**2), max_asp=5)
+  i = 0
+  for x_pc, y_label in progressbar(zip(X.values(), y), len(y)):
+    sieve.family = parameterize_dt(x_pc, dv = 32)
+    sieve.sift(w=1, progress=False)
+    feature_summary = np.ravel(sieve.summarize())
+    if y_label in mean_curves: 
+      mean_curves[y_label] += phase_align(feature_summary, mean_curves[y_label])
+    else: 
+      mean_curves[y_label] = feature_summary
+    if i < 20: 
+      i += 1
+    else: 
+      break
+  mean_curves = { cl : ts / sum(y == cl) for cl, ts in mean_curves.items() }
+
+sieve.solver = PsdSolver(sieve.laplacian, solver='lanczos', ncv=5, tolerance=1e-1, k=5, maxiter=30, return_stats=True, return_eigenvectors=True, return_unconverged=True)
+res = sieve.solver(sieve.laplacian)
+sieve.solver(sieve.laplacian, v0=res[1], return_eigenvectors=True)
+
+sieve.solver(sieve.laplacian)
+
+sieve.solver = PsdSolver(sieve.laplacian, solver='lanczos', ncv=5, tolerance=1e-1, k=5, maxiter=30, return_stats=False, return_eigenvectors=False, return_unconverged=True)
+from line_profiler import LineProfiler
+profiler = LineProfiler()
+profiler.add_function(_bench)
+profiler.add_function(sieve.sift)
+profiler.add_function(sieve.project)
+profiler.add_function(sieve.solver.solver)
+profiler.add_function(sieve.solver.__call__)
+profiler.enable_by_count()
+_bench()
+profiler.print_stats(output_unit=1e-3)
+# from pbsig.dsp import phase_align2
+# s1 = np.roll(s2, 15) + np.random.uniform(size=len(s2), low=-1e-4, high=1e-4)
+# p = figure(width=250, height=175)
+# p.line(np.arange(len(s1)), s1, color='orange')
+# p.line(np.arange(len(s1)), phase_align2(s1,s2), color='red')
+# p.line(np.arange(len(s2)), s2, color='blue')
+# show(p)
+
+```
+
+
+
+```{python}
+# | name: idi
+class WeakLearner:
+  # Should all be keyword arguments with a default value, should correspond to an attribute on the instance, w/ no input validation 
+  def __init__(p: int):
+    self.p = p
+    pass
+
+  def fit(X: ArrayLike, y: ArrayLike, **kwargs):
+    return self
+  
+  def predict_proba(X: ArrayLike):
+    pass
+
+  def predict(X: ArrayLike):
+    P = self.predict_proba(X)
+
+
+class SieveWeakClassifier:
+  def __init__(sieve, curves: dict):
+    self.curves = curves
+    self.sift_params = {}
+
+  def predict_proba(X: ArrayLike):
+    assert len(X) == sieve.laplacian.nv, "Number of vertices must match"
+    sieve.family = parameterize_dt(X, dv = 32)
+    sieve.sift(**self.sift_params)
+    curve = np.ravel(sieve.summarize())
+    curve - 
+
+
+for 
+eigen_dist(mean_curves[0], np.ravel(sieve.summarize()))
+
+
+import timeit
+timeit.timeit(lambda: sieve.sift(w=1.0, k=55, tol=1), number=5)
+
+
+## TODO: 
+# from scipy.sparse.linalg.eigen import arpack
+# Import _SymmetricArpackParams from arpack and see how to control the behavior from there\
+from line_profiler import LineProfiler
+profiler = LineProfiler()
+profiler.add_function(sieve.sift)
+profiler.add_function(sieve.project)
+profiler.add_function(sieve.solver.__call__)
+profiler.add_function(sieve.solver.solver)
+profiler.enable_by_count()
+sieve.sift(w=1.0, k=55, tol=1)
+profiler.print_stats(output_unit=1e-3)
+```
