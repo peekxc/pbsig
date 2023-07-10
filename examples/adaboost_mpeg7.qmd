@@ -23,7 +23,7 @@ output_notebook(verbose=False)
 #| label: Load shape data
 from pbsig.datasets import mpeg7
 from operator import itemgetter
-X_data = mpeg7(simplify=150, which=["turtle", "watch", "bird", "bone", "bell"])
+X_data = mpeg7(simplify=100, which=["bone", "watch", "bird", "bell", "bat", 'fish','flatfish', 'fork','frog', "horse"]) # "default", "all",  ["turtle", "watch", "bird", "bone", "bell"]
 labels = np.array(list(map(itemgetter(0), X_data.keys())))
 classes = np.sort(np.unique(labels))
 y = np.searchsorted(classes, labels)
@@ -49,6 +49,155 @@ p.line(np.arange(32), np.ravel(sieve.summarize()))
 p.y_range = Range1d(-1, 1)
 show(p)
 ```
+
+```{python}
+#| label:  Logistic regression baseline
+from pbsig.shape import shells 
+from sklearn.linear_model import LogisticRegression, LogisticRegressionCV
+# X_train = np.array([np.ravel(x) for x in X_data.values()])
+X_train = np.array([np.ravel(shells(x,20)) for x in X_data.values()])
+model = LogisticRegression(random_state=0, penalty="l2").fit(X_train, y)
+model = LogisticRegressionCV(random_state=0, penalty="l2").fit(X_train, y)
+
+## Get accuracy
+print(sum(model.predict(X_train) != y))
+
+## 10-fold cross-validation --- generalization accuracy for shells around ~ 25%
+## Point cloud data (as-is) w/ 100 points: train/test accuracy averages 86/68%, respectively
+## Shells vector (10 shells): train/test accuracy averages 50/37%, respectively
+from sklearn.model_selection import cross_validate
+cross_validate(model, X_train, y, cv=10, verbose=1, scoring="accuracy", return_train_score=True)
+
+from bokeh.palettes import turbo
+Z = cmds(squareform(pdist(X_train)**2))
+p = figure(width=375, height=375)
+p.scatter(*Z.T, color=np.array(turbo(len(np.unique(y))))[y.astype(np.uint)])
+show(p)
+
+from sklearn.manifold import TSNE
+z = TSNE(2).fit_transform(X_train)
+p = figure(width=375, height=375)
+p.scatter(*z.T, color=np.array(turbo(len(np.unique(y))))[y.astype(np.uint)])
+show(p)
+```
+
+```{python}
+# | label: Shells and Sector weak learner
+
+from sklearn.base import BaseEstimator, ClassifierMixin
+class ShellsLearner(BaseEstimator, ClassifierMixin):
+  # Should all be keyword arguments with a default value, should correspond to an attribute on the instance, w/ no input validation 
+  def __init__(self, k: int, d: int, random_state = None):
+    self.k = k  # size of the vector signature
+    self.d = d  # ambient dimension of the point cloud 
+    self.random_state = random_state 
+  
+  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+    print("Sample weight is None? ", sample_weight is None)
+    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
+    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
+    self.n_classes_ = len(self.classes_)
+    self.bins_norm = np.sort(np.random.uniform(low=0, high=1.0, size=self.k+1))
+    mean_curves = { cl : np.zeros(self.k) for cl in self.classes_ }
+
+    class_weights = {}
+    for cl in self.classes_: 
+      class_weights[cl] = np.sum(sample_weight[y == cl])
+      sample_weight[y == cl] = sample_weight[y == cl] / class_weights[cl]
+    # self.__class_weights = class_weights
+
+    for x, label, w in zip(X, y, sample_weight): 
+      x_pc = x.reshape((len(x) // self.d, self.d))
+      max_radius = np.max(np.linalg.norm(x_pc - x_pc.mean(axis=0), axis=1))
+      shells_sig = shells(x_pc, self.bins_norm * max_radius)
+      mean_curves[label] += w * shells_sig # phase_align(shells_sig, mean_curves[label])
+    # self.mean_curves = { cl : ts / sum(y == cl) for cl, ts in mean_curves.items() }
+    self.mean_curves = mean_curves
+    return self
+  
+  ## Needed for SAMME.R boosting
+  def predict_proba(self, X: ArrayLike) -> ArrayLike:
+    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
+    P = np.empty(shape=(X.shape[0], self.n_classes_))
+    for i,x in enumerate(X):
+      x_pc = x.reshape((len(x) // self.d, self.d))
+      max_radius = np.max(np.linalg.norm(x_pc - x_pc.mean(axis=0), axis=1))
+      shells_sig = shells(x_pc, self.bins_norm * max_radius)
+      d = np.array([np.sum(np.abs(curve-shells_sig)) for cl, curve in self.mean_curves.items()])
+      s = np.exp(-d**1)
+      P[i,:] = s / np.sum(s)
+    return P
+
+  def predict(self, X: ArrayLike):
+    P = self.predict_proba(X)
+    return self.classes_[P.argmax(axis=1)]
+
+
+# from sklearn.utils.estimator_checks import check_estimator
+# check_estimator(ShellsLearner(k=10, d=2))
+
+X_train = np.array([np.ravel(x) for x in X_data.values()])
+weak_learner = ShellsLearner(k=3, d=2, random_state=1)
+weak_learner.fit(X_train, y)
+# weak_learner.predict_proba(X_train)
+print(f"Accuracy: {np.sum(weak_learner.predict(X_train) == y)/len(y):.2f}")
+cross_validate(weak_learner, X_train, y, cv=10, verbose=1, scoring="accuracy", return_train_score=True)
+
+## TODO: find a case where two classes severely overlap and logistci struggles. 
+## Logistic is already a power-house with OvR enabled, need to re-create the multi-class functionality from scratch here 
+from sklearn.ensemble import AdaBoostClassifier
+ensemble_logistic = AdaBoostClassifier(LogisticRegression(penalty="l2"), n_estimators=20, algorithm="SAMME.R", random_state=1234)
+ensemble_logistic.fit(X_train, y)
+cross_validate(ensemble_logistic, X_train, y, cv=10, verbose=1, scoring="accuracy", return_train_score=True)
+
+np.array(list(ensemble_logistic.staged_score(X_train, y)))
+
+ensemble = AdaBoostClassifier(ShellsLearner(k=10, d=2), n_estimators=200, algorithm="SAMME.R", random_state=1234)
+ensemble.fit(X_train, y)
+
+[est.n_classes_ for est in ensemble.estimators_]
+
+
+
+boosted_scores = np.array(list(ensemble.staged_score(X_train, y)))
+p = figure()
+p.line(np.arange(len(boosted_scores)), boosted_scores)
+show(p)
+
+
+res = list(ensemble.staged_predict(X_train))
+
+## Fit the classifier
+
+print(ensemble.estimator_weights_)
+print(ensemble.estimator_errors_)
+print(f"Accuracy: {np.sum(ensemble.predict(X_train) == y)/len(y):.2f}")
+cross_validate(ensemble, X_train, y, cv=10, verbose=1, scoring="accuracy", return_train_score=True)
+
+
+est1 = ensemble.estimators_[1]
+(len(y) - np.sum(est1.predict(X_train) != y))/len(y)
+# np.histogram(ensemble.estimator_weights_)
+
+# random_stateint, RandomState instance or None, default=None
+# Controls the random seed given at each estimator at each boosting iteration. Thus, it is only used when estimator exposes a random_state. Pass an int for reproducible output across multiple function calls. See Glossary.
+
+```
+
+
+```{python}
+#| label: 
+from ngboost import NGBClassifier
+from ngboost.distns import k_categorical, Bernoulli
+from ngboost.scores import LogScore, CRPScore
+
+weak_learner = ShellsLearner(k=3, d=2, random_state=1)
+classifier = NGBClassifier(Base=weak_learner, Dist=k_categorical(len(np.unique(y))), verbose=False)
+_ = classifier.fit(X_train, y)
+
+
+```
+
 
 
 Benchmarking 
@@ -104,52 +253,6 @@ profiler.print_stats(output_unit=1e-3)
 
 
 ```{python}
-# | name: idi
-class ShellsLearner:
-  # Should all be keyword arguments with a default value, should correspond to an attribute on the instance, w/ no input validation 
-  def __init__(self, k: int, d: int):
-    self.k = k  # size of the vector signature
-    self.d = d  # ambient dimension of the point cloud 
-  
-  def fit(self, X: ArrayLike, y: ArrayLike, **kwargs):
-    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
-    self.n_classes_ = len(self.classes_)
-    mean_curves = { cl : np.zeros(self.k) for cl in self.classes_ }
-    for x, label in zip(X, y): 
-      x_pc = x.reshape((len(x) // self.d, self.d))
-      shells_sig = shells(x_pc, self.k)
-      mean_curves[label] += shells_sig # phase_align(shells_sig, mean_curves[label])
-    self.mean_curves = { cl : ts / sum(y == cl) for cl, ts in mean_curves.items() }
-    return self
-  
-  def predict_proba(self, X: ArrayLike) -> ArrayLike:
-    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
-    P = np.empty(shape=(X.shape[0], self.n_classes_))
-    for i,x in enumerate(X):
-      x_pc = x.reshape((len(x) // self.d, self.d))
-      shells_sig = shells(x_pc, self.k)
-      d = np.array([np.sum(np.abs(curve-shells_sig)) for cl, curve in self.mean_curves.items()])
-      s = np.exp(-d**1)
-      P[i,:] = s / np.sum(s)
-    return P
-
-  def predict(self, X: ArrayLike):
-    P = self.predict_proba(X)
-    return self.classes_[P.argmax(axis=1)]
-
-weak_learner = ShellsLearner(k=10, d=2)
-
-
-from sklearn.ensemble import AdaBoostClassifier
-from pbsig.shape import shells
-X_train = np.array([np.ravel(x) for x in X_data.values()])
-weak_learner = ShellsLearner(k=10, d=2)
-weak_learner.fit(X_train, y)
-weak_learner.predict_proba(X_train)
-weak_learner.predict(X_train)
-
-
-
 from sklearn.ensemble import AdaBoostRegressor
 
 

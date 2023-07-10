@@ -15,13 +15,13 @@ def cart2pol(x, y):
   phi = np.arctan2(y, x)
   return(rho, phi)
 
-def shells(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwargs):
+def shells(X: ArrayLike, bins: Union[int, ArrayLike], center: Optional[ArrayLike] = None, **kwargs):
   """Vectorizes a point cloud via a histogram of distances emanating from its barycenter.
   
   Rotation-invariant. 
   """
   barycenter = X.mean(axis=0) if center is None else center
-  return np.histogram(np.linalg.norm(X - barycenter, axis=1), bins=k, **kwargs)[0]
+  return np.histogram(np.linalg.norm(X - barycenter, axis=1), bins=bins, **kwargs)[0]
 
 def sectors_2d(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwargs):
   """Vectorizes a point cloud via a histogram of point-angles emanating from its barycenter.

@@ -5,7 +5,6 @@ import pickle
 
 from os.path import exists
 from scipy.spatial.distance import pdist, cdist, squareform
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
 from typing import * 
 from numpy.typing import ArrayLike
 from pathlib import Path
@@ -83,6 +82,7 @@ def animal_svgs():
   return(dict(zip([os.path.splitext(fn)[0] for fn in SVG_fns], SVG_paths)))
 
 def letter_image(text, font: Optional[str] = ["Lato-Bold", "OpenSans", "Ostrich", "Oswald", "Roboto"], nwide=51):
+  from PIL import Image, ImageDraw, ImageFont, ImageFilter
   """Generates a grayscale image of a letter in a given font.
   """
   base_dir = _package_data('fonts')
@@ -170,6 +170,7 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
 
 
 def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
+  from PIL import Image, ImageDraw, ImageFont, ImageFilter
   base_dir = _package_data('mpeg7')
   mpeg7 = []
   _all_shapes = ['Bone', 'Comma', 'Glas', 'HCircle', 'Heart', 'Misk', 'apple', 'bat', 
@@ -193,6 +194,8 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
   ]
   if isinstance(which, str) and which == "default":
     shape_types = default_shapes
+  elif isinstance(which, str) and which == "all":
+    shape_types = _all_shapes
   else:
     assert all([s in _all_shapes for s in which]), "Invalid set of shapes given"
     shape_types = which
@@ -214,7 +217,7 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
         S = _largest_contour(255-img_gray) if len(S) <= 4 else S # recompute negative if bbox was found
         assert len(S) > 4
         S = simplify_outline(S, simplify) if simplify > 0 else S 
-        dataset[(st, sn)] = np.array([l.start for l in S]) 
+        dataset[(st, sn)] = S # np.array([l.start for l in S]) 
       else: 
         dataset[(st, sn)] = img_gray
   return(dataset)
