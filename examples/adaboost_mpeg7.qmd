@@ -51,7 +51,7 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
     return shells(x_pc, min_radius + bins * (max_radius-min_radius), center=barycenter)
 
   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    print("Sample weight is None? ", sample_weight is None)
+    # print("Sample weight is None? ", sample_weight is None)
     assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
     sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
     assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
@@ -138,25 +138,30 @@ class AdaBoostClassifier:
     self.coeffs_ = []
 
     ## Run the iterations
-    wt = np.ones(n) # uniform coefficient weights 
+    ## Update formula: https://course.ccs.neu.edu/cs6140sp15/4_boosting/lecture_notes/boosting/boosting.pdf
+    wt = np.ones(n) / n # uniform coefficient weights 
     for t in range(n_estimators):
       # print(f"Iteration {t}")
-      wt /= np.sum(wt)
       ht = self.weak_learner.fit(X, y, wt)  ## fit the weak learner with weighted samples; should already be randomized
       yt = ht.predict(X)                    ## compute better-than-chance weak classification 
+      if all(yt == y): 
+        break
       et = np.sum(w[yt != y]) / np.sum(w)   ## error of the current weak learner
-      at = np.log((1.0-et)/et)              ## voting coefficient update  
-      wt = wt * np.exp(at * np.where(yt != y, -1, 1))
+      at = 0.5 * np.log((1.0-et)/et)              ## voting coefficient update  
+      # wt = wt * np.exp(at * np.where(yt != y, 1, 0))
+      wt = wt * np.exp(at * np.where(yt == y, -1, 1))
+      wt /= np.sum(wt)
       self.estimators_.append(deepcopy(ht))
       self.coeffs_.append(at)
       print(f"{t}: WL accuracy={np.sum(yt == y)/len(y)}, Full accuracy={np.sum(self.predict(X) == y)/len(y)}")
-      if all(yt == y): 
-        break
-  
+      print(f"Full: {self.predict(X)}")
+      print(f"WL: {yt}")
+
   def predict(self, X: ArrayLike) -> ArrayLike:
     y_pred = np.zeros(len(X))
-    for a,h in zip(self.coeffs_, self.estimators_):
-      y_pred += a * h.predict(X)
+    for a, h in zip(self.coeffs_, self.estimators_):
+      p = h.predict(X)
+      y_pred += a * np.where(p != 1, -1, 1)
     return self.classes_[np.where(y_pred >= 0, 1, 0)]
   
   def margin(self):
@@ -164,14 +169,25 @@ class AdaBoostClassifier:
 
 
 A = AdaBoostClassifier(ShellsClassifier(bins=10))
-A.fit(X_train, y, n_estimators=50)
+A.fit(X_train, y, n_estimators=30)
 A.predict(X_train)
 
 A.estimators_[0].bins_
 
 ```
 
+```{python}
+from sklearn.ensemble import AdaBoostClassifier
+A_skl = AdaBoostClassifier(ShellsClassifier(bins=10), n_estimators=30, algorithm="SAMME", random_state=0)
+A_skl.fit(X_train, y)
+# np.sum(A_skl.predict(X_train) == y)/len(y)
 
+list(A_skl.staged_score(X_train, y))
+
+A_skl.estimator_weights_
+# A_skl.estimator_errors_
+
+```
 
 ```{python}
 #| label: PCA plot of the data
@@ -238,14 +254,6 @@ show(p)
 ```
 
 Test the shells classifier in binary label situation
-```{python}
-
-```
-
-```{python}
-
-
-```
 
 
 
