@@ -23,10 +23,166 @@ output_notebook(verbose=False)
 #| label: Load shape data
 from pbsig.datasets import mpeg7
 from operator import itemgetter
-X_data = mpeg7(simplify=100, which=["bone", "watch", "bird", "bell", "bat", 'fish','flatfish', 'fork','frog', "horse"]) # "default", "all",  ["turtle", "watch", "bird", "bone", "bell"]
+# X_data = mpeg7(simplify=100, which=["bone", "watch", "bird", "bell", "bat", 'fish','flatfish', 'fork','frog', "horse"]) # "default", "all",  
+# ["turtle", "watch", "bird", "bone", "bell"]
+X_data = mpeg7(simplify=100, which=["bird", "fish"])
 labels = np.array(list(map(itemgetter(0), X_data.keys())))
 classes = np.sort(np.unique(labels))
 y = np.searchsorted(classes, labels)
+```
+
+```{python}
+# | label: SHELLS weak learner (classifier)
+from typing import * 
+from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+class ShellsClassifier(BaseEstimator, ClassifierMixin):
+  from pbsig.shape import shells
+  def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None):
+    self.random_state = random_state # np.random.RandomState(random_state) # used for sampling shells
+    self.bins = bins
+    self.dim = dim  # ambient dimension of the point cloud 
+    
+  def shells_signature(self, x: ArrayLike, bins: Optional[ArrayLike] = None) -> ArrayLike:
+    bins = self.bins_ if bins is None else bins
+    x_pc = x.reshape((len(x) // self.dim, self.dim))
+    barycenter = x_pc.mean(axis=0)
+    dist_to_barycenter = np.linalg.norm(x_pc - barycenter, axis=1)
+    min_radius, max_radius = np.min(dist_to_barycenter), np.max(dist_to_barycenter)
+    return shells(x_pc, min_radius + bins * (max_radius-min_radius), center=barycenter)
+
+  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+    print("Sample weight is None? ", sample_weight is None)
+    assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
+    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
+    assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
+    
+    ## Preprocessing and randomization
+    rng = np.random.RandomState(self.random_state) # used for sampling shells
+    self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
+    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
+    self.n_classes_ = len(self.classes_)
+    
+    ## Re-weight the sample weights to be a distribution on each class
+    class_weights, norm_weight = {}, sample_weight
+    for cl in self.classes_: 
+      class_weights[cl] = np.sum(sample_weight[y == cl])
+      norm_weight[y == cl] = norm_weight[y == cl] / class_weights[cl] if class_weights[cl] > 0 else norm_weight[y == cl]
+
+    ## Build a weighted mean curve for each class to use for prediction
+    self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
+    for x, label, w in zip(X, y, norm_weight): 
+      self.mean_curves[label] += w * self.shells_signature(x, self.bins_)
+    return self
+
+  ## Needed for SAMME.R boosting
+  def predict_proba(self, X: ArrayLike) -> ArrayLike:
+    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
+    P = np.empty(shape=(X.shape[0], self.n_classes_))
+    for i,x in enumerate(X):
+      sig = self.shells_signature(x, self.bins_)
+      d = np.array([np.sum(np.abs(curve-sig)) for curve in self.mean_curves.values()])
+      s = np.exp(-d**1) # exponential conversion to similarity
+      P[i,:] = s / np.sum(s)
+    return P
+
+  def predict(self, X: ArrayLike):
+    P = self.predict_proba(X)
+    return self.classes_[P.argmax(axis=1)]
+
+  def score(self, X: ArrayLike, y: ArrayLike) -> float:
+    return np.sum(self.predict(X) == y)/len(y)
+
+# from sklearn.utils.estimator_checks import check_estimator
+# check_estimator(ShellsClassifier(bins=10, dim=2))
+```
+
+```{python}
+#| label: Get idea of performance on training alone (TODO: generalization error?)
+X_train = np.array([np.ravel(x) for x in X_data.values()])
+weak_learner = ShellsClassifier(bins=10, random_state=0)
+weak_learner.fit(X_train, y)
+weak_learner.score(X_train, y)
+
+## Try different weighting scheme
+w = np.random.uniform(size=len(y), low=0, high=1)
+w /= np.sum(w)
+weak_learner.fit(X_train, y, w)
+weak_learner.score(X_train, y)
+```
+
+```{python}
+#| label: Mean curve plots 
+p = figure(width=400, height=225)
+for x, y_label in zip(X_train, y):
+  p_color = 'red' if y_label == 0 else 'blue'
+  p.line(weak_learner.bins_[:-1], weak_learner.shells_signature(x), line_color=p_color, line_alpha=0.20, line_dash="dashed")
+p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[0], color='red', line_width=2)
+p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[1], color='blue', line_width=2)
+show(p)
+```
+
+```{python}
+class AdaBoostClassifier:
+  """Binary AdaBoost classifier."""
+  def __init__(self, classifier: object):
+    self.weak_learner = classifier
+
+  def fit(self, X: ArrayLike, y: ArrayLike, n_estimators: int = 100):
+    from copy import deepcopy
+    n = X.shape[0]
+    classes_, y = np.unique(y, return_inverse=True)
+    assert n == len(y) and isinstance(X, np.ndarray) and isinstance(y, np.ndarray), "Invalid (X, y) pair given."
+    assert len(classes_) == 2, "AdaBoost is only a binary classifier"
+    self.classes_ = classes_
+    self.estimators_ = []
+    self.coeffs_ = []
+
+    ## Run the iterations
+    wt = np.ones(n) # uniform coefficient weights 
+    for t in range(n_estimators):
+      # print(f"Iteration {t}")
+      wt /= np.sum(wt)
+      ht = self.weak_learner.fit(X, y, wt)  ## fit the weak learner with weighted samples; should already be randomized
+      yt = ht.predict(X)                    ## compute better-than-chance weak classification 
+      et = np.sum(w[yt != y]) / np.sum(w)   ## error of the current weak learner
+      at = np.log((1.0-et)/et)              ## voting coefficient update  
+      wt = wt * np.exp(at * np.where(yt != y, -1, 1))
+      self.estimators_.append(deepcopy(ht))
+      self.coeffs_.append(at)
+      print(f"{t}: WL accuracy={np.sum(yt == y)/len(y)}, Full accuracy={np.sum(self.predict(X) == y)/len(y)}")
+      if all(yt == y): 
+        break
+  
+  def predict(self, X: ArrayLike) -> ArrayLike:
+    y_pred = np.zeros(len(X))
+    for a,h in zip(self.coeffs_, self.estimators_):
+      y_pred += a * h.predict(X)
+    return self.classes_[np.where(y_pred >= 0, 1, 0)]
+  
+  def margin(self):
+    pass 
+
+
+A = AdaBoostClassifier(ShellsClassifier(bins=10))
+A.fit(X_train, y, n_estimators=50)
+A.predict(X_train)
+
+A.estimators_[0].bins_
+
+```
+
+
+
+```{python}
+#| label: PCA plot of the data
+from bokeh.palettes import turbo, viridis
+from pbsig.linalg import pca
+X_train = np.array([np.ravel(x) for x in X_data.values()])
+# X_train = np.array([np.ravel(shells(x, 20)) for x in X_data.values()])
+Z_train = pca(X_train)
+p = figure(width=375, height=375)
+p.scatter(*Z_train.T, color=np.array(viridis(len(np.unique(y))))[y.astype(np.uint)])
+show(p)
 ```
 
 ```{python}
@@ -81,61 +237,20 @@ p.scatter(*z.T, color=np.array(turbo(len(np.unique(y))))[y.astype(np.uint)])
 show(p)
 ```
 
+Test the shells classifier in binary label situation
 ```{python}
-# | label: Shells and Sector weak learner
 
-from sklearn.base import BaseEstimator, ClassifierMixin
-class ShellsLearner(BaseEstimator, ClassifierMixin):
-  # Should all be keyword arguments with a default value, should correspond to an attribute on the instance, w/ no input validation 
-  def __init__(self, k: int, d: int, random_state = None):
-    self.k = k  # size of the vector signature
-    self.d = d  # ambient dimension of the point cloud 
-    self.random_state = random_state 
-  
-  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    print("Sample weight is None? ", sample_weight is None)
-    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
-    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
-    self.n_classes_ = len(self.classes_)
-    self.bins_norm = np.sort(np.random.uniform(low=0, high=1.0, size=self.k+1))
-    mean_curves = { cl : np.zeros(self.k) for cl in self.classes_ }
+```
 
-    class_weights = {}
-    for cl in self.classes_: 
-      class_weights[cl] = np.sum(sample_weight[y == cl])
-      sample_weight[y == cl] = sample_weight[y == cl] / class_weights[cl]
-    # self.__class_weights = class_weights
-
-    for x, label, w in zip(X, y, sample_weight): 
-      x_pc = x.reshape((len(x) // self.d, self.d))
-      max_radius = np.max(np.linalg.norm(x_pc - x_pc.mean(axis=0), axis=1))
-      shells_sig = shells(x_pc, self.bins_norm * max_radius)
-      mean_curves[label] += w * shells_sig # phase_align(shells_sig, mean_curves[label])
-    # self.mean_curves = { cl : ts / sum(y == cl) for cl, ts in mean_curves.items() }
-    self.mean_curves = mean_curves
-    return self
-  
-  ## Needed for SAMME.R boosting
-  def predict_proba(self, X: ArrayLike) -> ArrayLike:
-    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
-    P = np.empty(shape=(X.shape[0], self.n_classes_))
-    for i,x in enumerate(X):
-      x_pc = x.reshape((len(x) // self.d, self.d))
-      max_radius = np.max(np.linalg.norm(x_pc - x_pc.mean(axis=0), axis=1))
-      shells_sig = shells(x_pc, self.bins_norm * max_radius)
-      d = np.array([np.sum(np.abs(curve-shells_sig)) for cl, curve in self.mean_curves.items()])
-      s = np.exp(-d**1)
-      P[i,:] = s / np.sum(s)
-    return P
-
-  def predict(self, X: ArrayLike):
-    P = self.predict_proba(X)
-    return self.classes_[P.argmax(axis=1)]
+```{python}
 
 
-# from sklearn.utils.estimator_checks import check_estimator
-# check_estimator(ShellsLearner(k=10, d=2))
+```
 
+
+
+
+```{python}
 X_train = np.array([np.ravel(x) for x in X_data.values()])
 weak_learner = ShellsLearner(k=3, d=2, random_state=1)
 weak_learner.fit(X_train, y)
@@ -186,17 +301,23 @@ est1 = ensemble.estimators_[1]
 
 
 ```{python}
-#| label: 
+#| label: Natural gradient boosting 
 from ngboost import NGBClassifier
 from ngboost.distns import k_categorical, Bernoulli
 from ngboost.scores import LogScore, CRPScore
 
+X_train = np.array([np.ravel(x) for x in X_data.values()])
+
+## Need a regressor as a base learner to use ngboost ~ 
+## See: https://github.com/stanfordmlgroup/ngboost/issues/225
 weak_learner = ShellsLearner(k=3, d=2, random_state=1)
 classifier = NGBClassifier(Base=weak_learner, Dist=k_categorical(len(np.unique(y))), verbose=False)
 _ = classifier.fit(X_train, y)
 
 
 ```
+
+
 
 
 
