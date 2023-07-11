@@ -130,10 +130,11 @@ show(p)
 ```
 
 ```{python}
-class AdaBoostClassifier:
+class BinaryAdaBoostClassifier:
   """Binary AdaBoost classifier."""
-  def __init__(self, classifier: object):
-    self.weak_learner = classifier
+  def __init__(self, weak_learner: object, random_state = None):
+    self.random_state = random_state
+    self.weak_learner = weak_learner
 
   def fit(self, X: ArrayLike, y: ArrayLike, n_estimators: int = 100):
     from copy import deepcopy
@@ -148,11 +149,9 @@ class AdaBoostClassifier:
     ## Run the iterations
     ## Update formula: https://course.ccs.neu.edu/cs6140sp15/4_boosting/lecture_notes/boosting/boosting.pdf
     ## Also: https://arxiv.org/pdf/2210.07808.pdf
-    # wt * np.exp(at * np.where(yt != y, 1, 0)) # (1)
-    # wt * np.exp(at * np.where(yt == y, -1, 1)) # (2)
-    # np.where(yt != y, wt * np.sqrt((1.0-et)/et), wt * np.sqrt(et/(1.0-et))) # (3)
-    # (2) matches (3)
-    # 0.5 * np.log((1+(1-2*et))/(1 - (1-2*et)))         ## alternative but equivalent coefficient calculation
+    ## rt = 1.0-et
+    ## np.where(yt != y, wt * np.sqrt(rt/et), wt * np.sqrt(et/rt))  ## alternative, equiv weight update
+    ## 0.5 * np.log((1+(1-2*et))/(1 - (1-2*et)))                    ## alternative, equiv coefficient calculation
     wt = np.ones(n) / n # uniform coefficient weights 
     for t in range(n_estimators):
       ht = self.weak_learner.fit(X, y, wt)                ## fit weak learner with weighted samples; should be randomized
@@ -184,7 +183,7 @@ class AdaBoostClassifier:
     # proba = (y_pred + max_confidence)/(2*max_confidence) # should be in [0,1]
 
   def predict(self, X: ArrayLike) -> ArrayLike:
-    return self.classes_[np.where(A.decision_function(X_train) < 0, 0, 1)]
+    return self.classes_[np.where(A.decision_function(X) < 0, 0, 1)]
   
   def margin(self, X: ArrayLike, y: ArrayLike):
     sgn_classes = np.array([-1, 1], dtype=np.int16) 
@@ -213,7 +212,7 @@ class AdaBoostClassifier:
     margin = np.zeros(len(y), dtype=np.float64)
     for yt, at in zip(self.staged_predict(X), self.coeffs_):
       margin += at * np.where(yt == y, 1, -1)
-      yield margin
+      yield deepcopy(margin)
 
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
@@ -222,7 +221,7 @@ class AdaBoostClassifier:
     for yt in self.staged_predict(X):
       yield float(np.sum(yt == y)/len(y))
 
-A = AdaBoostClassifier(ShellsClassifier(bins=10))
+A = BinaryAdaBoostClassifier(ShellsClassifier(bins=10))
 A.fit(X_train, y, n_estimators=30)
 A.predict(X_train)
 A.decision_function(X_train)
@@ -232,6 +231,42 @@ A.score(X_train, y)
 list(A.staged_decision_function(X))[-1]
 list(A.staged_margin(X, y))[-1]
 np.array(list(A.staged_score(X,y)))
+```
+
+Margin and scoring plots for train/test splits
+```{python}
+#| label: Margin plots 
+X_data = mpeg7(simplify=100, which=["bird", "fish"])
+train_keys, test_keys = [k for k in X_data.keys() if k[1] <= 15], [k for k in X_data.keys() if k[1] > 15]
+X_train = np.array(list(map(np.ravel, map(X_data.get, train_keys))))
+X_test = np.array(list(map(np.ravel, map(X_data.get, test_keys))))
+y_train, y_test = np.array([k[0] for k in train_keys]), np.array([k[0] for k in test_keys])
+
+classes = np.sort(np.unique(y_train))
+y_train = np.searchsorted(classes, y_train)
+y_test = np.searchsorted(classes, y_test)
+
+A = BinaryAdaBoostClassifier(ShellsClassifier(bins=20))
+A.fit(X_train, y_train, n_estimators=2500)
+A.score(X_train, y_train)
+A.predict(X_train)
+A.predict(X_test)
+A.score(X_test, y_test)
+
+np.array(list(A.staged_score(X_train, y_train)))
+np.array(list(A.staged_score(X_test, y_test)))
+
+# np.array(list(A.staged_margin(X_test, y_test)))
+
+
+A.decision_function(X_train)
+
+A.score(X_test, y_test)
+
+np.array(list(A.staged_score(X_train, y_train)))
+np.array(list(A.staged_score(X_test, y_test)))
+ 
+
 ```
 
 ```{python}
