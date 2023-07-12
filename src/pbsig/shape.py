@@ -305,6 +305,51 @@ def shift_curve(line, reference, objective: Optional[Callable] = None):
     line = np.roll(line, best_offset, axis=0)
   return line
 
+
+def sample_interp(X: ArrayLike, n_samples: int, dist: ArrayLike = None, use_landmarks: bool = False) -> list:
+  """Samples 2d point clouds by randomly interpolating between all pairwise combinations of them.
+
+  If the point clouds live in a metric space _dist_ and use_landmarks is False, point clouds are 
+  constructed from all pairwise point cloud interpolations under a sampling weighted by their distance, 
+  such that larger distances imply higher probability of being sampled.
+
+  If use_landmarks is True, the interpolation is restricted to adjacent pairs in the
+  greedy permutation (landmarks), which are sampled according to their insertion radii. 
+
+  Parameters: 
+    X: 2-dimensional point clouds, vectorized as rows 
+    n_samples: number of new point clouds to interpolate.
+    dist: pairwise distances between point clouds in X
+
+  Returns: 
+    Pairwise interpolated point clouds
+  """
+  from pbsig.meta import is_pairwise_distances
+  from splex import unrank_combs
+  n = len(X)
+  Ease = LinearInOut(start=0, end=1.0, duration=1.0)
+  cuts = np.random.uniform(size=n_samples, low=0, high=1)  
+  if dist is None: 
+    ind = np.random.choice(range(comb(n,2)), size=n_samples, replace=True)
+    pairs = np.array(unrank_combs(ind, n=n, k=2, order='lex'))
+  elif use_landmarks:
+    cl_ind, cl_rad = landmarks(dist, k = len(X))
+    bins = np.append(0, np.cumsum(cl_rad[1:]/np.sum(cl_rad[1:])))
+    bin_idx = np.minimum(np.digitize(cuts, bins)-1, len(cl_ind)-2)
+    pairs = np.array([(cl_ind[bi], cl_ind[bi+1]) for bi in bin_idx])
+  else:
+    assert is_pairwise_distances(dist), "If supplied, 'dist' must be an array of pairwise distances."
+    ind = np.random.choice(range(comb(n,2)), size=n_samples, replace=True, p=dist/np.sum(dist))
+    pairs = np.array(unrank_combs(ind, n=n, k=2, order='lex'))
+  new_point_clouds = []
+  for i,j in pairs:
+    Xi = X[i].reshape(len(X[i]) // 2, 2) 
+    Xj = X[j].reshape(len(X[j]) // 2, 2) 
+    F_interp = pyflubber.interpolator(Xi, Xj, closed=True)
+    Xij = F_interp(Ease(np.random.uniform(size=1,low=0, high=1)).item())
+    new_point_clouds.append(Xij)
+  return new_point_clouds
+
 def Kabsch(A, B):
   H = A.T @ B
   R = (H.T @ H)**(1/2) @ np.linalg.inv(H)

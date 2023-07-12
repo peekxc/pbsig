@@ -29,6 +29,14 @@ X_data = mpeg7(simplify=100, which=["bird", "fish"])
 labels = np.array(list(map(itemgetter(0), X_data.keys())))
 classes = np.sort(np.unique(labels))
 y = np.searchsorted(classes, labels)
+
+## Make training/testing sets 
+train_keys, test_keys = [k for k in X_data.keys() if k[1] <= 15], [k for k in X_data.keys() if k[1] > 15]
+X_train = np.array(list(map(np.ravel, map(X_data.get, train_keys))))
+X_test = np.array(list(map(np.ravel, map(X_data.get, test_keys))))
+y_train, y_test = np.array([k[0] for k in train_keys]), np.array([k[0] for k in test_keys])
+y_train = np.searchsorted(classes, y_train)
+y_test = np.searchsorted(classes, y_test)
 ```
 
 ```{python}
@@ -53,15 +61,44 @@ show(row(p,q))
 # | label: Shape interpolation 
 # Interpolate inter-class shapes to generate more data 
 # Also need to verify adaboost over-training phenonomenon
+# Idea: use midpoints on n choose 2 ordered by distances in procrustes to get interpolated k 
+# Could also maybe interpolate using equi-spaced distances directly
+# the linear order could come from landmarks 
 
+len(sample_interp(X_cl, 15, dist=pro_dist_cl, use_landmarks=True)    )
+```
+
+```{python}
+  for cl in range(len(classes)):
+    X_cl = X_train[y_train == cl]
+    pro_dist_cl = np.array([procrustes_dist_curves(X.reshape(len(X)//2, 2),Y.reshape(len(Y)//2, 2)) for (X,Y) in combinations(X_cl, 2)])
+
+
+  # bin_sz = np.diff(np.append(0, bins[:-1]))
+  # bin_sz = np.append(bin_sz, bin_sz[-1])
+  # rel = np.maximum(np.minimum(1, 1.0 - (bins[bin_idx] - cuts)/bin_sz[bin_idx]), 0.0)
+
+  # PD = squareform(np.array(pro_dist_cl))
+  # PD_ordered = squareform(PD[np.ix_(cl_ind, cl_ind)])
+  # PD_ordered/np.sum(PD_ordered)
+
+
+import pyflubber
+from easing_functions import LinearInOut
+Ease = LinearInOut(start=0, end=1.0, duration=1.0)
+
+F_interp = pyflubber.interpolator(shapes[0], shapes[1], closed=True)
+  Pt = F_interp(Ease(t))
+
+from pbsig.shape import landmarks
+lm_ind, lm_rad = landmarks(np.array(pro_dist), k = len(X_data))
 
 ```
 
 ```{python}
 # | label: Shape interpolation 
-# Idea: use midpoints on n choose 2 ordered by distances in procrustes to get interpolated k 
-# Could also maybe interpolate using equi-spaced distances directly
-# the linear order could come from landmarks 
+
+
 
 
 ```

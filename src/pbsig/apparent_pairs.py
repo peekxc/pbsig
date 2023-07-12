@@ -11,10 +11,11 @@ def apparent_pairs(D: ArrayLike, K: List):
 
   TODO: should be given some epsilon + distances, enumerate edges and find cofacets, not rips complex
 
-  An zero-persistence pair (tau, sigma) is said to be *apparent* iff: 
+  A persistence pair (tau, sigma) is said to be *apparent* iff: 
     1. tau is the youngest facet of sigma 
     2. sigma is the oldest cofacet of tau 
-  
+    3. the pairing has persistence |f(sigma)-f(tau)| = 0 
+
   Observe tau is the facet of sigma with the largest filtration value, i.e. f(tau) >= f(tau') for any tau' \in facets(sigma)
   and sigma is cofacet of tau with the smallest filtration value, i.e. f(sigma) <= f(sigma') for any sigma' \in cofacets(tau). 
   There are potentially several cofacets of a given tau, to ensure uniqueness, we rely on lexicographically-refined 
