@@ -32,6 +32,41 @@ y = np.searchsorted(classes, labels)
 ```
 
 ```{python}
+# | label: Procrustes + PCA embedding plots 
+from itertools import * 
+from pbsig.shape import procrustes_dist_curves
+from scipy.spatial.distance import squareform, pdist, cdist
+from bokeh.palettes import viridis
+from bokeh.layouts import row, column
+
+pro_dist = [procrustes_dist_curves(X,Y) for (X,Y) in combinations(X_data.values(), 2)]
+Z = cmds(squareform(np.array(pro_dist))**2, 2)
+
+pt_col = np.array(viridis(len(np.unique(y))))[y.astype(np.uint)]
+p, q = figure(width=375, height=375), figure(width=375, height=375)
+p.scatter(*Z.T, color=pt_col)
+q.scatter(*pca(X).T, color=pt_col)
+show(row(p,q))
+```
+
+```{python}
+# | label: Shape interpolation 
+# Interpolate inter-class shapes to generate more data 
+# Also need to verify adaboost over-training phenonomenon
+
+
+```
+
+```{python}
+# | label: Shape interpolation 
+# Idea: use midpoints on n choose 2 ordered by distances in procrustes to get interpolated k 
+# Could also maybe interpolate using equi-spaced distances directly
+# the linear order could come from landmarks 
+
+
+```
+
+```{python}
 # | label: SHELLS weak learner (classifier)
 from typing import * 
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin

@@ -23,7 +23,7 @@ def shells(X: ArrayLike, bins: Union[int, ArrayLike], center: Optional[ArrayLike
   barycenter = X.mean(axis=0) if center is None else center
   return np.histogram(np.linalg.norm(X - barycenter, axis=1), bins=bins, **kwargs)[0]
 
-def sectors_2d(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwargs):
+def sectors(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwargs):
   """Vectorizes a point cloud via a histogram of point-angles emanating from its barycenter.
   
   Depends on rotation of X around _center_. 
@@ -212,18 +212,19 @@ def geodesic_dist(X: ArrayLike, mesh: ComplexLike):
   return squareform(AG)
                
 def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "polygon", "directions"], V: Optional[ArrayLike] = None, atol: float = 1e-12):
-  """
-  Given a set of (n x d) points 'X' in d dimensions, returns the (1 x d) 'center' of the shape, suitably defined. 
+  """Computes various barycenters of a shape. 
 
-  Each type of center varies in cost and definition, but each can effectively be interpreted as some kind of 'barycenter'. In particular: 
+  Given a set of (n x d) points 'X' in d dimensions, this function computes a (1 x d) 'barycenter' of the shape.
+  Though the 'barycenter' is always defined as a center of mass, the object whose 'mass' is to be considered may vary.  
 
-  barycenter := point-wise barycenter of 'X', equivalent to arithmetic mean of the points 
-  box := barycenter of bounding box of 'X' 
-  hull := barycenter of convex hull of 'X'
-  polygon := barycenter of 'X', when 'X' traces out the boundary of a closed polygon in R^2*
-  directions := barycenter of 'X' projected onto a set of rotationally-symmetric direction vectors 'V' in S^1
+  Here are the types implemented: 
+    pointwise: point-wise barycenter of 'X'; equivalent to arithmetic mean of the points 
+    box: barycenter of bounding box of 'X' 
+    hull: barycenter of convex hull of 'X'
+    polygon: barycenter of 'X', when the ordered 'X' traces out the boundary of a closed polygon in R^2*
+    directions: barycenter of 'X' projected onto a set of rotationally-symmetric direction vectors 'V' in S^{d-1}
   
-  The last options 'directions' uses an iterative process (akin to meanshift) to find the barycenter 'u' satisfying: 
+  The last option 'directions' uses an iterative process (akin to meanshift) to find the barycenter 'u' satisfying: 
 
   np.array([min((X-u) @ v)*v for v in V]).sum(axis=0) ~= [0.0, 0.0]
   """
@@ -244,12 +245,12 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
     original_center = X.mean(axis=0)
     cost: float = np.inf
     while not(np.isclose(cost, 0.0, atol=atol)):
-      Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V]
-      U = np.vstack([s*vi for s, vi in zip(Lambda, V)])
+      Lambda = [np.min(X @ vi[:,np.newaxis]) for vi in V] # todo: replace
+      U = np.vstack([s*vi for s, vi in zip(Lambda, V)])   # todo: replace
       center_diff = U.mean(axis=0)
       X = X - center_diff
       cost = min([
-        np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)),
+        np.linalg.norm(np.array([min(X @ vi[:,np.newaxis])*vi for vi in V]).sum(axis=0)), ## todo: just replace with single mat-mat
         np.linalg.norm(center_diff)
       ])
     return(original_center - X.mean(axis=0))
@@ -265,8 +266,7 @@ def shape_center(X: ArrayLike, method: str = ["pointwise", "bbox", "hull", "poly
 
 
 def winding_distance(X: ArrayLike, Y: ArrayLike):
-  """ 
-  Returns the minimum 'winding' distance between sequences of points (X,Y) defining closed curves in the plane homeomorphic to S^1
+  """Computes the minimum 'winding' distance between sequences of points (X,Y) defining closed curves in the plane homeomorphic to S^1.
   
   Given two arrays (X, Y) of size (n,m) = (|X|,|Y|) representing 'circle-ish outlines', i.e. representing shapes whose edge sets EX satisfy:
   
@@ -314,8 +314,8 @@ def Kabsch(A, B):
   return R
 
 from scipy.linalg import orthogonal_procrustes
-def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
-  """ Procrustes distance between closed curves """
+def procrustes_curves(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: bool = False, preprocess: bool = False):
+  """ Procrustes analysis between PL curves """
   # from procrustes.rotational import rotational
   # from pbsig.pht import pht_preprocess_pc
   from pyflubber.closed import prepare
@@ -323,8 +323,8 @@ def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: 
   #   A, B = pht_preprocess_pc(A), pht_preprocess_pc(B)
   if do_reflect:
     R_refl = np.array([[-1, 0], [0, 1]])
-    A1,B1 = procrustes_cc(A, B, do_reflect=False, matched=matched, preprocess=False)
-    A2,B2 = procrustes_cc(A @ R_refl, B, do_reflect=False, matched=matched, preprocess=False)
+    A1,B1 = procrustes_curves(A, B, do_reflect=False, matched=matched, preprocess=False)
+    A2,B2 = procrustes_curves(A @ R_refl, B, do_reflect=False, matched=matched, preprocess=False)
     return (A1, B1) if np.linalg.norm(A1-B1, 'fro') < np.linalg.norm(A2-B2, 'fro') else (A2, B2)
   else:
     if matched:
@@ -346,10 +346,11 @@ def procrustes_cc(A: ArrayLike, B: ArrayLike, do_reflect: bool = True, matched: 
       os = np.argmin([pro_error(A_p, np.roll(B_p, offset, axis=0)) for offset in range(A_p.shape[0])])
       A, B = A_p, np.roll(B_p, os, axis=0)
       # plt.plot(*A.T);plt.plot(*B.T)
-      return procrustes_cc(A, B, matched=True)
+      return procrustes_curves(A, B, matched=True)
 
-def procrustes_dist_cc(A: ArrayLike, B: ArrayLike, **kwargs):
-  A_p, B_p = procrustes_cc(A, B, **kwargs)
+def procrustes_dist_curves(A: ArrayLike, B: ArrayLike, **kwargs):
+  """ Procrustes distance between closed curves """
+  A_p, B_p = procrustes_curves(A, B, **kwargs)
   return np.linalg.norm(A_p - B_p, 'fro')
 
 
