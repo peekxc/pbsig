@@ -142,7 +142,7 @@
 
 % Smooth Betti curves in dynamic settings \\ using persistent spectral theory
 \title{\vspace{-2.0em} 
-Spectral families of \\ persistent rank invariants
+Spectral relaxations of \\ persistent rank invariants
 \vspace{-0.5em}}
 
 \author{Matt Piekenbrock\thanks{Khoury College of Computer Sciences, Northeastern University.} \, and Jose A. Perea\thanks{Department of Mathematics and Khoury College of Computer Sciences, Northeastern University.}}
@@ -180,9 +180,8 @@ Persistence is the de facto connection between homology and the application fron
 
 Though theoretically sound, diagrams suffer from several practical issues: they are sensitive to strong outliers, far from injective, expensive to compute, and expensive to compare. 
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
-Practitioners have tackled some of these issues by equipping diagrams with additional structure by way of maps to function spaces---examples include persistence landscapes~\cite{bubenik2015statistical} and references therein. 
-These diagram vectorizations have proven useful for learning applications due to their stability and  metric configurability.
-The scalability issue remains exacerbated though, as these vectorizations require diagrams as part of their input. %moves
+Practitioners have tackled some of these issues by equipping diagrams with additional structure by way of maps to function spaces; examples include persistence landscapes~\cite{bubenik2015statistical} and references therein. 
+These diagram vectorizations have proven useful for learning applications due to their stability and  metric configurability---however, their scalability is limited, as these vectorizations require persistence diagrams as part of their input. %moves
 \\
 \\
 \noindent \textbf{Approach:}
@@ -271,7 +270,8 @@ Our proposed approximation first associates a \emph{normalized combinatorial Lap
 	and (2) varying $\tau > 0$ yields a family of spectral operators whose Schatten-1 norms are Lipshitz continuous, stable under relative perturbations, and differentiable on the positive semi-definite cone. Moreover, as the parameters $\epsilon$ and $\tau$ approach zero, the multiplicity $\mu_p^{i,j}$ is recovered exactly. 
 
 Unlike existing dynamic persistence algorithms, our approach requires no complicated data structures or maintenance procedures to implement, can be made \emph{matrix-free}, and is particularly efficient to compute over parameterized families of inputs.
-We defer the formal analysis, properties, and applications of the method to full\footnote{The paper in preparation can be found at: \url{https://github.com/peekxc/pbsig/blob/main/notes/pbsig.pdf}} paper, in preparation. 
+We defer the formal analysis, properties, and applications of the method to full paper. 
+%\footnote{The paper in preparation can be found at: \url{https://github.com/peekxc/pbsig/blob/main/notes/pbsig.pdf}} paper, in preparation. 
 %The proposed relaxation is also , requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$.
 
 %\noindent \textbf{Future Remarks:} The remaining steps of the relaxation depend on the application in mind. 

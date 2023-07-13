@@ -202,7 +202,7 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
   if simplify == 150 and contour == True:
     mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
     return { k : v for k,v in mpeg7.items() if k[0] in shape_types }
-  shape_nums = range(20) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
+  shape_nums = range(21) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
   normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
   dataset = {}
   for st in shape_types:

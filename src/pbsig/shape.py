@@ -324,6 +324,8 @@ def sample_interp(X: ArrayLike, n_samples: int, dist: ArrayLike = None, use_land
   Returns: 
     Pairwise interpolated point clouds
   """
+  import pyflubber
+  from easing_functions import LinearInOut
   from pbsig.meta import is_pairwise_distances
   from splex import unrank_combs
   n = len(X)

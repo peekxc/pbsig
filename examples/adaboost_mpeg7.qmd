@@ -22,22 +22,109 @@ output_notebook(verbose=False)
 ```{python}
 #| label: Load shape data
 from pbsig.datasets import mpeg7
-from operator import itemgetter
 # X_data = mpeg7(simplify=100, which=["bone", "watch", "bird", "bell", "bat", 'fish','flatfish', 'fork','frog', "horse"]) # "default", "all",  
 # ["turtle", "watch", "bird", "bone", "bell"]
 X_data = mpeg7(simplify=100, which=["bird", "fish"])
+
+## Obtain the typical (X,y) setup 
 labels = np.array(list(map(itemgetter(0), X_data.keys())))
 classes = np.sort(np.unique(labels))
-y = np.searchsorted(classes, labels)
-
-## Make training/testing sets 
-train_keys, test_keys = [k for k in X_data.keys() if k[1] <= 15], [k for k in X_data.keys() if k[1] > 15]
-X_train = np.array(list(map(np.ravel, map(X_data.get, train_keys))))
-X_test = np.array(list(map(np.ravel, map(X_data.get, test_keys))))
-y_train, y_test = np.array([k[0] for k in train_keys]), np.array([k[0] for k in test_keys])
-y_train = np.searchsorted(classes, y_train)
-y_test = np.searchsorted(classes, y_test)
+X_all = np.array([np.ravel(x) for x in X_data.values()])
+y_all = np.searchsorted(classes, labels)
 ```
+
+```{python}
+#| label: Visualize the shape data 
+def patch_plot(X: ArrayLike, color: str, **kwargs):
+  p = figure(width=50, height=50, **kwargs)
+  p.patch(X[:,0], X[:,1], alpha=0.40, line_width=2.5, color=color)
+  p.toolbar_location = None
+  p.axis.visible = False
+  p.grid.grid_line_color = None
+  p.min_border_left = 0
+  p.min_border_right = 0
+  p.min_border_top = 0
+  p.min_border_bottom = 0
+  return p 
+
+p = column(
+  row([patch_plot(X_data[('bird',i)], "blue") for i in range(1, 11)]), 
+  row([patch_plot(X_data[('bird',i)], "blue") for i in range(11, 21)]), 
+  row([patch_plot(X_data[('fish',i)], "red") for i in range(1, 11)]),
+  row([patch_plot(X_data[('fish',i)], "red") for i in range(11, 21)])
+)
+show(p)
+```
+
+```{python}
+# | label: Amplify the size of the data via interpolation
+# Interpolate intra-class shapes to generate more datasets for training 
+from pbsig.shape import sample_interp
+m_new = 1200 
+X_aug, y_aug = [], []
+for cl in range(len(classes)):
+  print(f"Generating new data for class {classes[cl]}")
+  X_cl = X_all[y_all == cl]
+  X_cl_new = sample_interp(X_cl, m_new) 
+  X_aug.append([np.ravel(x) for x in X_cl_new])
+  y_aug.extend(np.repeat(cl, m_new))
+X_aug = np.vstack([X_all, np.vstack(X_aug)])
+y_aug = np.append(y_all, np.array(y_aug))
+```
+
+```{python}
+# | label: Training and testing sets
+from pbsig.utility import train_test_split
+train_ind, test_ind = train_test_split(X_aug, split=(0.70, 0.30), y=y_aug)
+X_train, X_test = X_aug[train_ind], X_aug[test_ind]
+y_train, y_test = y_aug[train_ind], y_aug[test_ind]
+```
+
+```{python}
+# | label: Boosting a SHELLS  classifier
+from pbsig.classifiers import ShellsClassifier
+weak_learner = ShellsClassifier(bins=15)
+weak_learner.fit(X_train, y_train)
+weak_learner.score(X_train, y_train)
+weak_learner.score(X_test, y_test)
+
+from sklearn.ensemble import AdaBoostClassifier
+A_skl = AdaBoostClassifier(ShellsClassifier(bins=15), n_estimators=1500, learning_rate=0.01, algorithm="SAMME")
+A_skl.fit(X_train, y_train)
+print(len(A_skl.estimators_))
+
+## Train/test goes up to 85/84% respectively
+A_skl.score(X_train, y_train) ## accuracy 
+A_skl.score(X_test, y_test) 
+
+print(np.array(list(A_skl.staged_score(X_train, y_train))))
+print(np.array(list(A_skl.staged_score(X_test, y_test))))
+
+
+```
+
+
+
+
+```{python}
+# | label: Augment the training set via shape interpolation 
+# Interpolate intra-class shapes to generate more datasets for training 
+from pbsig.shape import sample_interp
+X_train_aug, y_train_aug = [], []
+for cl in range(len(classes)):
+  print(f"Generating new data for class {classes[cl]}")
+  X_cl = X_train[y_train == cl]
+  to2d = lambda x: x.reshape(len(x)//2, 2)
+  pro_dist_cl = np.array([procrustes_dist_curves(to2d(X),to2d(Y)) for (X,Y) in combinations(X_cl, 2)])
+  # X_cl_new = sample_interp(X_cl, 80, dist=pro_dist_cl, use_landmarks=False)
+  X_cl_new = sample_interp(X_cl, 80, dist=pro_dist_cl, use_landmarks=True)
+  X_train_aug.append([np.ravel(x) for x in X_cl_new])
+  y_train_aug.extend(np.repeat(cl, 80))
+X_train_aug = np.vstack([X_train, np.vstack(X_train_aug)])
+y_train_aug = np.append(y_train, np.array(y_train_aug))
+```
+
+
 
 ```{python}
 # | label: Procrustes + PCA embedding plots 
@@ -47,130 +134,24 @@ from scipy.spatial.distance import squareform, pdist, cdist
 from bokeh.palettes import viridis
 from bokeh.layouts import row, column
 
-pro_dist = [procrustes_dist_curves(X,Y) for (X,Y) in combinations(X_data.values(), 2)]
-Z = cmds(squareform(np.array(pro_dist))**2, 2)
+pt_col = np.array(viridis(len(np.unique(y_train_aug))))[y_train_aug.astype(np.uint)]
+p = figure(width=375, height=375)
+p.scatter(*pca(X_train_aug).T, color=pt_col)
+show(p)
 
-pt_col = np.array(viridis(len(np.unique(y))))[y.astype(np.uint)]
-p, q = figure(width=375, height=375), figure(width=375, height=375)
-p.scatter(*Z.T, color=pt_col)
-q.scatter(*pca(X).T, color=pt_col)
-show(row(p,q))
+# pro_dist = [procrustes_dist_curves(X,Y) for (X,Y) in combinations(X_data.values(), 2)]
+# Z = cmds(squareform(np.array(pro_dist))**2, 2)
+
+# pt_col = np.array(viridis(len(np.unique(y))))[y.astype(np.uint)]
+# p, q = figure(width=375, height=375), figure(width=375, height=375)
+# # p.scatter(*Z.T, color=pt_col)
+# q.scatter(*pca(X).T, color=pt_col)
+# show(row(p,q))
 ```
 
-```{python}
-# | label: Shape interpolation 
-# Interpolate inter-class shapes to generate more data 
-# Also need to verify adaboost over-training phenonomenon
-# Idea: use midpoints on n choose 2 ordered by distances in procrustes to get interpolated k 
-# Could also maybe interpolate using equi-spaced distances directly
-# the linear order could come from landmarks 
-
-len(sample_interp(X_cl, 15, dist=pro_dist_cl, use_landmarks=True)    )
-```
-
-```{python}
-  for cl in range(len(classes)):
-    X_cl = X_train[y_train == cl]
-    pro_dist_cl = np.array([procrustes_dist_curves(X.reshape(len(X)//2, 2),Y.reshape(len(Y)//2, 2)) for (X,Y) in combinations(X_cl, 2)])
-
-
-  # bin_sz = np.diff(np.append(0, bins[:-1]))
-  # bin_sz = np.append(bin_sz, bin_sz[-1])
-  # rel = np.maximum(np.minimum(1, 1.0 - (bins[bin_idx] - cuts)/bin_sz[bin_idx]), 0.0)
-
-  # PD = squareform(np.array(pro_dist_cl))
-  # PD_ordered = squareform(PD[np.ix_(cl_ind, cl_ind)])
-  # PD_ordered/np.sum(PD_ordered)
-
-
-import pyflubber
-from easing_functions import LinearInOut
-Ease = LinearInOut(start=0, end=1.0, duration=1.0)
-
-F_interp = pyflubber.interpolator(shapes[0], shapes[1], closed=True)
-  Pt = F_interp(Ease(t))
-
-from pbsig.shape import landmarks
-lm_ind, lm_rad = landmarks(np.array(pro_dist), k = len(X_data))
-
-```
-
-```{python}
-# | label: Shape interpolation 
-
-
-
-
-```
 
 ```{python}
 # | label: SHELLS weak learner (classifier)
-from typing import * 
-from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
-class ShellsClassifier(BaseEstimator, ClassifierMixin):
-  from pbsig.shape import shells
-  def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None):
-    self.random_state = random_state # np.random.RandomState(random_state) # used for sampling shells
-    self.bins = bins
-    self.dim = dim  # ambient dimension of the point cloud 
-    
-  def shells_signature(self, x: ArrayLike, bins: Optional[ArrayLike] = None) -> ArrayLike:
-    bins = self.bins_ if bins is None else bins
-    x_pc = x.reshape((len(x) // self.dim, self.dim))
-    barycenter = x_pc.mean(axis=0)
-    dist_to_barycenter = np.linalg.norm(x_pc - barycenter, axis=1)
-    min_radius, max_radius = np.min(dist_to_barycenter), np.max(dist_to_barycenter)
-    return shells(x_pc, min_radius + bins * (max_radius-min_radius), center=barycenter)
-
-  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    from copy import deepcopy
-    # print("Sample weight is None? ", sample_weight is None)
-    assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
-    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
-    assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
-    
-    ## Preprocessing and randomization
-    rng = np.random.RandomState(self.random_state) # used for sampling shells
-    self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
-    self.classes_, y = np.unique(y, return_inverse=True) # scikit required 
-    self.n_classes_ = len(self.classes_)
-    
-    ## Re-weight the sample weights to be a distribution on each class
-    class_weights, norm_weight = {}, deepcopy(sample_weight)
-    for cl in self.classes_: 
-      class_weights[cl] = np.sum(norm_weight[y == cl])
-      norm_weight[y == cl] = norm_weight[y == cl] / class_weights[cl] if class_weights[cl] > 0 else norm_weight[y == cl]
-
-    ## Build a weighted mean curve for each class to use for prediction
-    self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
-    for x, label, w in zip(X, y, norm_weight): 
-      self.mean_curves[label] += w * self.shells_signature(x, self.bins_)
-
-    ## Reverse the curves if its bad?
-    if self.score(X, y) < 0.50: 
-      c0 = self.mean_curves[self.classes_[0]]
-      c1 = self.mean_curves[self.classes_[1]]
-      self.mean_curves[self.classes_[0]] = c1
-      self.mean_curves[self.classes_[1]] = c0
-    return self
-
-  ## Needed for SAMME.R boosting
-  def predict_proba(self, X: ArrayLike) -> ArrayLike:
-    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
-    P = np.empty(shape=(X.shape[0], self.n_classes_))
-    for i,x in enumerate(X):
-      sig = self.shells_signature(x, self.bins_)
-      d = np.array([np.sum(np.abs(curve-sig)) for curve in self.mean_curves.values()])
-      s = np.exp(-d**1) # exponential conversion to similarity
-      P[i,:] = s / np.sum(s)
-    return P
-
-  def predict(self, X: ArrayLike):
-    P = self.predict_proba(X)
-    return self.classes_[P.argmax(axis=1)]
-
-  def score(self, X: ArrayLike, y: ArrayLike) -> float:
-    return np.sum(self.predict(X) == y)/len(y)
 
 # from sklearn.utils.estimator_checks import check_estimator
 # check_estimator(ShellsClassifier(bins=10, dim=2))
@@ -178,26 +159,25 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
 
 ```{python}
 #| label: Get idea of performance on training alone (TODO: generalization error?)
-X_train = np.array([np.ravel(x) for x in X_data.values()])
-weak_learner = ShellsClassifier(bins=10, random_state=0)
-weak_learner.fit(X_train, y)
-weak_learner.score(X_train, y)
+weak_learner = ShellsClassifier(bins=20, random_state=0)
+weak_learner.fit(X_train_aug, y_train_aug)
+weak_learner.score(X_train_aug, y_train_aug)
 
 ## Try different weighting scheme
-w = np.random.uniform(size=len(y), low=0, high=1)
+w = np.random.uniform(size=len(y_train_aug), low=0, high=1)
 w /= np.sum(w)
-weak_learner.fit(X_train, y, w)
-weak_learner.score(X_train, y)
+weak_learner.fit(X_train_aug, y_train_aug, w)
+weak_learner.score(X_train_aug, y_train_aug)
 ```
 
 ```{python}
 #| label: Mean curve plots 
 p = figure(width=400, height=225)
-for x, y_label in zip(X_train, y):
+for x, y_label in zip(X_train_aug, y_train_aug):
   p_color = 'red' if y_label == 0 else 'blue'
-  p.line(weak_learner.bins_[:-1], weak_learner.shells_signature(x), line_color=p_color, line_alpha=0.20, line_dash="dashed")
-p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[0], color='red', line_width=2)
-p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[1], color='blue', line_width=2)
+  p.line(weak_learner.bins_[:-1], weak_learner.shells_signature(x), line_color=p_color, line_alpha=0.05, line_dash="dashed")
+p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[0], color='red', line_width=1.5)
+p.line(weak_learner.bins_[:-1], weak_learner.mean_curves[1], color='blue', line_width=1.5)
 show(p)
 ```
 
@@ -280,11 +260,11 @@ class BinaryAdaBoostClassifier:
     for y_pred in self.staged_decision_function(X):
       yield self.classes_[np.where(y_pred < 0, 0, 1)]
 
-  def staged_margin(self, X: ArrayLike, y: ArrayLike) -> Generator:
+  def staged_margin(self, X: ArrayLike, y: ArrayLike, normalize: bool = False) -> Generator:
     margin = np.zeros(len(y), dtype=np.float64)
-    for yt, at in zip(self.staged_predict(X), self.coeffs_):
+    for i, (yt, at) in enumerate(zip(self.staged_predict(X), self.coeffs_)):
       margin += at * np.where(yt == y, 1, -1)
-      yield deepcopy(margin)
+      yield deepcopy(margin/np.sum(np.abs(self.coeffs_[:(i+1)]))) if normalize else deepcopy(margin)
 
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
@@ -292,62 +272,49 @@ class BinaryAdaBoostClassifier:
   def staged_score(self, X: ArrayLike, y: ArrayLike) -> Generator:
     for yt in self.staged_predict(X):
       yield float(np.sum(yt == y)/len(y))
+```
 
-A = BinaryAdaBoostClassifier(ShellsClassifier(bins=10))
-A.fit(X_train, y, n_estimators=30)
-A.predict(X_train)
-A.decision_function(X_train)
-A.score(X_train, y)
+```{python}
+## Show the accuracy on the training data
+A = BinaryAdaBoostClassifier(ShellsClassifier(bins=20))
+A.fit(X_train_aug, y_train_aug, n_estimators=50)
+# A.predict(X_train_aug)
+# A.decision_function(X_train_aug)
+A.score(X_train_aug, y_train_aug)
+
+np.array(list(A.staged_score(X_train_aug, y_train_aug)))
+
+list(A.staged_score(X_test, y_test))
+
+margin_train_aug = np.array(list(A.staged_margin(X_train_aug, y_train_aug, normalize=False)))
+margin_test = np.array(list(A.staged_margin(X_test, y_test, normalize=True)))
+
+p = figure(width=350, height=200)
+# for margin in margin_train_aug:
+#   margin_norm /= np.sum(np.abs(margin))
+#   # margin = np.sort(margin)
+#   p.line(margin, np.cumsum(margin), color='green')
+for margin in margin_test:
+  # margin /= np.sum(np.abs(margin))
+  p.line(np.sort(margin), np.cumsum(np.sort(margin))), color='red')
+show(p)
 
 # A.score(X_train, y)
-list(A.staged_decision_function(X))[-1]
-list(A.staged_margin(X, y))[-1]
-np.array(list(A.staged_score(X,y)))
+# list(A.staged_decision_function(X))[-1]
+# list(A.staged_margin(X, y))[-1]
+# np.array(list(A.staged_score(X,y)))
 ```
 
-Margin and scoring plots for train/test splits
-```{python}
-#| label: Margin plots 
-X_data = mpeg7(simplify=100, which=["bird", "fish"])
-train_keys, test_keys = [k for k in X_data.keys() if k[1] <= 15], [k for k in X_data.keys() if k[1] > 15]
-X_train = np.array(list(map(np.ravel, map(X_data.get, train_keys))))
-X_test = np.array(list(map(np.ravel, map(X_data.get, test_keys))))
-y_train, y_test = np.array([k[0] for k in train_keys]), np.array([k[0] for k in test_keys])
 
-classes = np.sort(np.unique(y_train))
-y_train = np.searchsorted(classes, y_train)
-y_test = np.searchsorted(classes, y_test)
-
-A = BinaryAdaBoostClassifier(ShellsClassifier(bins=20))
-A.fit(X_train, y_train, n_estimators=2500)
-A.score(X_train, y_train)
-A.predict(X_train)
-A.predict(X_test)
-A.score(X_test, y_test)
-
-np.array(list(A.staged_score(X_train, y_train)))
-np.array(list(A.staged_score(X_test, y_test)))
-
-# np.array(list(A.staged_margin(X_test, y_test)))
-
-
-A.decision_function(X_train)
-
-A.score(X_test, y_test)
-
-np.array(list(A.staged_score(X_train, y_train)))
-np.array(list(A.staged_score(X_test, y_test)))
- 
-
-```
 
 ```{python}
 from sklearn.ensemble import AdaBoostClassifier
-A_skl = AdaBoostClassifier(ShellsClassifier(bins=10), n_estimators=30, algorithm="SAMME")
-A_skl.fit(X_train, y)
+A_skl = AdaBoostClassifier(ShellsClassifier(bins=20), n_estimators=40, algorithm="SAMME")
+A_skl.fit(X_train_aug, y_train_aug)
 # np.sum(A_skl.predict(X_train) == y)/len(y)
 
-print(np.array(list(A_skl.staged_score(X_train, y))))
+print(np.array(list(A_skl.staged_score(X_train_aug, y_train_aug))))
+print(np.array(list(A_skl.staged_score(X_test, y_test))))
 
 list(A_skl.staged_predict_proba(X_train))
 A_skl.estimator_weights_
