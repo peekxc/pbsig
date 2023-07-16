@@ -961,10 +961,13 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 \noindent Noting property (3), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
 replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yields Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz. 
-\begin{remark}\label{remark:diff}
-	While $\Phi_\tau$ is a continuously differentiable operator in $\mathbb{R}^{n \times m}$ for any $\tau > 0$ and it in fact may be shown  to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$ (see~\cite{ding2018spectral}), % for all $i = 1, \dots, n$, 
-	note that $\lVert\Phi_\tau(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}. However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, which we exploit in the following section. 
-\end{remark}
+
+	While $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
+	%% TODO: mention that directional differentiability is not enough
+	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
+$\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere in the Hadamard sense Proposition 2.2(d). 
+$\lVert\Phi_\tau(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}. 
+However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, which we exploit in the following section. 
  
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
@@ -981,7 +984,7 @@ replacing the rank function in all of the constitutive terms of both $\mu_p^\ast
 %\end{equation*}
 
 %Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
-\subsection{Combinatorial Laplacians}\label{sec:laplacian_theory2}
+\subsection{Parameterized Laplacians}\label{sec:laplacian_theory2}
 For the sake of generality, it is important to make the class of differentiable operators from section~\ref{sec:spectral_relax} as large as possible.
 %elucidate the necessary conditions under which the spectral operators from section~\ref{sec:spectral_relax} are differentiable, so as to make the class of such operators as large as possible. 
 Noting remark~\ref{remark:diff}, we exploit another well known identity of the rank function:
@@ -1005,7 +1008,7 @@ All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are sym
 where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 Thus, from a rank-based perspective, it suffices to consider any one of these operators.
 
-Without loss of generality, we now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
+We now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
 $$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
 Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using smoothstep functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. Unlike $\partial_p(\alpha)$, however, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
  
@@ -1106,10 +1109,11 @@ $$\hat{\mu}_{p,}^R(\tau)= \hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\t
 	can be computed using at most $O(h)$ spectral rank computations, where the sign $s_{ij} \in \{-1, 1\}$ is determined by the inclusion-exclusion relationship given by Proposition~\ref{prop:include_exclude}. 
 \end{corollary}
 \begin{proof}
-	By the additivity of the multiplicity, we can vertically or horizontally partition any rectangular into two disjoint rectangles and add their total multiplicity to recover the multiplicity of the whole~\cite{}. Moreover, if $\mathcal{R}$ is simple and hole-free with $h$ corner points, then it is known that it can be decomposed into a minimal set of $h/2-g-1 \sim O(h)$ disjoint rectangles (of which several algorithms are known), where $g$ is the number of axis-parallel line segments connecting concave vertices of $\mathcal{R}$~\cite{}.
+	By the additivity of the multiplicity function, we can vertically or horizontally partition any rectangular into two disjoint rectangles and add their total multiplicity to recover the multiplicity of the whole~\cite{}. Moreover, if $\mathcal{R}$ is simple and hole-free with $h$ corner points, then it is known that it can be decomposed into a minimal set of $h/2-g-1 \sim O(h)$ disjoint rectangles (of which several algorithms are known), where $g$ is the number of axis-parallel line segments connecting concave vertices of $\mathcal{R}$~\cite{}.
 \end{proof}
 
-\noindent Though the cancellations between the relaxed multiplicity $\hat{\mu}_{p}^\ast(\tau)$ and the relaxed cardinalities $\hat{\beta}_{p}^{\ast}(\tau)$ is always satisfied for any $\tau \geq 0$, not all of the properties of PBNs are preserved when $\tau > 0$. This is exemplified by the next proposition, which clarifies the degree to which $\hat{\beta}_p^\ast$ is ``Betti-like'' in the sense of being cumulative. 
+\noindent Though the inclusion-exclusion relationship between the relaxations $\hat{\mu}_{p}^\ast(\tau)$ and $\hat{\beta}_{p}^{\ast}(\tau)$ holds for any $\tau \geq 0$, not all of the typical the cancellations occur for $\hat{\beta}_{p}^{\ast}(\tau)$ when $\tau > 0$.
+This is exemplified by the next proposition, which clarifies the degree to which $\hat{\beta}_p^\ast$ is ``Betti-like'' in the sense of being cumulative. 
 \begin{proposition}[$\phi$-monotone]
 For all $i < j$ and all $k < l$, there exists a non-decreasing function $c_\phi : \mathbb{R} \to \mathbb{R}_+$ whose form depends only on $\phi$ such that $\hat{\beta}_p^\ast$ satisfies the following monotonicity properties:
 %\begin{align*}
