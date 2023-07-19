@@ -15,7 +15,7 @@ from pbsig.linalg import *
 from pbsig.vis import figure_complex
 from bokeh.plotting import figure, show
 from bokeh.io import output_notebook
-from bokeh.layouts import row
+from bokeh.layouts import row, column
 output_notebook(verbose=False)
 ```
 
@@ -60,10 +60,10 @@ show(p)
 # | label: Amplify the size of the data via interpolation
 # Interpolate intra-class shapes to generate more datasets for training 
 from pbsig.shape import sample_interp
-m_new = 1200 
+m_new = 500 
 X_aug, y_aug = [], []
 for cl in range(len(classes)):
-  print(f"Generating new data for class {classes[cl]}")
+  print(f"Generating {m_new} new data sets for class {classes[cl]}")
   X_cl = X_all[y_all == cl]
   X_cl_new = sample_interp(X_cl, m_new) 
   X_aug.append([np.ravel(x) for x in X_cl_new])
@@ -74,22 +74,41 @@ y_aug = np.append(y_all, np.array(y_aug))
 
 ```{python}
 # | label: Training and testing sets
-from pbsig.utility import train_test_split
-train_ind, test_ind = train_test_split(X_aug, split=(0.70, 0.30), y=y_aug)
+from pbsig.utility import split_train_test
+train_ind, test_ind = split_train_test(len(X_aug), split=(0.70, 0.30), labels=y_aug)
 X_train, X_test = X_aug[train_ind], X_aug[test_ind]
 y_train, y_test = y_aug[train_ind], y_aug[test_ind]
 ```
 
 ```{python}
-# | label: Boosting a SHELLS  classifier
+# | label: Boosting a SHELLS classifier
+# Even this can be quite slow due to fit and histogram! 
 from pbsig.classifiers import ShellsClassifier
-weak_learner = ShellsClassifier(bins=15)
+
+import timeit
+
+timeit.timeit(lambda: ShellsClassifier(bins=15, cache=False).fit(X_train, y_train), number=100)
+
+weak_learner = ShellsClassifier(bins=15, cache=True)
+weak_learner.fit(X_train, y_train, ensure_better=True)
+weak_learner.score(X_train, y_train)
+timeit.timeit(lambda: weak_learner.fit(X_train, y_train), number=100)
+
+import line_profiler
+profiler = line_profiler.LineProfiler()
+profiler.add_function(weak_learner.fit)
+profiler.enable_by_count()
+for i in range(100):
+  weak_learner.fit(X_train, y_train)
+profiler.print_stats(output_unit=1e-3)
+
+weak_learner = ShellsClassifier(bins=15, cache=True)
 weak_learner.fit(X_train, y_train)
 weak_learner.score(X_train, y_train)
 weak_learner.score(X_test, y_test)
 
 from sklearn.ensemble import AdaBoostClassifier
-A_skl = AdaBoostClassifier(ShellsClassifier(bins=15), n_estimators=1500, learning_rate=0.01, algorithm="SAMME")
+A_skl = AdaBoostClassifier(ShellsClassifier(bins=15), n_estimators=15, learning_rate=0.01, algorithm="SAMME")
 A_skl.fit(X_train, y_train)
 print(len(A_skl.estimators_))
 
@@ -102,6 +121,69 @@ print(np.array(list(A_skl.staged_score(X_test, y_test))))
 
 
 ```
+
+
+
+
+```{python}
+# | label: Laplacian classifier 
+from pbsig.linalg import up_laplacian
+from pbsig.simplicial import cycle_graph
+from pbsig.vis import figure_complex
+from pbsig.color import bin_color
+from bokeh.palettes import Category10
+
+x_pc = X_data[('bird', 1)]
+S = simplicial_complex(cycle_graph(len(x_pc)))
+L = up_laplacian(S, normed=True)
+
+## Test connectedness of laplacian 
+# x = np.random.choice([0,1], size=len(x_pc), replace=True)
+normalize = lambda x: (x - np.min(x)) / (np.max(x) - np.min(x))
+x = np.array([0]*50 + [1]*49)
+y = L @ x
+z = L @ normalize(x_pc @ np.array([0,1]))
+
+from pbsig.linalg import eigh_solver
+ew, ev = eigh_solver(L)(L)
+
+N = card(S,0)
+
+
+# p = figure_complex(S, pos=x_pc)
+p,q,r,s = [figure(width=250, height=250) for i in range(4)]
+p.scatter(*x_pc.T, color=bin_color(x, "Category10"))
+q.scatter(*x_pc.T, color=bin_color(y, "Category10"))
+r.scatter(*x_pc.T, color=bin_color(z, "viridis", lb=-1, ub=1))
+s.scatter(*x_pc.T, color=bin_color(ev[:,0], "viridis"))
+show(row(p, q, r, s))
+
+
+figs = [figure(width=100, height=100) for j in range(ev.shape[1])]
+[fig.scatter(*x_pc.T, color=bin_color(ev[:,j], "viridis")) for j, fig in enumerate(figs)]
+show(row(*figs))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 

@@ -136,12 +136,21 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 
 def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
-	from matplotlib import cm
 	if isinstance(color_pal, str):
 		import bokeh
-		color_pal = getattr(bokeh.palettes, color_pal.lower())
-		assert isinstance(color_pal, Callable)
-		color_pal = np.c_[hex_to_rgb(color_pal(255))/255.0, np.ones(255)]
+		bokeh_palettes = { p.lower() : p for p in dir(bokeh.palettes) if p[0] != "_" }
+		color_pal = getattr(bokeh.palettes, bokeh_palettes[color_pal.lower()])
+		if isinstance(color_pal, Callable):
+			color_pal = np.c_[hex_to_rgb(color_pal(255))/255.0, np.ones(255)]
+		elif isinstance(color_pal, dict):
+			x_discrete = x.astype(np.int16)
+			x_class, x_ind = np.unique(x_discrete, return_inverse=True)
+			discrete_cp  = color_pal[max(len(x_class), 3)] 
+			color_pal = np.c_[hex_to_rgb(discrete_cp)/255.0, np.ones(len(discrete_cp))]
+			# discrete_rgb = hex_to_rgb([discrete_cp[i] for i in x_ind])
+			# color_pal = np.hstack((discrete_rgb/255.0, np.ones(len(x_class))[:,np.newaxis]))
+		else: 
+			raise ValueError("If color_pal is a string, it must be a dict- or function-valued palette in bokeh.palettes")
 		# color_pal = np.c_[np.array(color_pal(255)), np.ones(255)]
 		# col = cm.get_cmap(color_pal)
 		# color_pal = [col(i) for i in range(0, 255)]

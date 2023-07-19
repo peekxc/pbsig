@@ -274,23 +274,22 @@ def multigen(gen_func):
   return _multigen
 
 
-def train_test_split(X: ArrayLike, split: tuple = (0.80,0.20), y: ArrayLike = None):
+def split_train_test(n: int, split: tuple = (0.80,0.20), labels: ArrayLike = None):
+  """Partitions the range [0, n-1] into disjoint training/testing indices, optionally stratified. """
   assert sum(split) == 1, "Split must sum to 1."
-  if y is not None:
+  if labels is not None:
     train_ind, test_ind = [], []
-    for cl in np.unique(y):
-      X_cl = X[y == cl]
-      n = X_cl.shape[0]
+    for cl in np.unique(labels):
+      n = np.sum(labels == cl)
       indices = np.random.permutation(n)
       cut_ind = int(np.floor(n * split[0]))
-      train_ind.extend(np.flatnonzero(y == cl)[indices[:cut_ind]])
-      test_ind.extend(np.flatnonzero(y == cl)[indices[cut_ind:]])
+      train_ind.extend(np.flatnonzero(labels == cl)[indices[:cut_ind]])
+      test_ind.extend(np.flatnonzero(labels == cl)[indices[cut_ind:]])
     train_ind, test_ind = np.ravel(train_ind), np.ravel(test_ind)
     np.random.shuffle(train_ind)
     np.random.shuffle(test_ind)
     return train_ind,test_ind
   else:
-    n = X.shape[0]
     indices = np.random.permutation(n)
     cut_ind = int(np.floor(n * split[0]))
     training_idx, test_idx = indices[:cut_ind], indices[cut_ind:]
