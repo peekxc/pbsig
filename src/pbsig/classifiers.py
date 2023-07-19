@@ -115,30 +115,53 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
     return np.sum(self.predict(X) == y)/len(y)
   
 
-class ShellsFactory(BaseEstimator, ClassifierMixin):
-  """ Weak classifier factory that improves the computational efficiency of SHELLS on a fixed data set """
-  _precomputed = {}
+
+class WeightedClassifier(BaseEstimator, ClassifierMixin):
+  
+  # def dist: Union[Callable
+
+  def __init__(self, **kwargs):
+    """sklearn requires no input validation for initializer """
+    for k,v in kwargs.items():
+      setattr(self, k, v)
+
+  def vector(self, x: Any, **kwargs) -> np.ndarray:
+    """Produces a vector embedding of a given input """
+    return x
+  
+  def cdist(self, XA: ArrayLike, XB: ArrayLike) -> np.ndarray:
+    """Compute distance between each pair of the two collections of inputs."""
+    pass 
+
+  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+    pass
+
+  def predict(self, ):
+    pass
+
+  def predict_proba(self, X: ArrayLike) -> np.ndarray:
+    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
+    P = np.empty(shape=(X.shape[0], self.n_classes_))
+    for i,x in enumerate(X):
+      v = self.vector(x)
+      d = np.array([self.cdist(centroid,v) for centroid in self.averages.values()])
+      s = np.exp(-d**1) # exponential conversion to similarity: todo, generalize
+      P[i,:] = s / np.sum(s)
+    return P
+
+  def predict(self, X: ArrayLike):
+    P = self.predict_proba(X)
+    return self.classes_[P.argmax(axis=1)]
+
+  def score(self, X: ArrayLike, y: ArrayLike) -> float:
+    return np.sum(self.predict(X) == y)/len(y)
+
+
+class MClassifierFactory(BaseEstimator, ClassifierMixin):
+  """ Classifier factory for building learners that use distance to class-averages for classification """
   
   def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None, cache: bool = False):
-    self.random_state = random_state # np.random.RandomState(random_state) # used for sampling shells
-    self.bins = bins
-    self.dim = dim  # ambient dimension of the point cloud 
-    self.cache = cache # whether to use a cache for each pair (X,y) s.t. fitting (X,y,w) is faster
-    
-  def shells_signature(self, x: ArrayLike, bins: Optional[ArrayLike] = None) -> ArrayLike:
-    bins = self.bins_ if bins is None else bins
-    x_pc = x.reshape((len(x) // self.dim, self.dim))
-    barycenter = x_pc.mean(axis=0)
-    dist_to_barycenter = np.linalg.norm(x_pc - barycenter, axis=1)
-    min_radius, max_radius = np.min(dist_to_barycenter), np.max(dist_to_barycenter)
-    return shells(x_pc, min_radius + bins * (max_radius-min_radius), center=barycenter)
-  
-  def subsample_hash(self, X: np.ndarray, size: int = 100):
-    rng = np.random.RandomState(89)
-    inds = rng.randint(low=0, high=X.size, size=size)
-    b = X.flat[inds]
-    b.flags.writeable = False
-    return hash(b.data.tobytes())
+
 
   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
     from copy import deepcopy

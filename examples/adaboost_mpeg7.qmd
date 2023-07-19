@@ -135,6 +135,7 @@ from bokeh.palettes import Category10
 
 x_pc = X_data[('bird', 1)]
 S = simplicial_complex(cycle_graph(len(x_pc)))
+
 L = up_laplacian(S, normed=True)
 
 ## Test connectedness of laplacian 
@@ -148,7 +149,12 @@ from pbsig.linalg import eigh_solver
 ew, ev = eigh_solver(L)(L)
 
 N = card(S,0)
+np.sort(np.array([1 - np.cos(2*np.pi*k / N) for k in range(N)]))
 
+D = np.diag(1/np.sqrt(np.arange(N)))
+D[0,0] = 0
+
+# np.sort(np.linalg.eigh(D @ L @ D)[0])
 
 # p = figure_complex(S, pos=x_pc)
 p,q,r,s = [figure(width=250, height=250) for i in range(4)]
