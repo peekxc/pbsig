@@ -1,8 +1,8 @@
 %\section{Background \& Notation}\label{sec:background_notation}
-An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\sigma : \sigma \in \mathcal{P}(V) \}$ such that $\tau \subseteq \sigma \in K \Rightarrow \tau \in K$.
+An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\, \sigma : \sigma \in \mathcal{P}(V) \,\}$ such that $\tau \subseteq \sigma \in K \Rightarrow \tau \in K$.
+A $p$-simplex $\sigma \subseteq V$ is a set of $p+1$ vertices, and $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ is a set of all such simplices. 
 %$p$-simplices are denoted with $K^p$.
 %The $p$-skeleton of $\mathrm{skel}_p(K)$ is the the restriction of $K$ to its simplices with dimension $\leq p$. 
-%We denote with $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ the $p$-simplices of $K$. 
 %and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
 %but for brevity refer to them simply as filtrations.
 %\\
@@ -24,20 +24,22 @@ An \emph{oriented $p$-simplex} $[\sigma]$ is an ordered set $[\sigma] = (-1)^{\l
 %\begin{equation}\label{eq:oriented_simplex}
 %	[\sigma] = (-1)^{\lvert \pi \rvert } \left [v_{\pi(1)}, v_{\pi(2)}, \dots, v_{\pi(p+1)} \right ]
 %\end{equation}
-where $\pi$ is a permutation on $[\,p+1\,]$ and $\lvert \pi \rvert$ the number of its inversions. 
+where $\pi$ is a permutation on $[\,p+1\,] = \{\, 1, 2, \dots, p+1 \, \}$ and $\lvert \pi \rvert$ the number of its inversions. 
 %Any ordering defines the same oriented simplex if the permutation transforming one ordering into the other is even. 
-The \emph{$p$-boundary} $\partial_p$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces, which collectively are represented in the $p$-th \emph{boundary matrix} of $K$:
+The \emph{$p$-boundary} $\partial_p[\sigma]$ of an oriented $p$-simplex $[\sigma] \in K$ is defined as the alternating sum of its oriented co-dimension 1 faces, which collectively define the $p$-th \emph{boundary matrix} $\partial_p$ of $K$:
 \begin{equation}\label{eq:alt_sum}
 %\begin{equation}\label{eq:boundary_matrix}
 %\end{equation}
-	\partial_p[\sigma] \triangleq \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}], \quad \quad  
-		\partial_p[i,j] = \begin{cases}
+	\partial_p[i,j] \triangleq \begin{cases}
 		(-1)^{s_{ij}} & \sigma_i \in \partial[\sigma_j]  \\
 		0 & \text{otherwise}
-	\end{cases}
+	\end{cases},
+	\quad \quad  
+	\partial_p[\sigma] \triangleq \sum_{i=1}^{p+1} (-1)^{i-1} [v_1, \dots, v_{i-1}, v_{i+1}, \dots v_{p+1}]	
 \end{equation}
 where $s_{ij} = \mathrm{sgn}([\sigma_i], \partial [\sigma_j])$ records the orientation. Extending~\eqref{eq:alt_sum} to all simplices in $\sigma \in K$ for all $p \leq \mathrm{dim}(K)$ yields the \emph{full boundary matrix} $\partial$. 
-With a small abuse in notation, we use $\partial_p$ to denote both the boundary operator and its ordered matrix representative. We will clarify which representation is intended, when it is not clear from the context. 
+With a small abuse in notation, we use $\partial_p$ to denote both the boundary operator and its ordered matrix representative. When it is not clear from the context, we will clarify which representation is intended. 
+
 %Since $\partial_p$ is completely characterized by the oriented $p$ and $p-1$ simplices of $(K, f)$, a matrix representative of $\partial_p$ can be obtained by setting all columns of $\partial$ corresponding to simplices of dimension $q \neq p$ to $0$. 
 
 Generalizing beyond simplices, given a field $\mathbb{F}$, an \emph{oriented $p$-chain} is a formal $\mathbb{F}$-linear combination of oriented $p$-simplices of $K$ whose boundary $\partial_p[c]$ is defined linearly in terms of its constitutive simplices. 

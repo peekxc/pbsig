@@ -187,7 +187,7 @@ Persistent homology~\cite{edelsbrunner2000topological} (PH) is the most widely d
 Persistence-related pipelines often follow a common pattern: given a data set $X$ as input, construct a simplicial complex $K$ and an order-preserving function $f: K \to \mathbb{R}$ such that useful topological/geometric information may be gleaned from its \emph{persistence diagram}---a 
 %given a tame function $f: \mathcal{X} \to \mathbb{R}$ over a topological space $\mathcal{X}$,
 %its $p$-th persistence diagram $\mathrm{dgm}_p(f)$ over $f$ is the 
-multiset summary of $f$ formed by pairs $(a,b) \in \mathbb{R}^2$ exhibiting non-zero \emph{multiplicity} $\mu_p^{a,b}$:
+multiset summary of $f$ formed by pairs $(a,b) \in \mathbb{R}^2$ exhibiting non-zero \emph{multiplicity} $\mu_p^{a,b} \in \mathbb{Z}_+$:
 %pairing homological critical values with \emph{multiplicities} $\mu_p^{a,b}$~\cite{cohen2005stability}:
 %defined over the integer upper halfplane $\Delta_+^N \triangleq \{\, (i,j) : 1 \leq i \leq j \leq n \, \}$: 
 \begin{equation}\label{eq:dgm}
@@ -224,18 +224,18 @@ Though theoretically sound, diagrams suffer from many practical issues: they are
 %Performing even basic statistical operations, such as averaging, has proven difficult under the standard matching metrics~\cite{}. 
 Towards ameliorating these issues, practitioners have equipped diagrams with additional structure by way of maps to function spaces; examples include persistence images~\cite{adams2017persistence}, persistence landscapes~\cite{bubenik2015statistical}, and template functions~\cite{perea2022approximating}. 
 %Along a separate thread of research 
-Tackling the issue of injectivity, Turner et al. propose an injective shape statistic of directional diagrams associated to a data set $X \subset \mathbb{R}^d$,  
+Tackling the issue of injectivity, Turner et al.~\cite{turner2014persistent} propose an injective shape statistic of directional diagrams associated to a data set $X \subset \mathbb{R}^d$,  
 %\begin{align*}\label{eq:pht1}
 %	\mathrm{PHT}(X): S^{d-1} &\to \mathcal{D}^d \\
 %	v &\mapsto \left( \, \mathrm{dgm}_0(X, v), \mathrm{dgm}_1(X, v), \dots, \mathrm{dgm}_{d-1}(X, v) \, \right) \numberthis
 %\end{align*}
 %rather than compute one diagram, compute many, each diagram representing a different perspective. 
 %The main result of~\cite{} shows this collection of diagrams is 
-sparking both an inverse theory for persistence and a mathematical foundation for metric learning~\cite{}.  
+sparking both an inverse theory for persistence and a mathematical foundation for metric learning.  
 Despite the potential these extensions have in learning applications,
 %~\cite{pun2018persistent},
 %however, their scalability is limited as diagrams are prerequisite to their computation.
-individual diagrams can still be expensive to obtain---the parameterized setting only compounds the scalability issue. Indeed, generalizing the persistence computation to dynamic settings has proven non-trivial~\cite{piekenbrock2021move}.
+individual diagrams can still be expensive to obtain---an issue only compounded in the parameterized setting. Indeed, generalizing the persistence computation to dynamic settings has proven non-trivial~\cite{piekenbrock2021move}.
 %not only is the standard PH computation expensive statistically, 
 %not only are diagrams difficult to compute individually, but extending the persistence computation to parameterized settings has proven non-trivial~\cite{piekenbrock2021move}. 
 %moves
@@ -311,10 +311,11 @@ Notably, our approach not only avoids explicitly constructing diagrams, but is i
 %requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$, 
 Additionally, the relaxation is computable in linear space and quadratic time, can be iteratively approximated, is continuously differentiable, requires no complicated data structures or maintenance procedures to implement, and is particularly efficient to compute over parameterized families of inputs. 
 %due to its spectral formulation. 
-\\
-\\
+%\\
+%\\
+
 \noindent 
-\textbf{Contributions:} Our primary contribution is the introduction of several families of spectral approximations to the rank invariants---$\mu_p$ and $\beta_p$\ref{}---all of which are Lipshitz continuous\ref{}, stable under relative perturbations\ref{}, and differentiable on the positive semi-definite cone\ref{}. By a reduction to spectral methods for Laplacian operators\ref{}, we also show these approximations are computable in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in $K$, respectively (see section~\ref{sec:computational_imp}). 
+\textbf{Contributions:} Our primary contribution is the introduction of several families of spectral approximations to the rank invariants---$\mu_p$ and $\beta_p$\ref{}---all of which are Lipshitz continuous\ref{}, stable under relative perturbations\ref{}, and differentiable on the positive semi-definite cone\ref{}. By a reduction to spectral methods for Laplacian operators\ref{}, we also show these approximations are computable in $\approx O(m)$ memory and $\approx O(mn)$ time, where $n,m$ are the number of $p, p+1$ simplices in $K$, respectively (see section~\ref{sec:computational_imp}). 
 Moreover, both relaxations admit iterative $(1-\epsilon)$-approximation schemes\ref{}, and in both cases are recovered exactly when the parameters $\epsilon$ and $\tau$ made small enough\ref{}. 
 %Our primary contribution is an iterative ($\epsilon$, $\tau$)-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
 % TODO: explicitly mention multiplicity and betti in hyphened-text
@@ -392,7 +393,7 @@ Intuitively, choosing $\mathcal{L}$ (e.g. Kirchoff, random walk) determines the 
 	\item Denote by $\Lambda(\mathcal{L}_{a,b}(\alpha))$ the spectrum of $\mathcal{L}_{a,b}$ at any $\alpha \in \mathcal{A}$ ordered in non-increasing order. Our relaxation approximates~\eqref{eq:mu_alpha} by summing the first $n_\epsilon$ eigenvalues at each corner point $(a,b)$ in the boundary of $\mathcal{R}$: 
 %	\item \in \Lambda(\mathcal{L}_p^{a,b})$
 	$$
-	\hat{\mu}^\mathcal{R}_p = \sum\limits_{(a,b)}\sum\limits_{i=1}^{n_\epsilon(\alpha)} s_{a,b} \cdot \phi(\lambda_{a,b}^{i}(\alpha), \tau), \quad \lambda_{a,b}^{(i)} = \Lambda(\mathcal{L}_{a,b})_i
+	\hat{\mu}^\mathcal{R}_p = \sum\limits_{(a,b)}\sum\limits_{i=1}^{n_\epsilon(\alpha)} s_{a,b} \cdot \phi(\lambda_{a,b}^{i}(\alpha), \tau), \quad \lambda_{a,b}^{i} = \Lambda(\mathcal{L}_{a,b})_i
 %	\hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\tau) - \hat{\beta}_{p}^{j,l}(\tau) + \hat{\beta}_{p}^{i,l}(\tau)
 	$$
 	where $1 \leq n_\epsilon(\alpha) \leq \mathrm{rank}(\mathcal{L}_{a,b}(\alpha))$ bounds how many values are needed to $(1-\epsilon)$-approximate $\mu_p^\mathcal{R}$. 
@@ -418,7 +419,7 @@ Intuitively, choosing $\mathcal{L}$ (e.g. Kirchoff, random walk) determines the 
 %	\item Differentiate an $\alpha$-parameterized filter $f_\alpha$ for a fixed sieve $\mathcal{R}$ over a family $\mathcal{A}$ % $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$
 %\end{enumerate}
 %\noindent
-Applications looking to vectorize persistence information over random and highly structured complexes may benefit from the concentration of mass phenomenon known to occur their spectra; examples include topology-guided image denoising~\cite{pun2018persistent}, detecting bifurcations in dynamical systems~\cite{perea2022approximating}, generating metric invariants for shape classification~\cite{chazal2009gromov}, and so on. 
+Applications looking to vectorize persistence information over random and highly structured complexes may benefit from the concentration of mass phenomenon known to occur their spectra; examples include topology-guided image denoising~\cite{pun2018persistent}, shape classification under metric invariants~\cite{chazal2009gromov}, bifurcation detection in dynamical systems~\cite{perea2022approximating}, and so on. 
 The differentiability of our relaxation also prompts questions of immediate applicability to methods that optimize persistence information~\cite{nigmetov2022topological}. 
 %\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
 %\begin{empheq}[box=\boxAppOne]{equation*}
@@ -513,10 +514,11 @@ Given a fixed $p \geq 0$, a filtration $(K,f)$ with filtration values $\{ \, a_i
 the persistent Betti number and multiplicity functions may be written as:
 	\begin{align*}\label{eq:betti_four}
 	% \mathrm{rank}(I_p^{1,i})
-	\beta_p^{a_i,a_j}(K,f) &= \lvert K_i^p \rvert - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} ) \numberthis  \\
+	\beta_p^{a_i,a_j}(K,f) &= \mathrm{rank}(C_p(K_i)) - \mathrm{rank}(\partial_p^{1,i}) - \mathrm{rank}(\partial_{p\+1 }^{1,j}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, j} ) \numberthis  \\
 	\mu_p^{R}(K, f) &= \mathrm{rank}(\partial_{p\+1}^{j \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{i \+ 1, k})  - \mathrm{rank}(\partial_{p\+1}^{j \+ 1, l}) + \mathrm{rank}(\partial_{p\+1}^{i \+ 1, l}) \numberthis \label{eq:mu_four}
 	%\mathrm{rank}(\partial_{p+1}^{i+1,\ast} \otimes\partial_{p+1}^{\ast,j} )
 	\end{align*}
+%	where $\lvert K_i^p \rvert$ denotes the number of $p$-simplices in $K_p$. 
 %where $I_p^{1,i}$ denotes the first $i$ columns of the $n \times n$ identity matrix.
 \end{corollary}
 %Dey \& Wang
@@ -546,14 +548,14 @@ the persistent Betti number and multiplicity functions may be written as:
 Two important observations stemming from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) that they are comprised strictly of \emph{rank} computations, and (2) that these computations are carried out on \emph{unfactored} boundary (sub)matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-The former suggests techniques from sparse recovery or compressive sensing~\cite{zhao2012approximation} may find utility in the persistence setting, while the latter suggest these quantities may be iteratively approximated in a matrix-free fashion using e.g. randomized algorithms~\cite{chen2011output} or iterative subspace methods~\cite{golub2013matrix, parlett1994we}. 
+The former suggests spectral relaxations of the rank function may find utility in the persistence setting, such as those in compressive sensing~\cite{zhao2012approximation}. The latter suggests both quantities may admit \emph{matrix-free} iterative approximation schemes using randomized algorithms~\cite{chen2011output} or iterative subspace methods~\cite{golub2013matrix, parlett1994we}. 
 %as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
 %The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
-Moreover, the structure of $\partial$ and the spectral characterization of the rank function
+Moreover, the invariance of the rank function under zero-characteristic fields coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure} suggest connections to other areas of applied mathematics, such as the ``The Laplacian Paradigm''~\cite{}, may be exploited to accelerate the computation further. 
+%the structure of $\partial \cdot \partial^T$, 
 %---such as invariance under permutations and adjoint multiplication---
 %may lead to interesting overlap in other popular areas of applied mathematics, such as compressive sensing, 
-suggest tools from spectral theory, such as those developed for ``The Laplacian Paradigm''~\cite{}, may be exploited to accelerate the computation further. 
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
 The rest of the paper is dedicated to exploring these connections and their ramifications in detail. 
 
@@ -614,6 +616,7 @@ The rest of the paper is dedicated to exploring these connections and their rami
 % --- Generic Rank approximation via eigenvalues --- 
 \section{Spectral relaxation and its implications}\label{sec:spectral_sec}
 %The following derivations of the persistent Betti number will be used in proofs and serve as the primary technical motivations for this effort.
+In this section, we introduce the proposed relaxation successively by relaxing or generalizing different aspects of the expressions from Corollary~\ref{cor:rank_reduction} to the parameterized setting. To motivate why these expression are important, it is instructive to derive the more traditional expressions used to compute the persistent rank invariants. 
 Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ defined over some index set $I$, its $p$-th persistent Betti number $\beta_p^{a,b}$ at index $(a,b) \in I \times I$, is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
@@ -682,7 +685,8 @@ Observe that (1) the non-zero entries from~\eqref{eq:param_boundary_matrix} vary
 	\begin{equation}\label{eq:decouple}
 		\partial_p(\alpha) \triangleq D_p(f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p+1}(f_\alpha) 
 	\end{equation}
-	where $D_p(f_\alpha)$ and  $D_{p+1}(f_\alpha)$ are diagonal matrices whose non-zero entries are ordered by $\preceq$ based on restrictions of $f_\alpha$ to $K^p$ and $K^{p+1}$, respectively.
+	where $D_p(f_\alpha)$ and  $D_{p+1}(f_\alpha)$ are diagonal matrices whose non-zero entries are ordered by restrictions of $f_\alpha$ to $K_\preceq^p$ and $K_\preceq^{p+1}$, respectively.
+	%based on restrictions of $f_\alpha$ to $K^p$ and $K^{p+1}$, respectively.
 We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
 Exploiting this decoupling, note that we may define a matrix with rank matching the rank of the matrices $\partial_p^{i,j}(K, f_\alpha)$ from Lemma~\ref{lemma:rank} via matrices of the form:
 \begin{equation}\label{eq:rank_equiv_param}

@@ -197,6 +197,12 @@ Horst~D Simon.
   methods.
 \newblock {\em Linear algebra and its applications}, 61:101--131, 1984.
 
+\bibitem{turner2014persistent}
+Katharine Turner, Sayan Mukherjee, and Doug~M Boyer.
+\newblock Persistent homology transform for modeling shapes and surfaces.
+\newblock {\em Information and Inference: A Journal of the IMA}, 3(4):310--344,
+  2014.
+
 \bibitem{zhao2012approximation}
 Yun-Bin Zhao.
 \newblock An approximation theory of matrix rank minimization and its

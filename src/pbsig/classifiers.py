@@ -156,22 +156,21 @@ class WeightedClassifier(BaseEstimator, ClassifierMixin):
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
 
-
-class MClassifierFactory(BaseEstimator, ClassifierMixin):
+from copy import deepcopy
+class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
   """ Classifier factory for building learners that use distance to class-averages for classification """
   
   def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None, cache: bool = False):
-
+    pass 
 
   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    from copy import deepcopy
-    # print("Sample weight is None? ", sample_weight is None)
+    rng = np.random.RandomState(self.random_state) # used for sampling shells
     assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
     sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
     assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
     
     ## TODO: Sample from a precomputed set of large bins to be even faster?
-    rng = np.random.RandomState(self.random_state) # used for sampling shells
+    
     self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
     self.classes_, y = np.unique(y, return_inverse=True) # TODO: import from cache
     self.n_classes_ = len(self.classes_)                 # TODO: import from cache
