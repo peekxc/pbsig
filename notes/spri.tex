@@ -467,7 +467,7 @@ as a function of time $\alpha \in \mathbb{R}$ (top) and a real-valued spectral r
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 %In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
-The following results summarize some technical observations motivating this effort. They are not necessary to understand the general approach, though they will be used in several proofs. Collectively, these observations suggest the rank invariant computation admits several advantages in the vector space setting. 
+The following results summarize some technical observations motivating this effort, which will be used in several proofs. Collectively, these observations suggest the rank invariant computation admits several advantages in the vector space setting. 
 
 %There is an alternative approach to computing~\eqref{eq:pbn_simple} that exploits the structure of persistence. 
 Among the most widely known results for persistence is the structure theorem~\cite{zomorodian2004computing}, which shows 1-parameter persistence modules decompose in an \emph{essentially unique} way. Computationally, 
@@ -687,13 +687,13 @@ Observe that (1) the non-zero entries from~\eqref{eq:param_boundary_matrix} vary
 	\end{equation}
 	where $D_p(f_\alpha)$ and  $D_{p+1}(f_\alpha)$ are diagonal matrices whose non-zero entries are ordered by restrictions of $f_\alpha$ to $K_\preceq^p$ and $K_\preceq^{p+1}$, respectively.
 	%based on restrictions of $f_\alpha$ to $K^p$ and $K^{p+1}$, respectively.
-We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
-Exploiting this decoupling, note that we may define a matrix with rank matching the rank of the matrices $\partial_p^{i,j}(K, f_\alpha)$ from Lemma~\ref{lemma:rank} via matrices of the form:
+%We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
+Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq))$ when the diagonal entries of $D_p$ and $D_{p+1}$ are strictly positive. Observe we may obtain matrices with ranks akin to those from Lemma~\ref{lemma:rank} via a post-composition of step functions $\bar{S}_a(x) = \mathbbm{1}_{x > a}(x)$ and $S_b(x) = \mathbbm{1}_{x \leq b}(x)$ to $D_p$ and $D_{p+1}$, respectively:
 \begin{equation}\label{eq:rank_equiv_param}
 %	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = 
 	 \hat{\partial}_p^{a,b}(\alpha) \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) 
 	\end{equation}
-where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down step functions, respectively, of the form $\bar{S}_a(x) = \mathbbm{1}_{x > a}(x)$ and $S_b(x) = \mathbbm{1}_{x \leq b}(x)$.
+%where $\bar{S}, S : \mathbb{R} \to \{0,1\}$ are up and down step functions, respectively,.
 %\begin{equation}\label{eq:step_functions}
 %	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 %\end{equation}
@@ -721,7 +721,8 @@ We summarize these observations with a proposition. Without loss in generality, 
 	%satisfying $i < j \leq k < l$, 
 	the $\mathcal{A}$-parameterized invariants $\beta_p^{a,b} : \mathcal{A} \times K \to \mathbb{N}$ and $\mu_p^{R} : \mathcal{A} \times K \to \mathbb{N}$ defined by: 
 	\begin{align*}\label{eq:pbn_parameterized}
-		\beta_p^{a,b}(\alpha) &\triangleq \lvert K_a^{p}(\alpha) \rvert - \mathrm{rank}\big(\,\hat{\partial}_{p}^{a}(\alpha)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{b}(\alpha)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{a \+ \delta, b}(\alpha)\,\big) \numberthis \\
+%	\lvert K_a^{p}(\alpha) \rvert 
+		\beta_p^{a,b}(\alpha) &\triangleq \mathrm{rank}\big(D_p(S_a \circ f_\alpha)\big) - \mathrm{rank}\big(\,\hat{\partial}_{p}^{a}(\alpha)\,\big) - \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{b}(\alpha)\,\big) + \mathrm{rank}\big(\,\hat{\partial}_{p+1}^{a \+ \delta, b}(\alpha)\,\big) \numberthis \\
 %	\end{align*}
 %	\vspace{-2.1em}
 %	\begin{align*}
@@ -732,7 +733,8 @@ We summarize these observations with a proposition. Without loss in generality, 
 \end{proposition}
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 %\begin{remark}
-Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as opposed to $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq})$ is ordered  according to a fixed linear ordering $(K, \preceq)$. The distinction is necessary as evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the total ordering induced by $f_\alpha$---which varies in $\mathcal{A}$---whereas replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}, respectively, yields expressions that are permutation invariant in $\mathcal{A}$. 
+Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as opposed to $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq})$ is ordered  according to a fixed linear ordering $(K, \preceq)$. The distinction is necessary as evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the total ordering induced by $f_\alpha$---which varies in $\mathcal{A}$---whereas the expressions obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}, respectively, require no such  filtering explicitly.  
+%permutation invariant in $\mathcal{A}$. 
 %\end{remark}
 
 
@@ -860,7 +862,7 @@ To address this, we exploit the spectral characterization of the rank function: 
 	\end{cases}
 \end{equation}
 where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
- 
+ As the singular values vary continuously under perturbations in $X$, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function.
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 %\begin{flalign}\label{eq:rank_sgn}
@@ -871,14 +873,13 @@ where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{
 %\end{equation}
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
-As the singular values vary continuously under perturbations in $X$, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function.
-Building off the seminal work from~\cite{mangasarian1994class}, Bi et al.~\cite{bi2013approximation} propose replacing the $\mathrm{sgn}_+$ function with integrated smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
+Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$.
+Building off seminal work from~\cite{mangasarian1994class}, Bi et al.~\cite{bi2013approximation} studied a natural relaxation of the $\mathrm{sgn}_+$ function obtained by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \tau > 0  \,)  & & \quad\quad\quad
-\phi(x, \tau) := \int\limits_{-\infty}^x \hat{\delta}(z, \tau) dz, \quad \quad  & 
-\hat{\delta}(z, \tau) = \nu(1/\tau) \cdot p \big( z \, \nu (1/\tau) \big ) && 
+\phi(x, \tau) \triangleq \int\limits_{-\infty}^x \hat{\delta}(z, \tau) \, dz, \quad \quad  & 
+\hat{\delta}(z, \tau) = \frac{1}{\nu(\tau)} \cdot p \left( \frac{z}{\nu(\tau)} \right ) && 
 \end{flalign}
-where $p: \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$ and $\nu(\tau) > 0$. 
 In contrast to the $\mathrm{sgn}_+$ function, if $p$ is continuous on $\mathbb{R}_+$ then $\phi(\cdot, \tau)$ is continuously differentiable on $\mathbb{R}_+$, and if $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \tau)$ is globally Lipshitz continuous on $\mathbb{R}_+$. 
 %Moreover, note that $\phi(0, \tau) = 0$ and ${\textstyle \lim_{\tau \to 0^{+}} } \phi(x, \tau) = \mathrm{sgn}_+(x)$ for any $x \geq 0$ and 
 %for any choice of $(p, \nu)$ satisfying the assumptions above. 
@@ -887,13 +888,12 @@ Moreover, varying $\tau \in \mathbb{R}_{+}$ in~\eqref{eq:phi} yields an $\tau$-p
 %(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
 %\end{flalign}
 
-Many properties of the sign approximation~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}.
+Many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}.
 In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$ from~\cite{bhatia2013matrix, bi2013approximation}: 
-\begin{definition}[Spectral Rank Approximation]
-	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral rank approximation} $\lVert \Phi_\tau(X) \rVert_\ast$ of $X$ via: 
-	\begin{equation}\label{def:lowner}%\label{eq:lowner}
-	\Phi_\tau (X) = \sum\limits_{i=1}^{n} \phi(\sigma_i, \tau) u_i v_i^T, \quad \quad 
-		\lVert \Phi_\tau(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \tau)
+\begin{definition}[Spectral $\phi$-approximation]
+	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral $\phi$-approximation} $\Phi_\tau(X)$ of $X$ and its Schatten-1 norm via: 
+	\begin{equation}\label{def:lowner}%\label{eq:lowner} 
+		\lVert \Phi_\tau(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \tau), \quad \quad \Phi_\tau (X) \triangleq \sum\limits_{i=1}^{n} \phi(\sigma_i, \tau) u_i v_i^T
 	\end{equation}
 	where $u_i$ and $v_i$ are the $i$th columns of $U$ and $V$, respectively. 
 	%$U = [u_1, u_2, \dots, u_n]$ and....
@@ -911,7 +911,9 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 %The operator $\Phi_\epsilon$ from~\eqref{} is called \emph{Löwners} operator. One can verify that the nuclear norm of the operator is given by composing $\phi(\cdot, \epsilon)$ with the singular value function. 
 %The formal connection between $\Phi_\epsilon$ and $\phi$ is characterized by the following definition:
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
-\noindent Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
+\noindent 
+%Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
+Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
@@ -922,7 +924,7 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 		$$ 0 \leq r - \lVert \Phi_\tau(X) \rVert_\ast \leq r\cdot (1 - \phi(\sigma_r, \tau))$$
 		%c(r, \nu, p)
 		Moreover, if $\tau$ satisfies $0 < \tau \leq \sigma_r / r$, then $r - \lVert \Phi_\tau(X) \rVert_\ast$ is bounded above by a constant $c_\phi(r) \geq 0$. %dependent only on $\phi$. 
-		\item $\lVert \Phi_\tau(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{Here, ``semismooth'' refers to the existence certain directional derivatives in the limit as $\tau \to 0^+$, see~\cite{bi2013approximation, bhatia2013matrix}.} on $\mathbb{R}^{n \times m}$.
+		\item $\lVert \Phi_\tau(X) \rVert_\ast$ is globally Lipshitz continuous and semismooth\footnote{Here, ``semismooth'' refers to the existence certain directional derivatives in the limit as $\tau \to 0^+$, see~\cite{bhatia2013matrix, bi2013approximation}.} on $\mathbb{R}^{n \times m}$.
 %		\item $\phi(\cdot, \epsilon)$ is continuously differentiable in $\mathbb{R}_+$ if $p$ is continuous on $\mathbb{R}_+$
 %		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
