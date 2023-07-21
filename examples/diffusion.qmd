@@ -1,0 +1,37 @@
+---
+title: "Diffusion w/ Laplacians"
+format: html
+jupyter: python3
+editor: 
+  render-on-save: true
+---
+
+
+
+```{python}
+## Laplacian diffusion kernel
+import numpy as np
+import networkx as nx
+from itertools import *
+G = nx.random_geometric_graph(30, 0.125, seed=896803)
+S = simplicial_complex(chain(G.nodes, G.edges))
+X = np.random.uniform(size=(30,2), low=0, high=1)
+S = delaunay_complex(X)
+
+from pbsig.linalg import * 
+L = up_laplacian(S, normed = True)
+
+import bokeh
+from bokeh.io import output_notebook
+from bokeh.plotting import figure, show
+from bokeh.layouts import row, column
+from pbsig.vis import figure_complex
+show(figure_complex(S, X))
+
+from scipy.sparse.linalg import eigsh
+ew, ev = eigsh(L)
+
+np.exp(-ew)
+
+
+```
