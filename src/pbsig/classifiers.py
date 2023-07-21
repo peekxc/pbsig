@@ -114,53 +114,83 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
   
-
-
-class WeightedClassifier(BaseEstimator, ClassifierMixin):
-  
-  # def dist: Union[Callable
-
+class BarycenterClassifier(BaseEstimator, ClassifierMixin):
+  """Classifier defined by distance to nearest class-fit barycenter."""
   def __init__(self, **kwargs):
     """sklearn requires no input validation for initializer """
     for k,v in kwargs.items():
       setattr(self, k, v)
 
-  def vector(self, x: Any, **kwargs) -> np.ndarray:
+  @staticmethod
+  def vector(X: Any, **kwargs) -> np.ndarray:
     """Produces a vector embedding of a given input """
-    return x
+    raise NotImplementedError("A vector method must be implemented to use as an estimator.")
   
-  def cdist(self, XA: ArrayLike, XB: ArrayLike) -> np.ndarray:
+  @staticmethod
+  def cdist(XA: ArrayLike, XB: ArrayLike, **kwargs) -> np.ndarray:
     """Compute distance between each pair of the two collections of inputs."""
-    pass 
+    from scipy.spatial.distance import cdist
+    return cdist(XA, XB, **kwargs)
+
+  @staticmethod
+  def barycenter(X: ArrayLike, sample_weight: ArrayLike = None, normalize: bool = True) -> np.ndarray:
+    """Computes an representative average over a set of inputs."""
+    if sample_weight is None:
+      return X.mean(axis=0) 
+    else: 
+      assert isinstance(sample_weight, np.ndarray) and len(sample_weight) == len(X), "Sample weight must be array with a length matching X."
+      sample_weight = sample_weight / np.sum(sample_weight) if normalize else sample_weight
+      return (X @ np.diag(sample_weight)).mean(axis=0)
 
   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    pass
+    """Fits a set of weighted barycenters for each class.
+    
+    Populates barycenters_
+    """
+    self.classes_, y = np.unique(y, return_inverse=True)  # sklearn required 
+    self.n_classes_ = len(self.classes_)                  # sklearn required 
+    self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
+    return self
 
-  def predict(self, ):
-    pass
+  def decision_function(self, X: ArrayLike) -> np.ndarray: 
+    # V = np.array([self.vector(x) for x in X])
+    V = self.vector(X)
+    C = np.array([centroid for centroid in self.barycenters_.values()])
+    return self.cdist(V, C)
 
   def predict_proba(self, X: ArrayLike) -> np.ndarray:
+    """Converts distances to similarity (arbitrarily) to produce a probability."""
     # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
-    P = np.empty(shape=(X.shape[0], self.n_classes_))
-    for i,x in enumerate(X):
-      v = self.vector(x)
-      d = np.array([self.cdist(centroid,v) for centroid in self.averages.values()])
-      s = np.exp(-d**1) # exponential conversion to similarity: todo, generalize
-      P[i,:] = s / np.sum(s)
+    P = self.decision_function(X)
+    P = np.exp(-P) # exponential conversion to similarity: todo, generalize
+    P = np.diag(1 / P.sum(axis=1)) @ P
     return P
 
   def predict(self, X: ArrayLike):
+    """Bayes classifier."""
     P = self.predict_proba(X)
     return self.classes_[P.argmax(axis=1)]
 
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
+    """Accuracy as the default score."""
     return np.sum(self.predict(X) == y)/len(y)
+
+def barycenter_classifier(name: str, vector: Callable, center: Callable = None, dist: Callable = None) -> BaseEstimator:
+  """Constructs a basic classifier """
+  methods = dict(vector=staticmethod(vector))
+  if center is not None: 
+    methods["barycenter"] = staticmethod(center)
+  if dist is not None: 
+    methods["cdist"] = staticmethod(dist)
+  return type(name, (BarycenterClassifier,), methods)
+
 
 from copy import deepcopy
 class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
   """ Classifier factory for building learners that use distance to class-averages for classification """
   
-  def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None, cache: bool = False):
+  def __init__(self):
+
     pass 
 
   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):

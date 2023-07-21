@@ -123,7 +123,16 @@ print(np.array(list(A_skl.staged_score(X_test, y_test))))
 ```
 
 
-
+```{python}
+from pbsig.classifiers import barycenter_classifier
+ShellsClassifier = barycenter_classifier("shells", lambda X: np.zeros(shape=X.shape))
+model = ShellsClassifier()
+model.fit(X = np.array([[0,1,2,3], [0, 0, 0, 0], [3,4,5,6]]), y = np.array([0,0,1]))
+model.barycenters_
+D = model.decision_function(X=np.array([[0,2,2,3], [0,1,2,3], [0,2,2,2]]))
+np.exp(-D) 
+model.predict_proba(np.array([[0,1,2,3], [0, 0, 0, 0], [3,4,5,6]]))
+```
 
 ```{python}
 # | label: Laplacian classifier 

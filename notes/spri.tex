@@ -688,7 +688,7 @@ Observe that (1) the non-zero entries from~\eqref{eq:param_boundary_matrix} vary
 	where $D_p(f_\alpha)$ and  $D_{p+1}(f_\alpha)$ are diagonal matrices whose non-zero entries are ordered by restrictions of $f_\alpha$ to $K_\preceq^p$ and $K_\preceq^{p+1}$, respectively.
 	%based on restrictions of $f_\alpha$ to $K^p$ and $K^{p+1}$, respectively.
 %We refer to the fixed inner matrix $\partial_p \in \{-1, 0, 1\}^{n \times m}$ as the \emph{sign pattern matrix}.
-Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq))$ when the diagonal entries of $D_p$ and $D_{p+1}$ are strictly positive. Observe we may obtain matrices with ranks akin to those from Lemma~\ref{lemma:rank} via a post-composition of step functions $\bar{S}_a(x) = \mathbbm{1}_{x > a}(x)$ and $S_b(x) = \mathbbm{1}_{x \leq b}(x)$ to $D_p$ and $D_{p+1}$, respectively:
+Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq))$ when the diagonal entries of $D_p$ and $D_{p+1}$ are strictly positive. Moreover, observe we may restrict to those ``lower left'' matrices from Lemma~\ref{lemma:rank} via post-composing step functions $\bar{S}_a(x) = \mathbbm{1}_{x > a}(x)$ and $S_b(x) = \mathbbm{1}_{x \leq b}(x)$ to $D_p$ and $D_{p+1}$, respectively:
 \begin{equation}\label{eq:rank_equiv_param}
 %	\mathrm{rank}(\, \partial_p^{i,j}(K_\bullet) \, ) = 
 	 \hat{\partial}_p^{a,b}(\alpha) \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) 
@@ -697,6 +697,7 @@ Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq
 %\begin{equation}\label{eq:step_functions}
 %	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 %\end{equation}
+% TODO: maybe mention relative chains
 Moreover, since these step functions are non-continuous, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ of the form: 
 %In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 \begin{equation}\label{eq:smoothstep}
@@ -852,8 +853,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
  
 \subsection{Spectral rank relaxation}\label{sec:spectral_relax}
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
-The results from the previous section lay the groundwork for continuous relaxations of $\mu_p^\ast$/$\beta_p^\ast$, as the only noncontinuous function in $\mu_p^\ast(\alpha)$/$\beta_p^\ast(\alpha)$ is the rank function. 
-To address this, we exploit the spectral characterization of the rank function: given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
+Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
+To address this, we exploit the spectral characterization of the rank function; given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -968,11 +969,10 @@ Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, th
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
 replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yields Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz. 
 
-	While $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
+	Though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
 	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
-$\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere in the Hadamard sense Proposition 2.2(d). 
-$\lVert\Phi_\tau(X)\rVert_\ast$ is not necessarily differentiable on $\mathbb{R}^{n \times m}$ due to Proposition 2.2(e) in~\cite{bi2013approximation}. 
+note that $\lVert\Phi_\tau(X)\rVert_\ast$ is not fully differentiable on $\mathbb{R}^{n \times m}$ but rather directionally differentiable everywhere in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. 
 However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, which we exploit in the following section. 
  
 %We now discuss the various properties that these smoothed-counting invariants obey. 
