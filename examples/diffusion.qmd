@@ -11,10 +11,10 @@ editor:
 ```{python}
 ## Laplacian diffusion kernel
 import numpy as np
-import networkx as nx
-from itertools import *
-G = nx.random_geometric_graph(30, 0.125, seed=896803)
-S = simplicial_complex(chain(G.nodes, G.edges))
+# import networkx as nx
+# from itertools import *
+# G = nx.random_geometric_graph(30, 0.125, seed=896803)
+# S = simplicial_complex(chain(G.nodes, G.edges))
 X = np.random.uniform(size=(30,2), low=0, high=1)
 S = delaunay_complex(X)
 
@@ -26,12 +26,18 @@ from bokeh.io import output_notebook
 from bokeh.plotting import figure, show
 from bokeh.layouts import row, column
 from pbsig.vis import figure_complex
+from pbsig.color import bin_color
 show(figure_complex(S, X))
 
 from scipy.sparse.linalg import eigsh
-ew, ev = eigsh(L)
+ew, ev = eigsh(L, k=L.shape[1]-1)
 
-np.exp(-ew)
+L_diff = ev @ np.diag(np.exp(-2500.15*ew)) @ ev.T
+# np.argmin(X @ np.array([0,1]))
+
+p = figure_complex(S, X, height=250, width=250)
+p.scatter(*X.T, color=bin_color(L_diff[:,14], "viridis"), size=10.5)
+show(p)
 
 
 ```

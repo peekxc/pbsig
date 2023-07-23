@@ -616,7 +616,7 @@ The rest of the paper is dedicated to exploring these connections and their rami
 % --- Generic Rank approximation via eigenvalues --- 
 \section{Spectral relaxation and its implications}\label{sec:spectral_sec}
 %The following derivations of the persistent Betti number will be used in proofs and serve as the primary technical motivations for this effort.
-In this section, we introduce the proposed relaxation successively by relaxing or generalizing different aspects of the expressions from Corollary~\ref{cor:rank_reduction} to the parameterized setting. To motivate why these expression are important, it is instructive to derive the more traditional expressions used to compute the persistent rank invariants. 
+In this section, we introduce the proposed relaxation successively by relaxing and generalizing different aspects of the expressions from Corollary~\ref{cor:rank_reduction} to the parameterized setting. To motivate the advantages these expressions provide, it is instructive to derive the more traditional expressions used to compute the persistent rank invariants. 
 Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ defined over some index set $I$, its $p$-th persistent Betti number $\beta_p^{a,b}$ at index $(a,b) \in I \times I$, is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
@@ -875,7 +875,7 @@ where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
 Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$.
-Building off seminal work from~\cite{mangasarian1994class}, Bi et al.~\cite{bi2013approximation} studied a natural relaxation of the $\mathrm{sgn}_+$ function obtained by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
+Mangasarian et al.~\cite{mangasarian1994class} proposed a natural relaxation of $\mathrm{sgn}_+$ may be obtained by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \tau > 0  \,)  & & \quad\quad\quad
 \phi(x, \tau) \triangleq \int\limits_{-\infty}^x \hat{\delta}(z, \tau) \, dz, \quad \quad  & 
