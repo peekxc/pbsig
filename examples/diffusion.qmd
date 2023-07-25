@@ -30,13 +30,40 @@ L = up_laplacian(S, normed = True)
 
 from scipy.sparse.linalg import eigsh
 ew, ev = eigsh(L, k=L.shape[1]-1)
-L_diff = ev @ np.diag(np.exp(-5.050*ew)) @ ev.T
-# ind = np.argmin(X @ np.array([0,1]))
-ind = 14
+ind = np.argmin(X @ np.array([0,1]))
 
-p = figure_complex(S, X, height=250, width=250)
-p.scatter(*X.T, color=bin_color(L_diff[:,ind], "viridis", lb=0, ub=1), size=10.5)
-show(p)
+## Show heat diffusion from a single vertex 
+figs = []
+for t in np.exp(np.linspace(0, 3, 5)): 
+  Ht = ev @ np.diag(np.exp(-t*ew)) @ ev.T
+  p = figure_complex(S, X, height=250, width=250)
+  p.scatter(*X.T, color=bin_color(Ht[:,ind], "viridis"), size=10.5)
+  figs.append(p)
+show(row(*figs))
+
+
+## Show heat kernel signatures
+def hks(L: LinearOperator, T: np.ndarray, subset = None, **kwargs):
+  """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
+  
+  For a subset S \subseteq V of vertices, this returns a  |T| x |S| signature. 
+  """
+  from pbsig.linalg import eigh_solver
+  ew, ev = eigh_solver(L)(L, sigma=0, which="LM", **kwargs)
+  # [np.sum(np.exp(-0.5*ew) * ev[i,:]**2) for i in range(L.shape[0])][:10]
+  ## Could use subsets of points vis-a-via rows of ev to get smaller signature?
+  I = np.arange(L.shape[0]) if subset is None else np.array(subset)
+  ev_subset = ev[I]**2 
+  hks_matrix = np.array([ev_subset @ np.exp(-t*ew) for t in T])
+  return hks_matrix
+    
+def hkt(L: LinearOperator, T: np.ndarray):
+  """Computes the heat kernel trace of a gievn Laplacian operators at time points T.
+  """
+  from pbsig.linalg import eigvalsh_solver
+  ew = eigvalsh_solver(L)(L, sigma=0, which="LM", **kwargs)
+  return np.array([np.sum(np.exp(-t*ew)) for t in T])
+
 ```
 
 ## Heat kernel signature
