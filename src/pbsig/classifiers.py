@@ -114,6 +114,13 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
   
+
+
+
+
+
+
+
 class BarycenterClassifier(BaseEstimator, ClassifierMixin):
   """Classifier defined by distance to nearest class-fit barycenter."""
   def __init__(self, **kwargs):
@@ -142,7 +149,7 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
       sample_weight = sample_weight / np.sum(sample_weight) if normalize else sample_weight
       return (X @ np.diag(sample_weight)).mean(axis=0)
 
-  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+  def fit(self, X: List[Any],ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
     """Fits a set of weighted barycenters for each class.
     
     Populates barycenters_
@@ -175,6 +182,11 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     """Accuracy as the default score."""
     return np.sum(self.predict(X) == y)/len(y)
 
+
+
+
+
+
 def barycenter_classifier(name: str, vector: Callable, center: Callable = None, dist: Callable = None) -> BaseEstimator:
   """Constructs a basic classifier """
   methods = dict(vector=staticmethod(vector))
@@ -185,7 +197,13 @@ def barycenter_classifier(name: str, vector: Callable, center: Callable = None, 
   return type(name, (BarycenterClassifier,), methods)
 
 
+
+
+
+
 from copy import deepcopy
+
+## TODO: can this be generalized further by treating as a simplified bag-of-words type model
 class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
   """ Classifier factory for building learners that use distance to class-averages for classification """
   

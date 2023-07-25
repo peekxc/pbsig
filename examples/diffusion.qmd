@@ -6,38 +6,51 @@ editor:
   render-on-save: true
 ---
 
-
-
 ```{python}
-## Laplacian diffusion kernel
-import numpy as np
-# import networkx as nx
-# from itertools import *
-# G = nx.random_geometric_graph(30, 0.125, seed=896803)
-# S = simplicial_complex(chain(G.nodes, G.edges))
-X = np.random.uniform(size=(30,2), low=0, high=1)
-S = delaunay_complex(X)
-
-from pbsig.linalg import * 
-L = up_laplacian(S, normed = True)
-
 import bokeh
 from bokeh.io import output_notebook
 from bokeh.plotting import figure, show
 from bokeh.layouts import row, column
 from pbsig.vis import figure_complex
 from pbsig.color import bin_color
-show(figure_complex(S, X))
+output_notebook()
+```
+
+
+```{python}
+import numpy as np
+from splex import *
+np.random.seed(1234)
+X = np.random.uniform(size=(50,2), low=0, high=1)
+S = delaunay_complex(X)
+
+from pbsig.linalg import * 
+L = up_laplacian(S, normed = True)
+# show(figure_complex(S, X))
 
 from scipy.sparse.linalg import eigsh
 ew, ev = eigsh(L, k=L.shape[1]-1)
-
-L_diff = ev @ np.diag(np.exp(-2500.15*ew)) @ ev.T
-# np.argmin(X @ np.array([0,1]))
+L_diff = ev @ np.diag(np.exp(-5.050*ew)) @ ev.T
+# ind = np.argmin(X @ np.array([0,1]))
+ind = 14
 
 p = figure_complex(S, X, height=250, width=250)
-p.scatter(*X.T, color=bin_color(L_diff[:,14], "viridis"), size=10.5)
+p.scatter(*X.T, color=bin_color(L_diff[:,ind], "viridis", lb=0, ub=1), size=10.5)
 show(p)
+```
 
+## Heat kernel signature
+
+```{python}
+from scipy.sparse.linalg import eigsh
+import timeit
+
+
+ew, ev = eigsh(L, k=10)
+timeit.timeit(lambda: eigsh(L, k=20, sigma=0, which="LM"), number=30)
+ew, ev = eigsh(L, k=10, sigma=0, which="LM")
 
 ```
+
+
+
