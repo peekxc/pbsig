@@ -173,6 +173,57 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
   return _huber if x is None else _huber(x)
 
 
+def logspaced_timepoints(n: int, lb: float = 0.0, ub: float = 1.0, method: str = "full") -> np.ndarray:
+  """Constructs _n_ non-negative time points equi-distant in log-space for use in the map exp(-t).
+  
+  If an upper-bound for time is known, it may be specified so as to map the interval [0, ub] to the range
+  such that np.exp(-t0) = 1 and np.exp(-tn) = epsilon, which epsilon is the machine epsilon.
+  """
+  if method == "full":
+    timepoints = np.geomspace(lb+1.0, 37/ub, num=n)-1.0 ## -1 to include 0
+  elif method == "local":
+    assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
+    tmin  = 4 * np.log(10) / ub
+    tmax  = 4 * np.log(10) / lb
+    timepoints = np.geomspace(tmin, tmax, n)
+  else:
+    raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
+  return timepoints
+
+def heat_kernel_signature(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
+  """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
+  
+  For a subset S \subseteq V of vertices, this returns a  |S| x |T| signature. 
+  """
+  from pbsig.linalg import eigh_solver
+  ew, ev = eigh_solver(L)(L, which="SM", **kwargs)
+  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+  assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
+  cind_nz = np.flatnonzero(~np.isclose(ew, 0.0, atol=1e-14))
+  ev_subset = np.square(ev[np.array(subset), cind_nz]) if subset is None else np.square(ev[:,cind_nz])
+  hks_matrix = np.array([ev_subset @ np.exp(-t*ew) for t in timepoints]).T
+  if scaled: 
+    ht = np.array([np.sum(np.exp(-t * ew)) for t in timepoints]) # heat trace
+    ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0))
+    hks_matrix = hks_matrix @ diags(ht)
+  return hks_matrix
+    
+def diffuse_heat(evecs: ArrayLike, evals: ArrayLike, timepoints: Union[int, ArrayLike] = 10, subset = None):
+  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+  I = np.arange(evecs.shape[0]) if subset is None else np.array(subset)
+  for t in timepoints:
+    Ht = evecs @ np.diag(np.exp(-t*evals)) @ evecs.T
+    yield Ht[:,I]
+
+def heat_kernel_trace(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10, **kwargs):
+  """Computes the heat kernel trace of a gievn Laplacian operators at time points T.
+  """
+  from pbsig.linalg import eigvalsh_solver
+  ew = eigvalsh_solver(L)(L, sigma=1e-6, which="LM", **kwargs)
+  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+  assert isinstance(timepoints, np.ndarray), "timepoints must be an array." 
+  return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
+
 class PsdSolver:
   def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
     assert solver is not None, "Invalid solver"

@@ -1,6 +1,7 @@
 %\section{Background \& Notation}\label{sec:background_notation}
-An (abstract) \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite \emph{ordered} set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\, \sigma : \sigma \in \mathcal{P}(V) \,\}$ such that $\tau \subseteq \sigma \in K \Rightarrow \tau \in K$.
-A $p$-simplex $\sigma \subseteq V$ is a set of $p+1$ vertices, and $K^p = \{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ is a set of all such simplices. 
+A \emph{simplicial complex} $K \subseteq \mathcal{P}(V)$ over a finite set $V = \{v_1, v_2, \dots, v_n \}$ is a collection of simplices $\{\, \sigma : \sigma \in \mathcal{P}(V) \,\}$ such that $\tau \subseteq \sigma \in K \Rightarrow \tau \in K$.
+A \emph{$p$-simplex} $\sigma \subseteq V$ is a set of $p+1$ vertices, the collection of which is denoted as $K^p$.
+%\{ \, \sigma \in K : \mathrm{dim}(\sigma) = p \, \}$ 
 %$p$-simplices are denoted with $K^p$.
 %The $p$-skeleton of $\mathrm{skel}_p(K)$ is the the restriction of $K$ to its simplices with dimension $\leq p$. 
 %and by $K^{(p)} = \{ \, \sigma \in K : \mathrm{dim}(\sigma) \leq p \, \}$ the $p$-skeleton of $K$. 
@@ -110,7 +111,7 @@ When a given quantity depends on fixed parameters that are irrelevant or unknown
 %Since any filtration may be converted into a simplexwise filtration via \emph{condensing}, \emph{refining}, and \emph{reindexing} maps~\cite{bauer2021ripser}, without loss of generality we consider them exclusively.
 
 % NOTE: Time varying filtration is a family of monotone functions 
-We will at times need to generalize the notation given thus far to the \emph{parameterized} setting. Towards this end, for some $\mathcal{A} \subset \mathbb{R}^d$, we define an \emph{$\mathcal{A}$-parameterized filtration} as a pair $(K, f_\alpha)$ where $K$ is a simplicial complex and $f : K \times \mathcal{A} \to \mathbb{R}$ an $\mathcal{A}$-parameterized filter function satisfying:
+We will at times need to generalize the notation given thus far to the \emph{parameterized} setting. Towards this end, for some $\mathcal{A} \subseteq \mathbb{R}^d$, we define an \emph{$\mathcal{A}$-parameterized filtration} as a pair $(K, f_\alpha)$ where $K$ is a simplicial complex and $f : K \times \mathcal{A} \to \mathbb{R}$ an $\mathcal{A}$-parameterized filter function satisfying:
 \begin{equation}
 f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K  \;\; \text{ and } \; \; f_\alpha(\sigma) \text{ is continuous in } \alpha \in \mathcal{A} \text{ for every } \sigma \in K
 \end{equation}
@@ -118,12 +119,14 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K
 %	\item For every $\alpha \in \mathcal{A}$, $(K, f_\alpha)$ is a filtration satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$
 %	\item For every $\sigma \in K$, $f_\alpha(\sigma) : \mathbb{R} \to \mathbb{R}$ is a continuous function in $\alpha \in \mathcal{A}$
 %\end{enumerate}
-We will often refer to $\alpha$ as the \emph{time} parameter. Intuitively, one can think of each $f_\alpha(\sigma)$ as tracing a curve in $\mathbb{R}^d$ parameterized by $\mathcal{A}$.  Examples of parameterized filtrations include:
+Intuitively, when $\mathcal{A} = \mathbb{R}$, one can think of $\alpha$ as a \emph{time} parameter (see Figure~\ref{fig:overview}) and each $f_\alpha(\sigma)$ as tracing a curve in $\mathbb{R}^2$ parameterized by $\mathcal{A}$.  
+Examples of parameterized filtrations include:
 \begin{itemize}[itemsep=0.25em, parsep=0.25em]
-	\item (Constant filtration) Given a filtration $(K, f)$, declaring $f_\alpha = f$ for all $\alpha \in \mathcal{A}$ recovers definition of filtration in the non-parameterized setting
+	\item (Constant filtration) Given a filtration $(K, f)$, declaring $f_\alpha(\sigma) = f(\sigma)$ for all $\alpha \in \mathcal{A}$ and all $\sigma \in K$ recovers definition of filtration in the non-parameterized setting
 	\item (Dynamic Rips) When $K$ derives from a metric space $(X,d_X)$ via $f(\sigma) = \max_{x, x' \in \sigma} d_X(x,x')$ and $\mathcal{A} = \mathbb{R}$, the pair $(K, f_\alpha)$ is akin to a time-varying Rips filtration over a dynamic metric space~\cite{kim2021spatiotemporal}  
-	\item (Multi-filtrations) By filtering $K$ along several functions spanning $\mathbb{R}^d$, such as a density and distance, we recover the notion of a $\mathbb{R}^d$-indexed multi-filtration.  
+	\item (Multi-filtrations) A natural class of $\mathcal{A}$-parameterized filtrations are obtained by filtering $K$ along several real-valued functions, such as a density and distance.
 \end{itemize} 
+
 
 %In many such settings, it is of interest to ``exclude'' certain simplices $\tau \in K$ once they reach a certain threshold---we encapsulate this scenario by setting $f_\alpha(\tau) = 0$.
 %\end{remark} 

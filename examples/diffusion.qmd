@@ -7,6 +7,7 @@ editor:
 ---
 
 ```{python}
+#| label: Imports
 import bokeh
 from bokeh.io import output_notebook
 from bokeh.plotting import figure, show
@@ -18,65 +19,246 @@ output_notebook()
 
 
 ```{python}
+#| label: Heat kernel on random Delaunay
 import numpy as np
-from splex import *
-np.random.seed(1234)
-X = np.random.uniform(size=(50,2), low=0, high=1)
-S = delaunay_complex(X)
-
 from pbsig.linalg import * 
-L = up_laplacian(S, normed = True)
-# show(figure_complex(S, X))
-
+from splex import *
 from scipy.sparse.linalg import eigsh
-ew, ev = eigsh(L, k=L.shape[1]-1)
-ind = np.argmin(X @ np.array([0,1]))
+
+## Generate random laplacian
+np.random.seed(1234)
+X = np.random.uniform(size=(150,2), low=0, high=1)
+S = delaunay_complex(X)
+L = up_laplacian(S, normed = True)
+
+## Generic way to generate multiple plots with colored vertices
+def fig_colors(gen_fig: Callable, X: ArrayLike, vertex_weights: Iterable[list]):
+  figs = []
+  for vw in vertex_weights: 
+    p = gen_fig()
+    p.scatter(*X.T, color=bin_color(vw, "viridis"), size=10.5)
+    figs.append(p)
+  return figs
 
 ## Show heat diffusion from a single vertex 
-figs = []
-for t in np.exp(np.linspace(0, 3, 5)): 
-  Ht = ev @ np.diag(np.exp(-t*ew)) @ ev.T
-  p = figure_complex(S, X, height=250, width=250)
-  p.scatter(*X.T, color=bin_color(Ht[:,ind], "viridis"), size=10.5)
-  figs.append(p)
-show(row(*figs))
-
-
-## Show heat kernel signatures
-def hks(L: LinearOperator, T: np.ndarray, subset = None, **kwargs):
-  """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
-  
-  For a subset S \subseteq V of vertices, this returns a  |T| x |S| signature. 
-  """
-  from pbsig.linalg import eigh_solver
-  ew, ev = eigh_solver(L)(L, sigma=0, which="LM", **kwargs)
-  # [np.sum(np.exp(-0.5*ew) * ev[i,:]**2) for i in range(L.shape[0])][:10]
-  ## Could use subsets of points vis-a-via rows of ev to get smaller signature?
-  I = np.arange(L.shape[0]) if subset is None else np.array(subset)
-  ev_subset = ev[I]**2 
-  hks_matrix = np.array([ev_subset @ np.exp(-t*ew) for t in T])
-  return hks_matrix
-    
-def hkt(L: LinearOperator, T: np.ndarray):
-  """Computes the heat kernel trace of a gievn Laplacian operators at time points T.
-  """
-  from pbsig.linalg import eigvalsh_solver
-  ew = eigvalsh_solver(L)(L, sigma=0, which="LM", **kwargs)
-  return np.array([np.sum(np.exp(-t*ew)) for t in T])
-
+ind = np.argmin(X @ np.array([0,1]))
+ew, ev = eigsh(L, k=L.shape[1]-1, which="SM")
+heat_gen = diffuse_heat(ev, ew, logspaced_timepoints(5, ub=2), subset=ind)
+gen_fig = lambda: figure_complex(S, X, height=250, width=250)
+show(row(*fig_colors(gen_fig, X, heat_gen)))
 ```
 
-## Heat kernel signature
+```{python}
+#| label: Import MPEG7
+from pbsig.datasets import mpeg7
+from pbsig.distance import dist 
+X_data = mpeg7(simplify=200, which=['turtle', 'bird'])
+S = cycle_graph(len(X_data[('turtle',1)]))
+```
 
 ```{python}
-from scipy.sparse.linalg import eigsh
-import timeit
+#| label: Visualize MPEG7 shapes 
+def patch_plot(X: ArrayLike, color: str, **kwargs):
+  p = figure(width=50, height=50, **kwargs)
+  p.patch(X[:,0], X[:,1], alpha=0.40, line_width=2.5, color=color)
+  p.toolbar_location = None
+  p.axis.visible = False
+  p.grid.grid_line_color = None
+  p.min_border_left = 0
+  p.min_border_right = 0
+  p.min_border_top = 0
+  p.min_border_bottom = 0
+  return p 
+
+p = column(
+  row([patch_plot(X_data[('turtle',i)], "blue") for i in range(1, 11)]), 
+  row([patch_plot(X_data[('turtle',i)], "blue") for i in range(11, 21)]), 
+  row([patch_plot(X_data[('bird',i)], "red") for i in range(1, 11)]),
+  row([patch_plot(X_data[('bird',i)], "red") for i in range(11, 21)])
+)
+show(p)
+```
+
+```{python}
+#| label: Visualize HKS on MPEG7
+from scipy.sparse import diags
+from pbsig.distance import dist
+
+X_pos = X_data[('turtle',1)]
+S = cycle_graph(X_pos.shape[0])
+E_ind = np.array(list(faces(S,1)))
+E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
+D1 = boundary_matrix(S, p=1)
+# L = D1 @ diags(np.exp(-E_dist)) @ D1.T
+# L = D1 @ diags(1/(1 + E_dist)) @ D1.T
+L = D1 @ diags(E_dist) @ D1.T
+D = diags(pseudoinverse(np.sqrt(L.diagonal())))
+LN = D @ L @ D
+# LN = up_laplacian(S, p=0, normed=True)
+
+## Compute the heat kernel diffusion for placement of heat at specific vertex weighted by distance
+ind = np.argmin(X_pos @ np.array([0,1]))
+ew, ev = eigsh(LN, k=LN.shape[0]-1, which="SM")
+gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
+v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
+show(row(*fig_colors(gen_fig, X_pos, v_gen)))
+```
 
 
-ew, ev = eigsh(L, k=10)
-timeit.timeit(lambda: eigsh(L, k=20, sigma=0, which="LM"), number=30)
-ew, ev = eigsh(L, k=10, sigma=0, which="LM")
+```{python}
+## Compute the heat kernel signaure for random diffusion based on distance
+from pbsig.linalg import heat_kernel_signature
+# H = heat_kernel_signature(LN, timepoints=logspaced_timepoints(10, ub=0.2))
+# gen_fig = lambda: figure_complex(S, X_pos, height=200, width=200)
+# show(row(*fig_colors(gen_fig, X_pos, H)))
 
+## Why is the heat kernel signature useless?
+ew, ev = eigsh(LN, k=LN.shape[1]-1, which="SM")
+T = logspaced_timepoints(20, ub=0.2)
+hks_T = np.array([np.sum(np.exp(-t * ew) * (ev ** 2), axis=1) for t in T]).T
+int_S = diags([1/np.sum(np.exp(-t * ew)) for t in T])
+hks_TS = hks_T @ int_S
+
+# hks_T.sum(axis=0) == np.array([np.sum(np.exp(-t * ew)) for t in T])
+# hks = ((ev[:, :]**2) @ (ew[:,None] * logspaced_timepoints(20, ub=0.2))).sum(axis=1)
+
+from pbsig.shape import landmarks
+l_ind, l_rad = landmarks(X_pos, 10)
+l_col = bin_color(np.arange(10), "category10")
+
+p, q = figure_complex(S, X_pos, width=200, height=200, simplex_kwargs={ 0 : {'size' : 4.5}}), figure(width=200, height=200, x_axis_type="log")
+p.scatter(*X_pos[l_ind].T, color=l_col, size=10.5)
+for i, c in zip(l_ind, l_col): 
+  q.line(T, hks_TS[i], line_color=rgb_to_hex(c*255))
+show(row(p,q))
+
+#  np.square(eigenvectors).dot(np.diag(np.exp(-time * eigenvals))).sum(axis=1)
+
+## Show distance between scaled HKS's
+v_color = bin_color(np.arange(X_pos.shape[0]), "turbo")
+hks_dist = np.array([np.sum(((hks_T[i] - hks_T[j])/np.sum(np.exp(-t * ew)))**2)**(1/2) for i,j in combinations(range(X_pos.shape[0]), 2)])
+# hks_dist = np.array([np.sum(((hks_TS[i] - hks_TS[j]))**2)**(1/2) for i,j in combinations(range(X_pos.shape[0]), 2)])
+hks_emb = cmds(squareform(hks_dist)**2)
+p = figure(width=200, height=200)
+p.scatter(*hks_emb.T, color=v_color)
+q = figure_complex(S, X_pos, width=200, height=200, 
+  simplex_kwargs={ 0 : {'size' : 4.5 }}, 
+  color=np.arange(X_pos.shape[0]), 
+  bin_kwargs={'color_pal':'turbo'}
+)
+show(row(p,q))
+
+# "Since kt(x, x) decays exponentially as t increases, we need a more appropriate strategy of computing the difference between two signatures"
+np.argmin(X @ np.array([0,1]))
+```
+
+
+```{python}
+import sys
+sys.path.append('/Users/mpiekenbrock/mesh-signatures')
+import laplace
+import signature
+laplace.get_laplace_operator_approximation
+# laplace.get_laplace_operator_approximation(mesh, approx="")
+X_3d = np.hstack([X_pos, np.zeros((X_pos.shape[0],1))])
+
+from pbsig.utility import cycle_window
+triangles = list(cycle_window(range(X_pos.shape[0]), offset = 2, w=3))
+S.update(triangles)
+
+
+mesh = trimesh.Trimesh(vertices=X_3d, faces=np.array(triangles))
+
+## beltrami := unweighted graph laplacian 
+## mesh := weighted graph laplacian built using 1/(4*pi*h**2)*exp(-|d_ij|**2/4h) formulation (prioritizes local distances)
+## cotangens := weighted graph laplacian weighed by cotangent angles
+## All of them use a mass matrix built summing the areas fo triangles of neighbors
+## Beltrami is *nearly* useless as the only thing distinguishing the graph from the sphere is the mass matrix
+## cotangents and mesh seem surprisingly identical
+extractor = signature.SignatureExtractor(mesh, X_3d.shape[0]-1, approx="contangens") 
+
+# extractor.initialize(mesh, )
+# extractor.save("./dragon.npz") # Store eigen spectrum
+
+# Compute 64 dimensional heat features and get time values
+# heat_fs, ts = extractor.signatures(64, 'heat', return_x_ticks=True)
+
+heat_sigs = extractor.heat_signatures(64)
+hks_emb = cmds(squareform(pdist(heat_sigs)**2))
+p = figure(width=200, height=200)
+p.scatter(*hks_emb.T, color=v_color)
+# show(p)
+
+q = figure_complex(S, X_pos, width=200, height=200, 
+  simplex_kwargs={ 0 : {'size' : 4.5 }}, 
+  color=np.arange(X_pos.shape[0]), 
+  bin_kwargs={'color_pal':'turbo'}
+)
+# ext_ind = np.argsort(heat_sigs[:,-1])[-5:]
+# q.scatter(*X_pos[ext_ind].T, color="gray", size=10.5)
+
+r = figure(width=250, height=200)
+pt_col = bin_color(np.arange(X_pos.shape[0]), "turbo")
+for i, (hs, col) in enumerate(zip(heat_sigs, pt_col)):
+  if i % 5 == 0:
+    r.line(np.arange(heat_sigs.shape[1]), hs, color=rgb_to_hex(col*255))
+show(row(p,q,r))
+
+
+
+
+
+
+# laplace.approx_methods()
+laplace.get_laplace_operator_approximation(mesh, approx="beltrami")
+```
+
+
+```{python}
+# L = up_laplacian(S, normed=True)
+D1 = boundary_matrix(S, p=1)
+
+L, deg = up_laplacian(S, normed=False, return_diag=True)
+D = dia_array(np.diag(deg))
+A = L - D
+I = dia_array(np.eye(L.shape[0]))
+
+D2 = dia_array(np.diag(pseudoinverse(np.sqrt(deg))))
+eigsh(I - D2 @ A @ D2)[0] # indeed in [0,2]
+(I - D2 @ A @ D2).sum(axis=0) # sums to 2!
+LN = up_laplacian(S, normed=True, return_diag=False)
+LN.sum(axis=0) ## sums to zero!
+(D2 @ L @ D2).sum(axis=0) ## sums to zero! 
+
+up_laplacian(S).sum(axis=0)
+
+L = dia_array(np.diag(deg)) - A # graph Laplacian
+L.sum(axis=1)
+
+
+from scipy.sparse import dia_matrix
+from scipy.spatial.distance import cdist 
+E_ind = np.array(list(faces(S,1)))
+E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
+
+shape_sigs = []
+for k, X_pos in X_data.items():
+  L = D1 @ dia_array(np.diag(E_dist)) @ D1.T
+  D = diags(pseudoinverse(np.sqrt(L.diagonal())))
+  L = D @ L @ D
+  hkl_sig = hkt(L, timepoints=25, spectral_ub=2)
+  shape_sigs.append(hkl_sig)
+
+shape_sigs = np.array(shape_sigs)
+Z_emb = cmds(dist(shape_sigs, paired=True)**2)
+
+p = figure(width=200, height=200)
+p.scatter(*Z_emb.T, color=['red' if k[0] == 'turtle' else 'blue' for k in X_data.keys()])
+show(p)
+
+## exp maps the range [-37,0] roughly to [machine_eps, 1]
+## if eigen bound is [0,2], we want log-spaced map [0,2] -> (-)[0,37]
+# minimize_scalar(lambda x: np.abs(np.exp(-x) - 1e-8), bounds=(-37, 0))
 ```
 
 
