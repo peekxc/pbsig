@@ -84,8 +84,39 @@ show(p)
 from scipy.sparse import diags
 from pbsig.distance import dist
 
+from pbsig.utility import cycle_window
 X_pos = X_data[('turtle',1)]
 S = cycle_graph(X_pos.shape[0])
+triangles = list(cycle_window(range(X_pos.shape[0]), offset=2, w=3))
+S.update(triangles)
+
+from pbsig.shape import triangle_areas
+from pbsig.linalg import vertex_masses
+A = diags(vertex_masses(S, X_pos)) # mass matrix
+
+def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
+  E_ind = np.array(list(faces(S,1)))
+  E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
+  o = np.mean(E_dist) if sigma == "default" else float(sigma)
+  a = 1.0 / (4 * np.pi * o**2)
+  w = a * np.exp(-E_dist**2 / (4.0*o))
+  return w
+
+L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), p=1, normed=False)
+
+max_ew = eigsh(L_sim, M=A, k=1, which='LM')[0][0]
+min_ew = eigsh(L_sim, M=A, k=2, sigma=1e-8, which='LM')[0][1]
+timepoints = logspaced_timepoints(20, lb=min_ew, ub=max_ew, method="local")
+
+l_mi, l_ma = eigsh(L_sim, k=4, which="BE", tol=1e-10)[0][np.array([1,3],dtype=int)] 
+
+l_min, l_max = eigsh(L_sim, M=A, k=4, which="BE", tol=1e-10)[0][np.array([1,3],dtype=int)] # checks out
+np.max(eigsh(LM, M=MM, k=10)[0])
+np.max(eigsh(LM, k=10)[0])*np.max(A.diagonal())
+
+np.min(A.diagonal())
+
+
 E_ind = np.array(list(faces(S,1)))
 E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
 D1 = boundary_matrix(S, p=1)
@@ -96,16 +127,21 @@ D = diags(pseudoinverse(np.sqrt(L.diagonal())))
 LN = D @ L @ D
 # LN = up_laplacian(S, p=0, normed=True)
 
-def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
-  E_ind = np.array(list(faces(S,1)))
-  E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
-  o = np.mean(E_dist) if sigma == "default" else float(sigma)
-  a = 1.0 / (4 * np.pi * o**2)
-  w = a * np.exp(-E_dist**2 / (4.0*o))
-  return w
+# def build_mass_matrix(mesh : trimesh.Trimesh):
+#     """Build the sparse diagonal mass matrix for a given mesh
 
-L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), normed=True)
-# logspaced_timepoints(30, lb=1e-10, ub=max(eigsh(L_sim)[0]))
+#     Args:
+#         mesh (trimesh.Trimesh): Mesh to use.
+
+#     Returns:
+#         A sparse diagonal matrix of size (#vertices, #vertices).
+#     """
+#     areas = np.zeros(shape=(len(mesh.vertices)))
+#     for face, area in zip(mesh.faces, mesh.area_faces):
+#         areas[face] += area / 3.0
+
+#     return scipy.sparse.diags(areas)
+
 
 
 ## Compute the heat kernel diffusion for placement of heat at specific vertex weighted by distance
@@ -115,10 +151,19 @@ gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
 v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
 show(row(*fig_colors(gen_fig, X_pos, v_gen)))
 
-from pbsig.linalg import heat_kernel_signature
-hks = heat_kernel_signature(L_sim, timepoints=np.array([0.000001]))
+from pbsig.linalg import heat_kernel_signature, logspaced_timepoints
+# timepoints = logspaced_timepoints(64, ub=0.5)
+ind = np.argmax(X_pos @ np.array([0,1]))
+hks = heat_kernel_signature(L_sim, A, timepoints=timepoints)
+
+## Should match 
+hks_emb = cmds(squareform(pdist(hks)**2))
+p = figure(width=200, height=200)
+p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
+show(p)
+
 p = figure_complex(S, X_pos, height=250, width=250)
-p.scatter(*X_pos.T, color=bin_color(hks[:,0].flatten(), "turbo"), size=10.5)
+p.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
 show(p)
 
 
@@ -182,12 +227,21 @@ laplace.get_laplace_operator_approximation
 # laplace.get_laplace_operator_approximation(mesh, approx="")
 X_3d = np.hstack([X_pos, np.zeros((X_pos.shape[0],1))])
 
+import trimesh
 from pbsig.utility import cycle_window
-triangles = list(cycle_window(range(X_pos.shape[0]), offset = 2, w=3))
-S.update(triangles)
+triangles = list(cycle_window(range(X_pos.shape[0]), offset=2, w=3))
+# S.update(triangles)
 
 
 mesh = trimesh.Trimesh(vertices=X_3d, faces=np.array(triangles))
+
+triangle_area(X_pos[(0,1,2),:])/3
+mesh.area_faces[0]
+
+# laplace.approx_methods()
+LM, MM = laplace.get_laplace_operator_approximation(mesh, approx="mesh")
+
+MM.diagonal()[0]
 
 ## beltrami := unweighted graph laplacian 
 ## mesh := weighted graph laplacian built using 1/(4*pi*h**2)*exp(-|d_ij|**2/4h) formulation (prioritizes local distances)
@@ -195,7 +249,7 @@ mesh = trimesh.Trimesh(vertices=X_3d, faces=np.array(triangles))
 ## All of them use a mass matrix built summing the areas fo triangles of neighbors
 ## Beltrami is *nearly* useless as the only thing distinguishing the graph from the sphere is the mass matrix
 ## cotangents and mesh seem surprisingly identical
-extractor = signature.SignatureExtractor(mesh, X_3d.shape[0]-1, approx="contangens") 
+extractor = signature.SignatureExtractor(mesh, X_3d.shape[0]-1, approx="mesh") 
 
 # extractor.initialize(mesh, )
 # extractor.save("./dragon.npz") # Store eigen spectrum
@@ -206,7 +260,7 @@ extractor = signature.SignatureExtractor(mesh, X_3d.shape[0]-1, approx="contange
 heat_sigs = extractor.heat_signatures(64)
 hks_emb = cmds(squareform(pdist(heat_sigs)**2))
 p = figure(width=200, height=200)
-p.scatter(*hks_emb.T, color=v_color)
+p.scatter(*hks_emb.T)
 # show(p)
 
 q = figure_complex(S, X_pos, width=200, height=200, 
@@ -229,8 +283,7 @@ show(row(p,q,r))
 
 
 
-# laplace.approx_methods()
-laplace.get_laplace_operator_approximation(mesh, approx="beltrami")
+
 ```
 
 

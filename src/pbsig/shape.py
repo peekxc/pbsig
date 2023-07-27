@@ -58,6 +58,24 @@ def archimedean_sphere(n: int, nr: int):
   return(X)
 
 
+# def triangle_area(tri):
+#   if tri.shape[1] == 3:
+#     # https://stackoverflow.com/questions/55601927/correct-way-to-calculate-triangle-area-from-3-vertices
+#     x1, y1, x2, y2, x3, y3 = tri[0][0], tri[0][1], tri[1][0], tri[1][1], tri[2][0], tri[2][1]
+#     return abs(0.5 * (((x2-x1)*(y3-y1))-((x3-x1)*(y2-y1))))
+#   elif tri.shape[1] == 2: 
+#     return 0.5*np.abs(np.linalg.det(np.c_[tri, np.ones(3)]))
+#   else: 
+#     raise NotImplementedError("Haven't implemented n-dimensional triangle area calculation")
+def triangle_areas(S: ComplexLike, X: ArrayLike) -> np.ndarray:
+  """Computes the area of every 2-simplex in _S_ embedded with Euclidean coordinates given by _X_."""
+  from scipy.spatial import ConvexHull
+  from splex import faces
+  if X.shape[1] == 2: 
+    return np.array([ConvexHull(X[(i,j,k),:], qhull_options="QJ").volume for i,j,k in faces(S,2)])
+  else: 
+    return np.array([ConvexHull(X[(i,j,k),:], qhull_options="QJ").area for i,j,k in faces(S,2)])
+
 def complex2points(x): 
   return(np.c_[np.real(x), np.imag(x)])
 

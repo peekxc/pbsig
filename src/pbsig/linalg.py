@@ -172,6 +172,24 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
     return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
   return _huber if x is None else _huber(x)
 
+def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, **kwargs):
+  # d = A.diagonal()
+  # d_min, d_max = np.min(d), np.max(d)
+  # lb_approx = (1.0/d_max)*1e-8
+  # tmin_approx = 4 * np.log(10) / (2.0 / d_min)
+  # tmax_approx = 4 * np.log(10) / (1e-8 / d_max)
+  # TODO: revisit randomized Rayleigh quotient or use known bounds idea
+  # XR = np.random.normal(size=(L_sim.shape[0],15), loc=0.0).T
+  # np.max([(x.T @ L_sim @ x)/(np.linalg.norm(x)**2) for x in XR])
+  lb, ub = eigsh(L, M=A, k=4, which="BE", return_eigenvectors=False, **kwargs)[np.array((1,3))] # checks out
+  tmin = 4 * np.log(10) / ub
+  tmax = 4 * np.log(10) / lb
+  timepoints = np.geomspace(tmin, tmax, n)
+  return timepoints 
+
+
+
+
 
 def logspaced_timepoints(n: int, lb: float = 0.0, ub: float = 1.0, method: str = "full") -> np.ndarray:
   """Constructs _n_ non-negative time points equi-distant in log-space for use in the map exp(-t).
@@ -179,24 +197,36 @@ def logspaced_timepoints(n: int, lb: float = 0.0, ub: float = 1.0, method: str =
   If an upper-bound for time is known, it may be specified so as to map the interval [0, ub] to the range
   such that np.exp(-t0) = 1 and np.exp(-tn) = epsilon, which epsilon is the machine epsilon.
   """
+  ## TODO: revisit the full heuristic! The localized method works so much better
   if method == "full":
     timepoints = np.geomspace(lb+1.0, 37/ub, num=n)-1.0 ## -1 to include 0
   elif method == "local":
     assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
-    tmin  = 4 * np.log(10) / ub
-    tmax  = 4 * np.log(10) / lb
+    tmin = 4 * np.log(10) / ub
+    tmax = 4 * np.log(10) / lb
     timepoints = np.geomspace(tmin, tmax, n)
   else:
     raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
   return timepoints
 
-def heat_kernel_signature(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
+def vertex_masses(S: ComplexLike, X: ArrayLike) -> np.ndarray:
+  """Computes the cumulative area or 'mass' around every vertex"""
+  # TODO: allow area to be computed via edge lengths?
+  from pbsig.shape import triangle_areas
+  areas = triangle_areas(S, X)
+  vertex_mass = np.zeros(card(S,0))
+  for t, t_area in zip(faces(S,2), areas):
+    vertex_mass[t] += t_area / 3.0
+  return vertex_mass
+
+def heat_kernel_signature(L: LinearOperator, A: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
   """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
   
   For a subset S \subseteq V of vertices, this returns a  |S| x |T| signature. 
   """
   from pbsig.linalg import eigh_solver
-  ew, ev = eigh_solver(L)(L, which="SM", **kwargs)
+  solver = eigh_solver(L, laplacian=True)
+  ew, ev = solver(L, M=A, which="SM", **kwargs) ## solve generalized eigenvalue problem
   timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
   assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
   cind_nz = np.flatnonzero(~np.isclose(ew, 0.0, atol=1e-14))
