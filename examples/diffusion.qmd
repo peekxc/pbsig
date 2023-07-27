@@ -27,7 +27,7 @@ from scipy.sparse.linalg import eigsh
 
 ## Generate random laplacian
 np.random.seed(1234)
-X = np.random.uniform(size=(150,2), low=0, high=1)
+X = np.random.uniform(size=(50,2), low=0, high=1)
 S = delaunay_complex(X)
 L = up_laplacian(S, normed = True)
 
@@ -96,12 +96,32 @@ D = diags(pseudoinverse(np.sqrt(L.diagonal())))
 LN = D @ L @ D
 # LN = up_laplacian(S, p=0, normed=True)
 
+def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
+  E_ind = np.array(list(faces(S,1)))
+  E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
+  o = np.mean(E_dist) if sigma == "default" else float(sigma)
+  a = 1.0 / (4 * np.pi * o**2)
+  w = a * np.exp(-E_dist**2 / (4.0*o))
+  return w
+
+L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), normed=True)
+# logspaced_timepoints(30, lb=1e-10, ub=max(eigsh(L_sim)[0]))
+
+
 ## Compute the heat kernel diffusion for placement of heat at specific vertex weighted by distance
 ind = np.argmin(X_pos @ np.array([0,1]))
 ew, ev = eigsh(LN, k=LN.shape[0]-1, which="SM")
 gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
 v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
 show(row(*fig_colors(gen_fig, X_pos, v_gen)))
+
+from pbsig.linalg import heat_kernel_signature
+hks = heat_kernel_signature(L_sim, timepoints=np.array([0.000001]))
+p = figure_complex(S, X_pos, height=250, width=250)
+p.scatter(*X_pos.T, color=bin_color(hks[:,0].flatten(), "turbo"), size=10.5)
+show(p)
+
+
 ```
 
 

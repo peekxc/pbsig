@@ -200,10 +200,10 @@ def heat_kernel_signature(L: LinearOperator, timepoints: Union[int, ArrayLike] =
   timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
   assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
   cind_nz = np.flatnonzero(~np.isclose(ew, 0.0, atol=1e-14))
-  ev_subset = np.square(ev[np.array(subset), cind_nz]) if subset is None else np.square(ev[:,cind_nz])
-  hks_matrix = np.array([ev_subset @ np.exp(-t*ew) for t in timepoints]).T
+  ev_subset = np.square(ev[np.array(subset), cind_nz]) if subset is not None else np.square(ev[:,cind_nz])
+  hks_matrix = np.array([ev_subset @ np.exp(-t*ew[cind_nz]) for t in timepoints]).T
   if scaled: 
-    ht = np.array([np.sum(np.exp(-t * ew)) for t in timepoints]) # heat trace
+    ht = np.array([np.sum(np.exp(-t * ew[cind_nz])) for t in timepoints]) # heat trace
     ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0))
     hks_matrix = hks_matrix @ diags(ht)
   return hks_matrix
