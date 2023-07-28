@@ -92,8 +92,7 @@ S.update(triangles)
 
 from pbsig.shape import triangle_areas
 from pbsig.linalg import vertex_masses
-A = diags(vertex_masses(S, X_pos)) # mass matrix
-
+from pbsig.linalg import timepoint_heuristic
 def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
   E_ind = np.array(list(faces(S,1)))
   E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
@@ -102,29 +101,47 @@ def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "d
   w = a * np.exp(-E_dist**2 / (4.0*o))
   return w
 
-L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), p=1, normed=False)
+L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), p=0, normed=False)
+A_mass = diags(vertex_masses(S, X_pos)) # mass matrix
+timepoints = timepoint_heuristic(32, L_sim, A_mass, locality=(0.95,1.5))
+timepoints = timepoint_heuristic(64, L_sim, A_mass, locality=(100.50,200.0)) ## higher seems to be quite smooth! 
 
-max_ew = eigsh(L_sim, M=A, k=1, which='LM')[0][0]
-min_ew = eigsh(L_sim, M=A, k=2, sigma=1e-8, which='LM')[0][1]
-timepoints = logspaced_timepoints(20, lb=min_ew, ub=max_ew, method="local")
+from pbsig.linalg import heat_kernel_signature
+hks = heat_kernel_signature(L_sim, A, timepoints=timepoints)
 
-l_mi, l_ma = eigsh(L_sim, k=4, which="BE", tol=1e-10)[0][np.array([1,3],dtype=int)] 
+## Plot the MDS embedding of the signatures + their similarities to the top point
+hks_emb = cmds(squareform(pdist(hks)**2))
+p = figure(width=250, height=250)
+p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
 
-l_min, l_max = eigsh(L_sim, M=A, k=4, which="BE", tol=1e-10)[0][np.array([1,3],dtype=int)] # checks out
-np.max(eigsh(LM, M=MM, k=10)[0])
-np.max(eigsh(LM, k=10)[0])*np.max(A.diagonal())
+ind = np.argmax(X_pos @ np.array([0,1]))
+q = figure_complex(S, X_pos, height=250, width=250)
+q.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+q.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
-np.min(A.diagonal())
+ind = np.argmax(X_pos @ np.array([0,-1]))
+r = figure_complex(S, X_pos, height=250, width=250)
+r.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+r.scatter(*X_pos[ind].T, color="purple", size=5.5)
+
+ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
+s = figure_complex(S, X_pos, height=250, width=250)
+s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+s.scatter(*X_pos[ind].T, color="purple", size=5.5)
+
+show(row(p,q,r,s))
 
 
-E_ind = np.array(list(faces(S,1)))
-E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
-D1 = boundary_matrix(S, p=1)
-# L = D1 @ diags(np.exp(-E_dist)) @ D1.T
-# L = D1 @ diags(1/(1 + E_dist)) @ D1.T
-L = D1 @ diags(E_dist) @ D1.T
-D = diags(pseudoinverse(np.sqrt(L.diagonal())))
-LN = D @ L @ D
+
+
+# E_ind = np.array(list(faces(S,1)))
+# E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
+# D1 = boundary_matrix(S, p=1)
+# # L = D1 @ diags(np.exp(-E_dist)) @ D1.T
+# # L = D1 @ diags(1/(1 + E_dist)) @ D1.T
+# L = D1 @ diags(E_dist) @ D1.T
+# D = diags(pseudoinverse(np.sqrt(L.diagonal())))
+# LN = D @ L @ D
 # LN = up_laplacian(S, p=0, normed=True)
 
 # def build_mass_matrix(mesh : trimesh.Trimesh):
@@ -151,20 +168,6 @@ gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
 v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
 show(row(*fig_colors(gen_fig, X_pos, v_gen)))
 
-from pbsig.linalg import heat_kernel_signature, logspaced_timepoints
-# timepoints = logspaced_timepoints(64, ub=0.5)
-ind = np.argmax(X_pos @ np.array([0,1]))
-hks = heat_kernel_signature(L_sim, A, timepoints=timepoints)
-
-## Should match 
-hks_emb = cmds(squareform(pdist(hks)**2))
-p = figure(width=200, height=200)
-p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
-show(p)
-
-p = figure_complex(S, X_pos, height=250, width=250)
-p.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
-show(p)
 
 
 ```

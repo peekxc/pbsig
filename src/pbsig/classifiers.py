@@ -199,8 +199,6 @@ def barycenter_classifier(name: str, vector: Callable, center: Callable = None, 
 
 
 
-
-
 from copy import deepcopy
 
 ## TODO: can this be generalized further by treating as a simplified bag-of-words type model
@@ -280,3 +278,18 @@ class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
 
   def score(self, X: ArrayLike, y: ArrayLike) -> float:
     return np.sum(self.predict(X) == y)/len(y)
+
+
+
+# class BagOfFeatures(object):
+#   def __init__(self, X: List[ArrayLike]):
+#     self.X = X 
+
+#   def fit(self, method=["kmeans", "uniform", "qke"], **kwargs):
+#     from scipy.cluster.vq import kmeans2
+
+#     self.prototypes_ = ...
+  
+#   def transform(self, X: List[ArrayLike], method=["voronoi", "qee", "qke"]) -> np.ndarray:
+#     for V in X: 
+#       np.argmin(cdist(V, self.prototypes_), axis=1)

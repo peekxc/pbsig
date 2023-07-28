@@ -172,7 +172,18 @@ def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
     return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
   return _huber if x is None else _huber(x)
 
-def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, **kwargs):
+def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, locality: tuple = (0, 1), **kwargs):
+  """Constructs _n_ positive time points equi-distant in log-space for use in the map exp(-t).
+  
+  This uses the heuristic from "A Concise and Provably Informative Multi-Scale Signature Based on Heat Diffusion" to determine 
+  adequete time-points for generating a "nice" heat kernel signature, with a tuneable locality parameter. 
+
+  Parameters: 
+    n: number of time point to generate 
+    L: Laplacian operator used in the the generalized eigenvalue problem.
+    A: Mass matrix used in the the generalized eigenvalue problem. 
+    locality: tuple indicating how to modify the lower and upper bounds of the time points to adjust for locality. 
+  """
   # d = A.diagonal()
   # d_min, d_max = np.min(d), np.max(d)
   # lb_approx = (1.0/d_max)*1e-8
@@ -184,11 +195,10 @@ def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, **kwargs):
   lb, ub = eigsh(L, M=A, k=4, which="BE", return_eigenvectors=False, **kwargs)[np.array((1,3))] # checks out
   tmin = 4 * np.log(10) / ub
   tmax = 4 * np.log(10) / lb
+  tmin *= (1.0+locality[0])
+  tmax *= locality[1]
   timepoints = np.geomspace(tmin, tmax, n)
   return timepoints 
-
-
-
 
 
 def logspaced_timepoints(n: int, lb: float = 0.0, ub: float = 1.0, method: str = "full") -> np.ndarray:
