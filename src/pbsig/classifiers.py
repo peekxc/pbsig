@@ -280,16 +280,22 @@ class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
     return np.sum(self.predict(X) == y)/len(y)
 
 
+from scipy.cluster.vq import kmeans2, vq, whiten
+class BagOfFeatures(object):
+  def __init__(self, X: List[ArrayLike]):
+    self.X = X 
 
-# class BagOfFeatures(object):
-#   def __init__(self, X: List[ArrayLike]):
-#     self.X = X 
+  def fit(self, k: int, method=["kmeans", "uniform", "qke"], **kwargs):
+    p = { 'iter': 1, 'minit': "++"} | kwargs
+    centroids, labels = kmeans2(whiten(self.X), k=k, **p) 
+    self.prototypes_ = centroids
+    return self # "The method should return the object (self)"
 
-#   def fit(self, method=["kmeans", "uniform", "qke"], **kwargs):
-#     from scipy.cluster.vq import kmeans2
-
-#     self.prototypes_ = ...
-  
-#   def transform(self, X: List[ArrayLike], method=["voronoi", "qee", "qke"]) -> np.ndarray:
-#     for V in X: 
-#       np.argmin(cdist(V, self.prototypes_), axis=1)
+  # "even unsupervised estimators need to accept a y=None keyword argument in the second position that is just ignored by the estimator."
+  def transform(self, X: List[ArrayLike], y: ArrayLike = None, method=["voronoi", "qee", "qke"]) -> np.ndarray:
+    from scipy.cluster.vq import vq
+    bof = np.zeros((len(X), len(self.prototypes_)), dtype=np.uint16)
+    for i, V in enumerate(X): 
+      codebook_labels, centroid_dist = vq(whiten(V), self.prototypes_)
+      np.add.at(bof[i,:], codebook_labels, 1)
+    return bof

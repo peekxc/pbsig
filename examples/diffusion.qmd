@@ -53,6 +53,7 @@ show(row(*fig_colors(gen_fig, X, heat_gen)))
 from pbsig.datasets import mpeg7
 from pbsig.distance import dist 
 X_data = mpeg7(simplify=200, which=['turtle', 'bird'])
+X, y = mpeg7(simplify=200, which=['turtle', 'bird'], return_X_y = True)
 S = cycle_graph(len(X_data[('turtle',1)]))
 ```
 
@@ -93,21 +94,15 @@ S.update(triangles)
 from pbsig.shape import triangle_areas
 from pbsig.linalg import vertex_masses
 from pbsig.linalg import timepoint_heuristic
-def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
-  E_ind = np.array(list(faces(S,1)))
-  E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
-  o = np.mean(E_dist) if sigma == "default" else float(sigma)
-  a = 1.0 / (4 * np.pi * o**2)
-  w = a * np.exp(-E_dist**2 / (4.0*o))
-  return w
 
+
+## Formulate the mesh Laplacian the normalize by the mass matrices
+from pbsig.linalg import heat_kernel_signature
 L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), p=0, normed=False)
 A_mass = diags(vertex_masses(S, X_pos)) # mass matrix
-timepoints = timepoint_heuristic(32, L_sim, A_mass, locality=(0.95,1.5))
-timepoints = timepoint_heuristic(64, L_sim, A_mass, locality=(100.50,200.0)) ## higher seems to be quite smooth! 
-
-from pbsig.linalg import heat_kernel_signature
-hks = heat_kernel_signature(L_sim, A, timepoints=timepoints)
+# timepoints = timepoint_heuristic(32, L_sim, A_mass, locality=(0.95,1.5))
+timepoints = timepoint_heuristic(64, L_sim, A_mass, locality=(0.10,0.50)) ## higher seems to be quite smooth! 
+hks = heat_kernel_signature(L_sim, A_mass, timepoints=timepoints)
 
 ## Plot the MDS embedding of the signatures + their similarities to the top point
 hks_emb = cmds(squareform(pdist(hks)**2))
@@ -130,10 +125,54 @@ s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "tur
 s.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
 show(row(p,q,r,s))
+```
+
+```{python}
+#| label: Bag of features
+
+def HKS_emb(S: ComplexLike, emb: ArrayLike, timepoints: int, **kwargs):
+  L_sim = up_laplacian(S, weight=gauss_similarity(S, emb), p=0, normed=True)
+  A_mass = diags(vertex_masses(S, emb)) # mass matrix
+  timepoints = timepoint_heuristic(timepoints, L_sim, A_mass) ## higher seems to be quite smooth! 
+  return heat_kernel_signature(L_sim, A_mass, timepoints, **kwargs)
+
+hks_mpeg = [HKS(S, X_pos, 32, k=20) for X_pos in X_data.values()]
+
+from pbsig.dsp import signal_dist
+signal_dist(np.ravel(hks_mpeg[0]), np.ravel(hks_mpeg[22]))
+
+p = figure(width=450, height=200)
+p.line(np.arange(len(X_pos)*32), np.ravel(hks_mpeg[0]), color="blue")
+p.line(np.arange(len(X_pos)*32), np.ravel(hks_mpeg[1]), color="red")
+show(p)
+
+from pbsig.classifiers import BagOfFeatures
+BOF = BagOfFeatures(np.vstack(hks_mpeg))
+bof = BOF.fit(k=24).transform(hks_mpeg)
+
+
+p = figure(width=200, height=200)
+p.scatter(*cmds(squareform(pdist(bof))**2).T, color=bin_color(y, "Category10"))
+show(p)
+
+X_data
 
 
 
+# hks[0,32:]
+# from scipy.sparse.csgraph import floyd_warshall
+# A = -(L_sim - diags(L_sim.diagonal()))
+# np.max(np.max(floyd_warshall(A), axis=1))
+# np.log(n-1)/(np.log(ub+lb)/np.log(ub-lb))
+# # import networkx as nx
+# # 
+# # G = nx.from_scipy_sparse_array(A)
 
+# list(nx.all_pairs_shortest_path_length(G))
+```
+
+
+```{python}
 # E_ind = np.array(list(faces(S,1)))
 # E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True)
 # D1 = boundary_matrix(S, p=1)
@@ -162,11 +201,11 @@ show(row(p,q,r,s))
 
 
 ## Compute the heat kernel diffusion for placement of heat at specific vertex weighted by distance
-ind = np.argmin(X_pos @ np.array([0,1]))
-ew, ev = eigsh(LN, k=LN.shape[0]-1, which="SM")
-gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
-v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
-show(row(*fig_colors(gen_fig, X_pos, v_gen)))
+# ind = np.argmin(X_pos @ np.array([0,1]))
+# ew, ev = eigsh(LN, k=LN.shape[0]-1, which="SM")
+# gen_fig = lambda: figure_complex(S, X_pos, height=250, width=250)
+# v_gen = diffuse_heat(ev, ew, logspaced_timepoints(10, ub=0.2), subset=ind)
+# show(row(*fig_colors(gen_fig, X_pos, v_gen)))
 
 
 

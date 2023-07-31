@@ -169,7 +169,7 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   return(S)
 
 
-def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
+def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', return_X_y: bool = False):
   from PIL import Image, ImageDraw, ImageFont, ImageFilter
   base_dir = _package_data('mpeg7')
   mpeg7 = []
@@ -220,7 +220,13 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default'):
         dataset[(st, sn)] = S # np.array([l.start for l in S]) 
       else: 
         dataset[(st, sn)] = img_gray
-  return(dataset)
+  if return_X_y:
+    labels = [k[0] for k in dataset.keys()]
+    classes, y = np.unique(labels, return_inverse=True)
+    X_mat = np.array([np.ravel(emb) for emb in dataset.values()])
+    return X_mat, y
+  else:
+    return(dataset)
   
 
 def pose_meshes(simplify: int = None):
