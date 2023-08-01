@@ -14,6 +14,8 @@ from more_itertools import collapse
 from .meta import *
 from .simplicial import * 
 from .combinatorial import * 
+from .distance import dist 
+
 # import _lanczos as lanczos
 import _laplacian as laplacian
 from splex import *
@@ -235,71 +237,128 @@ def vertex_masses(S: ComplexLike, X: ArrayLike) -> np.ndarray:
 def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "default", **kwargs) -> np.ndarray:
   """Gaussian kernel similarity function"""
   E_ind = np.array(list(faces(S,1)))
-  E_dist = dist(X_pos[E_ind[:,0]], X_pos[E_ind[:,1]], paired=True, **kwargs)
+  E_dist = dist(X[E_ind[:,0]], X[E_ind[:,1]], paired=True, **kwargs)
   o = np.mean(E_dist) if sigma == "default" else float(sigma)
   a = 1.0 / (4 * np.pi * o**2)
   w = a * np.exp(-E_dist**2 / (4.0*o))
   return w
 
 class HeatKernel:
-  def __init__(self, S: ComplexLike, timepoints: int, heuristic: str = "log-spaced"):
-    from pbsig.linalg import eigh_solver
-    self._solver = eigh_solver(L, laplacian=True)
-    self.scaled = True
-    self.complex = S 
-  
-  @property
-  def solver(self, **kwargs):
-    self._solver = eigh_solver(self.L, laplacian=True)
+  def __init__(self, complex: ComplexLike):
+    self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
+    self._timepoints = (32, "log-spaced")
+    # self._laplacian = None
+    # self._solver = None  ## TODO: make the PsdSolver *not* specific a matrix, despite previous contracts! 
 
   @property
-  def timepoints(self, timepoints: Union[np.ndarray, tuple] = (32, "log-spaced")):
-    if isinstance(timepoints, tuple):
-      self._timepoints = timepoints # logspaced_timepoints(timepoints)
-    elif isinstance(timepoints, Container):
-      self._timepoints = np.array(timepoints)
-    # elif isinstance(timepoints, str):
-    #   assert timepoints in [""]
-    # assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
-
-  def _get_timepoints(self, eigvals: np.ndarray):
+  def timepoints(self) -> np.ndarray:
     if isinstance(self._timepoints, np.ndarray):
       return self._timepoints
     else:
-      nt, th = self._timepoints
-      lb, ub = np.min(ew), np.max(ew)
-      return logspaced_timepoints(nt, lb, ub)
+      assert hasattr(self, "eigvals_"), "Must call .fit() first!"
+      ntime, heuristic = self._timepoints
+      lb, ub = np.sort(self.eigvals_)[1], np.max(self.eigvals_)
+      return logspaced_timepoints(ntime, lb, ub, method="local")
 
-  def fit(self, method: str = "mesh", **kwargs):
-    """Computes the eigensets to use to construct (or approximate) the heat kernel"""
-    self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(S, X_pos), normed=False)
-    self.mass_matrix_ = diags(vertex_masses(S, X_pos)) 
-    ew, ev = self._solver(A=self.laplacian_, M=self.mass_matrix_, which="SM", **kwargs) ## solve Ax = \lambda M x 
+  @timepoints.setter
+  def timepoints(self, timepoints): 
+    if isinstance(timepoints, Container):
+      timepoints = np.array(timepoints)
+      assert np.all(timepoints >= 0), "Time points must be non-negative!"
+      self._timepoints = timepoints
+    elif isinstance(timepoints, Integral):
+      self._timepoints = (timepoints, "log-spaced")
+    elif isinstance(timepoints, tuple):
+      assert len(timepoints) == 2 and isinstance(timepoints[0], Integral) and isinstance(timepoints, str), "timepoints must be a tuple (num_time_points, heuristic)" 
+      self._timepoints = timepoints
+    else:
+      raise ValueError(f"Invalid timepoints form {type(timepoints)} given. Must be array, integer, or tuple (num timepoints, heuristic)")
+
+  ## TODO: consider revisiting variant of the property pattern
+  ## Note: JS version using @property not possible due to this: https://stackoverflow.com/questions/13029254/python-property-callable
+  # @property
+  # def laplacian(self):
+  #   return self._laplacian
+
+  # @laplacian.setter(self, value):
+  #   self._laplacian = value 
+
+  ## Parameterize the laplacian approximation
+  def param_laplacian(self, approx: str = "mesh", X: ArrayLike = None, **kwargs):
+    if approx == "mesh":
+      assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
+      self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **kwargs)
+      self.mass_matrix_ = diags(vertex_masses(self.complex, X)) 
+      return self
+    elif approx == "unweighted":
+      self.laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **kwargs)
+      self.mass_matrix_ = diags(d) 
+      return self 
+    elif approx == "cotangent":
+      raise NotImplementedError("Haven't implemented yet")
+    else:
+      raise ValueError("Invalid approximation choice {approx}; must be one of 'mesh', 'cotangent', or 'unweighted.'")
+
+  ## Parameterize the eigenvalue solver
+  def param_solver(self, shift_invert: bool = True, precon: str = None, **kwargs):
+    assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
+    if shift_invert: 
+      kwargs |= dict(sigma=1e-6, which="LM")
+    self.solver_ = eigh_solver(self.laplacian_, laplacian=True, **kwargs)
+    return self
+
+    # if value is None:
+    #   return self._solver 
+    # self._solver = value ## todo: branch based on type, str or callable or...
+    # return self
+
+  def fit(self, **kwargs):
+    """Computes the eigensets to use to construct (or approximate) the heat kernel
+    
+    Parameters: 
+      X: positions of an (n x d) point cloud embedding in Euclidean space. 
+    """
+    ew, ev = self.solver_(A=self.laplacian_, M=self.mass_matrix_, which="LM", sigma=1e-6, **kwargs) ## solve Ax = \lambda M x 
     self.eigvecs_ = ev
     self.eigvals_ = np.maximum(ew, 0.0)
     return self
   
   def diffuse(self, subset: ArrayLike = None, **kwargs) -> Generator:
+    assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
     I = np.arange(self.eigvecs_.shape[0]) if subset is None else np.array(subset)
-    for t in self._get_timepoints():
+    for t in self.timepoints:
       Ht = self.eigvecs_ @ np.diag(np.exp(-t*self.eigvals_)) @ self.eigvecs_.T
       yield Ht[:,I]
 
   def trace(self) -> np.ndarray:
-    timepoints = self._get_timepoints()
-    return np.array([np.sum(np.exp(-t*self.eigvals_)) for t in timepoints])
+    assert hasattr(self, "eigvals_"), "Must call .fit() first!"
+    cind_nz = np.flatnonzero(~np.isclose(self.eigvals_, 0.0, atol=1e-14))
+    ht = np.array([np.sum(np.exp(-t * self.eigvals_[cind_nz])) for t in self.timepoints])
+    return ht
 
-  def signature(self, subset: ArrayLike = None) -> np.ndarray:
-    timepoints = self._get_timepoints()
+  def signature(self, scaled: bool = True, subset: ArrayLike = None) -> np.ndarray:
+    assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
+    timepoints = self.timepoints
     I = np.arange(self.eigvecs_.shape[0]) if subset is None else np.array(subset)
     cind_nz = np.flatnonzero(~np.isclose(self.eigvals_, 0.0, atol=1e-14))
-    ev_subset = np.square(ev[np.ix_(I, cind_nz)]) if subset is not None else np.square(ev[:,cind_nz])
-    hks_matrix = np.array([ev_subset @ np.exp(-t*ew[cind_nz]) for t in timepoints]).T
-    if self.scaled: 
-      ht = np.array([np.sum(np.exp(-t * ew[cind_nz])) for t in timepoints]) # heat trace
-      ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0))
+    ev_subset = np.square(self.eigvecs_[np.ix_(I, cind_nz)]) if subset is not None else np.square(self.eigvecs_[:,cind_nz])
+    hks_matrix = np.array([ev_subset @ np.exp(-t*self.eigvals_[cind_nz]) for t in timepoints]).T
+    if scaled: 
+      ht = np.array([np.sum(np.exp(-t * self.eigvals_[cind_nz])) for t in timepoints]) # heat trace
+      ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0, atol=1e-14))
       hks_matrix = hks_matrix @ diags(ht)
     return hks_matrix
+
+  def __repr__(self) -> str:
+    return f"Heat kernel for {self.laplacian_.shape[0]}-Laplacian"
+  
+  def clone(self):
+    """Returns a clone of this instance with the same parameters, discarding fitted information (if any).""" 
+    hk_clone = HeatKernel(self.complex) # shallow copy
+    hk_clone._timepoints = self._timepoints
+    hk_clone.solver = self.solver
+    return hk_clone
+
 
 def heat_kernel_signature(L: LinearOperator, A: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
   """Constructs the heat kernel signature of a given Laplacian operator at time points T. 

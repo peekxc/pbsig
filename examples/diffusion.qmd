@@ -95,7 +95,6 @@ from pbsig.shape import triangle_areas
 from pbsig.linalg import vertex_masses
 from pbsig.linalg import timepoint_heuristic
 
-
 ## Formulate the mesh Laplacian the normalize by the mass matrices
 from pbsig.linalg import heat_kernel_signature
 L_sim = up_laplacian(S, weight=gauss_similarity(S, X_pos), p=0, normed=False)
@@ -126,6 +125,136 @@ s.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
 show(row(p,q,r,s))
 ```
+
+```{python}
+#| label: Reproduce HKS trace from graph diffusion distance paper
+S1 = cycle_graph(4) # square graph 
+S2 = cycle_graph(5) # pentagon graph 
+S3 = simplicial_complex([*cycle_window(range(7)), *cycle_window(range(7,14)), [14,0], [14,7]]) # simple dumbbell 
+S4 = simplicial_complex([*faces(range(7), 1), *faces(range(7, 14), 1), [14,0], [14,7]])        # complex dumbbell 
+HK_1 = HeatKernel(S1).fit()
+
+HK.clone().fit(emb, k=10)
+
+
+## Can't do it, Object.x eagerly resolves to the value, i.e. obj.x is not a property type, but the value itself, precluding 
+## obj.x()...
+## Based on: https://stackoverflow.com/questions/17330160/how-does-the-property-decorator-work-in-python
+class builder_property(property):
+  def __init__(self, fget=None, fset=None, fdel=None, doc=None):
+    super().__init__(fget, fset, fdel, doc)
+    
+  def __call__(self, obj: Any = None, value: Any = None):
+    if obj is None: return self
+    if value is None: return self.fget(obj)
+    if self.fset is None:
+      raise AttributeError("can't set attribute")
+    self.fset(obj, value)
+    return self
+
+class Test():
+  def __init__(self):
+    self._x = 0
+
+  @builder_property
+  def x(self):
+    return self._x
+  
+  @x.setter
+  def x(self, value):
+    self._x = value
+
+
+
+def get_x(self): return self._x
+def set_x(self, value): self._x = value
+p = BuilderProperty(fget = get_x, fset = set_x)
+p.fget(t)
+p.fset(t, 2)
+
+p(t)
+
+setattr(p, "__call__", lambda self: 5)
+
+t = Test()
+t.x
+t.x = 1
+t.x()
+t
+
+```
+
+
+```{python}
+#| label: HKS simplified 
+from pbsig.linalg import HeatKernel
+HK = HeatKernel(S)
+HK.fit(X_pos)
+HK.signature()
+HK.trace()
+
+HK.timepoints = 64
+
+HK.fit(X_data[('turtle',2)])
+eigsh(HK.laplacian_, k=10, M=HK.mass_matrix_, which="LM", return_eigenvectors=False)
+
+heat_sigs = HK.signature()
+hks_emb = cmds(squareform(pdist(heat_sigs)**2))
+p = figure(width=200, height=200)
+p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
+show(p)
+
+
+
+
+# list(HK.diffuse())
+# for i, emb in enumerate(X_data.values()):
+#   HK.clone().fit(emb, k=10)
+#   eigsh(A=HK.laplacian_, M=HK.mass_matrix_, k=10, which="SM", return_eigenvectors=False)
+#   solver = PsdSolver(HK.laplacian_, return_eigenvectors=True)
+#   solver(A=HK.laplacian_, M=HK.mass_matrix_, k=10, which="LM", sigma=1e-6)
+
+#   self = HK
+#   self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, emb), normed=False)
+#   self.mass_matrix_ = diags(vertex_masses(self.complex, emb)) 
+#   solver = eigh_solver(self.laplacian_, laplacian=True)
+#   ew, ev = solver(A=self.laplacian_, M=self.mass_matrix_, which="LM", k=10, sigma=1e-6) ## solve Ax = \lambda M x 
+#   self.eigvecs_ = ev
+#   self.eigvals_ = np.maximum(ew, 0.0)
+
+## Fix the timepoints across all the fittings
+HK.timepoints *= 1e-4
+
+
+heat_kernels = [HK.clone().fit(emb, k=10) for emb in X_data.values()]
+
+## Show the shapes
+keys = list(X_data.keys())
+key_ind = [keys.index(('turtle',1)), keys.index(('turtle',2)), keys.index(('turtle',3)), keys.index(('bird',1)), keys.index(('bird',2)), keys.index(('bird',3))]
+p = row([patch_plot(X_data[keys[sk]], sc) for sk, sc in zip(key_ind, ["red", "red", "red", "blue", "blue", "blue"])])
+q = figure(width=250, height=200) #  x_axis_type="log"
+for i, c in zip(key_ind, ["red", "red", "blue", "blue"]):
+  tp = heat_kernels[i].timepoints
+  q.line(np.arange(len(tp)), heat_kernels[i].trace(), color=c)
+
+show(q)
+
+heat_kernels[0].trace()
+heat_kernels[1].trace()
+heat_kernels[20].trace()
+heat_kernels[21].trace()
+
+
+heat_kernels[0].eigvals_[:6]
+heat_kernels[1].eigvals_[:6]
+heat_kernels[20].eigvals_[:6]
+heat_kernels[21].eigvals_[:6]
+
+
+[hk.trace() for hk in heat_kernels]
+# max(HK.timepoints) / (2.0 / 1e-6)
+```
+
 
 ```{python}
 #| label: Bag of features
@@ -302,7 +431,7 @@ extractor = signature.SignatureExtractor(mesh, X_3d.shape[0]-1, approx="mesh")
 heat_sigs = extractor.heat_signatures(64)
 hks_emb = cmds(squareform(pdist(heat_sigs)**2))
 p = figure(width=200, height=200)
-p.scatter(*hks_emb.T)
+p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
 # show(p)
 
 q = figure_complex(S, X_pos, width=200, height=200, 
