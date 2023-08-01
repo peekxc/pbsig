@@ -35,8 +35,6 @@ def phase_align2(s1: Sequence, s2: Sequence, return_offset: bool = False):
   shift = (np.argmax(correlate(s1, s2)) - (len(s2)-1))
   return np.roll(s1, shift)
 
-
-
 ## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
 def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
   

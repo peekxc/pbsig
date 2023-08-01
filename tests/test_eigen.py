@@ -13,6 +13,17 @@ import networkx as nx
 from scipy.linalg import eigh
 from scipy.sparse.linalg import eigsh
 
+def test_psd():
+  from scipy.sparse import random 
+  from pbsig.linalg import PsdSolver
+  A = random(150,150, density=0.05)
+  A = A.T @ A
+  solver = PsdSolver(tol=1e-12, k=14, eigenvectors=True)
+  solver(A)
+  solver(A.todense())
+  solver(A, solver="gd")
+  solver.test_accuracy(A)
+
 def test_operators():
   G = nx.Graph()
   while (len(list(nx.connected_components(G))) != 1):

@@ -396,17 +396,27 @@ def heat_kernel_trace(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10,
   return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
 
 class PsdSolver:
-  def __init__(self, A, solver: str = 'default', rank_ub: Union[str,int] = "auto", laplacian: bool = True, return_eigenvectors: bool = False, tolerance: float = None, **kwargs):
+  def __init__(self, solver: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = None, **kwargs):
     assert solver is not None, "Invalid solver"
-    self._rank_bound = lambda A: rank_bound(A, upper=True)
-    self.tolerance = tolerance if tolerance is not None else np.sqrt(np.finfo(A.dtype).eps)
+    # self._rank_bound = int(rank_ub) if isinstance(rank_ub, Integral) else lambda A: rank_bound(A, upper=True)
+    self.solver = solver
+    self.k = k ## have to infer this 
+    self.tol = tol if tol is not None else np.sqrt(np.finfo(np.float64).eps)
     self.laplacian = laplacian
-    self.configure_type = type(A)
-    self.return_eigenvectors = return_eigenvectors
+    if "return_eigenvectors" in kwargs:
+      self.eigenvectors = (eigenvectors | kwargs['return_eigenvectors']) 
+      kwargs.pop("return_eigenvectors", None)
+    else: 
+      self.eigenvectors = eigenvectors
+    self.fixed_params = kwargs
+    # dict(tol=self.tolerance, return_eigenvectors=eigenvectors, k=)
+    
+  def configure_solver(self, A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default') -> tuple:
     if solver == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
+    # if solver != 'dac': assert isinstance(A, np.ndarray), f"Cannot use iterative methods with dense of type '{type(A)}'"
     if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
-      self.params = kwargs
-      self.solver = np.linalg.eigh if return_eigenvectors else np.linalg.eigvalsh
+      solver = np.linalg.eigh if self.eigenvectors else np.linalg.eigvalsh
+      return solver, {}
     elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
       # if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       #   import warnings
@@ -416,30 +426,76 @@ class PsdSolver:
       assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
       if solver == 'irl':
         from scipy.sparse.linalg import eigsh
-        self.params = dict(which='LM', tol=self.tolerance, return_eigenvectors=return_eigenvectors) | kwargs
-        self.solver = eigsh
+        return eigsh, dict(which='LM', tol=self.tol, return_eigenvectors=self.eigenvectors)
       else:
         from primme import eigsh as primme_eigsh
         methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-        self.params = dict(tol=self.tolerance, which='LM', return_eigenvectors=return_eigenvectors, method=methods[solver]) | kwargs
-        self.solver = primme_eigsh
+        return primme_eigsh, dict(tol=self.tol, which='LM', return_eigenvectors=self.eigenvectors, method=methods[solver])
     else: 
       raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
     
-  def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], pp: float = 1.0, **kwargs) -> Union[ArrayLike, tuple]:
-    # assert type(A) == self.configure_type, f"Invalid type '{str(type(A))}'. Must match configuration type {str(self.configure_type)}."
+  def configure_k(self, A: Union[ArrayLike, spmatrix, LinearOperator], k: Union[int, str, float, list] = "auto") -> int:
+    if isinstance(k, Integral): 
+      return k
+    elif isinstance(k, Number) and k >= 0.0 and k <= 1.0:
+      if k == 0.0: return 0
+      nev = trace_threshold(A, k) if k != 1.0 else rank_bound(A, upper=True)
+      nev = min(nev, A.shape[0] - 1) # if self.laplacian else nev
+      return nev 
+    elif isinstance(k, str) and k == "auto":
+      nev = rank_bound(A, upper=True)
+      nev = min(nev, A.shape[0] - 1) # if self.laplacian else nev
+      return nev
+    else: 
+      raise ValueError("Couldn't deduce number of eigenvalues to compute.")
+
+  def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Union[ArrayLike, tuple]:
     assert A.shape[0] == A.shape[1], "A must be square"
-    assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
+    # assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     n = A.shape[0]
-    nev = trace_threshold(A, pp) if pp != 1.0 else self._rank_bound(A)
-    nev = min(nev, A.shape[0] - 1) if self.laplacian else nev
-    if (isinstance(A, spmatrix) and len(A.data) == 0) or (A.shape[0] == 0 or A.shape[1] == 0) or nev == 0 or pp == 0.0: 
-      return (np.zeros(1), np.c_[np.zeros(A.shape[0])]) if self.return_eigenvectors else np.zeros(1)
-    params = self.params
+    nev = self.configure_k(A, kwargs.pop("k", self.k))
+    self.solver_, defaults_ = self.configure_solver(A, kwargs.pop("solver", self.solver))
+    kwargs.pop("solver", None)
+    if (isinstance(A, spmatrix) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or nev == 0: 
+      return (np.zeros(1), np.c_[np.zeros(n)]) if self.eigenvectors else np.zeros(1)
     if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
-      default_params = dict(k=nev, maxiter=A.shape[0]*100, ncv=None)
-      params = (default_params | params) | kwargs  # if 'scipy' in self.solver.__module__ else None #min(2*nev + 1, 20) 
-    return self.solver(A, **params)
+      defaults_ |= dict(k=nev, maxiter=n*100, ncv=None)
+      # params = (default_params | params) | kwargs  # if 'scipy' in self.solver.__module__ else None #min(2*nev + 1, 20) 
+    self.params_ = (defaults_ | self.fixed_params) | kwargs
+    return self.solver_(A, **self.params_)
+  
+  def __repr__(self):
+    format_val = lambda v: str(v) if isinstance(v, Integral) else (f"{v:.2e}" if isinstance(v, Number) else str(v))
+    format_dict = lambda d: "(" + ", ".join([f"{str(k)} = {format_val(v)}" for k,v in d.items()]) + ")"
+    s = "Laplacian" if self.laplacian else ""
+    print_params = self.fixed_params | dict(solver=self.solver, k=self.k, tol=self.tol, eigenvectors=self.eigenvectors)
+    s += f"PsdSolver{format_dict(print_params)}:\n"
+    # if (self.fixed_params is not None and self.fixed_params != {}):
+    #   s += f"Fixed params: {format_dict(self.fixed_params)}\n"
+    s += f"Solver type: ({str(self.solver_)})\n"
+    if hasattr(self, "params_") and self.params_ != {}:
+      s += f"Called with: {format_dict(self.params_)}\n"
+    return s
+
+  def test_accuracy(self, A: Union[ArrayLike, spmatrix, LinearOperator] = None, **kwargs):
+    assert self.eigenvectors, "Solver must be parameterized with eigenvectors=True to test accuracy."
+    ew, ev = self(A, **kwargs)
+    diffs = A @ ev - ev * ew
+    maxdiffs = np.linalg.norm(diffs, axis=0, ord=np.inf)
+    print(f"|Av - λv|_max: {float(np.max(maxdiffs)):.6f}")
+    return diffs
+
+  # def test_speed(self, A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
+
+
+
+# def eigsort(w: ArrayLike, v: ArrayLike = None, ascending: bool = True):
+#   """
+  
+#   Based on: https://web.cecs.pdx.edu/~gerry/nmm/mfiles/eigen/eigSort.m
+#   """
+#   np.argsort(w)
+
 
 ## Great advice: https://gist.github.com/denis-bz/2658f671cee9396ac15cfe07dcc6657d 
 ## TODO: change p to be accepted at runtime from returned Callable, accept argument that has heuristic 'rank_estimate'  
