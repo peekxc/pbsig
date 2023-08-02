@@ -128,11 +128,82 @@ show(row(p,q,r,s))
 
 ```{python}
 #| label: Reproduce HKS trace from graph diffusion distance paper
+from pbsig.linalg import *
 S1 = cycle_graph(4) # square graph 
 S2 = cycle_graph(5) # pentagon graph 
 S3 = simplicial_complex([*cycle_window(range(7)), *cycle_window(range(7,14)), [14,0], [14,7]]) # simple dumbbell 
 S4 = simplicial_complex([*faces(range(7), 1), *faces(range(7, 14), 1), [14,0], [14,7]])        # complex dumbbell 
-HK_1 = HeatKernel(S1).fit()
+
+normed = True
+timepoints = logspaced_timepoints(10, lb=0, ub=2.0)
+HK1 = HeatKernel(S1).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
+HK2 = HeatKernel(S2).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
+HK3 = HeatKernel(S3).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
+HK4 = HeatKernel(S4).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
+
+## The trace is discriminating, but notice that they scale essentially by |V|
+## Normalizing doesn't seem to affect the trace almost at all 
+p = figure(width=200, height=200, x_axis_type="log")
+p.line(timepoints, HK1.trace(timepoints)/4, color="red")
+p.line(timepoints, HK2.trace(timepoints)/5, color="green")
+p.line(timepoints, HK3.trace(timepoints)/15, color="blue")
+p.line(timepoints, HK4.trace(timepoints)/15, color="cyan")
+show(p)
+
+## The un-scaled heta content is discriminating, but the vertex-scaled versions are very close in norm
+## Normalizing dramatically effects the heat content
+# indicator = lambda i,n: np.array([0]*(i) + [1] + [0]*(n-i-1))
+# indicator_edge = lambda i,j,n: indicator(i,n) + indicator(j,n)
+
+# [np.ones(15) @ hk @ np.ones(15) for hk in HK4.diffuse(timepoints)]
+# [np.ones(4) @ hk @ np.ones(4) for hk in HK1.diffuse(timepoints)]
+# HKC = np.array([np.array([indicator(i, 4) @ hk @ indicator(i, 4) for hk in HK1.diffuse(timepoints)]) for i in range(4)])
+# HKC = np.array([np.array([indicator_edge(i,j,4) @ hk @ indicator_edge(i,j,4) for hk in HK1.diffuse(timepoints)]) for i,j in faces(S1,1)])
+# HKC = np.array([np.array([indicator_edge(i,j,4) @ hk @ indicator_edge(i,j,4) for hk in HK1.diffuse(timepoints)]) for i,j in combinations(range(4),2)])
+
+# HKC = np.array([np.array([indicator(i, 15) @ hk @ indicator(i, 15) for hk in HK4.diffuse(timepoints)]) for i in range(15)])
+
+# hkc = HKC.sum(axis=0)
+# np.append(hkc[0], hkc[0] + np.cumsum(np.abs(np.diff(hkc))))
+
+## Heat kernel content -- equivalent to cumulative heat kernel trace differences
+## i.e. ~ c + np.cumsum(np.abs(np.diff([tr(HK(t)) for t in T])))
+p = figure(x_axis_type="log")
+p.line(timepoints, HKC.sum(axis=0))
+show(p)
+
+p,q = [figure(width=200, height=200, x_axis_type="log") for i in range(2)]
+p.line(timepoints, HK1.content(timepoints), color="red")
+p.line(timepoints, HK2.content(timepoints), color="green")
+p.line(timepoints, HK3.content(timepoints), color="blue")
+p.line(timepoints, HK4.content(timepoints), color="cyan")
+q.line(timepoints, HK1.content(timepoints)/4, color="red")
+q.line(timepoints, HK2.content(timepoints)/5, color="green")
+q.line(timepoints, HK3.content(timepoints)/15, color="blue")
+q.line(timepoints, HK4.content(timepoints)/15, color="cyan")
+show(row(p,q))
+
+## Heat kernel signature is quite telling, very descriptive
+## square has 1 class of vectors, pentagon has 5, simple barbell has 5 and complex barbell has 3
+p = figure(width=200, height=200, x_axis_type="log")
+for s in HK1.signature(timepoints): p.line(timepoints, s, color="red")
+for s in HK2.signature(timepoints): p.line(timepoints, s, color="green")
+for s in HK3.signature(timepoints): p.line(timepoints, s, color="blue")  
+for s in HK4.signature(timepoints): p.line(timepoints, s, color="cyan")  
+show(p)
+```
+
+
+```{python}
+HK2.trace(timepoints)
+HK3.trace(timepoints)
+HK4.trace(timepoints)
+
+## Graph diffusion distance -- needs pairing of vertices + same sized graphs
+# [np.linalg.norm(A1 - A2, "fro")**2 for A1, A2 in zip(HK1.diffuse(), HK2.diffuse())]
+
+
+HK = HeatKernel(S1)
 
 HK.clone().fit(emb, k=10)
 
