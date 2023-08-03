@@ -42,8 +42,8 @@ def fig_colors(gen_fig: Callable, X: ArrayLike, vertex_weights: Iterable[list]):
 
 ## Show heat diffusion from a single vertex 
 ind = np.argmin(X @ np.array([0,1]))
-ew, ev = eigsh(L, k=L.shape[1]-1, which="SM")
-heat_gen = diffuse_heat(ev, ew, logspaced_timepoints(5, ub=2), subset=ind)
+ew, ev = eigsh(L, k=L.shape[1]-1, which="LM", sigma=1e-6)
+heat_gen = diffuse_heat(ev, ew, logspaced_timepoints(5, lb=0.2, ub=50.0), subset=ind)
 gen_fig = lambda: figure_complex(S, X, height=250, width=250)
 show(row(*fig_colors(gen_fig, X, heat_gen)))
 ```
@@ -79,6 +79,69 @@ p = column(
 )
 show(p)
 ```
+
+```{python}
+#| label: Visualize HKS on MPEG7
+from scipy.sparse import diags
+from pbsig.distance import dist
+
+from pbsig.utility import cycle_window
+X_pos = X_data[('turtle',1)]
+S = cycle_graph(X_pos.shape[0])
+triangles = list(cycle_window(range(X_pos.shape[0]), offset=2, w=3))
+S.update(triangles)
+```
+
+
+
+```{python}
+## Formulate the mesh Laplacian the normalize by the mass matrices
+from pbsig.linalg import HeatKernel
+from pbsig.linalg import * 
+HK = HeatKernel(S).param_laplacian(approx="mesh", X=X_pos, normed=False).fit()
+
+## Effective seems like a good heuristic
+HK.time_bounds("absolute")
+HK.time_bounds("laplacian")
+HK.time_bounds("informative")
+HK.time_bounds("heuristic")
+HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.99,1.0]), p=32, reverse=False)
+hks = HK.signature(HK.timepoints)
+# hks, _ = HK.sihks(HK.timepoints)
+
+## Plot the MDS embedding of the signatures + their similarities to the top point
+hks_emb = cmds(squareform(pdist(hks)**2))
+p = figure(width=250, height=250)
+p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
+
+ind = np.argmax(X_pos @ np.array([0,1]))
+q = figure_complex(S, X_pos, height=250, width=250)
+q.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+q.scatter(*X_pos[ind].T, color="purple", size=5.5)
+
+ind = np.argmax(X_pos @ np.array([0,-1]))
+r = figure_complex(S, X_pos, height=250, width=250)
+r.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+r.scatter(*X_pos[ind].T, color="purple", size=5.5)
+
+ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
+s = figure_complex(S, X_pos, height=250, width=250)
+s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+s.scatter(*X_pos[ind].T, color="purple", size=5.5)
+
+show(row(p,q,r,s))
+
+
+```
+
+```{python}
+# emb = cmds(squareform(pdist(si)**2))
+p = figure(width=200, height=200)
+p.scatter(*X_pos.T, color=bin_color(np.linalg.norm(si - si[ind], axis=1), "turbo"))
+show(p)
+
+```
+
 
 ```{python}
 #| label: Visualize HKS on MPEG7
@@ -192,6 +255,30 @@ for s in HK3.signature(timepoints): p.line(timepoints, s, color="blue")
 for s in HK4.signature(timepoints): p.line(timepoints, s, color="cyan")  
 show(p)
 ```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 ```{python}
@@ -349,7 +436,6 @@ show(p)
 from pbsig.classifiers import BagOfFeatures
 BOF = BagOfFeatures(np.vstack(hks_mpeg))
 bof = BOF.fit(k=24).transform(hks_mpeg)
-
 
 p = figure(width=200, height=200)
 p.scatter(*cmds(squareform(pdist(bof))**2).T, color=bin_color(y, "Category10"))
@@ -519,13 +605,6 @@ for i, (hs, col) in enumerate(zip(heat_sigs, pt_col)):
   if i % 5 == 0:
     r.line(np.arange(heat_sigs.shape[1]), hs, color=rgb_to_hex(col*255))
 show(row(p,q,r))
-
-
-
-
-
-
-
 ```
 
 

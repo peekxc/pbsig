@@ -205,23 +205,30 @@ def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, locality: 
   return timepoints 
 
 
-def logspaced_timepoints(n: int, lb: float = 0.0, ub: float = 1.0, method: str = "full") -> np.ndarray:
+def logspaced_timepoints(n: int, lb: float = 1e-6, ub: float = 2.0) -> np.ndarray:
   """Constructs _n_ non-negative time points equi-distant in log-space for use in the map exp(-t).
   
   If an upper-bound for time is known, it may be specified so as to map the interval [0, ub] to the range
   such that np.exp(-t0) = 1 and np.exp(-tn) = epsilon, which epsilon is the machine epsilon.
   """
   ## TODO: revisit the full heuristic! The localized method works so much better
-  if method == "full":
-    timepoints = np.geomspace(lb+1.0, 37/ub, num=n)-1.0 ## -1 to include 0
-  elif method == "local":
-    assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
-    tmin = 4 * np.log(10) / ub
-    tmax = 4 * np.log(10) / lb
-    timepoints = np.geomspace(tmin, tmax, n)
-  else:
-    raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
+  # min_t = 13.815510475347063 # 32-bit float 
+  # min_t = 34.53877627071313  # 64-bit floats
+  # if method == "full":
+  #   # tmin = 1e-3 / ub
+  #   # tmax = min_t / max(1e-3, lb)
+  #   tmin = 4 * np.log(10) / 2.0 
+  #   tmax = 4 * np.log(10) / 1e-6
+  #   timepoints = np.geomspace(tmin, tmax, n)
+  # elif method == "local":
+  #   assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
+  tmin = 4 * np.log(10) / ub
+  tmax = 4 * np.log(10) / lb
+  timepoints = np.geomspace(tmin, tmax, n)
   return timepoints
+  # else:
+  #   raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
+  # return timepoints
 
 def vertex_masses(S: ComplexLike, X: ArrayLike) -> np.ndarray:
   """Computes the cumulative area or 'mass' around every vertex"""
@@ -243,6 +250,24 @@ def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "d
   w = a * np.exp(-E_dist**2 / (4.0*o))
   return w
 
+def geomspace(start: float, stop: float, p: Union[int, np.ndarray] = 50, base: float = 2.0, reverse: bool = False):
+  """Return numbers spaced on a log scale (a geometric progression).
+
+  If p is an integer, then this function matches the output of np.geomspace for an arbitrary logarithm-base, returning
+  p points between [start, stop] evenly spaced in logscale. Otherwise, if p is an array, its assumed to specify the 
+  proportions in log-space to select in the [start,stop] interval. 
+  
+  If reverse = True, then the sequence returned is logarithimically scaled from the stop to start. 
+  """
+  p = np.linspace(0, 1, p, endpoint=True) if isinstance(p, Integral) else p
+  ub = np.emath.logn(base, stop)
+  lb = np.emath.logn(base, start) if start != 0.0 else np.emath.logn(base, np.finfo(np.float32).eps)
+  logspaced = base ** (lb + p*(ub-lb))
+  if start == 0.0:
+    logspaced[0] = 0.0
+  return logspaced if not reverse else start + (stop - logspaced)
+
+
 class HeatKernel:
   def __init__(self, complex: ComplexLike):
     self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
@@ -250,6 +275,65 @@ class HeatKernel:
     # self.laplacian = None 
     # self.solver = None 
     # self._solver = None  ## TODO: make the PsdSolver *not* specific a matrix, despite previous contracts! 
+
+  def time_bounds(self, method: str, interval: tuple = (0.0, 1.0), dtype = None):
+    # assert len(interval) == 2 and interval[0] >= 0.0 and interval[1] <= 1.0, "If supplied, interval bounds must be in [0,1]"
+    if method == "absolute":
+      # assert hasattr(self, "laplacian_")
+      # dtype = self.laplacian_.dtype
+      dtype = np.float64 if dtype is None else dtype
+      t_max = -np.log(np.finfo(dtype).eps)/1e-6 # 1e-6 assumed smallest eigenvalue can be found
+      t_min = 0.0
+      return t_min, t_max
+    elif method == "laplacian":
+      assert hasattr(self, "laplacian_")
+      L, dtype = self.laplacian_, self.laplacian_.dtype
+      min_ew, max_ew = np.inf, 0.0
+      if np.allclose(L.diagonal(), 1.0):
+        max_ew = 2.0  ## the normalized laplacian is bounded in [0, p+1]
+        min_ew = 1e-6 ## heuristic on spectral gap
+      else:
+        ## use gerschgorin theorem
+        cv = np.zeros(L.shape[0])
+        for i in range(L.shape[0]):
+          cv[i-1], cv[i] = 0, 1
+          row = L @ cv
+          max_ew = max(row[i] + np.sum(np.abs(np.delete(row, i))), max_ew)
+          min_ew = min(row[i] - np.sum(np.abs(np.delete(row, i))), min_ew)
+        min_ew = 1e-6 if min_ew < 0 else min_ew 
+      l_min = min_ew / np.max(self.mass_matrix_.diagonal())
+      l_max = max_ew / np.min(self.mass_matrix_.diagonal())
+      t_min = 4 * np.log(10) / l_max
+      t_max = min(4 * np.log(10) / l_min, -np.log(np.finfo(dtype).eps) / min_ew)
+      return t_min, t_max
+    elif method == "effective":
+      assert hasattr(self, "eigvals_"), "Must call .fit() first!"
+      machine_eps = np.finfo(self.laplacian_.dtype).eps
+      l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_)
+      t_max = -np.log(machine_eps)/l_min
+      t_min = -np.log(machine_eps)/(l_max - l_min)
+      return t_min, t_max
+    elif method == "informative":
+      assert hasattr(self, "eigvals_"), "Must call .fit() first!"
+      machine_eps = np.finfo(self.laplacian_.dtype).eps
+      l_min, l_max = np.quantile(self.eigvals_[1:], interval) ## TODO: revisit, if its a linearly spaced interval use could do themselves
+      t_max = -np.log(machine_eps) / l_min
+      t_min = -np.log(machine_eps) / (l_max - l_min)
+      return t_min, t_max
+    elif method == "heuristic":
+      assert hasattr(self, "eigvals_"), "Must call .fit() first!"
+      l_min, l_max = np.quantile(self.eigvals_[1:], interval)
+      t_min = 4 * np.log(10) / l_max
+      t_max = 4 * np.log(10) / l_min
+      return t_min, t_max
+    else: 
+      raise ValueError(f"Unknown time bound method '{method}' supplied. Must be one ['absolute', 'laplacian', 'effective', 'informative', 'heuristic']")
+
+    ## normed? 
+      # l_max = 2.0*np.max(self.mass_matrix_.diagonal())
+      # l_min = eigsh(self.laplacian_, k = 3, which="LM", sigma=1e-6, return_eigenvectors=False)[1]
+      # l_min *= np.min(self.mass_matrix_.diagonal())
+
 
   @property
   def timepoints(self) -> np.ndarray:
@@ -259,7 +343,7 @@ class HeatKernel:
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       ntime, heuristic = self._timepoints
       lb, ub = np.sort(self.eigvals_)[1], np.max(self.eigvals_)
-      return logspaced_timepoints(ntime, lb, ub, method="local")
+      return logspaced_timepoints(ntime, lb, ub)
 
   @timepoints.setter
   def timepoints(self, timepoints): 
@@ -342,10 +426,10 @@ class HeatKernel:
     return ht
 
   def content(self, timepoints: ArrayLike = None, subset: ArrayLike = None, **kwargs) -> np.ndarray:
+    # heat_content = np.array([hk.sum() for hk in self.diffuse(timepoints, subset, **kwargs)])
     assert hasattr(self, "eigvals_"), "Must call .fit() first!"
     hkc = self.trace(timepoints)
     hkc = np.append(hkc[0], hkc[0] + np.cumsum(np.abs(np.diff(hkc))))
-    # heat_content = np.array([hk.sum() for hk in self.diffuse(timepoints, subset, **kwargs)])
     return hkc
 
   def signature(self, timepoints: ArrayLike = None, scaled: bool = True, subset: ArrayLike = None) -> np.ndarray:
@@ -360,8 +444,27 @@ class HeatKernel:
       ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0, atol=1e-14))
       hks_matrix = hks_matrix @ diags(ht)
     return hks_matrix
+  
+  def sihks(self, timepoints: ArrayLike = None, alpha: float = 2.0):
+    assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
+    ## TODO: choose alpha such that alpha**max(timepoints) is representeable as a number, or maybe such that 
+    ## -max(ew)*alpha*max(t) ~= -37, say
+    n, c = self.eigvecs_.shape[0], np.log(alpha)
+    sc = []
+    ew, ev = self.eigvals_, np.square(self.eigvecs_) ## note the elementwise squaring
+    for a_t in (alpha ** timepoints):
+      # scaling = np.tile(alpha**t * ew.T * np.exp(-alpha**t * ew.T), (n, 1))
+      scaling = a_t * ew * np.exp(-a_t * ew)
+      if all(np.abs(scaling) < 1e-15) or any(np.isnan(scaling)):
+        ## alpha**t can very quickly go to zero, so break if that happens
+        break
+      sc.append(-c * np.sum(ev * scaling, axis=1) / np.sum(ev * np.exp(-a_t * ew), axis=1))
+    sc = np.array(sc).T
+    si = np.abs(np.fft.fft(sc, axis=1))
+    return si, sc
 
   def __repr__(self) -> str:
+    # " ".join([f"{t:.2e}" for t in self.timepoints]).replace("+","")
     return f"Heat kernel for {str(self.complex)}"
   
   def clone(self):
@@ -372,40 +475,40 @@ class HeatKernel:
     return hk_clone
 
 
-def heat_kernel_signature(L: LinearOperator, A: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
-  """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
+# def heat_kernel_signature(L: LinearOperator, A: LinearOperator, timepoints: Union[int, ArrayLike] = 10, scaled: bool = True, subset = None, **kwargs):
+#   """Constructs the heat kernel signature of a given Laplacian operator at time points T. 
   
-  For a subset S \subseteq V of vertices, this returns a  |S| x |T| signature. 
-  """
-  from pbsig.linalg import eigh_solver
-  solver = eigh_solver(L, laplacian=True)
-  ew, ev = solver(L, M=A, which="SM", **kwargs) ## solve generalized eigenvalue problem
-  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
-  assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
-  cind_nz = np.flatnonzero(~np.isclose(ew, 0.0, atol=1e-14))
-  ev_subset = np.square(ev[np.array(subset), cind_nz]) if subset is not None else np.square(ev[:,cind_nz])
-  hks_matrix = np.array([ev_subset @ np.exp(-t*ew[cind_nz]) for t in timepoints]).T
-  if scaled: 
-    ht = np.array([np.sum(np.exp(-t * ew[cind_nz])) for t in timepoints]) # heat trace
-    ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0))
-    hks_matrix = hks_matrix @ diags(ht)
-  return hks_matrix
+#   For a subset S \subseteq V of vertices, this returns a  |S| x |T| signature. 
+#   """
+#   from pbsig.linalg import eigh_solver
+#   solver = eigh_solver(L, laplacian=True)
+#   ew, ev = solver(L, M=A, which="SM", **kwargs) ## solve generalized eigenvalue problem
+#   timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+#   assert isinstance(timepoints, np.ndarray), "timepoints must be an array."
+#   cind_nz = np.flatnonzero(~np.isclose(ew, 0.0, atol=1e-14))
+#   ev_subset = np.square(ev[np.array(subset), cind_nz]) if subset is not None else np.square(ev[:,cind_nz])
+#   hks_matrix = np.array([ev_subset @ np.exp(-t*ew[cind_nz]) for t in timepoints]).T
+#   if scaled: 
+#     ht = np.array([np.sum(np.exp(-t * ew[cind_nz])) for t in timepoints]) # heat trace
+#     ht = np.reciprocal(ht, where=~np.isclose(ht, 0.0))
+#     hks_matrix = hks_matrix @ diags(ht)
+#   return hks_matrix
     
-def diffuse_heat(evecs: ArrayLike, evals: ArrayLike, timepoints: Union[int, ArrayLike] = 10, subset = None):
-  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
-  I = np.arange(evecs.shape[0]) if subset is None else np.array(subset)
-  for t in timepoints:
-    Ht = evecs @ np.diag(np.exp(-t*evals)) @ evecs.T
-    yield Ht[:,I]
+# def diffuse_heat(evecs: ArrayLike, evals: ArrayLike, timepoints: Union[int, ArrayLike] = 10, subset = None):
+#   timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+#   I = np.arange(evecs.shape[0]) if subset is None else np.array(subset)
+#   for t in timepoints:
+#     Ht = evecs @ np.diag(np.exp(-t*evals)) @ evecs.T
+#     yield Ht[:,I]
 
-def heat_kernel_trace(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10, **kwargs):
-  """Computes the heat kernel trace of a gievn Laplacian operators at time points T.
-  """
-  from pbsig.linalg import eigvalsh_solver
-  ew = eigvalsh_solver(L)(L, sigma=1e-6, which="LM", **kwargs)
-  timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
-  assert isinstance(timepoints, np.ndarray), "timepoints must be an array." 
-  return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
+# def heat_kernel_trace(L: LinearOperator, timepoints: Union[int, ArrayLike] = 10, **kwargs):
+#   """Computes the heat kernel trace of a gievn Laplacian operators at time points T.
+#   """
+#   from pbsig.linalg import eigvalsh_solver
+#   ew = eigvalsh_solver(L)(L, sigma=1e-6, which="LM", **kwargs)
+#   timepoints = logspaced_timepoints(timepoints) if isinstance(timepoints, Integral) else timepoints
+#   assert isinstance(timepoints, np.ndarray), "timepoints must be an array." 
+#   return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
 
 class PsdSolver:
   def __init__(self, solver: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = None, **kwargs):
