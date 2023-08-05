@@ -271,12 +271,21 @@ def geomspace(start: float, stop: float, p: Union[int, np.ndarray] = 50, base: f
 class HeatKernel:
   def __init__(self, complex: ComplexLike):
     self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
-    self._timepoints = (32, "log-spaced")
+    self._timepoints = (32, "informative")
     # self.laplacian = None 
     # self.solver = None 
     # self._solver = None  ## TODO: make the PsdSolver *not* specific a matrix, despite previous contracts! 
 
   def time_bounds(self, method: str, interval: tuple = (0.0, 1.0), dtype = None):
+    """Returns lower and upper bounds on the time parameter of the heat kernel, based on various heuristics.
+    
+    The heat kernel, and the various summary representations derived from it, are heavily dependent on the choice of time parameter, 
+    which loosely translates into the time the system is diffuses heat from some initial condition. 
+
+    This function tries to deduce (loose) lower and upper bounds to help set the time parameter effectively. Heuristics include: 
+      "absolute" = returns [0, t_max], where t_max is the largest t one can expect to have any heat above machine precision.
+      "laplacian" = uses gerschgorin theorem to bound spectral radius and spectral gap, then uses "heuristic"
+    """
     # assert len(interval) == 2 and interval[0] >= 0.0 and interval[1] <= 1.0, "If supplied, interval bounds must be in [0,1]"
     if method == "absolute":
       # assert hasattr(self, "laplacian_")
@@ -340,21 +349,21 @@ class HeatKernel:
     if isinstance(self._timepoints, np.ndarray):
       return self._timepoints
     else:
-      assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       ntime, heuristic = self._timepoints
-      lb, ub = np.sort(self.eigvals_)[1], np.max(self.eigvals_)
-      return logspaced_timepoints(ntime, lb, ub)
+      lb, ub = self.time_bounds(heuristic)
+      return geomspace(lb, ub, ntime)
 
   @timepoints.setter
-  def timepoints(self, timepoints): 
-    if isinstance(timepoints, Container):
-      timepoints = np.array(timepoints)
-      assert np.all(timepoints >= 0), "Time points must be non-negative!"
-      self._timepoints = timepoints
-    elif isinstance(timepoints, Integral):
-      self._timepoints = (timepoints, "log-spaced")
+  def timepoints(self, timepoints: Any): 
+    if isinstance(timepoints, Integral):
+      self._timepoints = (timepoints, "informative")
     elif isinstance(timepoints, tuple):
-      assert len(timepoints) == 2 and isinstance(timepoints[0], Integral) and isinstance(timepoints, str), "timepoints must be a tuple (num_time_points, heuristic)" 
+      assert len(timepoints) == 2 and isinstance(timepoints[0], Integral) and isinstance(timepoints[1], str), "timepoints must be a tuple (num_time_points, heuristic)" 
+      assert timepoints[1] in ["absolute", "laplacian", "informative", "effective", "heuristic"]
+      self._timepoints = timepoints
+    elif isinstance(timepoints, Iterable):
+      timepoints = np.fromiter(iter(timepoints), dtype=np.float64)
+      assert np.all(timepoints >= 0), "Time points must be non-negative!"
       self._timepoints = timepoints
     else:
       raise ValueError(f"Invalid timepoints form {type(timepoints)} given. Must be array, integer, or tuple (num timepoints, heuristic)")
@@ -471,7 +480,6 @@ class HeatKernel:
     """Returns a clone of this instance with the same parameters, discarding fitted information (if any).""" 
     hk_clone = HeatKernel(self.complex) # shallow copy
     hk_clone._timepoints = self._timepoints
-    hk_clone.solver = self.solver
     return hk_clone
 
 

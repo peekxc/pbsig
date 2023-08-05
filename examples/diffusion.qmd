@@ -29,31 +29,27 @@ from scipy.sparse.linalg import eigsh
 np.random.seed(1234)
 X = np.random.uniform(size=(50,2), low=0, high=1)
 S = delaunay_complex(X)
-L = up_laplacian(S, normed = True)
 
 ## Generic way to generate multiple plots with colored vertices
-def fig_colors(gen_fig: Callable, X: ArrayLike, vertex_weights: Iterable[list]):
-  figs = []
-  for vw in vertex_weights: 
-    p = gen_fig()
-    p.scatter(*X.T, color=bin_color(vw, "viridis"), size=10.5)
-    figs.append(p)
-  return figs
+def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, **kwargs):
+  p = figure_complex(S, X, **kwargs)
+  p.scatter(*X.T, color=bin_color(vertex_weights, "inferno"), size=10.5)
+  return p
 
 ## Show heat diffusion from a single vertex 
 ind = np.argmin(X @ np.array([0,1]))
-ew, ev = eigsh(L, k=L.shape[1]-1, which="LM", sigma=1e-6)
-heat_gen = diffuse_heat(ev, ew, logspaced_timepoints(5, lb=0.2, ub=50.0), subset=ind)
-gen_fig = lambda: figure_complex(S, X, height=250, width=250)
-show(row(*fig_colors(gen_fig, X, heat_gen)))
+HK = HeatKernel(S).param_laplacian("mesh", X, normed=False).fit()
+HK.timepoints = (6, "informative")
+figs = [figure_heat(S, X, heat, width=200, height=200) for heat in HK.diffuse(subset=ind)]
+show(row(*figs))
 ```
 
 ```{python}
 #| label: Import MPEG7
 from pbsig.datasets import mpeg7
 from pbsig.distance import dist 
-X_data = mpeg7(simplify=200, which=['turtle', 'bird'])
-X, y = mpeg7(simplify=200, which=['turtle', 'bird'], return_X_y = True)
+X_data = mpeg7(simplify=101, which=['turtle', 'bird'])
+X, y = mpeg7(simplify=101, which=['turtle', 'bird'], return_X_y = True)
 S = cycle_graph(len(X_data[('turtle',1)]))
 ```
 
@@ -84,15 +80,12 @@ show(p)
 #| label: Visualize HKS on MPEG7
 from scipy.sparse import diags
 from pbsig.distance import dist
-
 from pbsig.utility import cycle_window
-X_pos = X_data[('turtle',1)]
+X_pos = X_data[('turtle',2)]
 S = cycle_graph(X_pos.shape[0])
-triangles = list(cycle_window(range(X_pos.shape[0]), offset=2, w=3))
+triangles = list(cycle_window(range(X_pos.shape[0]), offset=4, w=5))
 S.update(triangles)
 ```
-
-
 
 ```{python}
 ## Formulate the mesh Laplacian the normalize by the mass matrices
@@ -101,11 +94,7 @@ from pbsig.linalg import *
 HK = HeatKernel(S).param_laplacian(approx="mesh", X=X_pos, normed=False).fit()
 
 ## Effective seems like a good heuristic
-HK.time_bounds("absolute")
-HK.time_bounds("laplacian")
-HK.time_bounds("informative")
-HK.time_bounds("heuristic")
-HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.99,1.0]), p=32, reverse=False)
+HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.0,1.00]), p=32, reverse=False)
 hks = HK.signature(HK.timepoints)
 # hks, _ = HK.sihks(HK.timepoints)
 
@@ -116,31 +105,140 @@ p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
 
 ind = np.argmax(X_pos @ np.array([0,1]))
 q = figure_complex(S, X_pos, height=250, width=250)
-q.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+q.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
 q.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
 ind = np.argmax(X_pos @ np.array([0,-1]))
 r = figure_complex(S, X_pos, height=250, width=250)
-r.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+r.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
 r.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
 ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
 s = figure_complex(S, X_pos, height=250, width=250)
-s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=10.5)
+s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
 s.scatter(*X_pos[ind].T, color="purple", size=5.5)
 
 show(row(p,q,r,s))
-
-
 ```
 
 ```{python}
-# emb = cmds(squareform(pdist(si)**2))
+shape_keys = [('turtle', i) for i in range(1, 4)] + [('bird', i) for i in range(1,4)]
+HK = HeatKernel(S)
+HKS = [HK.clone().param_laplacian("mesh", X_data[k], normed=False).fit() for k in shape_keys]
+
+## Figure out some global time bounds 
+all_timepoints = np.array([hk.time_bounds("informative") for hk in HKS])
+all_signatures = np.array([np.ravel(hk.signature()) for hk in HKS])
+t_bnd = np.min(all_timepoints[:,0]), np.max(all_timepoints[:,1])
+global_time = geomspace(*t_bnd, 64)
+
+## Look at the signature embeddings of all these guys for comparison
+HKS_emb = [cmds(squareform(pdist(hk.signature(global_time))**2)) for hk in HKS]
+
+def figure_scatter(X, scatter_kwargs = {}, **kwargs):
+  p = figure(**kwargs)
+  p.scatter(*X.T, **scatter_kwargs)
+  return p
+
+show(row(*[figure_scatter(emb, width=150, height=150) for emb in HKS_emb]))
+
+
+## start uniformly sampling in the time interval, see how many 
+
+
+
+sigs = np.array(all_sigs)
+hks_emb = cmds(squareform(pdist(sigs)**2))
+
+## Why isnt this similar????
+s1, s2 = all_sigs[0], all_sigs[3]
+np.min([np.linalg.norm(s1 - np.roll(s2, 199*i)) for i in range(32)])
+
 p = figure(width=200, height=200)
-p.scatter(*X_pos.T, color=bin_color(np.linalg.norm(si - si[ind], axis=1), "turbo"))
+p.scatter(*hks_emb.T, color=["red"]*3 + ["blue"]*3)
 show(p)
 
+for X_pos in X_data.values():
+  HK.param_laplacian(approx="mesh", X=X_pos, normed=True).fit()
+  all_timepoints.append(geomspace(*HK.time_bounds("effective", interval=[0.0,1.0]), p=32, reverse=False))
+
+hks = HK.signature(HK.timepoints)
+
+
 ```
+
+
+
+```{python}
+stretch = lambda x: np.where(x < 0.5, 2*x ** 2, 1 - 2*(1-x)**2) ## maps [0,1] -> [0,1] monotonically, stretching extrema more
+normalize = lambda x: (x - np.min(x))/(np.max(x) - np.min(x))
+
+ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
+sdist_to_pt = np.linalg.norm(hks - hks[ind], axis=1)
+pt_col = bin_color(sdist_to_pt, "turbo")
+pt_col[:,3] = 1.0 - stretch(normalize(sdist_to_pt))
+
+from bokeh.io import export_png
+from bokeh.io.export import get_screenshot_as_png
+s = figure(width=400, height=400)
+s.patch(*X_pos.T, fill_color="gray", fill_alpha=0.10, line_alpha=0.0, hatch_pattern="dashed")
+s.scatter(*X_pos.T, line_color=None, fill_color=pt_col, size=25.5)
+s.background_fill_alpha = 0
+s.xaxis.visible = False
+s.yaxis.visible = False
+s.toolbar_location = None
+s.grid.visible = False
+show(s)
+
+# temp = export_png(s, filename="temp.png")
+temp = get_screenshot_as_png(s, height=400, width=400)
+im = np.array(temp.convert("RGBA"))
+im = im.view("uint32").reshape(im.shape[:2]) # no idea why this works but uint8 doesnt'
+
+p = figure(x_range=(-10,10), y_range=(-10,10), width=500, height=500)
+p.image_rgba(image=[im], x=0, y=0, dw=2, dh=2, anchor="center")
+show(p)
+
+# show(figure_complex(delaunay_complex(X_pos)))
+
+
+# hks_emb = cmds(squareform(pdist(hks)**2))
+# from bokeh.models import Div
+# p = figure(width=450, height=450, x_range=(-10,10), y_range=(-10,10))
+# # p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
+# div_image = Div(text=f"<img src=\"file://{temp}\" alt=\"div_image\">", width=150, height=150)
+# # p.image_url(url=['http://pngimg.com/uploads/cat/cat_PNG106.png'], x=0, y=0, w=3, h=3, anchor="center", syncable=False)
+
+# show(div_image)
+
+## TODO: continue this by making small images with voronoi cells and everything to show BoF
+
+# s.scatter(*X_pos[ind].T, color="purple", size=10.5)
+show(s)
+
+from more_itertools import * 
+def cycle_shift(seq, n) -> list:
+  N = len(seq)
+  L_ind = [take(n,l) for l in circular_shifts(range(N))]
+  L_ind = L_ind[-(n // 2):] + L_ind[:-(n // 2)]
+  return L_ind
+
+indices = cycle_shift(range(X_pos.shape[0]), 15)
+
+show(p)
+print("hello")
+p = figure(width=100, height=100)
+p.patch(X_pos[np.array(indices[0]),0], X_pos[np.array(indices[0]),1], alpha=0.80, line_width=1.5)
+
+show(p)
+
+# BagOfFeatures()
+```
+
+
+
+
+
 
 
 ```{python}
