@@ -48,9 +48,10 @@ show(row(*figs))
 #| label: Import MPEG7
 from pbsig.datasets import mpeg7
 from pbsig.distance import dist 
-X_data = mpeg7(simplify=101, which=['turtle', 'bird'])
-X, y = mpeg7(simplify=101, which=['turtle', 'bird'], return_X_y = True)
-S = cycle_graph(len(X_data[('turtle',1)]))
+NV = 100
+X_data = mpeg7(simplify=NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8))
+X, y = mpeg7(simplify=NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8), return_X_y = True)
+S = cycle_graph(NV)
 ```
 
 ```{python}
@@ -67,11 +68,12 @@ def patch_plot(X: ArrayLike, color: str, **kwargs):
   p.min_border_bottom = 0
   return p 
 
+
+
 p = column(
-  row([patch_plot(X_data[('turtle',i)], "blue") for i in range(1, 11)]), 
-  row([patch_plot(X_data[('turtle',i)], "blue") for i in range(11, 21)]), 
-  row([patch_plot(X_data[('bird',i)], "red") for i in range(1, 11)]),
-  row([patch_plot(X_data[('bird',i)], "red") for i in range(11, 21)])
+  row([patch_plot(x.reshape(NV, 2), "red") for x in X[y == 0]]),
+  row([patch_plot(x.reshape(NV, 2), "blue") for x in X[y == 1]]), 
+  row([patch_plot(x.reshape(NV, 2), "green") for x in X[y == 2]])
 )
 show(p)
 ```
@@ -124,7 +126,6 @@ show(row(p,q,r,s))
 ```{python}
 #| label: Feature plot 
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
-shape_keys = [('turtle', i) for i in range(1,6)] + [('bird', i) for i in range(1,6)]
 HK = HeatKernel(S)
 
 ## Locally fitted timepoints 
@@ -136,7 +137,8 @@ HK.timepoints = (6, "informative")
 # HK.timepoints = geomspace(*t_bnd, 6)
 
 ## Fit the heat kernel 
-HKS = [HK.clone().param_laplacian("mesh", X_data[k], normed=False).fit() for k in shape_keys]
+HKS = [HK.clone().param_laplacian("mesh", x.reshape(NV, 2), normed=False).fit() for x in X]
+
 
 def figure_scatter(X, scatter_kwargs = {}, **kwargs):
   p = figure(**kwargs)
@@ -147,27 +149,37 @@ cfigs = []
 for i in range(6):
   figs = []
   sigs = np.array([hk.signature()[:,i] for hk in HKS])
+  sigs_norm = np.diag(np.reciprocal(sigs.sum(axis=1))) @ sigs
+  sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
   # sigs_subset = np.array([hk.signature(subset=landmarks(X_data[k], 30)[0])[:,i] for k, hk in zip(shape_keys, HKS)])
-  emb = cmds(squareform(pdist(sigs)**2))
-  p = figure_scatter(emb, scatter_kwargs=dict(color=["red"]*5 + ["blue"]*5), width=125, height=125)
+  emb = cmds(squareform(sigs_norm_shift**2))
+  p = figure_scatter(emb, scatter_kwargs=dict(color=["red"]*7 + ["blue"]*7 + ["green"]*7), width=180, height=180)
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False
-  figs.append(p)
-  for k, sig in zip(shape_keys, sigs):
-    p = figure_scatter(X_data[k], scatter_kwargs = dict(color=bin_color(sig, "turbo")), width=125, height=125)
-    p.toolbar_location = None
-    figs.append(p)
+  figs.append(column(p))
+
+  shape_row = []
+  for j in np.unique(y):
+    class_ind = np.flatnonzero(y == j)
+    shape_sig_it = zip(X[class_ind], sigs[class_ind])
+    scatters_figs = [figure_scatter(x.reshape(NV, 2), scatter_kwargs = dict(color=bin_color(sig, "turbo")), width=60, height=60) for x, sig in shape_sig_it]
+    shape_row.append(row(*[figure_plain(p) for p in scatters_figs]))
+  figs.append(column(shape_row))
+
+  ## distance matrix
+  figs.append(column(figure_dist(sigs_norm_shift, width=180, height=180)))
+
   cfigs.append(row(*figs))
 
 show(column(*cfigs))
 
-from pbsig.vis import figure_dist
-sigs = np.array([hk.signature()[:,0] for hk in HKS])
-sigs_norm = np.diag(np.reciprocal(sigs.sum(axis=1))) @ sigs
-sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
+# from pbsig.vis import figure_dist
+# sigs = np.array([hk.signature()[:,0] for hk in HKS])
+# sigs_norm = np.diag(np.reciprocal(sigs.sum(axis=1))) @ sigs
+# sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
 
-show(figure_dist(sigs_norm_shift), palette = "turbo")
+# show(figure_dist(sigs_norm_shift), palette = "turbo")
 # show(figure_dist(pdist(sigs_norm)), palette = "turbo")
 ```
 

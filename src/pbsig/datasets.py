@@ -169,8 +169,9 @@ def _largest_contour(img: ArrayLike, threshold: int = 180):
   return(S)
 
 
-def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', return_X_y: bool = False):
+def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', shape_nums = "all", return_X_y: bool = False):
   from PIL import Image, ImageDraw, ImageFont, ImageFilter
+  shape_nums = range(21) if isinstance(shape_nums, str) and shape_nums == "all" else shape_nums
   base_dir = _package_data('mpeg7')
   mpeg7 = []
   _all_shapes = ['Bone', 'Comma', 'Glas', 'HCircle', 'Heart', 'Misk', 'apple', 'bat', 
@@ -202,7 +203,7 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', ret
   if simplify == 150 and contour == True:
     mpeg7 = pickle.load(open(base_dir + "/mpeg_small.pickle", "rb"))
     return { k : v for k,v in mpeg7.items() if k[0] in shape_types }
-  shape_nums = range(21) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
+  # shape_nums = range(21) #[1,2,3,4,5,6,7,8,9,10,11,12] #3,4,5
   normalize = lambda X: (X - np.min(X))/(np.max(X)-np.min(X))*255
   dataset = {}
   for st in shape_types:

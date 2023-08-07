@@ -237,3 +237,14 @@ def figure_complex(
 
 def plot_complex(*args, **kwargs) -> None:
   show(figure_complex(*args, **kwargs))
+
+
+
+def figure_plain(p):
+  """Turns off the visibility of the toolbar, grid axis, and background lines of a given figure."""
+  p.toolbar_location = None
+  p.xaxis.visible = False
+  p.yaxis.visible = False
+  p.xgrid.visible = False
+  p.ygrid.visible = False
+  return p
