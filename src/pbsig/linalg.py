@@ -325,9 +325,15 @@ class HeatKernel:
     elif method == "informative":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       machine_eps = np.finfo(self.laplacian_.dtype).eps
-      l_min, l_max = np.quantile(self.eigvals_[1:], interval) ## TODO: revisit, if its a linearly spaced interval use could do themselves
-      t_max = -np.log(machine_eps) / l_min
-      t_min = -np.log(machine_eps) / (l_max - l_min)
+      ew = np.sort(self.eigvals_)
+      l_min, l_max = ew[1], ew[-1]
+      # l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_)
+      # l_min, l_max = np.quantile(self.eigvals_[1:], interval) ## TODO: revisit, if its a linearly spaced interval use could do themselves
+      t_max = -np.log2(machine_eps) / l_min
+      t_min = -np.log2(machine_eps) / (l_max - l_min)
+      lmi, lmx = np.log2(t_min), np.log2(t_max)
+      t_max = 2.0 ** (lmi + interval[0] * (lmx - lmi))
+      t_min = 2.0 ** (lmi + interval[1] * (lmx - lmi))
       return t_min, t_max
     elif method == "heuristic":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"

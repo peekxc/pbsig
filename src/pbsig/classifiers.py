@@ -241,9 +241,10 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
 
 class BarycenterClassifier(BaseEstimator, ClassifierMixin):
   """Classifier defined by distance to nearest class-fit barycenter."""
-  def __init__(self, metric: Union[str, Callable] = "euclidean", **kwargs):
+  def __init__(self, metric: Union[str, Callable] = "euclidean", random_state = None, **kwargs):
     """sklearn requires no input validation for initializer """
     self.metric = metric # to be called by cdist
+    self.random_state = random_state 
     for k,v in kwargs.items():
       setattr(self, k, v)
 
@@ -263,14 +264,13 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
   #   return cdist(XA, XB, **kwargs)
 
   @staticmethod
-  def barycenter(X: ArrayLike, sample_weight: ArrayLike = None, normalize: bool = True) -> np.ndarray:
+  def barycenter(X: ArrayLike, sample_weight: ArrayLike = None) -> np.ndarray:
     """Computes an weighted average over a set of inputs."""
     if sample_weight is None:
       return X.mean(axis=0) 
     else: 
       ## Use barycentric coordinates
       assert isinstance(sample_weight, np.ndarray) and len(sample_weight) == len(X), "Sample weight must be array with a length matching X."
-      sample_weight = sample_weight / np.sum(sample_weight) if normalize else sample_weight
       return (sample_weight[:,np.newaxis] * X).mean(axis=0)
 
   def fit(self, X: List[ArrayLike], y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
@@ -280,6 +280,7 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     """
     self.classes_, y = np.unique(y, return_inverse=True)  # sklearn required 
     self.n_classes_ = len(self.classes_)                  # sklearn required 
+    # [x for xi, yi in zip(X, y) if yi == cl]
     self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
     return self
 

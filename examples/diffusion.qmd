@@ -81,34 +81,32 @@ S.update(triangles)
 ```{python}
 #| label: Visualize HKS on MPEG7
 ## Formulate the mesh Laplacian the normalize by the mass matrices
-from pbsig.linalg import HeatKernel
 from pbsig.linalg import * 
 HK = HeatKernel(S).param_laplacian(approx="mesh", X=X_pos, normed=False).fit()
 
-## Effective seems like a good heuristic
-HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.0,1.00]), p=32, reverse=False)
+## informative seems like a good heuristic
+HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.0,1.0]), p=32, reverse=False)
 hks = HK.signature(HK.timepoints)
-# hks, _ = HK.sihks(HK.timepoints)
 
-## Plot the MDS embedding of the signatures + their similarities to the top point
+## Plot the MDS embedding of the signatures 
 hks_emb = cmds(squareform(pdist(hks)**2))
-p = figure(width=250, height=250)
-p.scatter(*hks_emb.T, color=bin_color(np.arange(X_pos.shape[0]), "turbo"))
+p = figure_scatter(hks_emb, color=bin_color(np.arange(X_pos.shape[0]), "turbo"), width=250, height=200)
 
+## + their similarities to extremal points
 ind = np.argmax(X_pos @ np.array([0,1]))
-q = figure_complex(S, X_pos, height=250, width=250)
+q = figure_complex(S, X_pos, width=250, height=200)
 q.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
-q.scatter(*X_pos[ind].T, color="purple", size=5.5)
+q.scatter(*X_pos[ind].T, color="purple", size=10.5)
 
 ind = np.argmax(X_pos @ np.array([0,-1]))
-r = figure_complex(S, X_pos, height=250, width=250)
+r = figure_complex(S, X_pos, width=250, height=200)
 r.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
-r.scatter(*X_pos[ind].T, color="purple", size=5.5)
+r.scatter(*X_pos[ind].T, color="purple", size=10.5)
 
 ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
-s = figure_complex(S, X_pos, height=250, width=250)
+s = figure_complex(S, X_pos, width=250, height=200)
 s.scatter(*X_pos.T, color=bin_color(np.linalg.norm(hks - hks[ind], axis=1), "turbo"), size=5.5)
-s.scatter(*X_pos[ind].T, color="purple", size=5.5)
+s.scatter(*X_pos[ind].T, color="purple", size=10.5)
 
 show(row(p,q,r,s))
 ```
@@ -116,6 +114,7 @@ show(row(p,q,r,s))
 ```{python}
 #| label: MDS + HKS + dist plot over time
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
+from pbsig.dsp import signal_dist
 HK = HeatKernel(S)
 
 ## Locally fitted timepoints 
@@ -165,14 +164,125 @@ for i in range(6):
 show(column(*cfigs))
 ```
 
+TODO: Figure out way to give more weight to closer distances in signal distance, say with gaussian exp kernel...  
+
+Next, we generate an "average" heat kernel signature for each class of shapes at some fixed time `t > 0`. To do this, we phase-align the HKS of each 
+signature at time `t` to fixed but arbitrary reference signature by minimizing the cross-correlation. This gives a canonical correspondence 
+between each pair of vectors. We then take the average at each point using the correspondence, for all shapes in the given class.
+
+To do this for multiple values of `t`, one can perform the same steps with a slight augmentation: in step 1, rather than minimizing cross correlation, 
+minimize multiple cross correlation simulataneously across mutliple signals. This is like simultanous signal phase alignment. Then, in step 2, use 
+generalized procrustes analysis. 
+
+```{python}
+#| label: Class-specific signature barycenters for a fixed time t.  
+from pbsig.dsp import phase_align, signal_dist
+from pbsig.classifiers import barycenter_classifier
+
+## The 1-dimensional case for a fixed time point is easy 
+HK_sigs = np.array([np.ravel(hk.signature([hk.timepoints[1]])) for hk in HKS])
+HK_learner = barycenter_classifier("HKS")
+wl = HK_learner(metric=signal_dist) # weak learner
+wl.fit(hk_sigs, y)
+wl.score(hk_sigs, y)
+
+## Hypothesis space: 1d signatures at some give time 
+# lambda t: np.array([np.ravel(hk.signature([t])) for hk in HKS]) ## for range of t
+# lambda t: np.array([np.ravel(hk.signature([hk.timepoints[i]])) for hk in HKS]) ## for i in [0,n-1]
+
+
+## Need a randomized transformer 
+## TODO: How do I generically store the heat kernel object? What is its contract?
+## a) 
+## Feature extractors must implement at least: fit, transform, get_feature_names_out
+## https://scikit-learn.org/stable/glossary.html#term-feature-extractor
+## Transformers must be estimators supporting transform and/or fit_transform
+class RandomizedVectorizer(_VectorizerMixin, BaseEstimator):
+  def __init__(self, random_state = None, dimension: int, **kwargs):
+    self.random_state = random_state
+    self.distribution = distribution
+    self.dimension = dimension
+
+
+  @staticmethod
+  def sample(size: Union[int, tuple]) -> np.ndarray:
+    """Produces a vector embedding of a given input.
+    
+    Defaults to the identity function (w/ input validation).
+    """
+    # raise NotImplementedError("A vector method must be implemented to use as an estimator.")
+    return np.asarray_chkfinite(X)
+  
+  def fit(self, X: ArrayLike = None, y: Optional[np.ndarray] = None):
+    self.distribution(size=)
+
+  def transform(self, X: ArrayLike) -> np.ndarray:
+    n_samples = X.shape[0]
+    return self.random_state_.randn(n_samples, self.n_components)
+
+## Convert a deterministic estimator/classifier into a randomized one over some hypothesis space
+## 
+class HypothesisSpace(BaseEstimator):
+  """A _hypothesis space_ is a space of estimators/classifiers that depend on some random state.
+  
+
+  """
+  def __init__(estimator: BaseEstimator, hspace: Callable, random_state = None):
+    self.estimator = estimator ## deterministic estimator 
+    self.hspace = hspace       ## hypothesis space -- a transformer with support for a random state
+    self.random_state = random_state
+
+  def fit(X: Sized, y: np.ndarray, sample_weight = None):
+    from copy import deepcopy
+    assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
+    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
+    assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
+
+    ## Randomized component
+    rng = np.random.RandomState(self.random_state)
+    self.estimator.fit(self.hspace(rng))
+
+    timepoint = self.hspace.rvs(size=1)
+    HK_sigs = np.array([np.ravel(hk.signature([timepoint])) for hk in HKS])
+    
+    ## 
+    
+    self.estimator.fit(HK_sigs)
+
+
+
+
+
+    while not(hasattr(self, "bins_")) or (False if not(ensure_better) else self.score(X, y) <= 0.50):
+      self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
+      self.classes_, y = np.unique(y, return_inverse=True) # TODO: import from cache
+      self.n_classes_ = len(self.classes_)                 # TODO: import from cache
+      
+      ## Re-weight the sample weights to be a distribution on each class
+      class_weights, norm_weight = {}, deepcopy(sample_weight)
+      for cl in self.classes_: 
+        class_weights[cl] = np.sum(norm_weight[y == cl])
+        norm_weight[y == cl] = norm_weight[y == cl] / class_weights[cl] if class_weights[cl] > 0 else norm_weight[y == cl]
+
+
+## Requirements: 
+
+from sklearn.ensemble import AdaBoostClassifier
+A_skl = AdaBoostClassifier(ShellsClassifier(bins=15), n_estimators=15, learning_rate=0.01, algorithm="SAMME")
+```
+
 
 ```{python}
 #| label: Boosting HKS weak learners
 from pbsig.classifiers import barycenter_classifier
-HKS_learner = barycenter_classifier("HKS")
+# barycenter_2d = lambda x, w: (w[:,np.newaxis] * x.reshape(len(x) // 2, 2)).mean(axis=0) if w is not None else x.reshape(len(x) // 2, 2).mean(axis=0)
+
+hks = HK.clone().param_laplacian("mesh", x.reshape(NV, 2), normed=False).fit().signature()
+
+HKS_learner = barycenter_classifier("HKS", center=barycenter_2d)
 wl = HKS_learner(metric=signal_dist) # weak learner
 
-
+2
 wl.fit(X, y)
 weak_learner.score(X_train, y_train)
 
