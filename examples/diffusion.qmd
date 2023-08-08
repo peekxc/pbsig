@@ -49,37 +49,26 @@ show(row(*figs))
 from pbsig.datasets import mpeg7
 from pbsig.distance import dist 
 NV = 100
-X_data = mpeg7(simplify=NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8))
-X, y = mpeg7(simplify=NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8), return_X_y = True)
+data_params = dict(simplify = NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8))
+X_data = mpeg7(**data_params)
+X, y = mpeg7(**data_params, return_X_y = True)
 S = cycle_graph(NV)
 ```
 
 ```{python}
 #| label: Visualize MPEG7 shapes 
-def patch_plot(X: ArrayLike, color: str, **kwargs):
-  p = figure(width=50, height=50, **kwargs)
-  p.patch(X[:,0], X[:,1], alpha=0.40, line_width=2.5, color=color)
-  p.toolbar_location = None
-  p.axis.visible = False
-  p.grid.grid_line_color = None
-  p.min_border_left = 0
-  p.min_border_right = 0
-  p.min_border_top = 0
-  p.min_border_bottom = 0
-  return p 
-
-
-
+from pbsig.vis import * 
+patch = lambda X, color: figure_plain(figure_patch(X, color=color, width=50, height=50, alpha=0.40, line_width=2.5))
 p = column(
-  row([patch_plot(x.reshape(NV, 2), "red") for x in X[y == 0]]),
-  row([patch_plot(x.reshape(NV, 2), "blue") for x in X[y == 1]]), 
-  row([patch_plot(x.reshape(NV, 2), "green") for x in X[y == 2]])
+  row([patch(x.reshape(NV, 2), "red") for x in X[y == 0]]),
+  row([patch(x.reshape(NV, 2), "blue") for x in X[y == 1]]), 
+  row([patch(x.reshape(NV, 2), "green") for x in X[y == 2]])
 )
 show(p)
 ```
 
 ```{python}
-#| label: Visualize HKS on MPEG7
+#| label: REPLACE
 from scipy.sparse import diags
 from pbsig.distance import dist
 from pbsig.utility import cycle_window
@@ -90,6 +79,7 @@ S.update(triangles)
 ```
 
 ```{python}
+#| label: Visualize HKS on MPEG7
 ## Formulate the mesh Laplacian the normalize by the mass matrices
 from pbsig.linalg import HeatKernel
 from pbsig.linalg import * 
@@ -124,7 +114,7 @@ show(row(p,q,r,s))
 ```
 
 ```{python}
-#| label: Feature plot 
+#| label: MDS + HKS + dist plot over time
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
 HK = HeatKernel(S)
 
@@ -142,43 +132,51 @@ HKS = [HK.clone().param_laplacian("mesh", x.reshape(NV, 2), normed=False).fit() 
 cfigs = []
 for i in range(6):
   figs = []
+
+  ## Compute minimum rollover distance between specific signatures
   sigs = np.array([hk.signature()[:,i] for hk in HKS])
-  sigs_norm = np.diag(np.reciprocal(sigs.sum(axis=1))) @ sigs
-  sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
+  sigs_norm = np.reciprocal(sigs.sum(axis=1))[:,np.newaxis] * sigs
+  sigs_norm_shift = pdist(sigs_norm, metric=signal_dist)
   # sigs_subset = np.array([hk.signature(subset=landmarks(X_data[k], 30)[0])[:,i] for k, hk in zip(shape_keys, HKS)])
   emb = cmds(squareform(sigs_norm_shift**2))
+
+  ## MDS plot
   p = figure_scatter(emb, color=["red"]*7 + ["blue"]*7 + ["green"]*7, width=180, height=180)
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False
   figs.append(column(p))
 
+  ## Rows of shape HKS plots
   shape_row = []
   for j in np.unique(y):
     class_ind = np.flatnonzero(y == j)
     shape_sig_it = zip(X[class_ind], sigs[class_ind])
-    scatters_figs = [figure_scatter(x.reshape(NV, 2), scatter_kwargs = dict(color=bin_color(sig, "turbo")), width=60, height=60) for x, sig in shape_sig_it]
+    scatters_figs = [figure_scatter(x.reshape(NV, 2), color=bin_color(sig, "turbo"), width=60, height=60) for x, sig in shape_sig_it]
     shape_row.append(row(*[figure_plain(p) for p in scatters_figs]))
   figs.append(column(shape_row))
 
-  ## distance matrix
+  ## Distance plot 
   figs.append(column(figure_dist(sigs_norm_shift, width=180, height=180)))
 
+  ## Combine
   cfigs.append(row(*figs))
 
 show(column(*cfigs))
-
-# from pbsig.vis import figure_dist
-# sigs = np.array([hk.signature()[:,0] for hk in HKS])
-# sigs_norm = np.diag(np.reciprocal(sigs.sum(axis=1))) @ sigs
-# sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
-
-# show(figure_dist(sigs_norm_shift), palette = "turbo")
-# show(figure_dist(pdist(sigs_norm)), palette = "turbo")
 ```
 
 
 ```{python}
+#| label: Boosting HKS weak learners
+from pbsig.classifiers import barycenter_classifier
+HKS_learner = barycenter_classifier("HKS")
+wl = HKS_learner(metric=signal_dist) # weak learner
+
+
+wl.fit(X, y)
+weak_learner.score(X_train, y_train)
+
+
 shape_keys = [('turtle', i) for i in range(1, 4)] + [('bird', i) for i in range(1,4)]
 HK = HeatKernel(S)
 HKS = [HK.clone().param_laplacian("mesh", X_data[k], normed=False).fit() for k in shape_keys]
@@ -191,12 +189,6 @@ global_time = geomspace(*t_bnd, 64)
 
 ## Look at the signature embeddings of all these guys for comparison
 HKS_emb = [cmds(squareform(pdist(hk.signature(global_time))**2)) for hk in HKS]
-
-def figure_scatter(X, scatter_kwargs = {}, **kwargs):
-  p = figure(**kwargs)
-  p.scatter(*X.T, **scatter_kwargs)
-  return p
-
 show(row(*[figure_scatter(emb, width=150, height=150) for emb in HKS_emb]))
 
 

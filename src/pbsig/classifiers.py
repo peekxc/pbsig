@@ -14,6 +14,129 @@ def subsample_hash(X: np.ndarray, size: int = 100) -> int:
   b.flags.writeable = False
   return hash(b.data.tobytes())
 
+class BinaryAdaBoostClassifier:
+  """Binary AdaBoost classifier."""
+  def __init__(self, weak_learner: object, random_state = None):
+    self.random_state = random_state
+    self.weak_learner = weak_learner
+
+  def fit(self, X: ArrayLike, y: ArrayLike, n_estimators: int = 100, cap_loss: bool = True, normalize_weights: bool = True):
+    """Fits a binary boosted classifier. 
+    
+    Capping the exponential loss to [0,1] is equivalent to using a 0/1 mistake "dichotomy". If False, the loss 
+    for misclassification can be arbitrarily high ([0, \infty)), which could lead to faster convergence at 
+    the cost of numerical instability. 
+
+    Constraining the sample weights to sum to 1 via weight normalization is common in the literature. 
+    This has the effect of passing a measure / distribution of samples to the weak learners to fit too, and 
+    it internally implies the error / learning coefficient update will derive from an expectation taken over 
+    the hypothesis space of weak learners. Moreover, if the weak learners .fit() function creates ground truth 
+    information using these sample weights (e.g. in the form of barycenters), then normalizing the weight vector
+    effectively restricts the hypothesis space of those weak learners to the convex hull of each classes training data.
+    
+    In the context of barycentric coordinates, normalizing the weight vector allows a sample-weight-fitted estimator
+    to have a unique hypothesis space, as the corresponding barycenters are homogenous. 
+    
+    When normalize_weights = True, AdaBoost can be seen as maintaining a growth relation between the sum of KL
+    divergences between successive weight vectors and our expected value of of the margins. This has a dual interpretation 
+    of finding support vectors that minimize the margin as the number of learners grows, see https://arxiv.org/pdf/2210.07808.pdf.
+
+    The unique values and dtype of the y array will determine the output of any function that returns class labels (e.g. predict) 
+
+    Parameters: 
+      X: ndarray representing points in Euclidean space. 
+      y: ndarray of class labels. See details. 
+      n_estimators: the number of weak learners to fit.
+      cap_loss: whether to restrict the exponential loss to lie in [0,1]. See details. 
+      normalize_weights: whether to normalize the sample coefficients to sum to 1. See details. 
+    """
+    from copy import deepcopy
+    n = X.shape[0]
+    classes_, y = np.unique(y, return_inverse=True)
+    assert n == len(y) and isinstance(X, np.ndarray) and isinstance(y, np.ndarray), "Invalid (X, y) pair given."
+    assert len(classes_) == 2, "AdaBoost is only a binary classifier"
+    self.classes_ = classes_
+    self.estimators_ = []
+    self.coeffs_ = []
+
+    ## Run the iterations
+    ## Update formula: https://course.ccs.neu.edu/cs6140sp15/4_boosting/lecture_notes/boosting/boosting.pdf
+    ## Also: https://arxiv.org/pdf/2210.07808.pdf
+    ## rt = 1.0-et
+    ## np.where(yt != y, wt * np.sqrt(rt/et), wt * np.sqrt(et/rt))  ## alternative, equiv weight update
+    ## 0.5 * np.log((1+(1-2*et))/(1 - (1-2*et)))                    ## alternative, equiv coefficient calculation
+    ## Compare with: https://github.com/scikit-learn/scikit-learn/blob/a24c8b464d094d2c468a16ea9f8bf8d42d949f84/sklearn/ensemble/weight_boosting.py#L572-L574
+    ## sklearn uses 0/1 loss w/ no wieght normalization, though normalization may be necessary: https://stats.stackexchange.com/questions/59490/the-weight-updating-in-adaboost
+    wt = np.ones(n) / n # uniform coefficient weights 
+    for t in range(n_estimators):
+      ht = self.weak_learner.fit(X, y, wt)                ## fit weak learner with weighted samples; should be randomized
+      yt = ht.predict(X)                                  ## predict using the weak learner
+      et = np.sum(wt[yt != y]) / np.sum(wt)               ## error of the current weak learner; strictly non-negative
+      at = 0.5 * np.log((1.0-et)/et) if et > 0 else 1.0   ## voting/learning coefficient      ; in (-\infty, 1]
+      nt = np.where(yt == y, 1, -1)                       ## signed "mistake dichotomy" -- could also use 0/1 loss to cap mistake contributions
+      wt *= np.exp(-at * nt)                              ## weight update; exp(*) >= 0 ==> wt >= 0
+      wt /= np.sum(wt)                                    ## weight normalization; optional, though weights should stay non-negative
+      self.estimators_.append(deepcopy(ht))
+      self.coeffs_.append(at)
+
+  def decision_function(self, X: ArrayLike) -> ArrayLike: 
+    """Confidence function."""
+    y_pred = np.zeros(len(X), dtype=np.float64)
+    sgn_classes = np.array([-1, 1], dtype=np.int16) 
+    for a, h in zip(self.coeffs_, self.estimators_):
+      p = np.searchsorted(self.classes_, h.predict(X)) # guarenteed to be in [0,1]
+      y_pred += a * sgn_classes[p] # maps class @ 0 -> -1 and class @ 1 -> 1
+    return y_pred
+
+  def predict_proba(self, X: ArrayLike) -> ArrayLike:
+    """Probability prediction function."""
+    y_pred = self.decision_function(X)
+    m = np.sum(np.abs(self.coeffs_)) # all predictions should be in [-m, m] where m = sum(alpha) = max confidence
+    prob = 0.5 + np.where(y_pred < 0, (m - np.abs(y_pred))/(2*m), y_pred/(2*m))
+    return np.array([(p, 1-p) if s < 0 else (1-p, p) for p,s in zip(prob, y_pred)])
+    # normalize = lambda x: (x - np.min(x))/max_confidence
+    # proba = (y_pred + max_confidence)/(2*max_confidence) # should be in [0,1]
+
+  def predict(self, X: ArrayLike) -> ArrayLike:
+    return self.classes_[np.where(A.decision_function(X) < 0, 0, 1)]
+  
+  def margin(self, X: ArrayLike, y: ArrayLike):
+    """Computes the margin of classifier success or 'confidence' on a given (X,y) pair."""
+    sgn_classes = np.array([-1, 1], dtype=np.int16) 
+    yp = sgn_classes[np.searchsorted(self.classes_, y)]
+    return self.decision_function(X) * yp
+
+  def staged_decision_function(self, X: ArrayLike) -> Generator:
+    y_pred = np.zeros(len(X), dtype=np.float64)
+    sgn_classes = np.array([-1, 1], dtype=np.int16) 
+    for a, h in zip(self.coeffs_, self.estimators_):
+      p = np.searchsorted(self.classes_, h.predict(X)) # guarenteed to be in [0,1]
+      y_pred += a * sgn_classes[p] # maps class @ 0 -> -1 and class @ 1 -> 1
+      yield deepcopy(y_pred)
+
+  def staged_predict_proba(self, X: ArrayLike) -> Generator:
+    m = np.sum(np.abs(self.coeffs_)) # max confidence
+    for y_pred in self.staged_decision_function(X):
+      prob = 0.5 + np.where(y_pred < 0, (m - np.abs(y_pred))/(2*m), y_pred/(2*m))
+      yield np.array([(p, 1-p) if s < 0 else (1-p, p) for p,s in zip(prob, y_pred)])
+      
+  def staged_predict(self, X: ArrayLike) -> Generator:
+    for y_pred in self.staged_decision_function(X):
+      yield self.classes_[np.where(y_pred < 0, 0, 1)]
+
+  def staged_margin(self, X: ArrayLike, y: ArrayLike, normalize: bool = False) -> Generator:
+    margin = np.zeros(len(y), dtype=np.float64)
+    for i, (yt, at) in enumerate(zip(self.staged_predict(X), self.coeffs_)):
+      margin += at * np.where(yt == y, 1, -1)
+      yield deepcopy(margin/np.sum(np.abs(self.coeffs_[:(i+1)]))) if normalize else deepcopy(margin)
+
+  def score(self, X: ArrayLike, y: ArrayLike) -> float:
+    return np.sum(self.predict(X) == y)/len(y)
+
+  def staged_score(self, X: ArrayLike, y: ArrayLike) -> Generator:
+    for yt in self.staged_predict(X):
+      yield float(np.sum(yt == y)/len(y))
+
 class ShellsClassifier(BaseEstimator, ClassifierMixin):
   """ Weak classifier that uses a histogram of distances to perform classification """
   def __init__(self, bins: Union[int, Iterable] = 10, dim: int = 2, random_state = None, cache: bool = False):
@@ -116,15 +239,9 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
     return np.sum(self.predict(X) == y)/len(y)
   
 
-
-
-
-
-
-
 class BarycenterClassifier(BaseEstimator, ClassifierMixin):
   """Classifier defined by distance to nearest class-fit barycenter."""
-  def __init__(self, metric: Union[str, Callable], **kwargs):
+  def __init__(self, metric: Union[str, Callable] = "euclidean", **kwargs):
     """sklearn requires no input validation for initializer """
     self.metric = metric # to be called by cdist
     for k,v in kwargs.items():
@@ -154,9 +271,9 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
       ## Use barycentric coordinates
       assert isinstance(sample_weight, np.ndarray) and len(sample_weight) == len(X), "Sample weight must be array with a length matching X."
       sample_weight = sample_weight / np.sum(sample_weight) if normalize else sample_weight
-      return (X @ np.diag(sample_weight)).mean(axis=0)
+      return (sample_weight[:,np.newaxis] * X).mean(axis=0)
 
-  def fit(self, X: List[Any],ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+  def fit(self, X: List[ArrayLike], y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
     """Fits a set of weighted barycenters for each class.
     
     Populates barycenters_
@@ -168,10 +285,11 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
 
   def decision_function(self, X: ArrayLike) -> np.ndarray:
     """ Computes the distance between vectors of 'X' the class-fitted barycenters"""
+    from scipy.spatial.distance import cdist
     # V = np.array([self.vector(x) for x in X])
     V = self.vector(X)
     C = np.array([centroid for centroid in self.barycenters_.values()])
-    return self.cdist(V, C)
+    return cdist(V, C, metric=self.metric)
 
   def predict_proba(self, X: ArrayLike) -> np.ndarray:
     """Converts distances to similarity (arbitrarily) to produce a probability."""
@@ -191,15 +309,14 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     return np.sum(self.predict(X) == y)/len(y)
 
 
-def barycenter_classifier(name: str, vector: Callable, center: Callable = None, dist: Callable = None) -> BaseEstimator:
-  """Constructs a barycenter classifier using the supplied vector, center, and distance functions. 
-
+def barycenter_classifier(name: str, center: Callable = None, vector: Callable = None) -> BaseEstimator:
+  """Constructs a barycenter classifier using the supplied vector and centering functions. 
   """
-  methods = dict(vector=staticmethod(vector))
+  methods = {}
   if center is not None: 
     methods["barycenter"] = staticmethod(center)
-  if dist is not None: 
-    methods["cdist"] = staticmethod(dist)
+  if vector is not None:
+    methods["vector"] = staticmethod(vector)
   return type(name, (BarycenterClassifier,), methods)
 
 

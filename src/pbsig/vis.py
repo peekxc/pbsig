@@ -238,13 +238,22 @@ def figure_complex(
 def plot_complex(*args, **kwargs) -> None:
   show(figure_complex(*args, **kwargs))
 
-from bokeh.models import Scatter
+from bokeh.models import Scatter, Plot
+
 def figure_scatter(X: ArrayLike, **kwargs):
   fig_params = { param[0].name for param in figure.parameters() }
-  scatter_params = { param[0].name for param in Scatter.parameters() }
+  # scatter_params = { param[0].name for param in Scatter.parameters() }
   p = figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params }))
-  p.scatter(*X.T, **({ k : kwargs[k] for k in kwargs.keys() & scatter_params }))
+  p.scatter(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
   return p
+
+def figure_patch(X: ArrayLike, **kwargs):
+  fig_params = { param[0].name for param in figure.parameters() }
+  # patch_params = { param[0].name for param in Scatter.parameters() }
+  p = figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params }))
+  p.patch(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
+  return p
+
 
 def figure_plain(p):
   """Turns off the visibility of the toolbar, grid axis, and background lines of a given figure."""
@@ -253,4 +262,8 @@ def figure_plain(p):
   p.yaxis.visible = False
   p.xgrid.visible = False
   p.ygrid.visible = False
+  p.min_border_left = 0
+  p.min_border_right = 0
+  p.min_border_top = 0
+  p.min_border_bottom = 0
   return p
