@@ -4,6 +4,7 @@ from numpy.typing import ArrayLike
 import numpy as np
 from pbsig.shape import shells
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
+from scipy.cluster.vq import kmeans2, vq, whiten
 
 def subsample_hash(X: np.ndarray, size: int = 100) -> int:
   """Hashes the byte representation of a numpy array by random-sampling."""
@@ -123,28 +124,34 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
 
 class BarycenterClassifier(BaseEstimator, ClassifierMixin):
   """Classifier defined by distance to nearest class-fit barycenter."""
-  def __init__(self, **kwargs):
+  def __init__(self, metric: Union[str, Callable], **kwargs):
     """sklearn requires no input validation for initializer """
+    self.metric = metric # to be called by cdist
     for k,v in kwargs.items():
       setattr(self, k, v)
 
   @staticmethod
   def vector(X: Any, **kwargs) -> np.ndarray:
-    """Produces a vector embedding of a given input """
-    raise NotImplementedError("A vector method must be implemented to use as an estimator.")
+    """Produces a vector embedding of a given input.
+    
+    Defaults to the identity function (w/ input validation).
+    """
+    # raise NotImplementedError("A vector method must be implemented to use as an estimator.")
+    return np.asarray_chkfinite(X)
   
-  @staticmethod
-  def cdist(XA: ArrayLike, XB: ArrayLike, **kwargs) -> np.ndarray:
-    """Compute distance between each pair of the two collections of inputs."""
-    from scipy.spatial.distance import cdist
-    return cdist(XA, XB, **kwargs)
+  # @staticmethod
+  # def cdist(XA: ArrayLike, XB: ArrayLike, **kwargs) -> np.ndarray:
+  #   """Compute distance between each pair of the two collections of inputs."""
+  #   from scipy.spatial.distance import cdist
+  #   return cdist(XA, XB, **kwargs)
 
   @staticmethod
   def barycenter(X: ArrayLike, sample_weight: ArrayLike = None, normalize: bool = True) -> np.ndarray:
-    """Computes an representative average over a set of inputs."""
+    """Computes an weighted average over a set of inputs."""
     if sample_weight is None:
       return X.mean(axis=0) 
     else: 
+      ## Use barycentric coordinates
       assert isinstance(sample_weight, np.ndarray) and len(sample_weight) == len(X), "Sample weight must be array with a length matching X."
       sample_weight = sample_weight / np.sum(sample_weight) if normalize else sample_weight
       return (X @ np.diag(sample_weight)).mean(axis=0)
@@ -159,7 +166,8 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
     return self
 
-  def decision_function(self, X: ArrayLike) -> np.ndarray: 
+  def decision_function(self, X: ArrayLike) -> np.ndarray:
+    """ Computes the distance between vectors of 'X' the class-fitted barycenters"""
     # V = np.array([self.vector(x) for x in X])
     V = self.vector(X)
     C = np.array([centroid for centroid in self.barycenters_.values()])
@@ -183,12 +191,10 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     return np.sum(self.predict(X) == y)/len(y)
 
 
-
-
-
-
 def barycenter_classifier(name: str, vector: Callable, center: Callable = None, dist: Callable = None) -> BaseEstimator:
-  """Constructs a basic classifier """
+  """Constructs a barycenter classifier using the supplied vector, center, and distance functions. 
+
+  """
   methods = dict(vector=staticmethod(vector))
   if center is not None: 
     methods["barycenter"] = staticmethod(center)
@@ -197,105 +203,109 @@ def barycenter_classifier(name: str, vector: Callable, center: Callable = None, 
   return type(name, (BarycenterClassifier,), methods)
 
 
-
-
 from copy import deepcopy
 
-## TODO: can this be generalized further by treating as a simplified bag-of-words type model
-class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
-  """ Classifier factory for building learners that use distance to class-averages for classification """
+# ## TODO: can this be generalized further by treating as a simplified bag-of-words type model
+# class AverageClassifierFactory(BaseEstimator, ClassifierMixin):
+#   """ Classifier factory for building learners that use distance to class-averages for classification """
   
-  def __init__(self):
+#   def __init__(self):
 
-    pass 
+#     pass 
 
-  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
-    rng = np.random.RandomState(self.random_state) # used for sampling shells
-    assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
-    sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
-    assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
+#   def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+#     rng = np.random.RandomState(self.random_state) # used for sampling shells
+#     assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
+#     sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
+#     assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
     
-    ## TODO: Sample from a precomputed set of large bins to be even faster?
+#     ## TODO: Sample from a precomputed set of large bins to be even faster?
     
-    self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
-    self.classes_, y = np.unique(y, return_inverse=True) # TODO: import from cache
-    self.n_classes_ = len(self.classes_)                 # TODO: import from cache
-    if not(hasattr(self, "cache_")) and self.cache:
-      self.cache_ = {}
+#     self.bins_ = self.bins if isinstance(self.bins, np.ndarray) else np.sort(rng.uniform(low=0, high=1.0, size=self.bins+1))
+#     self.classes_, y = np.unique(y, return_inverse=True) # TODO: import from cache
+#     self.n_classes_ = len(self.classes_)                 # TODO: import from cache
+#     if not(hasattr(self, "cache_")) and self.cache:
+#       self.cache_ = {}
 
-    ## Re-weight the sample weights to be a distribution on each class
-    class_weights, norm_weight = {}, deepcopy(sample_weight)
-    for cl in self.classes_: 
-      class_weights[cl] = np.sum(norm_weight[y == cl])
-      norm_weight[y == cl] = norm_weight[y == cl] / class_weights[cl] if class_weights[cl] > 0 else norm_weight[y == cl]
+#     ## Re-weight the sample weights to be a distribution on each class
+#     class_weights, norm_weight = {}, deepcopy(sample_weight)
+#     for cl in self.classes_: 
+#       class_weights[cl] = np.sum(norm_weight[y == cl])
+#       norm_weight[y == cl] = norm_weight[y == cl] / class_weights[cl] if class_weights[cl] > 0 else norm_weight[y == cl]
 
-    ## Build/fit a reference model
-    x_hash = self.subsample_hash(X)
-    if self.cache:
-      if x_hash not in self.cache_:
-        ## Precompute as much information as we can 
-        self.cache_[x_hash] = {}
-        for i, x in enumerate(X): 
-          x_pc = x.reshape((len(x) // self.dim, self.dim))
-          barycenter = x_pc.mean(axis=0)
-          self.cache_[x_hash][i] = np.linalg.norm(x_pc - barycenter, axis=1)
-      else:
-        self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
-        ccache = self.cache_[x_hash]
-        for dist2center, yi in zip(ccache.values(), y): 
-          min_r, max_r = np.min(dist2center), np.max(dist2center)
-          self.mean_curves[yi] += wi * np.histogram(dist2center, bins = min_r + self.bins_ * (max_r-min_r)) 
-    else:
-      ## Build a weighted mean curve for each class to use for prediction
-      self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
-      for xi, yi, wi in zip(X, y, norm_weight): 
-        self.mean_curves[yi] += wi * self.shells_signature(xi, self.bins_)
+#     ## Build/fit a reference model
+#     x_hash = self.subsample_hash(X)
+#     if self.cache:
+#       if x_hash not in self.cache_:
+#         ## Precompute as much information as we can 
+#         self.cache_[x_hash] = {}
+#         for i, x in enumerate(X): 
+#           x_pc = x.reshape((len(x) // self.dim, self.dim))
+#           barycenter = x_pc.mean(axis=0)
+#           self.cache_[x_hash][i] = np.linalg.norm(x_pc - barycenter, axis=1)
+#       else:
+#         self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
+#         ccache = self.cache_[x_hash]
+#         for dist2center, yi in zip(ccache.values(), y): 
+#           min_r, max_r = np.min(dist2center), np.max(dist2center)
+#           self.mean_curves[yi] += wi * np.histogram(dist2center, bins = min_r + self.bins_ * (max_r-min_r)) 
+#     else:
+#       ## Build a weighted mean curve for each class to use for prediction
+#       self.mean_curves = { cl : np.zeros(len(self.bins_)-1) for cl in self.classes_ }
+#       for xi, yi, wi in zip(X, y, norm_weight): 
+#         self.mean_curves[yi] += wi * self.shells_signature(xi, self.bins_)
       
 
-    ## Reverse the curves if its bad?
-    ## Issue: The spirit of "positive" and "negative" classification is sort of lost 
-    # if self.score(X, y) < 0.50: 
-    #   c0 = self.mean_curves[self.classes_[0]]
-    #   c1 = self.mean_curves[self.classes_[1]]
-    #   self.mean_curves[self.classes_[0]] = c1
-    #   self.mean_curves[self.classes_[1]] = c0
-    return self
+#     ## Reverse the curves if its bad?
+#     ## Issue: The spirit of "positive" and "negative" classification is sort of lost 
+#     # if self.score(X, y) < 0.50: 
+#     #   c0 = self.mean_curves[self.classes_[0]]
+#     #   c1 = self.mean_curves[self.classes_[1]]
+#     #   self.mean_curves[self.classes_[0]] = c1
+#     #   self.mean_curves[self.classes_[1]] = c0
+#     return self
 
-  ## Needed for SAMME.R boosting
-  def predict_proba(self, X: ArrayLike) -> ArrayLike:
-    # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
-    P = np.empty(shape=(X.shape[0], self.n_classes_))
-    for i,x in enumerate(X):
-      sig = self.shells_signature(x, self.bins_)
-      d = np.array([np.sum(np.abs(curve-sig)) for curve in self.mean_curves.values()])
-      s = np.exp(-d**1) # exponential conversion to similarity
-      P[i,:] = s / np.sum(s)
-    return P
+#   ## Needed for SAMME.R boosting
+#   def predict_proba(self, X: ArrayLike) -> ArrayLike:
+#     # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
+#     P = np.empty(shape=(X.shape[0], self.n_classes_))
+#     for i,x in enumerate(X):
+#       sig = self.shells_signature(x, self.bins_)
+#       d = np.array([np.sum(np.abs(curve-sig)) for curve in self.mean_curves.values()])
+#       s = np.exp(-d**1) # exponential conversion to similarity
+#       P[i,:] = s / np.sum(s)
+#     return P
 
-  def predict(self, X: ArrayLike):
-    P = self.predict_proba(X)
-    return self.classes_[P.argmax(axis=1)]
+#   def predict(self, X: ArrayLike):
+#     P = self.predict_proba(X)
+#     return self.classes_[P.argmax(axis=1)]
 
-  def score(self, X: ArrayLike, y: ArrayLike) -> float:
-    return np.sum(self.predict(X) == y)/len(y)
+#   def score(self, X: ArrayLike, y: ArrayLike) -> float:
+#     return np.sum(self.predict(X) == y)/len(y)
 
 
-from scipy.cluster.vq import kmeans2, vq, whiten
 class BagOfFeatures(object):
   def __init__(self, X: List[ArrayLike]):
     self.X = X 
 
-  def fit(self, k: int, method=["kmeans", "uniform", "qke"], **kwargs):
+  def fit(self, k: int, method: str = "kmeans", **kwargs):
+    # ["kmeans", "uniform", "qke"]
     p = { 'iter': 1, 'minit': "++"} | kwargs
-    centroids, labels = kmeans2(whiten(self.X), k=k, **p) 
+    if method == "kmeans":
+      centroids, _ = kmeans2(whiten(self.X), k=k, **p) 
+    elif method == "uniform":
+      centroids = np.random.choice(len(self.X), size=k, replace=False)
+    elif method == "qke":
+      raise NotImplementedError("Haven't implemented yet")
+    else:
+      raise ValueError("Invalid BoF methododology")
     self.prototypes_ = centroids
     return self # "The method should return the object (self)"
 
   # "even unsupervised estimators need to accept a y=None keyword argument in the second position that is just ignored by the estimator."
   def transform(self, X: List[ArrayLike], y: ArrayLike = None, method=["voronoi", "qee", "qke"]) -> np.ndarray:
-    from scipy.cluster.vq import vq
     bof = np.zeros((len(X), len(self.prototypes_)), dtype=np.uint16)
     for i, V in enumerate(X): 
-      codebook_labels, centroid_dist = vq(whiten(V), self.prototypes_)
+      codebook_labels, centroid_dist = vq(whiten(V), self.prototypes_) # Assign codes from a code book to observations.
       np.add.at(bof[i,:], codebook_labels, 1)
     return bof

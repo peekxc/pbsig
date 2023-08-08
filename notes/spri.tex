@@ -1014,6 +1014,7 @@ All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are sym
 where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 Thus, from a rank-based perspective, it suffices to consider any one of these operators.
 
+
 We now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
 $$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
 Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using smoothstep functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. Unlike $\partial_p(\alpha)$, however, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
@@ -1189,44 +1190,11 @@ When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monot
 %where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, as summarized by Li~\cite{}. 
 % $$ \lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $$ 
 % Connections to Laplacian Energy
-\noindent \textbf{Interpretation:} A common approach used in sparse inverse problems is to impose a regularization scheme. 
-For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
- \begin{equation}\label{eq:tikhonov}
-	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
-\end{equation}
-When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\tau > 0$ solutions $x_\tau^\ast$ with small norm are favored. 
-%\begin{equation}\label{eq:least_squares}
-%	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
-%\end{equation}
-% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
-%The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
-%\begin{equation}\label{eq:tikhonov_soln}
-%	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
-%\end{equation}
-%To illustrate the relevance of TR with our proposed approximation, 
-Similarly, by parameterizing
-%\footnote{Similar regularization interpretations may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}
-$\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains via ~\eqref{eq:phi}:
-\begin{equation}
-	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
-\end{equation}
-By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
-\begin{equation}\label{eq:tikhonov_1}
-%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
-	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
-	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
-\end{equation}
-The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectrum of the inverse of a given Laplacian; 
-%$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
-in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
 
- One interpretation of the relaxation parameter $\tau$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
-Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximations of the rank.
-This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
  
 \section{Computational Implications}\label{sec:computational_imp}
 %\subsection*{An quadratic-time rank computation}
-In this section, we discuss several of the computational advantages that arise by combining the results of section~\ref{sec:spectral_sec}, focusing on iterative subspace acceleration techniques that decouple explicit matrix representations from the computation.
+%In this section, we discuss several of the computational advantages that arise by combining the results of section~\ref{sec:spectral_sec}, focusing on iterative subspace acceleration techniques that decouple explicit matrix representations from the computation.
 
 %As the singular values of boundary operators can be obtained are the square roots of eigenvalues of an appropriate Laplacian operator, we focus on spectral methods specialized for symmetric positive semi-definite operators.
 %In the following sections, we (1) recall the method of minimized iterations in section~\ref{sec:lanczos_it}, (2) explore the efficiencies and subtleties of simplicial Laplacian $\mathtt{matvec}$ operators, and (3) discuss the modern advances to estimating spectral quantities of combinatorial Laplacians efficiently, such as preconditioning methods and convergence rates. 
@@ -1234,7 +1202,7 @@ In this section, we discuss several of the computational advantages that arise b
 %In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
 
 % Benefits of rank(A) = < non-zero eigenvalues >
-\subsection{Matrix-free eigenvalue computations}\label{sec:lanczos_it}
+%\subsection{Matrix-free eigenvalue computations}\label{sec:lanczos_it}
 Our approach to computing eigen-decompositions is to use a variation of the Lanczos method~\cite{lanczos1950iteration}, which estimates eigenvalues by projecting a given linear operator $A$ onto successive Krylov subspaces. 
 That is, given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces (matrices, respectively) spanned by: 
 \begin{equation}
@@ -1242,8 +1210,6 @@ That is, given a large, sparse, symmetric $n \times n$ matrix $A$ with eigenvalu
 	%= \mathrm{range}(K_j(A, v))
 \end{equation}
 %where $$ are their corresponding Krylov matrices. 
-The spectral theorem implies $A$ is orthogonally diagonalizable~\cite{bhatia2013matrix} and that $\Lambda(A)$ may be obtained via successive QR factorizations of $K_j(A,v) = Q_j R_j$ for all $j \in [n]$.
-Symmetry in $A$ and orthogonality in $Q_j$ imply $q_k^T A q_l = q_l^T A^T q_k = 0$ for all $k > l + 1$, giving the corresponding\footnote{Unlike the spectral decomposition, there is no canonical choice of $T_j$ due to $v$ being arbitrary, however the iterates $K_j(A,v)$ are related to the full tridiagonalization of $A$ in the sense that if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix then $K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]$ is the QR factorization of $K_n(A, q_1)$.} $T_j = Q_j^T A Q_j$ a tridiagonal structure.
 %\begin{equation}
 %	T_j = \begin{bmatrix} 
 %	\alpha_1 & \beta_1 & & & \\
@@ -1257,11 +1223,13 @@ Symmetry in $A$ and orthogonality in $Q_j$ imply $q_k^T A q_l = q_l^T A^T q_k = 
 %Thus, tridiagonalizing $A$ with respect to a unit-norm $q_1$ determines $Q$. 
 %that is, $Q$ may be generated completely by tridiagonalizing $A$ with respect to an orthogonal matrix $Q$ whose first column vector is $q_1$. 
 %Indeed, the Implicit Q Theorem~\cite{golub2013matrix} asserts that if an upper Hessenburg matrix $T \in \mathbb{R}^{n \times n}$ has only positive elements on its first subdiagonal and there exists an orthogonal matrix $Q$ such that $Q^T A Q = T$, then $Q$ and $T$ are \emph{uniquely} determined by $(A, q_1)$. 
-As a result, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we obtain an orthonormal  $Q_j = [\, q_1 \mid q_2 \mid \dots \mid q_j \,]$ mutually orthogonal to $q_{j\+1}$ by restricting and projecting $A$ to its $j$-th Krylov subspace $T_j$ via: 
-\begin{equation}\label{eq:krylov_proj_}
-	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T \; \Leftrightarrow \; \beta_{j} \, q_{j+1} = A q_j - \alpha_j \, q_j - \beta_{j\text{-}1} \, q_{j\text{-}1}   \quad\quad (\beta_j > 0)
-\end{equation}
-where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$.
+% -- 
+%As a result, given an initial pair $(A, q_1)$ satisfying $\lVert q_1 \rVert = 1$, we obtain an orthonormal  $Q_j = [\, q_1 \mid q_2 \mid \dots \mid q_j \,]$ mutually orthogonal to $q_{j\+1}$ by restricting and projecting $A$ to its $j$-th Krylov subspace $T_j$ via: 
+%\begin{equation}\label{eq:krylov_proj_}
+%	A Q_j = Q_j T_j + \beta_j q_{j\+1} e_{j}^T \; \Leftrightarrow \; \beta_{j} \, q_{j+1} = A q_j - \alpha_j \, q_j - \beta_{j\text{-}1} \, q_{j\text{-}1}   \quad\quad (\beta_j > 0)
+%\end{equation}
+%where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \alpha_j I)q_j - \beta_{j\text{-}1} q_j$, and $q_{j+1} = r_j / \beta_j$.
+% -- 
 %$q_{j+1} \in \mathbb{R}^n$ is a unit vector satisfying $q_{j+1} \perp \{ q_1, q_2, \dots, q_j \}$, 
 %Equating the $j$-th columns on each side of~\eqref{eq:krylov_proj} and rearranging the terms yields the \emph{three-term recurrence}: 
 %\begin{equation}\label{eq:three_term_rec}
@@ -1269,22 +1237,20 @@ where $\alpha_j = q_j^T A q_j$, $\beta_j = \lVert r_j \rVert_2$, $r_j = (A - \al
 %\end{equation} 
 % See (3.3) "Connections between Lanczos iteration and orthogonal polynomials"
 %Equation~\eqref{eq:three_term_rec} is a variable-coefficient second-order linear difference equation, and it is a known fact that such equations have unique solutions: 
-The relation from~\eqref{eq:krylov_proj_}---often called the \emph{three-term recurrence}---characterizes the power of the Lanczos method: if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined, prompting an iterative strategy for building $T_j$. 
-% One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. 
-%The sequential process that iteratively builds $T_j$ via the recurrence from~\eqref{eq:three_term_rec} is called the \emph{Lanczos iteration}. 
-If $A$ is singular and one encounters $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and the symmetric eigenvalue problem is solved as $\Lambda(T_j) = \Lambda(A)$ and $j = \mathrm{rank}(A)$. 
+%The relation from~\eqref{eq:krylov_proj_}---often called the \emph{three-term recurrence}---characterizes the power of the Lanczos method: if ($q_{j\text{-}1}, \beta_j, q_j$) are known, then ($\alpha_j$, $\beta_{j+1}, q_{j+1}$) are completely determined, prompting an iterative strategy for building $T_j$. 
+%% One may begin the iteration by setting $\beta_0$ and $q_0$ to $0$, and $q_1$ arbitrarily. 
+%%The sequential process that iteratively builds $T_j$ via the recurrence from~\eqref{eq:three_term_rec} is called the \emph{Lanczos iteration}. 
+%If $A$ is singular and one encounters $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and the symmetric eigenvalue problem is solved as $\Lambda(T_j) = \Lambda(A)$ and $j = \mathrm{rank}(A)$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
-
  The Lanczos iteration and related subspace methods~\cite{} are often called ``matrix free'' spectral methods due to the fact that the only aspect of the computation dependent on $A$ is the $v \mapsto Av$ operator, which need not rely on an explicitly stored $A$. 
 %since $A$ is not modified during the computation,
 %the iteration may be executed without explicitly storing $A$ in memory. 
-Indeed, the three-term recurrence from~\eqref{eq:krylov_proj_} implies each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, motivating the following result:
+In fact, the Lanczos iteration arises three-term recurrence from~\eqref{eq:krylov_proj_} implies each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, motivating the following result:
 \begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
 \end{lemma}
-\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
-Although this assumption is unrealistic in practical settings, it yields a grounded expectation of what is possible to achieve in the \emph{finite-precision} regime: any implementation computing the largest $j$ eigenvalues $\{ \lambda_1, \lambda_2, \dots, \lambda_j \}$ using the Lanczos iteration in finite-precision arithmetic requires at least $\Omega(\max\{\eta, n\} \cdot j)$ time and $\Omega(\max\{\nu, n\})$ space to complete. 
+
 %\begin{corollary}\label{cor:finite_arith_lanczos}
 %	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
 %\end{corollary}
@@ -1327,6 +1293,9 @@ Combining Lemmas~\ref{lemma:matvec_lap} and~\ref{lemma:exact_arith_lanczos} yiel
 ---- STOP HERE ----- 
 
 \subsection*{Subspace acceleration}
+\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
+Although this assumption is unrealistic in practical settings, it yields a grounded expectation of what is possible to achieve in the \emph{finite-precision} regime: any implementation computing the largest $j$ eigenvalues $\{ \lambda_1, \lambda_2, \dots, \lambda_j \}$ using the Lanczos iteration in finite-precision arithmetic requires at least $\Omega(\max\{\eta, n\} \cdot j)$ time and $\Omega(\max\{\nu, n\})$ space to complete. 
+
 In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the methods convergence rate towards an invariant subspace, but in fact they muddle the termination condition entirely. 
 One option to ameliorate this issue is to orthogonalize $q_{j+1}$ against $k > 3$ Lanczos vectors to  retain the simplicity of the iteration. Another option is to continue the expansion of the Krylov subspace. 
 For a Laplacian operator $\mathcal{L}$ of size $\lvert n \rvert$, it is not uncommon for a naive Lanczos implementation to require upwards of $\approx O(n)$ (or worse) \texttt{matvec}'s to converge towards small or locally clustered eigenvalues.
@@ -1496,8 +1465,8 @@ This justifies our claim that combinatorial Laplacian operators, for many real-w
 % --- APPLICATION 2: Directional transforms as Shape Signatures ---- 
 \subsection{Shape comparison}
 In general, both combinatorial and topological aspects of a given topological space are encoded in the spectra of Laplacian operators. 
-For example, the Laplacians of a simplicial complex encode its basic topology via its homology groups, which is characterized by the nullspace of the corresponding operator---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
-In contrast, these operators differ in the nonzero part of the spectrum, which when equipped with a scalar-product encode specific geometric features in addition to topological properties. 
+Through their null-space, combinatorial Laplacians encode a complexes basic topology via its homology groups---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
+In contrast, these operators differ in the nonzero part of the spectrum, which encode specific geometric information in addition to topological properties. 
 
  
 \begin{figure}
@@ -1507,6 +1476,42 @@ In contrast, these operators differ in the nonzero part of the spectrum, which w
 
 
 \subsection{Filtration optimization}
+
+\noindent \textbf{Interpretation:} A common approach used in sparse inverse problems is to impose a regularization scheme. 
+For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
+ \begin{equation}\label{eq:tikhonov}
+	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
+\end{equation}
+When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\tau > 0$ solutions $x_\tau^\ast$ with small norm are favored. 
+%\begin{equation}\label{eq:least_squares}
+%	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
+%\end{equation}
+% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
+%The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
+%\begin{equation}\label{eq:tikhonov_soln}
+%	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
+%\end{equation}
+%To illustrate the relevance of TR with our proposed approximation, 
+Similarly, by parameterizing
+%\footnote{Similar regularization interpretations may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}
+$\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains via ~\eqref{eq:phi}:
+\begin{equation}
+	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+\end{equation}
+By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
+\begin{equation}\label{eq:tikhonov_1}
+%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
+	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
+	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
+\end{equation}
+The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectrum of the inverse of a given Laplacian; 
+%$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
+in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
+
+ One interpretation of the relaxation parameter $\tau$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
+Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximations of the rank.
+This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
+
 A common setting in topological data analysis is the setting wherein one has access to a means of building a filtration $(K,f)$ where $f : K \to \mathbb{R}$ is a filter function satisfying $f(\tau) \leq f(\sigma)$ for all $\tau \subseteq \sigma \in K$, but the filter function $f$ itself is parameterized by some hyper-parameters. 
 For example, a common setting is the one where the data set $(X, d_X)$ comes equipped with some notion of density $f: X \to \mathbb{R}_+$, and one would like to build a persistence diagram on $d_X$ in a way that is robust to local fluctuations in density. 
 This is a common practical setting often encountered in practice, as it is known that persistence is unstable with respect to \emph{strong outliers}~\cite{}, which prevents persistent homology from detecting a spaces prominent underlying topological structure, when it exists. 
@@ -1836,6 +1841,10 @@ where $s_{\tau, \tau'} = \mathrm{sgn}([\tau], \partial[\sigma]) \, \cdot \, \mat
 	(L_p^{\textrm{up}} \, x)_i =  \mathrm{deg}_w(\tau) \cdot w(\tau) \cdot x_i + \sum\limits_{\tau \overset{\sigma}{\sim} \tau'} s_{\tau, \tau'} \cdot x_{h(\tau')} \cdot  w^{+/2}(\tau) \cdot w(\sigma) \cdot w^{+/2}(\tau') 
 \end{equation}
 Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass algorithm as described for the graph Laplacian if the simplices of $K^{p+1}$ can be quickly enumerated and the indexing function $h$ can be efficiently evaluated.
+
+\subsection*{Lanczos2}
+The spectral theorem implies $A$ is orthogonally diagonalizable~\cite{bhatia2013matrix} and that $\Lambda(A)$ may be obtained via successive QR factorizations of $K_j(A,v) = Q_j R_j$ for all $j \in [n]$.
+Symmetry in $A$ and orthogonality in $Q_j$ imply $q_k^T A q_l = q_l^T A^T q_k = 0$ for all $k > l + 1$, giving the corresponding\footnote{Unlike the spectral decomposition, there is no canonical choice of $T_j$ due to $v$ being arbitrary, however the iterates $K_j(A,v)$ are related to the full tridiagonalization of $A$ in the sense that if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix then $K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]$ is the QR factorization of $K_n(A, q_1)$.} $T_j = Q_j^T A Q_j$ a tridiagonal structure.
 
 \subsection*{Lanczos}
 Computing eigen-decompositions $A = V \Lambda V^T$ of symmetric matrices $A \in S_n$ generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 

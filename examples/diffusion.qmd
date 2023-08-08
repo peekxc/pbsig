@@ -139,12 +139,6 @@ HK.timepoints = (6, "informative")
 ## Fit the heat kernel 
 HKS = [HK.clone().param_laplacian("mesh", x.reshape(NV, 2), normed=False).fit() for x in X]
 
-
-def figure_scatter(X, scatter_kwargs = {}, **kwargs):
-  p = figure(**kwargs)
-  p.scatter(*X.T, **scatter_kwargs)
-  return p
-
 cfigs = []
 for i in range(6):
   figs = []
@@ -153,7 +147,7 @@ for i in range(6):
   sigs_norm_shift = np.array([signal_dist(s1, s2) for s1,s2 in combinations(sigs_norm, 2)])
   # sigs_subset = np.array([hk.signature(subset=landmarks(X_data[k], 30)[0])[:,i] for k, hk in zip(shape_keys, HKS)])
   emb = cmds(squareform(sigs_norm_shift**2))
-  p = figure_scatter(emb, scatter_kwargs=dict(color=["red"]*7 + ["blue"]*7 + ["green"]*7), width=180, height=180)
+  p = figure_scatter(emb, color=["red"]*7 + ["blue"]*7 + ["green"]*7, width=180, height=180)
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False
@@ -207,9 +201,6 @@ show(row(*[figure_scatter(emb, width=150, height=150) for emb in HKS_emb]))
 
 
 ## start uniformly sampling in the time interval, see how many 
-
-
-
 sigs = np.array(all_sigs)
 hks_emb = cmds(squareform(pdist(sigs)**2))
 
