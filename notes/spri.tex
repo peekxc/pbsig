@@ -545,19 +545,19 @@ the persistent Betti number and multiplicity functions may be written as:
 %For a given $(K, f)$, if $f$ is injective, then every $a_i$ from Corollary~\ref{cor:rank_reduction} will be a homological critical value, as adding a simplex creates or removes a class.  
 %it is natural to consider their generalizations under the \emph{persistent measures} setting~\cite{chazal2016structure}.
 
-Two important observations stemming from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) that they are comprised strictly of \emph{rank} computations, and (2) that these computations are carried out on \emph{unfactored} boundary (sub)matrices.
+Two important observations stemming from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) they are comprised strictly of \emph{rank} computations, and (2) these computations are carried out on \emph{unfactored} boundary (sub)matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-The former suggests spectral relaxations of the rank function may find utility in the persistence setting, such as those in compressive sensing~\cite{zhao2012approximation}. The latter suggests both quantities may admit \emph{matrix-free} iterative approximation schemes using randomized algorithms~\cite{chen2011output} or iterative subspace methods~\cite{golub2013matrix, parlett1994we}. 
+The former suggests commonly used spectral techniques involving the rank function may find utility in the persistence setting, such as $\ell_1$-regularization in compressive sensing~\cite{zhao2012approximation}. The latter suggests both quantities may admit efficient  \emph{matrix-free} approximation schemes using random matrix theory~\cite{chen2011output} or  subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
 %The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
-Moreover, the invariance of the rank function under zero-characteristic fields coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure} suggest connections to other areas of applied mathematics, such as the ``The Laplacian Paradigm''~\cite{}, may be exploited to accelerate the computation further. 
+Moreover, the invariance of the rank function under zero-characteristic fields coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure} suggest connections to other areas of applied mathematics, such as the tools developed as part of ``The Laplacian Paradigm''~\cite{}, may be exploited to accelerate the computation further. 
 %the structure of $\partial \cdot \partial^T$, 
 %---such as invariance under permutations and adjoint multiplication---
 %may lead to interesting overlap in other popular areas of applied mathematics, such as compressive sensing, 
 %By working with persistence modules indexed with real-valued coefficients, we naturally recover the measure-theoretic perspective from~\eqref{eq:measure}.
-The rest of the paper is dedicated to exploring these connections and their ramifications in detail. 
+The rest of the paper is dedicated to exploring these connections and their implications. 
 
 %\begin{remark}
 %% Change index set
@@ -616,7 +616,7 @@ The rest of the paper is dedicated to exploring these connections and their rami
 % --- Generic Rank approximation via eigenvalues --- 
 \section{Spectral relaxation and its implications}\label{sec:spectral_sec}
 %The following derivations of the persistent Betti number will be used in proofs and serve as the primary technical motivations for this effort.
-In this section, we introduce the proposed relaxation successively by relaxing and generalizing different aspects of the expressions from Corollary~\ref{cor:rank_reduction} to the parameterized setting. To motivate the advantages these expressions provide, it is instructive to derive the more traditional expressions used to compute the persistent rank invariants. 
+In this section, we introduce the proposed relaxation successively by relaxing and generalizing different aspects of the expressions from Corollary~\ref{cor:rank_reduction} to the parameterized setting. To begin, it is instructive to examine  traditional expressions used to compute the persistent rank invariants. 
 Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ defined over some index set $I$, its $p$-th persistent Betti number $\beta_p^{a,b}$ at index $(a,b) \in I \times I$, is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
@@ -628,9 +628,9 @@ Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ define
 %\begin{equation}\label{eq:pbn_simple}
 %	\beta_p^{a,b} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \cap \mathrm{Im}(\partial_{p+1}(K_b)) \; \big) 
 %\end{equation}
-Thus, computing $\beta_p^{a,b}$ via~\eqref{eq:pbn} reduces to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
-While the former is easily solved, direct methods that solve the latter typically do so in $\Omega(N^3)$ time and $\Omega(N^2)$ space by finding a basis via reduction or projector-based techniques~\cite{golub2013matrix}.
-These methods have proven challenging to efficiently extend to the parameterized setting~\cite{piekenbrock2021move}, prompting questions of whether alternative expressions (e.g.~\eqref{eq:mu_four}) have any potential computational benefits.
+Thus, computing $\beta_p^\ast$ may be reduced to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
+While there are a myriad of options for solving the former (see~\cite{chen2011output}), computing the latter term using basis reduction or projector-based techniques exhibits $\Omega(N^3)$ time and $\Omega(N^2)$ space~\cite{golub2013matrix}.
+Specializations of these direct methods to filtered simplicial complexes have proven challenging to efficiently extend to the parameterized setting~\cite{piekenbrock2021move}, prompting questions of whether alternative expressions (e.g.~\eqref{eq:mu_four}) have any potential computational benefits.
 
 %$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
 %Since the nullity of an operator may be reduced to a rank computation via rank-nullity, the complexity of first term may be reduced to the complexity of computing the rank of a sparse $n \times m$ matrix. 
@@ -698,22 +698,23 @@ Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq
 %	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 %\end{equation}
 % TODO: maybe mention relative chains
-Moreover, since these step functions are non-continuous, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ of the form: 
+Moreover, since these step functions are non-continuous, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ that interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$, for some $\omega > 0$ (see Figure~\ref{fig:smoothstep}).
+%of the form: 
 %In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
-\begin{equation}\label{eq:smoothstep}
-\mathcal{S}_a^{\omega} (x) = \begin{cases}
-	0 & x \leq a \\
-	P_n\big( \omega^{-1}((a + \omega) - x) \big) & a < x < a + \omega \\
-	1 & a + \omega \leq x
-\end{cases}
-\end{equation} 
-where $P_n: [0,1] \to [0,1]$ is a $n$-th order polynomial satisfying $P_n(0) = 0$ and $P_n(1) = 1$.
-These functions simply interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$ (see Figure~\ref{fig:smoothstep}).
+%\begin{equation}\label{eq:smoothstep}
+%\mathcal{S}_a^{\omega} (x) = \begin{cases}
+%	0 & x \leq a \\
+%	P_n\big( \omega^{-1}((a + \omega) - x) \big) & a < x < a + \omega \\
+%	1 & a + \omega \leq x
+%\end{cases}
+%\end{equation} 
+%where $P_n: [0,1] \to [0,1]$ is a $n$-th order polynomial satisfying $P_n(0) = 0$ and $P_n(1) = 1$.
+
 %\\
 %\\
 %\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
 
-We summarize these observations with a proposition. Without loss in generality, assume the orientation of the simplices induced by $(K, \preceq)$ is inherited from the order on the vertex set $V$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$. 
+These observations motivate our first relaxation. Without loss in generality, assume the orientation of the simplices induced by $(K, \preceq)$ is inherited from the order on the vertex set $V$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$. 
 %We also write $r(A) = \mathrm{rank}(A)$.
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
@@ -853,8 +854,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
  
 \subsection{Spectral rank relaxation}\label{sec:spectral_relax}
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
-Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
-To address this, we exploit the spectral characterization of the rank function; given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
+%Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
+To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1}, we exploit the spectral characterization of the rank function---given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -864,6 +865,7 @@ To address this, we exploit the spectral characterization of the rank function; 
 \end{equation}
 where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
  As the singular values vary continuously under perturbations in $X$, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function.
+ Thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 %\begin{flalign}\label{eq:rank_sgn}
@@ -875,9 +877,9 @@ where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
 Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$.
-Mangasarian et al.~\cite{mangasarian1994class} proposed a natural relaxation of $\mathrm{sgn}_+$ may be obtained by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
+Mangasarian et al.~\cite{mangasarian1994class} proposed an approximate $\mathrm{sgn}_+$ function may be obtained by integrating smoothed variations $\hat{\delta}$ of the Dirac delta function $\delta$:  
 \begin{flalign}\label{eq:phi}
-(\, \forall \, z \geq 0, \tau > 0  \,)  & & \quad\quad\quad
+(\, \forall \, z \geq 0, \tau > 0  \,)  & &
 \phi(x, \tau) \triangleq \int\limits_{-\infty}^x \hat{\delta}(z, \tau) \, dz, \quad \quad  & 
 \hat{\delta}(z, \tau) = \frac{1}{\nu(\tau)} \cdot p \left( \frac{z}{\nu(\tau)} \right ) && 
 \end{flalign}
@@ -889,12 +891,14 @@ Moreover, varying $\tau \in \mathbb{R}_{+}$ in~\eqref{eq:phi} yields an $\tau$-p
 %(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
 %\end{flalign}
 
-Many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}.
+Not only do many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}, but augmenting the spectrum using $\phi$ has surprising connection to the theory of \emph{operator monotone} functions~\cite{bhatia2013matrix}.
 In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$ from~\cite{bhatia2013matrix, bi2013approximation}: 
 \begin{definition}[Spectral $\phi$-approximation]
-	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral $\phi$-approximation} $\Phi_\tau(X)$ of $X$ and its Schatten-1 norm via: 
+	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral $\phi$-approximation} $\Phi_\tau(X)$ of $X$ as:
+%	and its Schatten-1 norm via: 
 	\begin{equation}\label{def:lowner}%\label{eq:lowner} 
-		\lVert \Phi_\tau(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \tau), \quad \quad \Phi_\tau (X) \triangleq \sum\limits_{i=1}^{n} \phi(\sigma_i, \tau) u_i v_i^T
+%		\lVert \Phi_\tau(X) \rVert_\ast = \sum\limits_{i=1}^n \phi(\sigma_i, \tau), \quad \quad 
+		\Phi_\tau (X) \triangleq \sum\limits_{i=1}^{n} \phi(\sigma_i, \tau) u_i v_i^T
 	\end{equation}
 	where $u_i$ and $v_i$ are the $i$th columns of $U$ and $V$, respectively. 
 	%$U = [u_1, u_2, \dots, u_n]$ and....
@@ -914,12 +918,14 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 %whose nuclear norm is semismooth on $\mathbb{R}^{n \times m}$. 
 \noindent 
 %Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
-Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, this quantity turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
+%Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, 
+When $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
 	\begin{enumerate}
-		\item For any $\tau \leq \tau'$, $\lVert \Phi_{\tau}(X) \rVert_\ast \geq \lVert \Phi_{\tau'}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
+		\item For any $\tau \geq 0$, the Schatten-1 norm $\lVert \Phi_\tau(X) \rVert_\ast$ of  $\Phi_\tau(X)$ is given by $\sum\limits_{i=1}^n \phi(\sigma_i, \tau)$
+		\item For any $\tau' \geq \tau$, $\lVert \Phi_{\tau'}(X) \rVert_\ast \leq \lVert \Phi_{\tau}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$ and positive singular values $\Lambda(X) = \{\sigma_1, \sigma_2, \dots, \sigma_r\}$:
 %		\item %if $\tau$ satisfies $0 < \tau \leq \sigma_r / r$,  
 		$$ 0 \leq r - \lVert \Phi_\tau(X) \rVert_\ast \leq r\cdot (1 - \phi(\sigma_r, \tau))$$
@@ -965,9 +971,10 @@ Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, th
 %\end{equation}
 %where $\Phi_\epsilon^\alpha(\partial) = (\Phi_\epsilon \circ \partial)(\alpha)$ for any $\alpha \in \mathcal{A}$, $\hat{I}_{p}^i = \mathrm{diag}(\{ \mathcal{S}_i^\omega(f(\tau_j)) \}_{j=1}^{n} )$, and $\hat{\partial}_p$ is $\mathcal{A}$-parameterized $p$-th boundary matrix from~\eqref{eq:rank_equiv_param} with step functions $S_\ast$ replaced by the smoothstep $\mathcal{S}_\ast^\omega$ from~\eqref{eq:smoothstep}.
 %\end{definition}
-\noindent Noting property (3), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
+\noindent Noting property (4), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
-replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yields Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz. 
+replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yield a Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz and the step functions from~\eqref{eq:rank_equiv_param} are smoothed with some $\omega > 0$. 
+We defer the formal definition of such a relaxation and its properties to section~\ref{sec:spri_properties}.
 
 	Though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
@@ -991,9 +998,9 @@ However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-
 
 %Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
 \subsection{Parameterized Laplacians}\label{sec:laplacian_theory2}
-For the sake of generality, it is important to make the class of differentiable operators from section~\ref{sec:spectral_relax} as large as possible.
+For the sake of generality, it is important to make the class of relaxations derived from operators from section~\ref{sec:spectral_relax} as large as possible.
 %elucidate the necessary conditions under which the spectral operators from section~\ref{sec:spectral_relax} are differentiable, so as to make the class of such operators as large as possible. 
-Noting remark~\ref{remark:diff}, we exploit another well known identity of the rank function:
+Towards this end, we exploit another identity of the rank function:
 % for zero characteristic fields: 
 %$$\mathrm{rank}(\partial_p) = \mathrm{rank}(\partial_p \circ \partial_p^T) = \mathrm{rank}(\partial_p^T \circ \partial_p)$$ 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
