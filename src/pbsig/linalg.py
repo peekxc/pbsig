@@ -205,27 +205,60 @@ def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, locality: 
   return timepoints 
 
 
-def logspaced_timepoints(n: int, lb: float = 1e-6, ub: float = 2.0) -> np.ndarray:
-  """Constructs _n_ non-negative time points equi-distant in log-space for use in the map exp(-t).
-  
-  If an upper-bound for time is known, it may be specified so as to map the interval [0, ub] to the range
-  such that np.exp(-t0) = 1 and np.exp(-tn) = epsilon, which epsilon is the machine epsilon.
+
+def logsample(start: float, end: float, num: Union[int, np.ndarray] = 50, endpoint: bool = True, base: int = 2, dtype=None, axis=0):
+  """Generate samples on a logarithmic scale within the interval [start, end].
+
+  If 'num' is an integer, the samples are uniformly spaced, matching the behavior of np.logspace. 
+
+  If 'num' is an ndarray, its values are used as relative proportions in log-scale. This can be helpful for procedures 
+  seeking to generate e.g. random values that uniformly-sampled in log-scale, i.e. 
+
+  x = logsample(1, 100, np.random.uniform(0,1,size=10))
+
+  Yields 10 random points in the interval [1, 100] that are uniformly-sampled in log-salce.
+
+  Parameters:
+    start: The start of the interval.
+    end: The end of the interval.
+    num: The number of samples to generate, or an array of proportions relative to [start, end].
+    endpoint: whether to include end, in the case where num is an integer.
+    base: The logarithmic base. Default is 2.
+    dtype: passed to np.linspace
+    axis: passed to np.linspace 
+     
+  Returns:
+    np.ndarray: An array of logarithmically spaced samples.
   """
-  ## TODO: revisit the full heuristic! The localized method works so much better
-  # min_t = 13.815510475347063 # 32-bit float 
-  # min_t = 34.53877627071313  # 64-bit floats
-  # if method == "full":
-  #   # tmin = 1e-3 / ub
-  #   # tmax = min_t / max(1e-3, lb)
-  #   tmin = 4 * np.log(10) / 2.0 
-  #   tmax = 4 * np.log(10) / 1e-6
-  #   timepoints = np.geomspace(tmin, tmax, n)
-  # elif method == "local":
-  #   assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
-  tmin = 4 * np.log(10) / ub
-  tmax = 4 * np.log(10) / lb
-  timepoints = np.geomspace(tmin, tmax, n)
-  return timepoints
+  log_start, log_end = np.log(start) / np.log(base),  np.log(end) / np.log(base)
+  if isinstance(num, np.ndarray):
+    log_samples = log_start + num * np.abs(log_end-log_start)
+  else: 
+    log_samples = np.linspace(log_start, log_end, num, endpoint=endpoint, dtype=dtype, axis=axis)
+  samples = np.power(base, log_samples)
+  return samples
+
+# def logspaced_timepoints(n: int, lb: float = 1e-6, ub: float = 2.0) -> np.ndarray:
+#   """Constructs _n_ non-negative time points equi-distant in log-space for use in the map exp(-t).
+  
+#   If an upper-bound for time is known, it may be specified so as to map the interval [0, ub] to the range
+#   such that np.exp(-t0) = 1 and np.exp(-tn) = epsilon, which epsilon is the machine epsilon.
+#   """
+#   ## TODO: revisit the full heuristic! The localized method works so much better
+#   # min_t = 13.815510475347063 # 32-bit float 
+#   # min_t = 34.53877627071313  # 64-bit floats
+#   # if method == "full":
+#   #   # tmin = 1e-3 / ub
+#   #   # tmax = min_t / max(1e-3, lb)
+#   #   tmin = 4 * np.log(10) / 2.0 
+#   #   tmax = 4 * np.log(10) / 1e-6
+#   #   timepoints = np.geomspace(tmin, tmax, n)
+#   # elif method == "local":
+#   #   assert lb != 0.0, "Local heuristic require positive lower-bound for spectral gap"
+#   tmin = 4 * np.log(10) / ub
+#   tmax = 4 * np.log(10) / lb
+#   timepoints = np.geomspace(tmin, tmax, n)
+#   return timepoints
   # else:
   #   raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
   # return timepoints

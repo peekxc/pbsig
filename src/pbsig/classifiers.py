@@ -281,6 +281,7 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     self.classes_, y = np.unique(y, return_inverse=True)  # sklearn required 
     self.n_classes_ = len(self.classes_)                  # sklearn required 
     # [x for xi, yi in zip(X, y) if yi == cl]
+    X_cl = lambda cl: [x for x, yi in zip(X, y) if yi == cl]
     self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
     return self
 

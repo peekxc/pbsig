@@ -183,26 +183,64 @@ from pbsig.classifiers import barycenter_classifier
 HK_sigs = np.array([np.ravel(hk.signature([hk.timepoints[1]])) for hk in HKS])
 HK_learner = barycenter_classifier("HKS")
 wl = HK_learner(metric=signal_dist) # weak learner
-wl.fit(hk_sigs, y)
-wl.score(hk_sigs, y)
+wl.fit(HK_sigs, y)
+wl.score(HK_sigs, y)
 
 ## Hypothesis space: 1d signatures at some give time 
 # lambda t: np.array([np.ravel(hk.signature([t])) for hk in HKS]) ## for range of t
 # lambda t: np.array([np.ravel(hk.signature([hk.timepoints[i]])) for hk in HKS]) ## for i in [0,n-1]
 
+def random_hks_transformer(HK, t_min: float, t_max: float, random_state = None):
+  """Generates a random weak learner using the heat kernel signature. 
+  """
+  from pbsig.linalg import logsample
+  # assert len(X) == len(HK), "Must pass a list of heat kernels, one fit for each value in X."
+  # assert len(X) == len(y), "length of input data 'X' must match length of label vector 'y'."
+  # t_min, t_max = HK.time_bounds("informative")
+  rng = np.random.RandomState(random_state)
+  ## TODO: expand beyond single time parameter using procrustes
+  def _fit_transform_hks(X: ArrayLike, y: np.ndarray = None, **kwargs) -> np.ndarray:
+    t = logsample(t_min, t_max, num=np.array([rng.uniform()])) # time for diffusion 
+    HKS = [HK.param_laplacian("mesh", x.reshape(len(x) // 2, 2), normed=False).fit() for x in X]
+    HKS_sigs = np.array([np.ravel(hk.signature([t])) for hk in HKS])
+    return HKS_sigs
+  return _fit_transform_hks 
+
+from sklearn.preprocessing import FunctionTransformer
+hks_transformer = random_hks_transformer(HeatKernel(S), 1.0, 1000.0, random_state = None)
+f = FunctionTransformer(hks_transformer, validate=True)
+# f.fit_transform(X[:5,:]).shape
+
+HK_learner = barycenter_classifier("HKS")
+wl = HK_learner(metric=signal_dist) # weak learner
+
+pipeline = Pipeline([('hks', f), ('bary', wl)])
+
+pipeline.fit(X, y)
+pipeline.predict(X)
+
+## Final estimator is a barycentric classifier
+## TODO: expand beyond single time parameter using procrustes
+# HKS_learner = barycenter_classifier("HKS")
+# wl = HKS_learner(metric=signal_dist) # weak learner
+# wl.fit(HK_sigs, y)
+
+random_hks_wl(HKS, y, 10, 1000).score(X, y)
+
 
 ## Need a randomized transformer 
 ## TODO: How do I generically store the heat kernel object? What is its contract?
 ## a) 
+## b) 
+## 
 ## Feature extractors must implement at least: fit, transform, get_feature_names_out
 ## https://scikit-learn.org/stable/glossary.html#term-feature-extractor
 ## Transformers must be estimators supporting transform and/or fit_transform
-class RandomizedVectorizer(_VectorizerMixin, BaseEstimator):
+class RandomizedVectorizer(BaseEstimator): # _VectorizerMixin
   def __init__(self, random_state = None, dimension: int, **kwargs):
     self.random_state = random_state
     self.distribution = distribution
     self.dimension = dimension
-
 
   @staticmethod
   def sample(size: Union[int, tuple]) -> np.ndarray:
@@ -220,37 +258,55 @@ class RandomizedVectorizer(_VectorizerMixin, BaseEstimator):
     n_samples = X.shape[0]
     return self.random_state_.randn(n_samples, self.n_components)
 
-## Convert a deterministic estimator/classifier into a randomized one over some hypothesis space
-## 
-class HypothesisSpace(BaseEstimator):
-  """A _hypothesis space_ is a space of estimators/classifiers that depend on some random state.
-  
 
+from sklearn.pipeline import Pipeline
+
+## Convert a deterministic estimator/classifier into a randomized one over some hypothesis space
+class HypothesisSpace(BaseEstimator):
+  """A _hypothesis space_ is a space of estimators that can be sampled from.
+  
+  It takes as input: 
+    1. An unsupervised Vectorizer (Transformer) with support for randomized vectorization (.fit_transform(X, random_state = ...))
+    2. A supervised Estimator (BaseEstimator) with support for weighted prediction or classification (.fit(X, y, sample_weight, ...))
+
+  Given these two as input, an estimator a parameterized that support sklearn's base estimator (https://scikit-learn.org/stable/developers/develop.html) and random_state (https://scikit-learn.org/stable/glossary.html#term-random_state) API guidelines.
+
+  .fit() should satify (https://scikit-learn.org/stable/glossary.html#term-fit)
+
+  The estimator tag of this is set to non_deterministic (https://scikit-learn.org/stable/developers/develop.html#estimator-tags)
   """
-  def __init__(estimator: BaseEstimator, hspace: Callable, random_state = None):
-    self.estimator = estimator ## deterministic estimator 
-    self.hspace = hspace       ## hypothesis space -- a transformer with support for a random state
-    self.random_state = random_state
+  def __init__(estimator: BaseEstimator, vectorizer: BaseEstimator, random_state = None):
+    self.estimator = estimator        ## supervised estimator 
+    self.vectorizer = vectorizer      ## transformer with support for a random state
+    self.random_state = random_state  ## set the random_state
 
   def fit(X: Sized, y: np.ndarray, sample_weight = None):
     from copy import deepcopy
     assert isinstance(y, np.ndarray) and all(y >= 0), "y must be non-negative integers classes"
     sample_weight = np.ones(len(X))/len(X) if sample_weight is None else sample_weight
     assert np.isclose(np.sum(sample_weight), 1.0, atol=1e-8), f"Sample weight must be a distribution ({np.sum(sample_weight):8f} != 1 )."
-
-    ## Randomized component
     rng = np.random.RandomState(self.random_state)
-    self.estimator.fit(self.hspace(rng))
+    V = self.vectorizer.fit_transform(X, random_state = rng)
+    self.estimator_ = self.estimator.fit(V, y, sample_weight)
+    return self
+
+  def decision_function(X: Sized):
+    V = self.vectorizer.fit_transform(X, random_state = self.random_state)
+    return self.estimator_.decision_function(V)
+
+  def predict_prob(X: Sized):
+    V = self.vectorizer.fit_transform(X, random_state = self.random_state)
+    return self.estimator_.predict_proba(V)
+
+  def predict(X: Sized):
+    V = self.vectorizer.fit_transform(X, random_state = self.random_state)
+    return self.estimator_.predict(V)
 
     timepoint = self.hspace.rvs(size=1)
     HK_sigs = np.array([np.ravel(hk.signature([timepoint])) for hk in HKS])
     
     ## 
-    
     self.estimator.fit(HK_sigs)
-
-
-
 
 
     while not(hasattr(self, "bins_")) or (False if not(ensure_better) else self.score(X, y) <= 0.50):
