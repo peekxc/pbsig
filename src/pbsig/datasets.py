@@ -188,11 +188,11 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', sha
        'spoon', 'spring', 'stef', 'teddy', 'tree', 'truck', 'turtle',
        'watch']
   _all_shapes = [s.lower() for s in _all_shapes]
-  default_shapes = [
+  default_shapes = list(sorted([
     "turtle", "watch", "bird", "bone", "bell", "bat", "beetle", "butterly", 
     "car", "cup", "teddy", "spoon", "shoe", "ray", "sea_snake", "personal_car", 
     "key", "horse", "hammer", "frog", "fork", "flatfish", "elephant"
-  ]
+  ]))
   if isinstance(which, str) and which == "default":
     shape_types = default_shapes
   elif isinstance(which, str) and which == "all":

@@ -36,16 +36,25 @@ def phase_align2(s1: Sequence, s2: Sequence, return_offset: bool = False):
   return np.roll(s1, shift)
 
 ## Good defaults seems to be scaling=True, center=True, MSE, reverse=True
-def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, scale: bool = False, center: bool = False) -> float:
+def signal_dist(a: Sequence[float], b: Sequence[float], method="euc", check_reverse: bool = True, normalize: Union[str, bool] = "unit", center: bool = False) -> float:
   
   ## Center if requested 
   a = a - np.mean(a) if center else a
   b = b - np.mean(b) if center else b
 
   ## Scale if requested
-  normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
-  a = normalize(a) if (scale and not(np.all(a == a[0]))) else a
-  b = normalize(b) if (scale and not(np.all(b == b[0]))) else b
+  if (isinstance(normalize, bool) and normalize) or (isinstance(normalize, str) and normalize == "unit"):
+    normalize = lambda x: 2*((x - min(x))/(max(x) - min(x))) - 1
+    a = normalize(a) if not(np.all(a == a[0])) else a
+    b = normalize(b) if not(np.all(b == b[0])) else b
+  elif isinstance(normalize, str) and normalize == "sum":
+    normalize = lambda x: x / np.sum(x)
+    a = normalize(a) if not(np.all(a == a[0])) else a
+    b = normalize(b) if not(np.all(b == b[0])) else b
+  elif isinstance(normalize, bool) and not normalize:
+    pass
+  else: 
+    raise ValueError(f"Invalid normalization type '{normalize}' passed. Must be boolean or one of []'unit', 'sum']")
 
   ## Align the signals by maximizing cross correlation
   d1 = b-phase_align(a,b)

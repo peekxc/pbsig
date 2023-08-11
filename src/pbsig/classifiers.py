@@ -1,10 +1,13 @@
 from itertools import *
 from typing import * 
 from numpy.typing import ArrayLike
+
 import numpy as np
-from pbsig.shape import shells
 from sklearn.base import BaseEstimator, ClassifierMixin, RegressorMixin
 from scipy.cluster.vq import kmeans2, vq, whiten
+
+from .linalg import logsample
+from .shape import shells
 
 def subsample_hash(X: np.ndarray, size: int = 100) -> int:
   """Hashes the byte representation of a numpy array by random-sampling."""
@@ -67,8 +70,9 @@ class BinaryAdaBoostClassifier:
     ## 0.5 * np.log((1+(1-2*et))/(1 - (1-2*et)))                    ## alternative, equiv coefficient calculation
     ## Compare with: https://github.com/scikit-learn/scikit-learn/blob/a24c8b464d094d2c468a16ea9f8bf8d42d949f84/sklearn/ensemble/weight_boosting.py#L572-L574
     ## sklearn uses 0/1 loss w/ no wieght normalization, though normalization may be necessary: https://stats.stackexchange.com/questions/59490/the-weight-updating-in-adaboost
-    wt = np.ones(n) / n # uniform coefficient weights 
-    for t in range(n_estimators):
+    wt = np.ones(n) / n                                   ## uniform coefficient weights 
+    self.weak_learner.fit(X, y)                           ## fit the first estimator with (X,y) pair - subsequent .fit() calls should be ignored
+    for t in range(1, n_estimators):
       ht = self.weak_learner.fit(X, y, wt)                ## fit weak learner with weighted samples; should be randomized
       yt = ht.predict(X)                                  ## predict using the weak learner
       et = np.sum(wt[yt != y]) / np.sum(wt)               ## error of the current weak learner; strictly non-negative
@@ -240,7 +244,10 @@ class ShellsClassifier(BaseEstimator, ClassifierMixin):
   
 
 class BarycenterClassifier(BaseEstimator, ClassifierMixin):
-  """Classifier defined by distance to nearest class-fit barycenter."""
+  """Classifier defined by distance to nearest class-fit barycenter.
+  
+  The default behavior fits class-specific barycenters and yields an classifier whose decision_function depends on the chosen metric. 
+  """
   def __init__(self, metric: Union[str, Callable] = "euclidean", random_state = None, **kwargs):
     """sklearn requires no input validation for initializer """
     self.metric = metric # to be called by cdist
@@ -273,7 +280,7 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
       assert isinstance(sample_weight, np.ndarray) and len(sample_weight) == len(X), "Sample weight must be array with a length matching X."
       return (sample_weight[:,np.newaxis] * X).mean(axis=0)
 
-  def fit(self, X: List[ArrayLike], y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
+  def fit(self, X: ArrayLike, y: ArrayLike, sample_weight: ArrayLike = None, **kwargs):
     """Fits a set of weighted barycenters for each class.
     
     Populates barycenters_
@@ -281,7 +288,7 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     self.classes_, y = np.unique(y, return_inverse=True)  # sklearn required 
     self.n_classes_ = len(self.classes_)                  # sklearn required 
     # [x for xi, yi in zip(X, y) if yi == cl]
-    X_cl = lambda cl: [x for x, yi in zip(X, y) if yi == cl]
+    # X_cl = lambda cl: [x for x, yi in zip(X, y) if yi == cl]
     self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
     return self
 
@@ -323,6 +330,91 @@ def barycenter_classifier(name: str, center: Callable = None, vector: Callable =
 
 
 from copy import deepcopy
+from scipy.stats import uniform
+
+## TODO: Cretae a generalized Ensemble Learner or a Hypothesis space Classifier that uses subsample hashing on 
+## fit, predict (+ related methods) to cache fixed training inputs 
+## TODO: THEN, create a generalized base estimator that accounts for knowing correspondences
+## Feature extractors must implement at least: fit, transform, get_feature_names_out
+## https://scikit-learn.org/stable/glossary.html#term-feature-extractor
+## Transformers must be estimators supporting transform and/or fit_transform
+## for warm_start, see: https://scikit-learn.org/stable/glossary.html#term-warm_start
+class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
+  """ Constructs a meta-estimator from a heat kernel instance. """
+  def __init__(self, heat_kernel, dimension: int, distribution = uniform, metric: str = "euclidean", random_state = None, warm_start: bool = False, **kwargs): 
+    # self.heat_kernels = heat_kernels
+    self.heat_kernel = heat_kernel 
+    self.time_interval = heat_kernel.time_bounds("absolute") # can be changed
+    # self.complex = complex 
+    self.warm_start = warm_start
+    self.random_state = random_state
+    self.distribution = distribution
+    self.dimension = dimension
+    self.metric = metric
+
+  def fit(self, X: ArrayLike, y: Optional[np.ndarray] = None, sample_weight: ArrayLike = None):
+    """Fits a classifier to a signature produced by the underlying heat kernel at a randomly sampled timepoint. 
+    """
+    if not(self.warm_start) or not(hasattr(self, "X_hash_")):
+      # assert card(self.complex,0) == X.shape[0]
+      self.X_hash_ = subsample_hash(X)
+      self.heat_kernels_ = []
+      for x in X: 
+        hk = self.heat_kernel.clone().param_laplacian("mesh", x.reshape(len(x) // self.dimension, self.dimension), normed=False).fit()
+        self.heat_kernels_.append(hk)
+    else: 
+      assert self.warm_start or (self.X_hash_ == subsample_hash(X)), "This estimator can only be used on a fixed training set."
+    
+    ## Sample new timepoint(s)
+    ## "If, for some reason, randomness is needed after fit, the RNG should be stored in an attribute random_state_"
+    self.distribution.random_state = self.random_state
+    prop = self.distribution.rvs(size=1)
+    self.timepoints_ = logsample(*self.time_interval, num=prop) # time for diffusion 
+    
+    ## Fit to class-specific signatures using either bag-of-feature vector quantization technique 
+    ## or class-specific barycenter idea (w/ generalized procrustes). If the latter, it's assumed the 
+    ## correspondence problem has already been solved, such that each row in X is already aligned. 
+    self.signature_ = np.array([np.ravel(hk.signature(self.timepoints_)) for hk in self.heat_kernels_])
+    self.estimator_ = BarycenterClassifier(metric=self.metric) # metric should be signal_dist
+    self.estimator_.fit(self.signature_, y, sample_weight)
+
+    ## If X is ArrayLike, it's assumed fixed number of points, fixed dimension, and correspondence problem is solved 
+    ## In which case we can use simple barycenter based classifier or generalized procrustes for |t| > 1
+    ## - The dimension problem can be resolved w/ a iterable of inputs w/ a given shape 
+    ## - The fixed number of points can be alleviated using landmarks (to yield a fixed # of points)
+    ## - Correspondence problem can be solved either: 
+    ##    a. Solve the global correspondence for every pair via supervision or *trusted* procrustes 
+    ##    b. Solve it per-pair by modding out via cross-correlation. Only works with 1-parameter  
+    return self
+    
+  def transform(self, X: ArrayLike, y: ArrayLike = None):
+    """ y is unused. """
+    if hasattr(self, "X_hash_") and self.X_hash_ == subsample_hash(X):
+      return self.signature_
+    else: 
+      hks = []
+      for x in X: 
+        hks.append(self.heat_kernel.clone().param_laplacian("mesh", x.reshape(len(x) // self.dimension, self.dimension), normed=False).fit())
+      sigs = np.array([np.ravel(hk.signature(self.timepoints_)) for hk in hks])
+      return sigs
+    
+  def decision_function(self, X: ArrayLike, *args, **kwargs) -> np.ndarray:     
+    Xt = self.transform(X)
+    return self.estimator_.decision_function(Xt, *args, **kwargs)
+  
+  def predict_proba(self, X: ArrayLike, *args, **kwargs) -> np.ndarray: 
+    Xt = self.transform(X)
+    return self.estimator_.predict_proba(Xt, *args, **kwargs)
+  
+  def predict(self, X: ArrayLike, *args, **kwargs) -> np.ndarray: 
+    Xt = self.transform(X)
+    return self.estimator_.predict(Xt, *args, **kwargs)
+
+  def score(self, X: ArrayLike, *args, **kwargs) -> float:
+    Xt = self.transform(X)
+    return self.estimator_.score(Xt, *args, **kwargs)
+
+
 
 # ## TODO: can this be generalized further by treating as a simplified bag-of-words type model
 # class AverageClassifierFactory(BaseEstimator, ClassifierMixin):

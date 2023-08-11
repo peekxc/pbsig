@@ -49,7 +49,7 @@ show(row(*figs))
 from pbsig.datasets import mpeg7
 from pbsig.distance import dist 
 NV = 100
-data_params = dict(simplify = NV+1, which=['turtle', 'bird', 'hammer'], shape_nums = np.arange(8))
+data_params = dict(simplify = NV+1, which=['bird', 'hammer', 'turtle'], shape_nums = np.arange(8))
 X_data = mpeg7(**data_params)
 X, y = mpeg7(**data_params, return_X_y = True)
 S = cycle_graph(NV)
@@ -61,21 +61,26 @@ from pbsig.vis import *
 patch = lambda X, color: figure_plain(figure_patch(X, color=color, width=50, height=50, alpha=0.40, line_width=2.5))
 p = column(
   row([patch(x.reshape(NV, 2), "red") for x in X[y == 0]]),
-  row([patch(x.reshape(NV, 2), "blue") for x in X[y == 1]]), 
-  row([patch(x.reshape(NV, 2), "green") for x in X[y == 2]])
+  row([patch(x.reshape(NV, 2), "green") for x in X[y == 1]]), 
+  row([patch(x.reshape(NV, 2), "blue") for x in X[y == 2]])
 )
 show(p)
 ```
+
+```{python}
+
+```
+
 
 ```{python}
 #| label: REPLACE
 from scipy.sparse import diags
 from pbsig.distance import dist
 from pbsig.utility import cycle_window
-X_pos = X_data[('turtle',2)]
-S = cycle_graph(X_pos.shape[0])
+S = cycle_graph(NV)
 triangles = list(cycle_window(range(X_pos.shape[0]), offset=4, w=5))
 S.update(triangles)
+S = simplicial_complex(chain(faces(S, 0), faces(S, 1), faces(S, 2)))
 ```
 
 ```{python}
@@ -111,36 +116,36 @@ s.scatter(*X_pos[ind].T, color="purple", size=10.5)
 show(row(p,q,r,s))
 ```
 
+The below uses `signal_dist` to resolve the correspondence problem per-signature. Because of this, there is no natural embedding 
+for each timepoint/signature, as although they are all 1-dimensional the metric varies per pair. 
+
+Since the number of vertices is fixed, if a fixed correspondence between shapes was set, we could use graph diffusion distance instead.  
+
 ```{python}
 #| label: MDS + HKS + dist plot over time
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
 from pbsig.dsp import signal_dist
 HK = HeatKernel(S)
 
-## Locally fitted timepoints 
+## Locally fitted models
+# ## TODO: move param calls to fit()? 
 HK.timepoints = (6, "informative")
-
-## Globally fitted timepoints
-# all_timepoints = np.array([hk.time_bounds("informative") for hk in HKS])
-# t_bnd = np.min(all_timepoints[:,0]), np.max(all_timepoints[:,1])
-# HK.timepoints = geomspace(*t_bnd, 6)
-
-## Fit the heat kernel 
 HKS = [HK.clone().param_laplacian("mesh", x.reshape(NV, 2), normed=False).fit() for x in X]
 
+signal_dist_norm = partial(signal_dist, normalize="sum") 
 cfigs = []
 for i in range(6):
   figs = []
 
   ## Compute minimum rollover distance between specific signatures
   sigs = np.array([hk.signature()[:,i] for hk in HKS])
-  sigs_norm = np.reciprocal(sigs.sum(axis=1))[:,np.newaxis] * sigs
-  sigs_norm_shift = pdist(sigs_norm, metric=signal_dist)
+  # sigs_norm = np.reciprocal(sigs.sum(axis=1))[:,np.newaxis] * sigs
+  sigs_norm_shift = pdist(sigs, metric=signal_dist_norm)
   # sigs_subset = np.array([hk.signature(subset=landmarks(X_data[k], 30)[0])[:,i] for k, hk in zip(shape_keys, HKS)])
   emb = cmds(squareform(sigs_norm_shift**2))
 
   ## MDS plot
-  p = figure_scatter(emb, color=["red"]*7 + ["blue"]*7 + ["green"]*7, width=180, height=180)
+  p = figure_scatter(emb, color=["red"]*7 + ["green"]*7 + ["blue"]*7, width=180, height=180)
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False
@@ -170,15 +175,41 @@ Next, we generate an "average" heat kernel signature for each class of shapes at
 signature at time `t` to fixed but arbitrary reference signature by minimizing the cross-correlation. This gives a canonical correspondence 
 between each pair of vectors. We then take the average at each point using the correspondence, for all shapes in the given class.
 
-To do this for multiple values of `t`, one can perform the same steps with a slight augmentation: in step 1, rather than minimizing cross correlation, 
-minimize multiple cross correlation simulataneously across mutliple signals. This is like simultanous signal phase alignment. Then, in step 2, use 
-generalized procrustes analysis. 
+To do this for multiple values of `t`, one can perform the same steps with a slight augmentation: in step 1, rather than minimizing cross correlation, minimize multiple cross correlation simulataneously across mutliple signals. This is like simultanous signal phase alignment. Then, in step 2, use generalized procrustes analysis...
 
 ```{python}
 #| label: Class-specific signature barycenters for a fixed time t.  
 from pbsig.dsp import phase_align, signal_dist
-from pbsig.classifiers import barycenter_classifier
+from pbsig.classifiers import HeatKernelClassifier
+from functools import partial
+## Globally fitted timepoints
+# all_timepoints = np.array([hk.time_bounds("informative") for hk in HKS])
+# t_bnd = np.min(all_timepoints[:,0]), np.max(all_timepoints[:,1])
+# HK.timepoints = geomspace(*t_bnd, 6)
 
+
+## The base heat kernel object is repeatedly cloned
+HK = HeatKernel(S)
+
+## First fit takes about 22 seconds to complete once
+## Takes ~15 seconds to refit 21 models 1500 times, => about 0.15 seconds need to change sample-weight
+norm_dist = partial(signal_dist, normalize="sum") # improves scores dramatically
+hk_model = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist) # euclidean assumes correspondence
+hk_model.fit(X, y)
+# hk_model.predict(X)
+# hk_model.score(X, y)
+
+# hk_model.signature_ = np.reciprocal(hk_model.signature_.sum(axis=1))[:,np.newaxis] * hk_model.signature_
+
+## Get an idea of how the scores are doing in absolute range
+scores = np.array([hk_model.fit(X, y).score(X, y) for _ in range(30)])
+
+## TODO: expand mpeg7 size + classes 
+
+```
+
+
+```{python}
 ## The 1-dimensional case for a fixed time point is easy 
 HK_sigs = np.array([np.ravel(hk.signature([hk.timepoints[1]])) for hk in HKS])
 HK_learner = barycenter_classifier("HKS")
@@ -228,38 +259,6 @@ pipeline.predict(X)
 random_hks_wl(HKS, y, 10, 1000).score(X, y)
 
 
-## Need a randomized transformer 
-## TODO: How do I generically store the heat kernel object? What is its contract?
-## a) 
-## b) 
-## 
-## Feature extractors must implement at least: fit, transform, get_feature_names_out
-## https://scikit-learn.org/stable/glossary.html#term-feature-extractor
-## Transformers must be estimators supporting transform and/or fit_transform
-class RandomizedVectorizer(BaseEstimator): # _VectorizerMixin
-  def __init__(self, random_state = None, dimension: int, **kwargs):
-    self.random_state = random_state
-    self.distribution = distribution
-    self.dimension = dimension
-
-  @staticmethod
-  def sample(size: Union[int, tuple]) -> np.ndarray:
-    """Produces a vector embedding of a given input.
-    
-    Defaults to the identity function (w/ input validation).
-    """
-    # raise NotImplementedError("A vector method must be implemented to use as an estimator.")
-    return np.asarray_chkfinite(X)
-  
-  def fit(self, X: ArrayLike = None, y: Optional[np.ndarray] = None):
-    self.distribution(size=)
-
-  def transform(self, X: ArrayLike) -> np.ndarray:
-    n_samples = X.shape[0]
-    return self.random_state_.randn(n_samples, self.n_components)
-
-
-from sklearn.pipeline import Pipeline
 
 ## Convert a deterministic estimator/classifier into a randomized one over some hypothesis space
 class HypothesisSpace(BaseEstimator):
@@ -382,9 +381,11 @@ hks = HK.signature(HK.timepoints)
 
 
 ```{python}
+#| label: PNG plots 
 stretch = lambda x: np.where(x < 0.5, 2*x ** 2, 1 - 2*(1-x)**2) ## maps [0,1] -> [0,1] monotonically, stretching extrema more
 normalize = lambda x: (x - np.min(x))/(np.max(x) - np.min(x))
 
+## Highlight points with low HKS distance / similar HKS  to a fixed point 
 ind = np.argmax(X_pos @ np.array([np.cos((7/4)*np.pi), np.sin((7/4)*np.pi)]))
 sdist_to_pt = np.linalg.norm(hks - hks[ind], axis=1)
 pt_col = bin_color(sdist_to_pt, "turbo")
@@ -400,15 +401,27 @@ s.xaxis.visible = False
 s.yaxis.visible = False
 s.toolbar_location = None
 s.grid.visible = False
+s.background_fill_color = None
+s.border_fill_color = None
 show(s)
 
+## This works
+from PIL import Image
 # temp = export_png(s, filename="temp.png")
+temp = Image.open(temp)
+
+## So does this - and this works with transparency! But neither screenshot nor export support transparency
 temp = get_screenshot_as_png(s, height=400, width=400)
 im = np.array(temp.convert("RGBA"))
 im = im.view("uint32").reshape(im.shape[:2]) # no idea why this works but uint8 doesnt'
 
 p = figure(x_range=(-10,10), y_range=(-10,10), width=500, height=500)
 p.image_rgba(image=[im], x=0, y=0, dw=2, dh=2, anchor="center")
+show(p)
+
+# This does not
+p = figure(x_range=(-10,10), y_range=(-10,10), width=500, height=500)
+p.image_url([temp], x=0, y=0, w=4, h=4, anchor="center")
 show(p)
 
 # show(figure_complex(delaunay_complex(X_pos)))

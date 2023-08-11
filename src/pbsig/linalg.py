@@ -3,6 +3,7 @@ from numpy.typing import ArrayLike
 from numbers import *
 
 import numpy as np 
+import inspect 
 from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
@@ -300,16 +301,94 @@ def geomspace(start: float, stop: float, p: Union[int, np.ndarray] = 50, base: f
     logspaced[0] = 0.0
   return logspaced if not reverse else start + (stop - logspaced)
 
+def function_kwargs(f: Callable, **kwargs):
+  f_keys = inspect.getfullargspec(f).args ## NOTE: this is not recursive! 
+  f_kwargs = dict((k, kwargs[k]) for k in f_keys if k in kwargs)
+  return f_kwargs
+
+def pass_kwargs(f: Callable, **kwargs):
+  f_keys = inspect.getfullargspec(f).args
+  f_kwargs = dict((k, kwargs[k]) for k in f_keys if k in kwargs)
+  f(**f_kwargs)
 
 class HeatKernel:
-  def __init__(self, complex: ComplexLike):
+  def __init__(self, 
+    complex: ComplexLike, 
+    timepoints: dict = dict(ntime=32, bound="informative"), 
+    laplacian: dict = dict(approx="unweighted"), 
+    solver: dict = dict(shift_invert=True)
+  ):
     self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
-    self._timepoints = (32, "informative")
-    # self.laplacian = None 
-    # self.solver = None 
+    self.timepoints = timepoints
+    self.laplacian = laplacian 
+    self.solver = solver 
     # self._solver = None  ## TODO: make the PsdSolver *not* specific a matrix, despite previous contracts! 
 
-  def time_bounds(self, method: str, interval: tuple = (0.0, 1.0), dtype = None):
+
+  def param_timepoints(self, timepoints: Any = None):
+    if isinstance(timepoints, Integral):
+      lb, ub = self.time_bounds("informative")
+      self.timepoints = dict(ntime=timepoints, bound="informative") # default 
+      self.timepoints_ = geomspace(lb, ub, timepoints)
+    elif timepoints is None and isinstance(self.timepoints, dict): 
+      lb, ub = self.time_bounds(self.timepoints["bound"])
+      self.timepoints_ = geomspace(lb, ub, self.timepoints["ntime"])
+      return self
+    elif isinstance(timepoints, Iterable):
+      timepoints = np.fromiter(iter(timepoints), dtype=np.float64)
+      assert np.all(timepoints >= 0), "Time points must be non-negative!"
+      self.timepoints = dict(ntime=timepoints, bound="fixed")
+      self.timepoints_ = timepoints
+      return self
+    else:
+      raise ValueError(f"Invalid timepoints argument type '{type(timepoints)}'supplied")
+      
+  ## Parameterize the laplacian approximation
+  def param_laplacian(self, X: ArrayLike = None, approx: str = "unweighted", **kwargs):
+    """Parameterizes the laplacian and mass operators, with input validation."""
+    self.laplacian = function_kwargs(up_laplacian, self.laplacian | dict(approx=approx) | kwargs)
+    if approx == "unweighted":
+      self.laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **self.laplacian)
+      self.mass_matrix_ = diags(d) 
+      return self
+    elif approx == "mesh":
+      assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
+      self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **self.laplacian)
+      self.mass_matrix_ = diags(vertex_masses(self.complex, X))     
+      return self 
+    elif approx == "cotangent":
+      raise NotImplementedError("Haven't implemented yet")
+    else:
+      raise ValueError("Invalid approximation choice {approx}; must be one of 'mesh', 'cotangent', or 'unweighted.'")
+
+  ## Parameterize the eigenvalue solver
+  def param_solver(self, shift_invert: bool = True, precon: str = None, **kwargs):
+    assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
+    if shift_invert and "sigma" not in kwargs: 
+      kwargs |= dict(sigma=1e-6, which="LM")
+    self.solver = function_kwargs(PsdSolver, self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs)
+    self.solver = self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs
+    self.solver_ = PsdSolver(laplacian=True, eigenvectors=True, **kwargs)
+    return self
+
+  ## Fit + all the param_< attribute > methods enact side-effects, but should be idempotent! 
+  def fit(self, X: ArrayLike = None, y: np.ndarray = None, **kwargs):
+    """Computes the eigensets to use to construct (or approximate) the heat kernel
+    
+    Parameters: 
+      X: positions of an (n x d) point cloud embedding in Euclidean space. 
+      y: unused. 
+      kwargs: additional keyword-arguments are forwarded to the appropriate param_< method >(...) methods. 
+    """
+    self.param_laplacian(X=X, **kwargs) 
+    self.param_solver(X=X, **kwargs) 
+    assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
+    ew, ev = self.solver_(A=self.laplacian_, M=self.mass_matrix_, **kwargs) ## solve Ax = \lambda M x 
+    self.eigvecs_ = ev
+    self.eigvals_ = np.maximum(ew, 0.0)
+    return self
+
+  def time_range(self, bound: str, interval: tuple = (0.0, 1.0), dtype = None):
     """Returns lower and upper bounds on the time parameter of the heat kernel, based on various heuristics.
     
     The heat kernel, and the various summary representations derived from it, are heavily dependent on the choice of time parameter, 
@@ -320,14 +399,14 @@ class HeatKernel:
       "laplacian" = uses gerschgorin theorem to bound spectral radius and spectral gap, then uses "heuristic"
     """
     # assert len(interval) == 2 and interval[0] >= 0.0 and interval[1] <= 1.0, "If supplied, interval bounds must be in [0,1]"
-    if method == "absolute":
+    if bound == "absolute":
       # assert hasattr(self, "laplacian_")
       # dtype = self.laplacian_.dtype
       dtype = np.float64 if dtype is None else dtype
       t_max = -np.log(np.finfo(dtype).eps)/1e-6 # 1e-6 assumed smallest eigenvalue can be found
-      t_min = 0.0
+      t_min = 1.0 # since log(0) will be -inf, though this could be go down to 0
       return t_min, t_max
-    elif method == "laplacian":
+    elif bound == "laplacian":
       assert hasattr(self, "laplacian_")
       L, dtype = self.laplacian_, self.laplacian_.dtype
       min_ew, max_ew = np.inf, 0.0
@@ -348,14 +427,14 @@ class HeatKernel:
       t_min = 4 * np.log(10) / l_max
       t_max = min(4 * np.log(10) / l_min, -np.log(np.finfo(dtype).eps) / min_ew)
       return t_min, t_max
-    elif method == "effective":
+    elif bound == "effective":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       machine_eps = np.finfo(self.laplacian_.dtype).eps
       l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_)
       t_max = -np.log(machine_eps)/l_min
       t_min = -np.log(machine_eps)/(l_max - l_min)
       return t_min, t_max
-    elif method == "informative":
+    elif bound == "informative":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       machine_eps = np.finfo(self.laplacian_.dtype).eps
       ew = np.sort(self.eigvals_)
@@ -368,96 +447,15 @@ class HeatKernel:
       t_max = 2.0 ** (lmi + interval[0] * (lmx - lmi))
       t_min = 2.0 ** (lmi + interval[1] * (lmx - lmi))
       return t_min, t_max
-    elif method == "heuristic":
+    elif bound == "heuristic":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       l_min, l_max = np.quantile(self.eigvals_[1:], interval)
       t_min = 4 * np.log(10) / l_max
       t_max = 4 * np.log(10) / l_min
       return t_min, t_max
     else: 
-      raise ValueError(f"Unknown time bound method '{method}' supplied. Must be one ['absolute', 'laplacian', 'effective', 'informative', 'heuristic']")
-
-    ## normed? 
-      # l_max = 2.0*np.max(self.mass_matrix_.diagonal())
-      # l_min = eigsh(self.laplacian_, k = 3, which="LM", sigma=1e-6, return_eigenvectors=False)[1]
-      # l_min *= np.min(self.mass_matrix_.diagonal())
-
-
-  @property
-  def timepoints(self) -> np.ndarray:
-    if isinstance(self._timepoints, np.ndarray):
-      return self._timepoints
-    else:
-      ntime, heuristic = self._timepoints
-      lb, ub = self.time_bounds(heuristic)
-      return geomspace(lb, ub, ntime)
-
-  @timepoints.setter
-  def timepoints(self, timepoints: Any): 
-    if isinstance(timepoints, Integral):
-      self._timepoints = (timepoints, "informative")
-    elif isinstance(timepoints, tuple):
-      assert len(timepoints) == 2 and isinstance(timepoints[0], Integral) and isinstance(timepoints[1], str), "timepoints must be a tuple (num_time_points, heuristic)" 
-      assert timepoints[1] in ["absolute", "laplacian", "informative", "effective", "heuristic"]
-      self._timepoints = timepoints
-    elif isinstance(timepoints, Iterable):
-      timepoints = np.fromiter(iter(timepoints), dtype=np.float64)
-      assert np.all(timepoints >= 0), "Time points must be non-negative!"
-      self._timepoints = timepoints
-    else:
-      raise ValueError(f"Invalid timepoints form {type(timepoints)} given. Must be array, integer, or tuple (num timepoints, heuristic)")
-
-  ## TODO: consider revisiting variant of the property pattern
-  ## Note: JS version using @property not possible due to this: https://stackoverflow.com/questions/13029254/python-property-callable
-  # @property
-  # def laplacian(self):
-  #   return self._laplacian
-
-  # @laplacian.setter(self, value):
-  #   self._laplacian = value 
-
-  ## Parameterize the laplacian approximation
-  def param_laplacian(self, approx: str = "unweighted", X: ArrayLike = None, **kwargs):
-    if approx == "unweighted":
-      self.laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **kwargs)
-      self.mass_matrix_ = diags(d) 
-      return self
-    elif approx == "mesh":
-      assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
-      self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **kwargs)
-      self.mass_matrix_ = diags(vertex_masses(self.complex, X))     
-      return self 
-    elif approx == "cotangent":
-      raise NotImplementedError("Haven't implemented yet")
-    else:
-      raise ValueError("Invalid approximation choice {approx}; must be one of 'mesh', 'cotangent', or 'unweighted.'")
-
-  ## Parameterize the eigenvalue solver
-  def param_solver(self, shift_invert: bool = True, precon: str = None, **kwargs):
-    assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
-    if shift_invert: 
-      kwargs |= dict(sigma=1e-6, which="LM")
-    self.solver_ = PsdSolver(laplacian=True, eigenvectors=True, **kwargs)
-    return self
-
-  def fit(self, **kwargs):
-    """Computes the eigensets to use to construct (or approximate) the heat kernel
+      raise ValueError(f"Unknown time bound method '{bound}' supplied. Must be one ['absolute', 'laplacian', 'effective', 'informative', 'heuristic']")
     
-    Parameters: 
-      X: positions of an (n x d) point cloud embedding in Euclidean space. 
-    """
-    if not hasattr(self, "laplacian_"):
-      self.param_laplacian("unweighted")
-    if not hasattr(self, "solver_"):
-      self.param_solver(shift_invert=True)
-    # self.laplacian_ = self.param_laplacian("unweighted")  else self.laplacian_
-    # self.solver_ =  if not hasattr(self, "solver_") else self.solver_
-    assert hasattr(self, "mass_matrix_"), "Heat kernel must have laplacian parameterized"
-    ew, ev = self.solver_(A=self.laplacian_, M=self.mass_matrix_, **kwargs) ## solve Ax = \lambda M x 
-    self.eigvecs_ = ev
-    self.eigvals_ = np.maximum(ew, 0.0)
-    return self
-  
   def diffuse(self, timepoints: ArrayLike = None, subset: ArrayLike = None, **kwargs) -> Generator:
     assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
     I = np.arange(self.eigvecs_.shape[0]) if subset is None else np.array(subset)
@@ -493,6 +491,9 @@ class HeatKernel:
       hks_matrix = hks_matrix @ diags(ht)
     return hks_matrix
   
+  # def estimator(self, method: str = "signature"):
+  #   """Constructs an sklearn-compatible e""
+
   def sihks(self, timepoints: ArrayLike = None, alpha: float = 2.0):
     assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
     ## TODO: choose alpha such that alpha**max(timepoints) is representeable as a number, or maybe such that 
@@ -518,7 +519,7 @@ class HeatKernel:
   def clone(self):
     """Returns a clone of this instance with the same parameters, discarding fitted information (if any).""" 
     hk_clone = HeatKernel(self.complex) # shallow copy
-    hk_clone._timepoints = self._timepoints
+    hk_clone.timepoints = self.timepoints
     return hk_clone
 
 
@@ -563,17 +564,20 @@ class PsdSolver:
     # self._rank_bound = int(rank_ub) if isinstance(rank_ub, Integral) else lambda A: rank_bound(A, upper=True)
     self.solver = solver
     self.k = k ## have to infer this 
-    self.tol = tol if tol is not None else np.sqrt(np.finfo(np.float64).eps)
+    self.tol = tol
+    # self.tol = tol if tol is not None else np.sqrt(np.finfo(np.float64).eps)
     self.laplacian = laplacian
-    if "return_eigenvectors" in kwargs:
-      self.eigenvectors = (eigenvectors | kwargs['return_eigenvectors']) 
-      kwargs.pop("return_eigenvectors", None)
-    else: 
-      self.eigenvectors = eigenvectors
-    self.fixed_params = kwargs
+    self.eigenvectors = eigenvectors | kwargs.pop("return_eigenvectors", False)
+    # if "return_eigenvectors" in kwargs:
+    #   self.eigenvectors = (eigenvectors | kwargs['return_eigenvectors']) 
+    #   kwargs.pop("return_eigenvectors", None)
+    # else: 
+    #   self.eigenvectors = eigenvectors
+    for key, value in kwargs.items():
+      setattr(self, key, value)
     # dict(tol=self.tolerance, return_eigenvectors=eigenvectors, k=)
     
-  def configure_solver(self, A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default') -> tuple:
+  def param_solver(self, A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default') -> tuple:
     if solver == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
     # if solver != 'dac': assert isinstance(A, np.ndarray), f"Cannot use iterative methods with dense of type '{type(A)}'"
     if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
@@ -596,7 +600,7 @@ class PsdSolver:
     else: 
       raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
     
-  def configure_k(self, A: Union[ArrayLike, spmatrix, LinearOperator], k: Union[int, str, float, list] = "auto") -> int:
+  def param_k(self, A: Union[ArrayLike, spmatrix, LinearOperator], k: Union[int, str, float, list] = "auto") -> int:
     if isinstance(k, Integral): 
       return k
     elif isinstance(k, Number) and k >= 0.0 and k <= 1.0:
@@ -615,8 +619,8 @@ class PsdSolver:
     assert A.shape[0] == A.shape[1], "A must be square"
     # assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     n = A.shape[0]
-    nev = self.configure_k(A, kwargs.pop("k", self.k))
-    self.solver_, defaults_ = self.configure_solver(A, kwargs.pop("solver", self.solver))
+    nev = self.param_k(A, kwargs.pop("k", self.k))
+    self.solver_, defaults_ = self.param_solver(A, kwargs.pop("solver", self.solver))
     kwargs.pop("solver", None)
     if (isinstance(A, spmatrix) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or nev == 0: 
       return (np.zeros(1), np.c_[np.zeros(n)]) if self.eigenvectors else np.zeros(1)
