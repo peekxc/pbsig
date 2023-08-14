@@ -314,48 +314,43 @@ class HeatKernel:
   ## TODO: Replace the laplacian solver parameters with actual parameters, e.g. ntime, bound, approx 
   def __init__(self, 
     complex: ComplexLike, 
-    timepoints: dict = dict(ntime=32, bound="informative"), 
-    laplacian: dict = dict(approx="unweighted"), 
-    solver: dict = dict(shift_invert=True)
+    timepoints: int = 32,
+    approx: str = "unweighted",
+    solver: str = "default",
+    bounds: str = "informative"
   ):
     self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
     self.timepoints = timepoints
-    self.laplacian = laplacian 
+    self.approx = approx 
     self.solver = solver 
-    # self._solver = None  ## TODO: make the PsdSolver *not* specific a matrix, despite previous contracts! 
+    self.bounds = bounds
 
-
-  def param_timepoints(self, timepoints: Any = None):
+  def param_timepoints(self, timepoints: Union[int, np.ndarray] = None, bounds: str = "informative"):
+    """Parameterizes the actual timepoints to evaluate the heat kernel over."""
     if isinstance(timepoints, Integral):
-      lb, ub = self.time_bounds("informative")
-      self.timepoints = dict(ntime=timepoints, bound="informative") # default 
-      self.timepoints_ = geomspace(lb, ub, timepoints)
-    elif timepoints is None and isinstance(self.timepoints, dict): 
-      lb, ub = self.time_bounds(self.timepoints["bound"])
-      self.timepoints_ = geomspace(lb, ub, self.timepoints["ntime"])
-      return self
+      lb, ub = self.time_range(bounds)
+      # timepoints = dict(ntime=timepoints, bound="informative") # default 
+      return geomspace(lb, ub, timepoints)
     elif isinstance(timepoints, Iterable):
       timepoints = np.fromiter(iter(timepoints), dtype=np.float64)
       assert np.all(timepoints >= 0), "Time points must be non-negative!"
-      self.timepoints = dict(ntime=timepoints, bound="fixed")
-      self.timepoints_ = timepoints
-      return self
+      return timepoints
     else:
-      raise ValueError(f"Invalid timepoints argument type '{type(timepoints)}'supplied")
+      raise ValueError(f"Invalid timepoints argument type '{type(timepoints)}' supplied")
       
   ## Parameterize the laplacian approximation
   def param_laplacian(self, X: ArrayLike = None, approx: str = "unweighted", **kwargs):
     """Parameterizes the laplacian and mass operators, with input validation."""
-    self.laplacian = dict(approx=approx) | function_kwargs(up_laplacian, **(self.laplacian | dict(approx=approx) | kwargs))
+    laplacian_kwargs = function_kwargs(up_laplacian, **kwargs)
     if approx == "unweighted":
-      self.laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **self.laplacian)
-      self.mass_matrix_ = diags(d) 
-      return self
+      laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **laplacian_kwargs)
+      mass_matrix_ = diags(d) 
+      return laplacian_, mass_matrix_
     elif approx == "mesh":
       assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
-      self.laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **self.laplacian)
-      self.mass_matrix_ = diags(vertex_masses(self.complex, X))     
-      return self 
+      laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **laplacian_kwargs)
+      mass_matrix_ = diags(vertex_masses(self.complex, X))     
+      return laplacian_, mass_matrix_
     elif approx == "cotangent":
       raise NotImplementedError("Haven't implemented yet")
     else:
@@ -363,25 +358,23 @@ class HeatKernel:
 
   ## Parameterize the eigenvalue solver
   def param_solver(self, shift_invert: bool = True, precon: str = None, **kwargs):
-    assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
+    # assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
     if shift_invert and "sigma" not in kwargs: 
       kwargs |= dict(sigma=1e-6, which="LM")
-    self.solver = function_kwargs(PsdSolver, **(self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs))
-    self.solver = self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs
-    self.solver_ = PsdSolver(laplacian=True, eigenvectors=True, **kwargs)
-    return self
+    solver_kwargs = function_kwargs(PsdSolver, **(dict(shift_invert=shift_invert, precon = None) | kwargs))
+    return PsdSolver(laplacian=True, eigenvectors=True, **solver_kwargs)
 
   ## Fit + all the param_< attribute > methods enact side-effects, but should be idempotent! 
   def fit(self, X: ArrayLike = None, y: np.ndarray = None, **kwargs):
     """Computes the eigensets to use to construct (or approximate) the heat kernel
     
     Parameters: 
-      X: positions of an (n x d) point cloud embedding in Euclidean space. 
+      X: positions of an (n x d) point cloud embedding in Euclidean space. Required for "mesh"  or "cotangent" approximation. 
       y: unused. 
       kwargs: additional keyword-arguments are forwarded to the appropriate param_< method >(...) methods. 
     """
-    self.param_laplacian(X=X, **kwargs) 
-    self.param_solver(X=X, **kwargs) 
+    self.solver_ = self.param_solver(**kwargs)                               ## should be idempotent for fixed params + kwargs
+    self.laplacian_, self.mass_matrix_ = self.param_laplacian(X=X, **kwargs) ## should be idempotent for fixed params + kwargs
     assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
     solver_kwargs = dict(A=self.laplacian_, M=self.mass_matrix_) | function_kwargs(self.solver_, **kwargs)
     ew, ev = self.solver_(**solver_kwargs) ## solve Ax = \lambda M x 
@@ -438,15 +431,15 @@ class HeatKernel:
     elif bound == "informative":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
       machine_eps = np.finfo(self.laplacian_.dtype).eps
-      ew = np.sort(self.eigvals_)
-      l_min, l_max = ew[1], ew[-1]
-      # l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_)
+      # ew = np.sort(self.eigvals_)
+      # l_min, l_max = ew[1], ew[-1]
+      l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_)
       # l_min, l_max = np.quantile(self.eigvals_[1:], interval) ## TODO: revisit, if its a linearly spaced interval use could do themselves
       t_max = -np.log2(machine_eps) / l_min
       t_min = -np.log2(machine_eps) / (l_max - l_min)
       lmi, lmx = np.log2(t_min), np.log2(t_max)
-      t_max = 2.0 ** (lmi + interval[0] * (lmx - lmi))
-      t_min = 2.0 ** (lmi + interval[1] * (lmx - lmi))
+      t_min = 2.0 ** (lmi + interval[0] * (lmx - lmi))
+      t_max = 2.0 ** (lmi + interval[1] * (lmx - lmi))
       return t_min, t_max
     elif bound == "heuristic":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
@@ -460,7 +453,7 @@ class HeatKernel:
   def diffuse(self, timepoints: ArrayLike = None, subset: ArrayLike = None, **kwargs) -> Generator:
     assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
     I = np.arange(self.eigvecs_.shape[0]) if subset is None else np.array(subset)
-    T = self.timepoints if timepoints is None else timepoints
+    T = self.param_timepoints(self.timepoints, self.bounds) if timepoints is None else np.asarray(timepoints)
     for t in T:
       Ht = self.eigvecs_ @ np.diag(np.exp(-t*self.eigvals_)) @ self.eigvecs_.T
       yield Ht[:,I]
@@ -468,20 +461,21 @@ class HeatKernel:
   def trace(self, timepoints: ArrayLike = None) -> np.ndarray:
     assert hasattr(self, "eigvals_"), "Must call .fit() first!"
     cind_nz = np.flatnonzero(~np.isclose(self.eigvals_, 0.0, atol=1e-14))
-    T = self.timepoints if timepoints is None else timepoints
+    T = self.param_timepoints(self.timepoints, self.bounds) if timepoints is None else np.asarray(timepoints)
     ht = np.array([np.sum(np.exp(-t * self.eigvals_[cind_nz])) for t in T])
     return ht
 
   def content(self, timepoints: ArrayLike = None, subset: ArrayLike = None, **kwargs) -> np.ndarray:
     # heat_content = np.array([hk.sum() for hk in self.diffuse(timepoints, subset, **kwargs)])
     assert hasattr(self, "eigvals_"), "Must call .fit() first!"
-    hkc = self.trace(timepoints)
+    T = self.param_timepoints(self.timepoints, self.bounds) if timepoints is None else np.asarray(timepoints)
+    hkc = self.trace(T)
     hkc = np.append(hkc[0], hkc[0] + np.cumsum(np.abs(np.diff(hkc))))
     return hkc
 
   def signature(self, timepoints: ArrayLike = None, scaled: bool = True, subset: ArrayLike = None) -> np.ndarray:
     assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
-    T = self.timepoints if timepoints is None else timepoints
+    T = self.param_timepoints(self.timepoints, self.bounds) if timepoints is None else np.asarray(timepoints)
     I = np.arange(self.eigvecs_.shape[0]) if subset is None else np.array(subset)
     cind_nz = np.flatnonzero(~np.isclose(self.eigvals_, 0.0, atol=1e-14))
     ev_subset = np.square(self.eigvecs_[np.ix_(I, cind_nz)]) if subset is not None else np.square(self.eigvecs_[:,cind_nz])
@@ -499,10 +493,11 @@ class HeatKernel:
     assert hasattr(self, "eigvecs_"), "Must call .fit() first!"
     ## TODO: choose alpha such that alpha**max(timepoints) is representeable as a number, or maybe such that 
     ## -max(ew)*alpha*max(t) ~= -37, say
+    T = self.param_timepoints(self.timepoints, self.bounds) if timepoints is None else np.asarray(timepoints)
     n, c = self.eigvecs_.shape[0], np.log(alpha)
     sc = []
     ew, ev = self.eigvals_, np.square(self.eigvecs_) ## note the elementwise squaring
-    for a_t in (alpha ** timepoints):
+    for a_t in (alpha ** T):
       # scaling = np.tile(alpha**t * ew.T * np.exp(-alpha**t * ew.T), (n, 1))
       scaling = a_t * ew * np.exp(-a_t * ew)
       if all(np.abs(scaling) < 1e-15) or any(np.isnan(scaling)):
@@ -520,7 +515,12 @@ class HeatKernel:
   def clone(self):
     """Returns a clone of this instance with the same parameters, discarding fitted information (if any).""" 
     hk_clone = HeatKernel(self.complex) # shallow copy
+    # hk_clone.timepoints = self.timepoints
     hk_clone.timepoints = self.timepoints
+    # hk_clone.laplacian = self.laplacian 
+    hk_clone.solver = self.solver 
+    hk_clone.bounds = self.bounds 
+    hk_clone.approx = self.approx
     return hk_clone
 
 
@@ -560,12 +560,12 @@ class HeatKernel:
 #   return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
 
 class PsdSolver:
-  def __init__(self, solver: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = 1e-6, **kwargs):
-    assert solver is not None, "Invalid solver"
+  def __init__(self, method: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = 1e-6, **kwargs):
+    assert method is not None, f"Invalid solver method '{method}'"
     # self._rank_bound = int(rank_ub) if isinstance(rank_ub, Integral) else lambda A: rank_bound(A, upper=True)
-    self.solver = solver
-    self.k = k ## have to infer this, these are solver parms and prob should go in solver! 
-    self.tol = tol
+    self.method: Union[tuple, str, Callable] = method
+    self.k: Union[str, int] = k ## have to infer this, these are solver parms and prob should go in solver! 
+    self.tol = np.max([tol, kwargs.pop("tolerance", 0.0)])
     # self.tol = tol if tol is not None else np.sqrt(np.finfo(np.float64).eps)
     self.laplacian = laplacian
     self.eigenvectors = eigenvectors | kwargs.pop("return_eigenvectors", False)
@@ -579,55 +579,55 @@ class PsdSolver:
     #   setattr(self, key, value)
     # dict(tol=self.tolerance, return_eigenvectors=eigenvectors, k=)
     
-  def param_solver(self, A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default') -> tuple:
-    if solver == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
+  ## Turns a data-independent parameter setting + data into a realized
+  def param_method(self, A: Union[ArrayLike, spmatrix, LinearOperator], method: Union[str, Callable] = 'default'):
     # if solver != 'dac': assert isinstance(A, np.ndarray), f"Cannot use iterative methods with dense of type '{type(A)}'"
-    if isinstance(A, np.ndarray) and solver == 'default' or solver == 'dac':
-      solver = np.linalg.eigh if self.eigenvectors else np.linalg.eigvalsh
-      return solver, {}
+    if isinstance(A, np.ndarray) and method == 'default' or method == 'dac':
+      if method == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
+      method = np.linalg.eigh if self.eigenvectors else np.linalg.eigvalsh
+      return method, {}
     elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
       # if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       #   import warnings
       #   warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")
       #   solver = 'jd'
-      solver = 'irl' if solver == 'default' else solver
-      assert isinstance(solver, str) and solver in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
-      if solver == 'irl':
+      method = 'irl' if method == 'default' else method
+      assert isinstance(method, str) and method in ['default', 'irl', 'lanczos', 'gd', 'jd', 'lobpcg']
+      if method == 'irl':
         from scipy.sparse.linalg import eigsh
         return eigsh, dict(which='LM', tol=self.tol, return_eigenvectors=self.eigenvectors)
       else:
         from primme import eigsh as primme_eigsh
         methods = { 'lanczos' : 'PRIMME_Arnoldi', 'gd': "PRIMME_GD" , 'jd' : "PRIMME_JDQR", 'lobpcg' : 'PRIMME_LOBPCG_OrthoBasis', 'default' : 'PRIMME_DEFAULT_MIN_TIME' }
-        return primme_eigsh, dict(tol=self.tol, which='LM', return_eigenvectors=self.eigenvectors, method=methods[solver])
+        return primme_eigsh, dict(tol=self.tol, which='LM', return_eigenvectors=self.eigenvectors, method=methods[method])
     else: 
-      raise ValueError(f"Invalid solver / operator-type {solver}/{str(type(A))} given")
-    
+      raise ValueError(f"Invalid solver method / operator-type combination ({method}/{str(type(A))}) given")
+  
+  ## Parameterize 
   def param_k(self, A: Union[ArrayLike, spmatrix, LinearOperator], k: Union[int, str, float, list] = "auto") -> int:
     if isinstance(k, Integral): 
       return k
     elif isinstance(k, Number) and k >= 0.0 and k <= 1.0:
       if k == 0.0: return 0
-      nev = trace_threshold(A, k) if k != 1.0 else rank_bound(A, upper=True)
-      nev = min(nev, A.shape[0] - 1) # if self.laplacian else nev
-      return nev 
+      k = trace_threshold(A, k) if k != 1.0 else rank_bound(A, upper=True)
+      return min(self.k, A.shape[0] - 1) # if self.laplacian else nev
     elif isinstance(k, str) and k == "auto":
-      nev = rank_bound(A, upper=True)
-      nev = min(nev, A.shape[0] - 1) # if self.laplacian else nev
-      return nev
+      k = rank_bound(A, upper=True)
+      return min(k, A.shape[0] - 1) # if self.laplacian else nev
     else: 
       raise ValueError("Couldn't deduce number of eigenvalues to compute.")
 
+  ## Equivalent of .fit() 
   def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Union[ArrayLike, tuple]:
     assert A.shape[0] == A.shape[1], "A must be square"
     # assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     n = A.shape[0]
-    nev = self.param_k(A, kwargs.pop("k", self.k))
-    self.solver_, defaults_ = self.param_solver(A, kwargs.pop("solver", self.solver))
-    kwargs.pop("solver", None)
-    if (isinstance(A, spmatrix) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or nev == 0: 
+    self.k_ = self.param_k(A, kwargs.pop("k", self.k))
+    self.solver_, defaults_ = self.param_method(A, kwargs.pop("method", self.method))
+    if (isinstance(A, spmatrix) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or self.k_ == 0: 
       return (np.zeros(1), np.c_[np.zeros(n)]) if self.eigenvectors else np.zeros(1)
     if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
-      defaults_ |= dict(k=nev, maxiter=n*100, ncv=None)
+      defaults_ |= dict(k=self.k_, maxiter=n*100, ncv=None)
       # params = (default_params | params) | kwargs  # if 'scipy' in self.solver.__module__ else None #min(2*nev + 1, 20) 
     self.params_ = (defaults_ | self.params) | kwargs
     return self.solver_(A, **self.params_)
@@ -636,10 +636,10 @@ class PsdSolver:
     format_val = lambda v: str(v) if isinstance(v, Integral) else (f"{v:.2e}" if isinstance(v, Number) else str(v))
     format_dict = lambda d: "(" + ", ".join([f"{str(k)} = {format_val(v)}" for k,v in d.items()]) + ")"
     s = "Laplacian" if self.laplacian else ""
-    print_params = self.params | dict(solver=self.solver, k=self.k, tol=self.tol, eigenvectors=self.eigenvectors)
+    print_params = self.params | dict(method=self.method, k=self.k, tol=self.tol, eigenvectors=self.eigenvectors)
     s += f"PsdSolver{format_dict(print_params)}:\n"
     if hasattr(self, "solver_"):
-      s += f"Solver type: ({str(self.solver_)})\n"
+      s += f"Solver type: (module = {str(self.solver_.__module__)}, name = {str(self.solver_.__name__)})\n"
     if hasattr(self, "params_") and self.params_ != {}:
       s += f"Called with: {format_dict(self.params_)}\n"
     return s

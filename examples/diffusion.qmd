@@ -31,16 +31,19 @@ X = np.random.uniform(size=(50,2), low=0, high=1)
 S = delaunay_complex(X)
 
 ## Generic way to generate multiple plots with colored vertices
-def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, **kwargs):
+def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, lb, ub, **kwargs):
   p = figure_complex(S, X, **kwargs)
-  p.scatter(*X.T, color=bin_color(vertex_weights, "inferno"), size=10.5)
+  # v_color = pass_kwargs(bin_color, **(dict(x=vertex_weights, color_pal="inferno") | kwargs))
+  v_color = bin_color(vertex_weights, color_pal="inferno", lb=lb, ub=ub)
+  p.scatter(*X.T, color=v_color, size=10.5)
   return p
 
 ## Show heat diffusion from a single vertex 
 ind = np.argmin(X @ np.array([0,1]))
-HK = HeatKernel(S).param_laplacian(X=X, approx="mesh", normed=False).fit()
-HK.timepoints = (6, "informative")
-figs = [figure_heat(S, X, heat, width=200, height=200) for heat in HK.diffuse(subset=ind)]
+HK = HeatKernel(S, timepoints=6, approx="mesh", bounds="informative").fit(X)
+heat_diffusion = list(HK.diffuse(subset=ind))
+# figure_heat(S, X, heat_diffusion[0], lb = 0.0, ub = max(heat_diffusion[0]), width=200, height=200)
+figs = [figure_heat(S, X, heat, lb = 0.0, ub = max(heat), width=200, height=200) for heat in heat_diffusion]
 show(row(*figs))
 ```
 
@@ -78,7 +81,7 @@ from scipy.sparse import diags
 from pbsig.distance import dist
 from pbsig.utility import cycle_window
 S = cycle_graph(NV)
-triangles = list(cycle_window(range(X_pos.shape[0]), offset=4, w=5))
+triangles = list(cycle_window(range(NV), offset=4, w=5))
 S.update(triangles)
 S = simplicial_complex(chain(faces(S, 0), faces(S, 1), faces(S, 2)))
 ```

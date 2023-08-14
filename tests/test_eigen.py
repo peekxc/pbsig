@@ -21,9 +21,13 @@ def test_psd():
   solver = PsdSolver(tol=1e-12, k=14, eigenvectors=True)
   print(solver)
   solver(A)
+  print(solver)
   solver(A.todense())
-  solver(A, solver="gd")
+  print(solver)
+  solver(A, method="gd")
+  print(solver)
   solver.test_accuracy(A)
+  solver.k = 20
 
 def test_operators():
   G = nx.Graph()
