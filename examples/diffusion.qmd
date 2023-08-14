@@ -38,7 +38,7 @@ def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, **kwargs
 
 ## Show heat diffusion from a single vertex 
 ind = np.argmin(X @ np.array([0,1]))
-HK = HeatKernel(S).param_laplacian("mesh", X, normed=False).fit()
+HK = HeatKernel(S).param_laplacian(X=X, approx="mesh", normed=False).fit()
 HK.timepoints = (6, "informative")
 figs = [figure_heat(S, X, heat, width=200, height=200) for heat in HK.diffuse(subset=ind)]
 show(row(*figs))

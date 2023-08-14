@@ -307,11 +307,11 @@ def function_kwargs(f: Callable, **kwargs):
   return f_kwargs
 
 def pass_kwargs(f: Callable, **kwargs):
-  f_keys = inspect.getfullargspec(f).args
-  f_kwargs = dict((k, kwargs[k]) for k in f_keys if k in kwargs)
-  f(**f_kwargs)
+  return f(function_kwargs(f, **kwargs))
 
 class HeatKernel:
+  ## "any parameter that can have a value assigned prior to having access to the data should be an __init__ keyword argument."
+  ## TODO: Replace the laplacian solver parameters with actual parameters, e.g. ntime, bound, approx 
   def __init__(self, 
     complex: ComplexLike, 
     timepoints: dict = dict(ntime=32, bound="informative"), 
@@ -346,7 +346,7 @@ class HeatKernel:
   ## Parameterize the laplacian approximation
   def param_laplacian(self, X: ArrayLike = None, approx: str = "unweighted", **kwargs):
     """Parameterizes the laplacian and mass operators, with input validation."""
-    self.laplacian = function_kwargs(up_laplacian, self.laplacian | dict(approx=approx) | kwargs)
+    self.laplacian = dict(approx=approx) | function_kwargs(up_laplacian, **(self.laplacian | dict(approx=approx) | kwargs))
     if approx == "unweighted":
       self.laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **self.laplacian)
       self.mass_matrix_ = diags(d) 
@@ -366,7 +366,7 @@ class HeatKernel:
     assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
     if shift_invert and "sigma" not in kwargs: 
       kwargs |= dict(sigma=1e-6, which="LM")
-    self.solver = function_kwargs(PsdSolver, self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs)
+    self.solver = function_kwargs(PsdSolver, **(self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs))
     self.solver = self.solver | dict(shift_invert=shift_invert, precon = None) | kwargs
     self.solver_ = PsdSolver(laplacian=True, eigenvectors=True, **kwargs)
     return self
@@ -383,7 +383,8 @@ class HeatKernel:
     self.param_laplacian(X=X, **kwargs) 
     self.param_solver(X=X, **kwargs) 
     assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
-    ew, ev = self.solver_(A=self.laplacian_, M=self.mass_matrix_, **kwargs) ## solve Ax = \lambda M x 
+    solver_kwargs = dict(A=self.laplacian_, M=self.mass_matrix_) | function_kwargs(self.solver_, **kwargs)
+    ew, ev = self.solver_(**solver_kwargs) ## solve Ax = \lambda M x 
     self.eigvecs_ = ev
     self.eigvals_ = np.maximum(ew, 0.0)
     return self
@@ -559,11 +560,11 @@ class HeatKernel:
 #   return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
 
 class PsdSolver:
-  def __init__(self, solver: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = None, **kwargs):
+  def __init__(self, solver: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = 1e-6, **kwargs):
     assert solver is not None, "Invalid solver"
     # self._rank_bound = int(rank_ub) if isinstance(rank_ub, Integral) else lambda A: rank_bound(A, upper=True)
     self.solver = solver
-    self.k = k ## have to infer this 
+    self.k = k ## have to infer this, these are solver parms and prob should go in solver! 
     self.tol = tol
     # self.tol = tol if tol is not None else np.sqrt(np.finfo(np.float64).eps)
     self.laplacian = laplacian
@@ -573,8 +574,9 @@ class PsdSolver:
     #   kwargs.pop("return_eigenvectors", None)
     # else: 
     #   self.eigenvectors = eigenvectors
-    for key, value in kwargs.items():
-      setattr(self, key, value)
+    self.params = kwargs
+    # for key, value in kwargs.items():
+    #   setattr(self, key, value)
     # dict(tol=self.tolerance, return_eigenvectors=eigenvectors, k=)
     
   def param_solver(self, A: Union[ArrayLike, spmatrix, LinearOperator], solver: str = 'default') -> tuple:
@@ -627,18 +629,17 @@ class PsdSolver:
     if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
       defaults_ |= dict(k=nev, maxiter=n*100, ncv=None)
       # params = (default_params | params) | kwargs  # if 'scipy' in self.solver.__module__ else None #min(2*nev + 1, 20) 
-    self.params_ = (defaults_ | self.fixed_params) | kwargs
+    self.params_ = (defaults_ | self.params) | kwargs
     return self.solver_(A, **self.params_)
   
   def __repr__(self):
     format_val = lambda v: str(v) if isinstance(v, Integral) else (f"{v:.2e}" if isinstance(v, Number) else str(v))
     format_dict = lambda d: "(" + ", ".join([f"{str(k)} = {format_val(v)}" for k,v in d.items()]) + ")"
     s = "Laplacian" if self.laplacian else ""
-    print_params = self.fixed_params | dict(solver=self.solver, k=self.k, tol=self.tol, eigenvectors=self.eigenvectors)
+    print_params = self.params | dict(solver=self.solver, k=self.k, tol=self.tol, eigenvectors=self.eigenvectors)
     s += f"PsdSolver{format_dict(print_params)}:\n"
-    # if (self.fixed_params is not None and self.fixed_params != {}):
-    #   s += f"Fixed params: {format_dict(self.fixed_params)}\n"
-    s += f"Solver type: ({str(self.solver_)})\n"
+    if hasattr(self, "solver_"):
+      s += f"Solver type: ({str(self.solver_)})\n"
     if hasattr(self, "params_") and self.params_ != {}:
       s += f"Called with: {format_dict(self.params_)}\n"
     return s

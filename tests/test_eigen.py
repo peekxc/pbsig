@@ -19,6 +19,7 @@ def test_psd():
   A = random(150,150, density=0.05)
   A = A.T @ A
   solver = PsdSolver(tol=1e-12, k=14, eigenvectors=True)
+  print(solver)
   solver(A)
   solver(A.todense())
   solver(A, solver="gd")

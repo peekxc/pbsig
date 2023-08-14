@@ -342,10 +342,8 @@ from scipy.stats import uniform
 class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
   """ Constructs a meta-estimator from a heat kernel instance. """
   def __init__(self, heat_kernel, dimension: int, distribution = uniform, metric: str = "euclidean", random_state = None, warm_start: bool = False, **kwargs): 
-    # self.heat_kernels = heat_kernels
     self.heat_kernel = heat_kernel 
     self.time_interval = heat_kernel.time_bounds("absolute") # can be changed
-    # self.complex = complex 
     self.warm_start = warm_start
     self.random_state = random_state
     self.distribution = distribution
