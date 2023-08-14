@@ -341,10 +341,9 @@ from scipy.stats import uniform
 ## for warm_start, see: https://scikit-learn.org/stable/glossary.html#term-warm_start
 class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
   """ Constructs a meta-estimator from a heat kernel instance. """
-  def __init__(self, heat_kernel, dimension: int, distribution = uniform, metric: str = "euclidean", random_state = None, warm_start: bool = False, **kwargs): 
+  def __init__(self, heat_kernel, dimension: int, distribution = uniform, metric: str = "euclidean", random_state = None, **kwargs): 
     self.heat_kernel = heat_kernel 
     self.time_interval = heat_kernel.time_bounds("absolute") # can be changed
-    self.warm_start = warm_start
     self.random_state = random_state
     self.distribution = distribution
     self.dimension = dimension
@@ -353,15 +352,16 @@ class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
   def fit(self, X: ArrayLike, y: Optional[np.ndarray] = None, sample_weight: ArrayLike = None):
     """Fits a classifier to a signature produced by the underlying heat kernel at a randomly sampled timepoint. 
     """
-    if not(self.warm_start) or not(hasattr(self, "X_hash_")):
+    if not(hasattr(self, "X_hash_")):
       # assert card(self.complex,0) == X.shape[0]
       self.X_hash_ = subsample_hash(X)
       self.heat_kernels_ = []
       for x in X: 
-        hk = self.heat_kernel.clone().param_laplacian("mesh", x.reshape(len(x) // self.dimension, self.dimension), normed=False).fit()
+        P = x.reshape(len(x) // self.dimension, self.dimension)
+        hk = self.heat_kernel.clone().fit(X=P, approx="mesh", normed=False)
         self.heat_kernels_.append(hk)
     else: 
-      assert self.warm_start or (self.X_hash_ == subsample_hash(X)), "This estimator can only be used on a fixed training set."
+      assert (self.X_hash_ == subsample_hash(X)), "This estimator can only be used on a fixed training set."
     
     ## Sample new timepoint(s)
     ## "If, for some reason, randomness is needed after fit, the RNG should be stored in an attribute random_state_"
@@ -392,7 +392,8 @@ class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
     else: 
       hks = []
       for x in X: 
-        hks.append(self.heat_kernel.clone().param_laplacian("mesh", x.reshape(len(x) // self.dimension, self.dimension), normed=False).fit())
+        P = x.reshape(len(x) // self.dimension, self.dimension)
+        hks.append(self.heat_kernel.clone().fit(P, approx="mesh", normed=False))
       sigs = np.array([np.ravel(hk.signature(self.timepoints_)) for hk in hks])
       return sigs
     

@@ -328,7 +328,7 @@ class HeatKernel:
   def param_timepoints(self, timepoints: Union[int, np.ndarray] = None, bounds: str = "informative"):
     """Parameterizes the actual timepoints to evaluate the heat kernel over."""
     if isinstance(timepoints, Integral):
-      lb, ub = self.time_range(bounds)
+      lb, ub = self.time_bounds(bounds)
       # timepoints = dict(ntime=timepoints, bound="informative") # default 
       return geomspace(lb, ub, timepoints)
     elif isinstance(timepoints, Iterable):
@@ -339,7 +339,7 @@ class HeatKernel:
       raise ValueError(f"Invalid timepoints argument type '{type(timepoints)}' supplied")
       
   ## Parameterize the laplacian approximation
-  def param_laplacian(self, X: ArrayLike = None, approx: str = "unweighted", **kwargs):
+  def param_laplacian(self, approx: str = "unweighted", X: ArrayLike = None, **kwargs):
     """Parameterizes the laplacian and mass operators, with input validation."""
     laplacian_kwargs = function_kwargs(up_laplacian, **kwargs)
     if approx == "unweighted":
@@ -357,11 +357,11 @@ class HeatKernel:
       raise ValueError("Invalid approximation choice {approx}; must be one of 'mesh', 'cotangent', or 'unweighted.'")
 
   ## Parameterize the eigenvalue solver
-  def param_solver(self, shift_invert: bool = True, precon: str = None, **kwargs):
+  def param_solver(self, solver: Union[str, Callable] = "default", shift_invert: bool = True, precon: str = None, **kwargs):
     # assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
     if shift_invert and "sigma" not in kwargs: 
       kwargs |= dict(sigma=1e-6, which="LM")
-    solver_kwargs = function_kwargs(PsdSolver, **(dict(shift_invert=shift_invert, precon = None) | kwargs))
+    solver_kwargs = function_kwargs(PsdSolver, **(dict(method=solver, shift_invert=shift_invert, precon = None) | kwargs))
     return PsdSolver(laplacian=True, eigenvectors=True, **solver_kwargs)
 
   ## Fit + all the param_< attribute > methods enact side-effects, but should be idempotent! 
@@ -373,8 +373,14 @@ class HeatKernel:
       y: unused. 
       kwargs: additional keyword-arguments are forwarded to the appropriate param_< method >(...) methods. 
     """
-    self.solver_ = self.param_solver(**kwargs)                               ## should be idempotent for fixed params + kwargs
-    self.laplacian_, self.mass_matrix_ = self.param_laplacian(X=X, **kwargs) ## should be idempotent for fixed params + kwargs
+    # timepoints: int = 32,
+    # approx: str = "unweighted",
+    # solver: str = "default",
+    # bounds: str = "informative"
+    solver_kwargs = (dict(solver=self.solver) | kwargs)
+    laplacian_kwargs = (dict(approx=self.approx) | kwargs)
+    self.solver_ = self.param_solver(**solver_kwargs)                                  ## should be idempotent for fixed params + kwargs
+    self.laplacian_, self.mass_matrix_ = self.param_laplacian(X=X, **laplacian_kwargs) ## should be idempotent for fixed params + kwargs
     assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
     solver_kwargs = dict(A=self.laplacian_, M=self.mass_matrix_) | function_kwargs(self.solver_, **kwargs)
     ew, ev = self.solver_(**solver_kwargs) ## solve Ax = \lambda M x 
@@ -382,7 +388,7 @@ class HeatKernel:
     self.eigvals_ = np.maximum(ew, 0.0)
     return self
 
-  def time_range(self, bound: str, interval: tuple = (0.0, 1.0), dtype = None):
+  def time_bounds(self, bound: str, interval: tuple = (0.0, 1.0), dtype = None):
     """Returns lower and upper bounds on the time parameter of the heat kernel, based on various heuristics.
     
     The heat kernel, and the various summary representations derived from it, are heavily dependent on the choice of time parameter, 
@@ -415,7 +421,7 @@ class HeatKernel:
           row = L @ cv
           max_ew = max(row[i] + np.sum(np.abs(np.delete(row, i))), max_ew)
           min_ew = min(row[i] - np.sum(np.abs(np.delete(row, i))), min_ew)
-        min_ew = 1e-6 if min_ew < 0 else min_ew 
+        min_ew = 1e-6 if min_ew <= 0 else min_ew 
       l_min = min_ew / np.max(self.mass_matrix_.diagonal())
       l_max = max_ew / np.min(self.mass_matrix_.diagonal())
       t_min = 4 * np.log(10) / l_max
@@ -443,7 +449,7 @@ class HeatKernel:
       return t_min, t_max
     elif bound == "heuristic":
       assert hasattr(self, "eigvals_"), "Must call .fit() first!"
-      l_min, l_max = np.quantile(self.eigvals_[1:], interval)
+      l_min, l_max = np.min(self.eigvals_[~np.isclose(self.eigvals_, 0.0)]), np.max(self.eigvals_) #np.quantile(self.eigvals_, interval)
       t_min = 4 * np.log(10) / l_max
       t_max = 4 * np.log(10) / l_min
       return t_min, t_max
