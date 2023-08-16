@@ -341,28 +341,53 @@ from scipy.stats import uniform
 ## for warm_start, see: https://scikit-learn.org/stable/glossary.html#term-warm_start
 class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
   """ Constructs a meta-estimator from a heat kernel instance. """
-  def __init__(self, heat_kernel, dimension: int, distribution = uniform, metric: str = "euclidean", random_state = None, **kwargs): 
+  def __init__(self, 
+    heat_kernel, 
+    dimension: int, 
+    distribution = uniform, 
+    metric: str = "euclidean", 
+    random_state = None, 
+    warm_start: bool = False, 
+    heat_kernels: list = [], 
+    X_hash: int = 0,
+    **kwargs
+  ): 
     self.heat_kernel = heat_kernel 
     self.time_interval = heat_kernel.time_bounds("absolute") # can be changed
     self.random_state = random_state
     self.distribution = distribution
     self.dimension = dimension
     self.metric = metric
+    self.warm_start = warm_start
+    self.heat_kernels = heat_kernels
+    self.X_hash = X_hash
 
+  def initial_fit(self, X: ArrayLike, **kwargs):
+    """Performs the initial (typically expensive) fit on a fixed data set, optimizing for subsequent .fit() calls.
+    
+    The initial fit populates .X_hash and .heat_kernels parameters, and sets warm_start to True. 
+    
+    This is also prior to .fit() as sklearn's AdaBoost doesn't support keyword argument recycling. 
+    """
+    # assert card(self.complex,0) == X.shape[0]
+    self.X_hash = subsample_hash(X)
+    self.heat_kernels = []
+    for x in X: 
+      P = x.reshape(len(x) // self.dimension, self.dimension)
+      hk = self.heat_kernel.clone().fit(X=P, **kwargs)
+      self.heat_kernels.append(hk)
+    self.warm_start = True
+
+  ## sklearn AdaBoost doesn't support kwargs for whatever reason...
   def fit(self, X: ArrayLike, y: Optional[np.ndarray] = None, sample_weight: ArrayLike = None):
     """Fits a classifier to a signature produced by the underlying heat kernel at a randomly sampled timepoint. 
     """
-    if not(hasattr(self, "X_hash_")):
-      # assert card(self.complex,0) == X.shape[0]
-      self.X_hash_ = subsample_hash(X)
-      self.heat_kernels_ = []
-      for x in X: 
-        P = x.reshape(len(x) // self.dimension, self.dimension)
-        hk = self.heat_kernel.clone().fit(X=P, approx="mesh", normed=False)
-        self.heat_kernels_.append(hk)
-    else: 
-      assert (self.X_hash_ == subsample_hash(X)), "This estimator can only be used on a fixed training set."
-    
+    assert hasattr(self, "X_hash") and hasattr(self, "heat_kernels"), "Must call 'initial_fit()' prior to fitting."
+    assert (self.X_hash == subsample_hash(X)), "Fitted hash does not match stored hash for input 'X'. This estimator can only be used on a fixed training set."
+    assert len(self.heat_kernels) == len(X), "Number of heat kernels does not match size of input."
+    self.classes_, y = np.unique(y, return_inverse=True) # TODO: import from cache
+    self.n_classes_ = len(self.classes_)                 # TODO: import from cache
+
     ## Sample new timepoint(s)
     ## "If, for some reason, randomness is needed after fit, the RNG should be stored in an attribute random_state_"
     self.distribution.random_state = self.random_state
@@ -372,7 +397,7 @@ class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
     ## Fit to class-specific signatures using either bag-of-feature vector quantization technique 
     ## or class-specific barycenter idea (w/ generalized procrustes). If the latter, it's assumed the 
     ## correspondence problem has already been solved, such that each row in X is already aligned. 
-    self.signature_ = np.array([np.ravel(hk.signature(self.timepoints_)) for hk in self.heat_kernels_])
+    self.signature_ = np.array([np.ravel(hk.signature(self.timepoints_)) for hk in self.heat_kernels])
     self.estimator_ = BarycenterClassifier(metric=self.metric) # metric should be signal_dist
     self.estimator_.fit(self.signature_, y, sample_weight)
 
@@ -384,10 +409,33 @@ class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
     ##    a. Solve the global correspondence for every pair via supervision or *trusted* procrustes 
     ##    b. Solve it per-pair by modding out via cross-correlation. Only works with 1-parameter  
     return self
-    
+
+  ## See: https://scikit-learn.org/stable/developers/develop.html#cloning
+  ## __sklearn_clone__ is useful when an estimator needs to hold on to some state when base.clone is called on the estimator.
+  def clone(self, include_prefit: bool = True):
+    """ Creates a clone of the estimator, optionally including prefitted kernels.
+    """
+    print("Calling clone")
+    hk_clone = HeatKernelClassifier(
+      self.heat_kernel, 
+      self.dimension, 
+      self.distribution, 
+      self.metric, 
+      self.random_state, 
+      self.warm_start, 
+      self.heat_kernels, 
+      self.X_hash
+    )
+    return hk_clone
+
+  def __sklearn_clone__(self):
+    print("Calling __sklearn_clone__")
+    return self.clone(include_prefit=True)
+
+
   def transform(self, X: ArrayLike, y: ArrayLike = None):
     """ y is unused. """
-    if hasattr(self, "X_hash_") and self.X_hash_ == subsample_hash(X):
+    if hasattr(self, "X_hash") and self.X_hash == subsample_hash(X):
       return self.signature_
     else: 
       hks = []

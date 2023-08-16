@@ -313,13 +313,11 @@ class HeatKernel:
   ## "any parameter that can have a value assigned prior to having access to the data should be an __init__ keyword argument."
   ## TODO: Replace the laplacian solver parameters with actual parameters, e.g. ntime, bound, approx 
   def __init__(self, 
-    complex: ComplexLike, 
     timepoints: int = 32,
     approx: str = "unweighted",
     solver: str = "default",
     bounds: str = "informative"
-  ):
-    self.complex = complex    ## TODO: make the simplicial complex shallow-copeable      
+  ): 
     self.timepoints = timepoints
     self.approx = approx 
     self.solver = solver 
@@ -339,17 +337,25 @@ class HeatKernel:
       raise ValueError(f"Invalid timepoints argument type '{type(timepoints)}' supplied")
       
   ## Parameterize the laplacian approximation
-  def param_laplacian(self, approx: str = "unweighted", X: ArrayLike = None, **kwargs):
+  @staticmethod
+  def param_laplacian(approx: Union[str, LinearOperator] = "unweighted", X: ArrayLike = None, S: ComplexLike = None, **kwargs):
     """Parameterizes the laplacian and mass operators, with input validation."""
+    from scipy.sparse import spmatrix
     laplacian_kwargs = function_kwargs(up_laplacian, **kwargs)
-    if approx == "unweighted":
-      laplacian_, d = up_laplacian(self.complex, p=0, return_diag=True, **laplacian_kwargs)
+    if isinstance(approx, LinearOperator) or isinstance(approx, spmatrix):
+      assert hasattr(approx, "diagonal"), f"Laplacian approximation operator '{approx}' must has .diagonal() method!"
+      laplacian_ = approx
+      d = laplacian_.diagonal()
+      mass_matrix_ = diags(d) 
+      return laplacian_, mass_matrix_
+    elif approx == "unweighted":
+      laplacian_, d = up_laplacian(S, p=0, return_diag=True, **laplacian_kwargs)
       mass_matrix_ = diags(d) 
       return laplacian_, mass_matrix_
     elif approx == "mesh":
       assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
-      laplacian_ = up_laplacian(self.complex, p=0, weight=gauss_similarity(self.complex, X), **laplacian_kwargs)
-      mass_matrix_ = diags(vertex_masses(self.complex, X))     
+      laplacian_ = up_laplacian(S, p=0, weight=gauss_similarity(S, X), **laplacian_kwargs)
+      mass_matrix_ = diags(vertex_masses(S, X))     
       return laplacian_, mass_matrix_
     elif approx == "cotangent":
       raise NotImplementedError("Haven't implemented yet")
@@ -357,7 +363,8 @@ class HeatKernel:
       raise ValueError("Invalid approximation choice {approx}; must be one of 'mesh', 'cotangent', or 'unweighted.'")
 
   ## Parameterize the eigenvalue solver
-  def param_solver(self, solver: Union[str, Callable] = "default", shift_invert: bool = True, precon: str = None, **kwargs):
+  @staticmethod
+  def param_solver(solver: Union[str, Callable] = "default", shift_invert: bool = True, precon: str = None, **kwargs):
     # assert hasattr(self, "laplacian_"), "Must parameterize Laplacian first"
     if shift_invert and "sigma" not in kwargs: 
       kwargs |= dict(sigma=1e-6, which="LM")
@@ -373,10 +380,6 @@ class HeatKernel:
       y: unused. 
       kwargs: additional keyword-arguments are forwarded to the appropriate param_< method >(...) methods. 
     """
-    # timepoints: int = 32,
-    # approx: str = "unweighted",
-    # solver: str = "default",
-    # bounds: str = "informative"
     solver_kwargs = (dict(solver=self.solver) | kwargs)
     laplacian_kwargs = (dict(approx=self.approx) | kwargs)
     self.solver_ = self.param_solver(**solver_kwargs)                                  ## should be idempotent for fixed params + kwargs
@@ -516,11 +519,14 @@ class HeatKernel:
 
   def __repr__(self) -> str:
     # " ".join([f"{t:.2e}" for t in self.timepoints]).replace("+","")
-    return f"Heat kernel for {str(self.complex)}"
+    s = f"Heat kernel (approx = {self.approx}, timepoints = {self.timepoints}, bounds = {self.bounds})\n"
+    s += f"Solver: {str(self.solver)}"
+    return s 
+
   
   def clone(self):
     """Returns a clone of this instance with the same parameters, discarding fitted information (if any).""" 
-    hk_clone = HeatKernel(self.complex) # shallow copy
+    hk_clone = HeatKernel() # shallow copy
     # hk_clone.timepoints = self.timepoints
     hk_clone.timepoints = self.timepoints
     # hk_clone.laplacian = self.laplacian 

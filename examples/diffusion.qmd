@@ -39,7 +39,7 @@ def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, lb, ub, 
 
 ## Show heat diffusion from a single vertex 
 ind = np.argmin(X @ np.array([0,1]))
-HK = HeatKernel(S, timepoints=6, approx="mesh", bounds="informative").fit(X)
+HK = HeatKernel(timepoints=6, approx="mesh", bounds="informative").fit(X, S=S)
 heat_diffusion = list(HK.diffuse(subset=ind))
 figs = [figure_heat(S, X, heat, lb = 0.0, ub = max(heat), width=200, height=200) for heat in heat_diffusion]
 show(row(*figs))
@@ -84,7 +84,7 @@ S = simplicial_complex(chain(faces(S, 0), faces(S, 1), faces(S, 2)))
 ## Formulate the mesh Laplacian the normalize by the mass matrices
 from pbsig.linalg import * 
 X_pos = X[14,:].reshape(NV, 2)
-HK = HeatKernel(S, approx="mesh").fit(X_pos)
+HK = HeatKernel(approx="mesh").fit(X_pos, S=S)
 
 ## informative seems like a good heuristic
 HK.timepoints = geomspace(*HK.time_bounds("informative", interval=[0.0,1.0]), p=32, reverse=False)
@@ -122,8 +122,9 @@ Since the number of vertices is fixed, if a fixed correspondence between shapes 
 #| label: MDS + HKS + dist plot over time
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
 from pbsig.dsp import signal_dist
-HK = HeatKernel(S, approx="mesh", timepoints = 6, bounds = "effective")
-HKS = [HK.clone().fit(x.reshape(NV, 2), normed=False) for x in X]
+HK = HeatKernel(approx="mesh", timepoints = 6, bounds = "effective")
+# HK.param_laplacian(approx="mesh")
+HKS = [HK.clone().fit(x.reshape(NV, 2), S=S, normed=False) for x in X]
 
 signal_dist_norm = partial(signal_dist, normalize="sum") 
 cfigs = []
@@ -172,6 +173,7 @@ To do this for multiple values of `t`, one can perform the same steps with a sli
 #| label: Class-specific signature barycenters for a fixed time t.  
 from pbsig.dsp import phase_align, signal_dist
 from pbsig.classifiers import HeatKernelClassifier
+from sklearn import clone
 
 ## Globally fitted timepoints
 # all_timepoints = np.array([hk.time_bounds("informative") for hk in HKS])
@@ -180,26 +182,126 @@ from pbsig.classifiers import HeatKernelClassifier
 
 
 ## The base heat kernel object is repeatedly cloned
-HK = HeatKernel(S)
+HK = HeatKernel(approx="mesh")
 
 ## First fit takes about 22 seconds to complete once
 ## Takes ~15 seconds to refit 21 models 1500 times, => about 0.15 seconds need to change sample-weight
 norm_dist = partial(signal_dist, normalize="sum") # improves scores dramatically
 hk_model = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist) # euclidean assumes correspondence
+hk_model.initial_fit(X=X, y=y, S=S, normed=True, approx="mesh")
 hk_model.fit(X, y)
 hk_model.transform(X)
+hk_model.warm_start
+hk_model.X_hash
+clone(hk_model).warm_start
+clone(hk_model).dimension
+clone(hk_model).X_hash
+clone(hk_model).heat_kernels
+
+
 # hk_model.predict(X)
 # hk_model.score(X, y)
 
 # hk_model.signature_ = np.reciprocal(hk_model.signature_.sum(axis=1))[:,np.newaxis] * hk_model.signature_
 
 ## Get an idea of how the scores are doing in absolute range
-scores = np.array([hk_model.fit(X, y).score(X, y) for _ in range(30)])
-
-## TODO: expand mpeg7 size + classes 
+# scores = np.array([hk_model.fit(X, y).score(X, y) for _ in range(30)])
 
 ```
 
+Why doens't sklearn respect clone? Ahh, needs >= 1.3
+```{python}
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+from sklearn.metrics import euclidean_distances
+class TemplateClassifier(BaseEstimator, ClassifierMixin):
+  def __init__(self, demo_param='demo'):  
+    self.demo_param = demo_param
+
+  def fit(self, X, y):
+    X, y = check_X_y(X, y)
+    self.classes_ = unique_labels(y)
+    self.X_, self.y_ = X, y
+    return self
+
+  def predict(self, X):
+    check_is_fitted(self)
+    X = check_array(X)
+    closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
+    return self.y_[closest]
+  
+  def clone(self):
+    print("clone called")
+    return self
+  
+  def __copy__(self):
+    print("copy called")
+    return self
+
+  def __deepcopy__(self):
+    print("deepcopy called")
+    return self
+  
+  def __sklearn_clone__(self):
+    print("sklearn clone called")
+    return self
+
+
+from sklearn import clone
+C = TemplateClassifier()
+c = clone(C)
+```
+
+
+```{python}
+#| label: Expanded MPEG random classifiers 
+## TODO: expand mpeg7 size + classes 
+data_params = dict(simplify = NV+1, which="default", shape_nums = np.arange(12))
+X_data = mpeg7(**data_params)
+X, y = mpeg7(**data_params, return_X_y = True)
+S = cycle_graph(NV)
+triangles = list(cycle_window(range(NV), offset=4, w=5))
+S.update(triangles)
+S = simplicial_complex(chain(faces(S, 0), faces(S, 1), faces(S, 2)), form="tree")
+
+## Fit the initial model
+HK = HeatKernel(approx="mesh")
+hk_model = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist) # euclidean assumes correspondence
+hk_model.initial_fit(X=X, y=y, S=S, normed=True, approx="mesh")
+print(hk_model.fit(X, y))
+
+## Show the scores of randomized models
+scores = np.array([hk_model.fit(X, y).score(X, y) for _ in range(30)])
+```
+
+
+```{python}
+#| label: Boosting HKS weak learners
+
+from sklearn.ensemble import AdaBoostClassifier
+HK = HeatKernel(approx="mesh")
+HK_classifier = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist)
+HK_classifier.initial_fit(X=X, y=y, S=S, normed=True, approx="mesh")
+assert HK_classifier.X_hash == clone(HK_classifier).X_hash, "Weak learner needs to be cloneable"
+
+HK_classifier.fit(X, y)
+HK_classifier.transform(X)
+HK_classifier.predict(X)
+
+HK_classifier.X_hash
+HK_classifier.clone()
+
+
+
+
+ab = AdaBoostClassifier(estimator=HK_classifier, n_estimators=15, learning_rate=1e-2)
+
+ab.fit(X, y)
+
+ab.predict(X)
+ab.score(X, y)
+```
 
 ```{python}
 ## The 1-dimensional case for a fixed time point is easy 
@@ -320,7 +422,6 @@ A_skl = AdaBoostClassifier(ShellsClassifier(bins=15), n_estimators=15, learning_
 
 
 ```{python}
-#| label: Boosting HKS weak learners
 from pbsig.classifiers import barycenter_classifier
 # barycenter_2d = lambda x, w: (w[:,np.newaxis] * x.reshape(len(x) // 2, 2)).mean(axis=0) if w is not None else x.reshape(len(x) // 2, 2).mean(axis=0)
 
