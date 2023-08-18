@@ -28,7 +28,7 @@ show(p)
 # %% Use the insertion radius of the greedy permuttion 
 from pbsig.shape import landmarks
 from pbsig.persistence import ph
-pi, insert_rad = landmarks(X.T, k=len(X), diameter=True)
+pi, insert_rad = landmarks(X, k=len(X), diameter=True)
 
 # %% Construct the 2-d rips compelx at the enclosing radius to true diagram
 from pbsig.vis import figure_dgm
@@ -81,14 +81,16 @@ assert np.all([exponential_search(x, x[i]) == i for i in range(len(x))])
 # Or just use the given sparse mesh. Take an elephant, choose landmarks/greedypermutation, then...
 # 1) Consider problem of *generating* a sparse filtered complex from a *point set alone*---start with the true diagram, and 
 # then use exp search on landmark points until a given multiplicity is satisfied (say, w/ geodesic eccentricity filter + delaunay complex)
+# UPDATE: this seems not feasible as delaunay ecc wont generate the right dgm as the structured mesh
 # 2) Reverse problem: You have a mesh + it's true diagram (from mesh!), you wish to sparsify (say w/ quadric simplification) 
 # as much as possible, but under the constraint it preserves a given topology. Again, eccentricity + elephant constraint. 
+# 
 # could also *perhaps* formulate a rips/based or spectra based objective for sparsification
 
-# %% (1)
+# %% (1) Load mesh and do floyd warshall to get geodesic distances
 from pbsig.datasets import pose_meshes
 from pbsig.shape import landmarks
-mesh_loader = pose_meshes()
+mesh_loader = pose_meshes(simplify=4000)
 elephant_mesh = mesh_loader[6]
 # elephant_mesh.euler_poincare_characteristic() # 2 
 # elephant_mesh.is_watertight() # False 
@@ -105,6 +107,43 @@ A = nx.adjacency_matrix(G).tocoo()
 A.data = np.linalg.norm(elephant_pos[A.row] - elephant_pos[A.col], axis=1)
 #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
 AG = floyd_warshall(A.tocsr())
+
+## Compute eccentricities for edges and vertices
+n = elephant_pos.shape[0]
+mesh_ecc = AG.max(axis=1)
+ecc_weight = lower_star_weight(mesh_ecc)
+K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
+
+
+# %% (2) Does delaunay recover this?
+from pbsig.persistence import ph
+from pbsig.vis import figure_dgm
+dgm = ph(K_ecc, engine="dionysus")
+
+p = figure_dgm(dgm[1])
+show(p)
+
+from pbsig.linalg import up_laplacian
+from scipy.sparse import diags
+S = delaunay_complex(np.asarray(elephant_mesh.vertices))
+
+L = up_laplacian(S, p=0)
+A = L - diags(L.diagonal())
+A = A.tocoo()
+A.data = np.linalg.norm(elephant_pos[A.row] - elephant_pos[A.col], axis=1)
+#A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+AG = floyd_warshall(A.tocsr())
+mesh_ecc = AG.max(axis=1)
+ecc_weight = lower_star_weight(mesh_ecc)
+
+
+K_ecc = filtration(S, ecc_weight)
+dgm = ph(K_ecc, engine="dionysus")
+p = figure_dgm(dgm[1])
+show(p)
+
+
+
 
 
 # %% Precompute eccentricities

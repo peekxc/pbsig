@@ -290,22 +290,21 @@ class BarycenterClassifier(BaseEstimator, ClassifierMixin):
     # [x for xi, yi in zip(X, y) if yi == cl]
     # X_cl = lambda cl: [x for x, yi in zip(X, y) if yi == cl]
     self.barycenters_ = { cl : self.barycenter(X[y == cl], sample_weight[y == cl] if not sample_weight is None else None) for cl in self.classes_ }
+    self.centroids_ = np.array([centroid for centroid in self.barycenters_.values()])
     return self
 
   def decision_function(self, X: ArrayLike) -> np.ndarray:
     """ Computes the distance between vectors of 'X' the class-fitted barycenters"""
     from scipy.spatial.distance import cdist
     # V = np.array([self.vector(x) for x in X])
-    V = self.vector(X)
-    C = np.array([centroid for centroid in self.barycenters_.values()])
-    return cdist(V, C, metric=self.metric)
+    return cdist(self.vector(X), self.centroids_, metric=self.metric)
 
   def predict_proba(self, X: ArrayLike) -> np.ndarray:
     """Converts distances to similarity (arbitrarily) to produce a probability."""
     # https://stackoverflow.com/questions/4064630/how-do-i-convert-between-a-measure-of-similarity-and-a-measure-of-difference-di
     P = self.decision_function(X)
     P = np.exp(-P) # exponential conversion to similarity: todo, generalize
-    P = np.diag(1 / P.sum(axis=1)) @ P
+    P = P.sum(axis=1)[np.newaxis,:] * P 
     return P
 
   def predict(self, X: ArrayLike):
@@ -450,8 +449,8 @@ class HeatKernelClassifier(BaseEstimator, ClassifierMixin): # _VectorizerMixin
     return self.estimator_.decision_function(Xt, *args, **kwargs)
   
   def predict_proba(self, X: ArrayLike, *args, **kwargs) -> np.ndarray: 
-    Xt = self.transform(X)
-    return self.estimator_.predict_proba(Xt, *args, **kwargs)
+    Xt = self.transform(X)                                    # this is fast
+    return self.estimator_.predict_proba(Xt, *args, **kwargs) # this is slow 
   
   def predict(self, X: ArrayLike, *args, **kwargs) -> np.ndarray: 
     Xt = self.transform(X)

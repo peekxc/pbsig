@@ -180,7 +180,6 @@ from sklearn import clone
 # t_bnd = np.min(all_timepoints[:,0]), np.max(all_timepoints[:,1])
 # HK.timepoints = geomspace(*t_bnd, 6)
 
-
 ## The base heat kernel object is repeatedly cloned
 HK = HeatKernel(approx="mesh")
 
@@ -191,12 +190,12 @@ hk_model = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist) # euclidean
 hk_model.initial_fit(X=X, y=y, S=S, normed=True, approx="mesh")
 hk_model.fit(X, y)
 hk_model.transform(X)
-hk_model.warm_start
-hk_model.X_hash
-clone(hk_model).warm_start
-clone(hk_model).dimension
-clone(hk_model).X_hash
-clone(hk_model).heat_kernels
+# hk_model.warm_start
+# hk_model.X_hash
+# clone(hk_model).warm_start
+# clone(hk_model).dimension
+# clone(hk_model).X_hash
+# clone(hk_model).heat_kernels
 
 
 # hk_model.predict(X)
@@ -293,11 +292,21 @@ HK_classifier.X_hash
 HK_classifier.clone()
 
 
-
-
 ab = AdaBoostClassifier(estimator=HK_classifier, n_estimators=15, learning_rate=1e-2)
 
+import line_profiler
+profiler = line_profiler.LineProfiler()
+
+profiler.add_function(HK_classifier.fit)
+profiler.add_function(ab.fit)
+profiler.add_function(HK_classifier.predict_proba)
+profiler.enable_by_count()
 ab.fit(X, y)
+profiler.print_stats(output_unit=1e-3, stripzeros=True)
+
+
+
+
 
 ab.predict(X)
 ab.score(X, y)

@@ -230,7 +230,7 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', sha
     return(dataset)
   
 
-def pose_meshes(simplify: int = None):
+def pose_meshes(simplify: int = None, which: str = "default", shape_nums = "all"):
   """3-D mesh data of animals / humans in different poses.
 
   Parameters: 
@@ -239,12 +239,33 @@ def pose_meshes(simplify: int = None):
   assert isinstance(simplify, Integral) or simplify is None, "If supplied, simplify must be an integer representing the desired number of triangles"
   import open3d as o3
   mesh_dir = _package_data("mesh_poses")
-  pose_dirs = ["camel-poses", "elephant-poses", "horse-poses", "flamingo-poses"] # "cat-poses", "lion-poses"
+
+  ## Shape numbers. 0 means reference. 
+  shape_nums = np.array([0,1,2,3,4,5,6,7,8,9,10]) if isinstance(shape_nums, str) and shape_nums == "all" else shape_nums
+  shape_nums = np.array([i-1 if i != 0 else 10 for i in shape_nums])
+
+  ## Choose the shapes
+  _all_shapes = ["camel","face","horse","elephant","head","cat","flamingo","lion"]
+  _default_shapes = ["camel", "cat", "elephant", "flamingo"]
+  if isinstance(which, str) and which == "default":
+    shape_types = _default_shapes
+  elif isinstance(which, str) and which == "all":
+    shape_types = _all_shapes
+  else:
+    assert all([s in _all_shapes for s in which]), "Invalid set of shapes given"
+    shape_types = which
+
+  ## Select the pose paths
+  import re
+  pose_dirs = [s+"-poses" for s in shape_types]
   get_pose_objs = lambda pd: np.array(list(filter(lambda s: s[-3:] == "obj", sorted(os.listdir(mesh_dir+"/"+pd)))))
-  pose_objs = [get_pose_objs(pose_type)[[0,1,2,3,7,8]] for pose_type in pose_dirs]
-  pose_objs = [[obj_type + "/" + o for o in objs] for obj_type, objs in zip(pose_dirs, pose_objs)]
-  pose_objs = list(collapse(pose_objs))
-  pose_paths = [mesh_dir + "/" + obj for obj in pose_objs]
+  pose_objs = list(collapse([get_pose_objs(pose_type) for pose_type in pose_dirs]))
+  pose_paths = []
+  ptn = re.compile('(\w+)-(\d+)\.obj')
+  for obj_name in pose_objs:
+    m = ptn.match(obj_name)
+    if m is not None and len(m.groups()) == 2 and int(m.groups()[1]) in shape_nums:
+      pose_paths.append(m.groups()[1]+"-poses" + "/" + obj_name)
 
   import networkx as nx
   from pbsig.itertools import LazyIterable
