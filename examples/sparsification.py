@@ -57,23 +57,125 @@ show(row(*dgm_figs))
 x = np.sort(np.random.choice(range(1500), size=340, replace=False))
 v = 78
 
+## Needs: 
+##  1. Sequence with __len__ + __getitem__() support
+##  2. target type with __eq__ and __le__ support
+def binary_search(seq: Sequence, target: Any):
+  left, right = 0, len(seq) - 1
+  while left <= right:
+    mid = left + (right - left) // 2
+    val = seq[mid]
+    if val == target:
+      return mid
+    left, right = (mid + 1, right) if val < target else (left, mid - 1)
+  return None # Element not found
+ 
+assert np.all([binary_search(x, x[i]) == i for i in range(len(x))])
+
 ## TODO: augment to work only for '<=' or better for arbitrary predicate
 ## Also augment to work with binary search as well  
 # goal is to find the index 'i' right before the predicate returns False, i.e.
 # TRUE, TRUE, TRUE, ..., TRUE, TRUE,  FALSE, FALSE, ..., FALSE
 # ------------------------------(i)^--(i+1)^------------------ 
-def exponential_search(arr: np.ndarray, v: Any, l: int = 0):
-  #print(f"({l})")
-  if arr[l] == v:
+def exponential_search(seq: Sequence, target: Any, l: int = 0):
+  print(f"({l})")
+  if seq[l] == v:
     return l
   n = 1
-  while (l+n) < len(arr) and arr[l+n] <= v:
+  while (l+n) < len(seq) and seq[l+n] <= v:
     #print(l+n)
     n *= 2
-  l = (l + (n // 2)) # min(l+n, len(arr) - 1)
-  return exponential_search(arr, v, l)
+  l = min(l + (n // 2), len(seq) - 1) # min(l+n, len(arr) - 1)
+  return exponential_search(seq, v, l)
 
 assert np.all([exponential_search(x, x[i]) == i for i in range(len(x))])
+
+exponential_search(np.array([True, True, True, True, False, False]), False)
+
+## Also augment to work with binary search as well  
+# goal is to find the index 'i' right before the predicate returns False, i.e.
+# TRUE, TRUE, TRUE, ..., TRUE, TRUE,  FALSE, FALSE, ..., FALSE
+# ------------------------------(i)^--(i+1)^------------------ 
+def first_true(seq: Sequence):
+  left, right = 0, len(seq) - 1
+  val = False
+  while left < right:
+    mid = left + (right - left) // 2
+    val = seq[mid]
+    print(mid)
+    if val is False: 
+      left = mid + 1
+    else:
+      if mid == 0 or seq[mid - 1] is False:
+        return mid
+      right = mid - 1
+  return left if val else -1
+
+
+def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None):
+  lb = min(lb, len(seq) - 1)
+  ub = len(seq) - 1 if ub is None else max(ub, len(seq) - 1)
+  # print(lb)
+  val = seq[lb]
+  print(f"E: val: {val}, ({lb}, {ub})")
+  # print(f"lb: {lb}")
+  i = 0
+  while not(val) and lb < ub: 
+    lb = lb + 2**i
+    if lb > ub: 
+      lb, ub = (lb - 2**i) + 1, ub 
+      return first_true_exp(seq, lb, ub)   
+    else: 
+      i += 1
+      val = seq[lb]
+      print(f"E: lb: {lb}")
+  lb, ub = max(min(lb, ub), 0), min(max(lb, ub), len(seq) - 1)
+  print(f"val: {val} /({not(val)}), ({lb}, {ub}) i={i}, ({lb == (ub-1)})")
+  if val and i <= 1: # (lb == ub)
+    return lb
+  elif not(val) and lb == ub:
+    return -1
+  else:
+    # print(f"WHAT: {val}, {(i <= 1 or lb == ub)}")
+    # lb, ub = max((lb - 2**(i-1)), lb + 1), lb + 1
+    lb, ub = (lb - 2**(i-1)) + 1, ub
+    return first_true_exp(seq, lb, ub)    
+
+L = [False]*1345 + [True]*1500
+
+z = np.zeros(1500, dtype=bool)
+assert first_true_exp(z) == -1
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_exp(z) == (len(z) - i - 1)
+
+print(first_true_exp(z, lb=0, ub=len(L)-1))
+
+# if (val and lb == 0) or (val and lb == ub): 
+#   return lb 
+# elif val == True and lb != ub: 
+#   return lb 
+# else: 
+#   lb = lb * 2
+#   first_true_exp
+
+
+# def first_true_exp(seq: Sequence, ub: int = 1):
+#   print(ub)
+#   if ub >= len(seq): ## we know its in the last half then
+#     lb = ub // 2
+
+#   if seq[ub] is True:
+#     if ub == 0 or seq[ub - 1] is False:
+#       return ub
+#     else:
+#       return first_true_exp(seq, ub * 2)
+#   else:
+#     return first_true_exp(seq, ub * 2 + 1)
+    
+L = [False]*1345 + [True]*15000
+
+first_true(L)
 
 
 # %% Problem: using landmark points for subsampled rips is still a rips complex, which is intractable....
@@ -89,31 +191,69 @@ assert np.all([exponential_search(x, x[i]) == i for i in range(len(x))])
 
 # %% (1) Load mesh and do floyd warshall to get geodesic distances
 from pbsig.datasets import pose_meshes
-from pbsig.shape import landmarks
-mesh_loader = pose_meshes(simplify=4000)
-elephant_mesh = mesh_loader[6]
+# from pbsig.shape import landmarks
+# mesh_loader = pose_meshes(simplify=20000, which=["elephant"])
+# elephant_mesh = mesh_loader[0]
 # elephant_mesh.euler_poincare_characteristic() # 2 
 # elephant_mesh.is_watertight() # False 
 
-elephant_pos = np.asarray(elephant_mesh.vertices)
-lm_ind, lm_radii = landmarks(elephant_pos, k=len(elephant_pos))
+# elephant_pos = np.asarray(elephant_mesh.vertices)
+# lm_ind, lm_radii = landmarks(elephant_pos, k=len(elephant_pos))
 
-from scipy.sparse.csgraph import floyd_warshall
-from scipy.spatial.distance import squareform, cdist
-import networkx as nx
-elephant_mesh.compute_adjacency_list()
-G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(elephant_mesh.adjacency_list) })
-A = nx.adjacency_matrix(G).tocoo()
-A.data = np.linalg.norm(elephant_pos[A.row] - elephant_pos[A.col], axis=1)
-#A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
-AG = floyd_warshall(A.tocsr())
+def geodesics(mesh):
+  from scipy.sparse.csgraph import floyd_warshall
+  from scipy.spatial.distance import squareform, cdist
+  import networkx as nx
+  vertices = np.asarray(mesh.vertices)
+  mesh.compute_adjacency_list()
+  G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
+  A = nx.adjacency_matrix(G).tocoo()
+  A.data = np.linalg.norm(vertices[A.row] - vertices[A.col], axis=1)
+  #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+  AG = floyd_warshall(A.tocsr())
+  return AG
 
-## Compute eccentricities for edges and vertices
-n = elephant_pos.shape[0]
-mesh_ecc = AG.max(axis=1)
+## Compute ground-truth eccentricities for edges and vertices
+## Does the mesh eccentricity even show convergent behavior
+mesh_loader = pose_meshes(simplify=8000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+elephant_mesh = mesh_loader[0]
+A = geodesics(elephant_mesh)
+mesh_ecc = A.max(axis=1)
 ecc_weight = lower_star_weight(mesh_ecc)
 K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
 
+## Final boxes: 
+## card([1.48, 1.68] x [1.70, 1.88]) == 4   ()
+## card([1.12, 1.28] x [1.36, 1.56]) == 2
+## card([1.0, 1.2] x [2.0, 2.2]) == 1       (torso)
+## 
+from pbsig.persistence import ph
+from pbsig.vis import figure_dgm
+dgm = ph(K_ecc, engine="dionysus")
+p = figure_dgm(dgm[1], tools="box_select")
+show(p)
+
+# %% Run exponential search 
+from pbsig.betti import Sieve
+from pbsig.linalg import spectral_rank
+
+mesh_loader = pose_meshes(simplify=100, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+elephant_mesh = mesh_loader[0]
+A = geodesics(elephant_mesh)
+mesh_ecc = A.max(axis=1)
+ecc_weight = lower_star_weight(mesh_ecc)
+# K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
+
+
+S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+sieve = Sieve(S, family=[ecc_weight], p = 1)
+sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+# sieve.pattern = np.array([[1.0, 1.2, 2.0, 2.2]])
+# sieve.family
+# sieve.project(1.0, 1.2, 0.0, sieve.family[0])
+
+sieve.sift()
+np.ravel(sieve.summarize(f=spectral_rank))
 
 # %% (2) Does delaunay recover this?
 from pbsig.persistence import ph

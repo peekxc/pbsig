@@ -230,11 +230,16 @@ def mpeg7(contour: bool = True, simplify: int = 150, which: str = 'default', sha
     return(dataset)
   
 
-def pose_meshes(simplify: int = None, which: str = "default", shape_nums = "all"):
+def pose_meshes(simplify: int = None, which: Union[str, Iterable] = "default", shape_nums: Union[str, Iterable] = "all"):
   """3-D mesh data of animals / humans in different poses.
 
   Parameters: 
     simplify: number of triangles desired from the loaded mesh. By default no simplification is done.  
+    which: which shapes to load. Defaults to ["camel", "cat", "elephant", "flamingo"]. 
+    shape_nums: which poses to use (most shapes have up to 11 poses). Defaults to all. 
+
+  Returns: 
+    mesh loader, given as a LazyIterable
   """
   assert isinstance(simplify, Integral) or simplify is None, "If supplied, simplify must be an integer representing the desired number of triangles"
   import open3d as o3
@@ -265,7 +270,7 @@ def pose_meshes(simplify: int = None, which: str = "default", shape_nums = "all"
   for obj_name in pose_objs:
     m = ptn.match(obj_name)
     if m is not None and len(m.groups()) == 2 and int(m.groups()[1]) in shape_nums:
-      pose_paths.append(m.groups()[1]+"-poses" + "/" + obj_name)
+      pose_paths.append(mesh_dir + "/" + m.groups()[0]+"-poses" + "/" + obj_name)
 
   import networkx as nx
   from pbsig.itertools import LazyIterable

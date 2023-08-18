@@ -722,6 +722,7 @@ class Sieve:
     precompute: precomputes the signature
   """
   def __init__(self, S: ComplexLike, family: Iterable, p: int = 0, form: str = "lo"):
+    from pbsig.linalg import PsdSolver
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
     if isinstance(family, Iterable):
       assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
@@ -739,7 +740,7 @@ class Sieve:
     self.nq = card(S, p+1)
     self.form = form
     self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.solver = eigvalsh_solver(self.laplacian)
+    self.solver = PsdSolver(eigenvectors=False)
     self.delta = np.finfo(float).eps
     self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
     self.bounds_domain = (0, 1) # bounds on the domain of the family, if Callable
@@ -891,9 +892,27 @@ class Sieve:
     fp, fq = f(self.p_faces), f(self.q_faces)
     fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
     if self.form == 'lo':
-      self._project(fp, fq, **kwargs)
+      return self._project(fp, fq, **kwargs)
     else:
       raise NotImplementedError("Array form of projection not implemented")
+    
+  def staged_project(self, w: float) -> Generator:
+    ## Setup the main iterator
+    n_pts, n_family = len(self.pattern), len(self.family)
+    pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
+    corner_it = zip(self.pattern['i'], self.pattern['j'], self.pattern['sign'])
+    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
+    for ((i,j,sgn), f), pt_ind in main_it:  
+      si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+      fp, fq = f(self.p_faces), f(self.q_faces)
+      fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
+      I = np.where(np.isclose(fp, 0.0), 0.0, 1.0)
+      self.laplacian.set_weights(I,fq,I)
+      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
+      self.laplacian.face_right_weights = d
+      self.laplacian.face_left_weights = d
+      self.laplacian.precompute_degree()
+      yield (i,j,sgn,pt_ind), self.laplacian
     
   def project_corner(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):
     si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)

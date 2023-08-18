@@ -756,13 +756,14 @@ class PsdSolver:
 #     return solver(A, **(params | kwargs)) 
 #   return _call_solver
 
-def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
-  #return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
-  return PsdSolver(A, return_eigenvectors=True, **kwargs)
+# def eigh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs):
+#   #return polymorphic_psd_solver(A, return_eigenvectors=True, **kwargs)
+#   return PsdSolver(A, return_eigenvectors=True, **kwargs)
 
-def eigvalsh_solver(A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Callable:
-  #return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
-  return PsdSolver(A, return_eigenvectors=False, **kwargs)
+# def eigvalsh_solver(**kwargs) -> Callable:
+#   #return polymorphic_psd_solver(A, return_eigenvectors=False, **kwargs)
+  
+#   return PsdSolver(A, return_eigenvectors=False, **kwargs)
 
 
 def eigen_dist(x: np.ndarray, y: np.ndarray, p: int = 2, method: str = "relative"):
