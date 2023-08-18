@@ -112,7 +112,7 @@ def first_true(seq: Sequence):
   return left if val else -1
 
 
-def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None):
+def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None, k: int = 1):
   lb = min(lb, len(seq) - 1)
   ub = len(seq) - 1 if ub is None else max(ub, len(seq) - 1)
   # print(lb)
@@ -133,7 +133,7 @@ def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None):
   print(f"val: {val} /({not(val)}), ({lb}, {ub}) i={i}, ({lb == (ub-1)})")
   if val and i <= 1: # (lb == ub)
     return lb
-  elif not(val) and lb == ub:
+  elif not val and lb == ub:
     return -1
   else:
     # print(f"WHAT: {val}, {(i <= 1 or lb == ub)}")
@@ -150,6 +150,35 @@ for i in range(len(z)-1):
   assert first_true_exp(z) == (len(z) - i - 1)
 
 print(first_true_exp(z, lb=0, ub=len(L)-1))
+
+
+## This works
+def first_true_bin(seq: Sequence, lb: int, ub: int):
+  while lb <= ub:
+    mid = lb + (ub - lb) // 2
+    val = seq[mid]
+    if val and (mid == 0 or not seq[mid - 1]):
+      return mid
+    lb,ub = (lb, mid - 1) if val else (mid + 1, ub)
+  return -1
+
+z = np.zeros(1500, dtype=bool)
+first_true_bin(z, 0, len(z)-1)
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_bin(z, 0, len(z)-1) == (len(z) - i - 1)
+
+first_true_bin(L, 0, len(L)-1)
+
+def binary_search_first(seq: Sequence, lb: int = 0, ub: int = None):
+  lb, ub = max(0, lb), len(seq) - 1 if ub is None else min(ub, len(seq) - 1)
+  while lb <= ub:
+    mid = lb + (ub - lb) // 2
+    val = seq[mid]
+    if val:
+      return mid
+    left, right = (mid + 1, right) if val < target else (left, mid - 1)
+  return None # Element not found
 
 # if (val and lb == 0) or (val and lb == ub): 
 #   return lb 
