@@ -18,6 +18,93 @@ from bokeh.layouts import row, column
 from bokeh.io import output_notebook
 output_notebook()
 
+# %% 
+from splex import *
+from pbsig.datasets import pose_meshes
+mesh_loader = pose_meshes(simplify=1000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+
+def geodesics(mesh):
+  from scipy.sparse.csgraph import floyd_warshall
+  from scipy.spatial.distance import squareform, cdist
+  import networkx as nx
+  vertices = np.asarray(mesh.vertices)
+  mesh.compute_adjacency_list()
+  G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
+  A = nx.adjacency_matrix(G).tocoo()
+  A.data = np.linalg.norm(vertices[A.row] - vertices[A.col], axis=1)
+  #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
+  AG = floyd_warshall(A.tocsr())
+  return AG
+
+# %% Test code
+elephant_mesh = mesh_loader[0]
+A = geodesics(elephant_mesh)
+mesh_ecc = A.max(axis=1)
+ecc_weight = lower_star_weight(mesh_ecc)
+S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+sieve = Sieve(S, family=[ecc_weight], p = 1)
+sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+sieve.sift()
+sieve.summarize(spectral_rank)
+
+# %% 
+from pbsig.betti import Sieve
+from pbsig.linalg import spectral_rank
+
+def mesh_loader(index: int):
+  mesh_loader = pose_meshes(simplify=index, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+  elephant_mesh = mesh_loader[0]
+  A = geodesics(elephant_mesh)
+  mesh_ecc = A.max(axis=1)
+  ecc_weight = lower_star_weight(mesh_ecc)
+  S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+  return S, ecc_weight
+
+## Create the Sequence container for the search
+class SieveSparsifier(Sequence):
+  def __init__(self, loader: Callable, lb: int, ub: int, pattern: np.ndarray):
+    self.loader = loader
+    self.lb = lb
+    self.ub = ub 
+    self.accesses = []
+    self.sieve = None
+    self.pattern = pattern
+
+  def __getitem__(self, index: int):
+    self.accesses.append(index)
+    S, w = self.loader(index)
+    print(f"Index: {index}, Complex: {str(S)}, ")
+    self.sieve = Sieve(S, family=[w], p = 1)
+    sieve.pattern = self.pattern
+    sieve.sift()
+    box_count = np.ravel(sieve.summarize(f=spectral_rank))
+    return np.allclose(box_count, [4,2,1])
+
+  def __len__(self) -> int: 
+    return np.abs(self.ub - self.lb)
+
+
+sparsifier = SieveSparsifier(
+  loader = mesh_loader, 
+  lb = 100, ub = 80000, 
+  pattern=np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+)
+# sparsifier[100]
+
+
+from pbsig import first_true_exp
+
+first_true_exp(sparsifier, lb=100, ub=80000)
+
+
+
+
+
+
+
+
+
+
 # %%  Data set 
 from pbsig.datasets import noisy_circle
 X = noisy_circle(50, n_noise=10, perturb=0.10, r=0.10)
@@ -52,6 +139,34 @@ for dgm in dgms_sparse:
   dgm_figs.append(p)
 
 show(row(*dgm_figs))
+
+# %% 
+z = np.zeros(size=80000, dtype=bool)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 # %% Simple exponential search 
 x = np.sort(np.random.choice(range(1500), size=340, replace=False))
@@ -111,37 +226,77 @@ def first_true(seq: Sequence):
       right = mid - 1
   return left if val else -1
 
-
-def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None, k: int = 1):
-  lb = min(lb, len(seq) - 1)
-  ub = len(seq) - 1 if ub is None else max(ub, len(seq) - 1)
-  # print(lb)
-  val = seq[lb]
-  print(f"E: val: {val}, ({lb}, {ub})")
-  # print(f"lb: {lb}")
-  i = 0
-  while not(val) and lb < ub: 
-    lb = lb + 2**i
-    if lb > ub: 
-      lb, ub = (lb - 2**i) + 1, ub 
-      return first_true_exp(seq, lb, ub)   
-    else: 
-      i += 1
-      val = seq[lb]
-      print(f"E: lb: {lb}")
-  lb, ub = max(min(lb, ub), 0), min(max(lb, ub), len(seq) - 1)
-  print(f"val: {val} /({not(val)}), ({lb}, {ub}) i={i}, ({lb == (ub-1)})")
-  if val and i <= 1: # (lb == ub)
-    return lb
-  elif not val and lb == ub:
-    return -1
-  else:
-    # print(f"WHAT: {val}, {(i <= 1 or lb == ub)}")
-    # lb, ub = max((lb - 2**(i-1)), lb + 1), lb + 1
-    lb, ub = (lb - 2**(i-1)) + 1, ub
-    return first_true_exp(seq, lb, ub)    
-
 L = [False]*1345 + [True]*1500
+first_true_exp(L)
+
+from array import array
+class CostSearch():
+  def __init__(self, L) -> None:
+    self.L = L
+    self.accesses = 0
+    self.indices = array('I')
+    self.resets = array('I')
+
+  def __getitem__(self, i: int):
+    self.accesses += 1
+    self.indices.append(i)
+    return self.L[i]
+  
+  def resolve(self):
+    self.resets.append(self.accesses)
+  
+  def __len__(self):
+    return len(self.L)
+  
+LC = CostSearch(L)
+first_true_exp(LC, k=2)
+LC.accesses
+
+
+# %% Skew access and index cost testing
+from scipy.stats import skewnorm
+z = np.sort(np.floor(skewnorm(10, loc=2, scale=10).rvs(1500))).astype(np.int32)
+print(str(np.histogram(z)[0]))
+
+m: float = 0.2
+index_costs, access_costs = [], []
+for i in np.linspace(0, max(z)/3, 30):
+  Z = CostSearch(z >= i)
+  index = first_true_exp(Z, k=10) # change k for binary vs exponential search 
+  assert index == np.flatnonzero(z >= i)[0]
+  index_costs.append(np.sum(m*np.array(Z.indices)))
+  access_costs.append(Z.accesses)
+
+## For heavily skewed samples the recursive exp search is indeed much faster in terms of index costs
+## though the skewness needs to be quite extreme
+print(f"Mean index cost: {np.sum(index_costs)/30:.2f}, Mean access cost: {np.sum(access_costs)/30:.2f}")
+
+
+# %%
+costs = []
+z = np.zeros(1500, dtype=bool)
+for i in range(len(z)-1):
+  # z[i] = True 
+  z[-(i+1)] = True 
+  Z = CostSearch(z)
+  first_true_exp(Z, k=9)
+  costs.append(Z.cost)
+print(np.sum(costs))
+
+costs = []
+for i in range(1500):
+  z = np.zeros(1500, dtype=bool)
+  j = np.random.choice(1500, size=1, p=)
+
+# Doesnt change after at k = np.log2(n) splits
+
+## Check is correct 
+z = np.zeros(1500, dtype=bool)
+first_true_exp(z, 0, len(z)-1)
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_exp(z, 0, len(z)-1) == (len(z) - i - 1)
+
 
 z = np.zeros(1500, dtype=bool)
 assert first_true_exp(z) == -1
@@ -150,17 +305,6 @@ for i in range(len(z)-1):
   assert first_true_exp(z) == (len(z) - i - 1)
 
 print(first_true_exp(z, lb=0, ub=len(L)-1))
-
-
-## This works
-def first_true_bin(seq: Sequence, lb: int, ub: int):
-  while lb <= ub:
-    mid = lb + (ub - lb) // 2
-    val = seq[mid]
-    if val and (mid == 0 or not seq[mid - 1]):
-      return mid
-    lb,ub = (lb, mid - 1) if val else (mid + 1, ub)
-  return -1
 
 z = np.zeros(1500, dtype=bool)
 first_true_bin(z, 0, len(z)-1)
@@ -229,18 +373,7 @@ from pbsig.datasets import pose_meshes
 # elephant_pos = np.asarray(elephant_mesh.vertices)
 # lm_ind, lm_radii = landmarks(elephant_pos, k=len(elephant_pos))
 
-def geodesics(mesh):
-  from scipy.sparse.csgraph import floyd_warshall
-  from scipy.spatial.distance import squareform, cdist
-  import networkx as nx
-  vertices = np.asarray(mesh.vertices)
-  mesh.compute_adjacency_list()
-  G = nx.from_dict_of_lists({ i : list(adj) for i, adj in enumerate(mesh.adjacency_list) })
-  A = nx.adjacency_matrix(G).tocoo()
-  A.data = np.linalg.norm(vertices[A.row] - vertices[A.col], axis=1)
-  #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
-  AG = floyd_warshall(A.tocsr())
-  return AG
+
 
 ## Compute ground-truth eccentricities for edges and vertices
 ## Does the mesh eccentricity even show convergent behavior
@@ -263,26 +396,7 @@ p = figure_dgm(dgm[1], tools="box_select")
 show(p)
 
 # %% Run exponential search 
-from pbsig.betti import Sieve
-from pbsig.linalg import spectral_rank
 
-mesh_loader = pose_meshes(simplify=100, which=["elephant"]) # 8k triangles takes ~ 40 seconds
-elephant_mesh = mesh_loader[0]
-A = geodesics(elephant_mesh)
-mesh_ecc = A.max(axis=1)
-ecc_weight = lower_star_weight(mesh_ecc)
-# K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
-
-
-S = simplicial_complex(np.asarray(elephant_mesh.triangles))
-sieve = Sieve(S, family=[ecc_weight], p = 1)
-sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
-# sieve.pattern = np.array([[1.0, 1.2, 2.0, 2.2]])
-# sieve.family
-# sieve.project(1.0, 1.2, 0.0, sieve.family[0])
-
-sieve.sift()
-np.ravel(sieve.summarize(f=spectral_rank))
 
 # %% (2) Does delaunay recover this?
 from pbsig.persistence import ph

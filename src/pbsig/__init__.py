@@ -15,6 +15,42 @@ from .linalg import *
 # from .fast_pbn import *
 from splex import *
 
+
+
+def first_true_bin(seq: Sequence, lb: int, ub: int):
+  while lb <= ub:
+    mid = lb + (ub - lb) // 2
+    val = seq[mid]
+    if val and (mid == 0 or not seq[mid - 1]):
+      return mid
+    lb,ub = (lb, mid - 1) if val else (mid + 1, ub)
+  return -1
+
+def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None, k: int = 1):
+  """ Searches for the first TRUE via k-rounds of exponential search, followed by a binary search. """
+  lb = min(lb, len(seq) - 1)
+  ub = len(seq) - 1 if ub is None else max(ub, len(seq) - 1)
+  if k <= 0: 
+    return first_true_bin(seq, lb, ub)
+  val = seq[lb] # print(f"E: val: {val}, ({lb}, {ub})")
+  i = 0
+  while not(val) and lb < ub: 
+    lb = lb + 2**i
+    if lb > ub: 
+      lb, ub = (lb - 2**i) + 1, ub 
+      return first_true_exp(seq, lb, ub, k - 1)   
+    else: 
+      i += 1
+      val = seq[lb]
+  lb, ub = max(min(lb, ub), 0), min(max(lb, ub), len(seq) - 1)
+  if val and i <= 1: # (lb == ub)
+    return lb
+  elif not val and lb == ub:
+    return -1
+  else:
+    lb, ub = (lb - 2**(i-1)) + 1, ub
+    return first_true_exp(seq, lb, ub, k - 1)    
+
 # def plot_dgm(dgm: ArrayLike):
 #   import matplotlib.pyplot as plt
 #   from matplotlib.patches import Polygon
