@@ -75,9 +75,10 @@ class SieveSparsifier(Sequence):
     S, w = self.loader(index)
     print(f"Index: {index}, Complex: {str(S)}, ")
     self.sieve = Sieve(S, family=[w], p = 1)
-    sieve.pattern = self.pattern
-    sieve.sift()
-    box_count = np.ravel(sieve.summarize(f=spectral_rank))
+    self.sieve.pattern = self.pattern
+    self.sieve.sift()
+    box_count = np.ravel(self.sieve.summarize(f=spectral_rank))
+    # return box_count
     return np.allclose(box_count, [4,2,1])
 
   def __len__(self) -> int: 
@@ -92,8 +93,8 @@ sparsifier = SieveSparsifier(
 # sparsifier[100]
 
 
+# %% 
 from pbsig import first_true_exp
-
 first_true_exp(sparsifier, lb=100, ub=80000)
 
 
@@ -139,34 +140,6 @@ for dgm in dgms_sparse:
   dgm_figs.append(p)
 
 show(row(*dgm_figs))
-
-# %% 
-z = np.zeros(size=80000, dtype=bool)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 # %% Simple exponential search 
 x = np.sort(np.random.choice(range(1500), size=340, replace=False))
@@ -271,59 +244,6 @@ for i in np.linspace(0, max(z)/3, 30):
 ## though the skewness needs to be quite extreme
 print(f"Mean index cost: {np.sum(index_costs)/30:.2f}, Mean access cost: {np.sum(access_costs)/30:.2f}")
 
-
-# %%
-costs = []
-z = np.zeros(1500, dtype=bool)
-for i in range(len(z)-1):
-  # z[i] = True 
-  z[-(i+1)] = True 
-  Z = CostSearch(z)
-  first_true_exp(Z, k=9)
-  costs.append(Z.cost)
-print(np.sum(costs))
-
-costs = []
-for i in range(1500):
-  z = np.zeros(1500, dtype=bool)
-  j = np.random.choice(1500, size=1, p=)
-
-# Doesnt change after at k = np.log2(n) splits
-
-## Check is correct 
-z = np.zeros(1500, dtype=bool)
-first_true_exp(z, 0, len(z)-1)
-for i in range(len(z)-1):
-  z[-(i+1)] = True 
-  assert first_true_exp(z, 0, len(z)-1) == (len(z) - i - 1)
-
-
-z = np.zeros(1500, dtype=bool)
-assert first_true_exp(z) == -1
-for i in range(len(z)-1):
-  z[-(i+1)] = True 
-  assert first_true_exp(z) == (len(z) - i - 1)
-
-print(first_true_exp(z, lb=0, ub=len(L)-1))
-
-z = np.zeros(1500, dtype=bool)
-first_true_bin(z, 0, len(z)-1)
-for i in range(len(z)-1):
-  z[-(i+1)] = True 
-  assert first_true_bin(z, 0, len(z)-1) == (len(z) - i - 1)
-
-first_true_bin(L, 0, len(L)-1)
-
-def binary_search_first(seq: Sequence, lb: int = 0, ub: int = None):
-  lb, ub = max(0, lb), len(seq) - 1 if ub is None else min(ub, len(seq) - 1)
-  while lb <= ub:
-    mid = lb + (ub - lb) // 2
-    val = seq[mid]
-    if val:
-      return mid
-    left, right = (mid + 1, right) if val < target else (left, mid - 1)
-  return None # Element not found
-
 # if (val and lb == 0) or (val and lb == ub): 
 #   return lb 
 # elif val == True and lb != ub: 
@@ -377,23 +297,40 @@ from pbsig.datasets import pose_meshes
 
 ## Compute ground-truth eccentricities for edges and vertices
 ## Does the mesh eccentricity even show convergent behavior
-mesh_loader = pose_meshes(simplify=8000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+mesh_loader = pose_meshes(simplify=1000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
 elephant_mesh = mesh_loader[0]
 A = geodesics(elephant_mesh)
 mesh_ecc = A.max(axis=1)
 ecc_weight = lower_star_weight(mesh_ecc)
 K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
 
+ecc_weight = lower_star_weight(mesh_ecc)
+S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+sieve = Sieve(S, family=[ecc_weight], p = 1)
+sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+sieve.sift()
+box_counts = np.ravel(sieve.summarize(spectral_rank))
+np.allclose(box_counts, [4,2,1])
+
+
 ## Final boxes: 
 ## card([1.48, 1.68] x [1.70, 1.88]) == 4   ()
 ## card([1.12, 1.28] x [1.36, 1.56]) == 2
 ## card([1.0, 1.2] x [2.0, 2.2]) == 1       (torso)
-## 
 from pbsig.persistence import ph
 from pbsig.vis import figure_dgm
 dgm = ph(K_ecc, engine="dionysus")
 p = figure_dgm(dgm[1], tools="box_select")
 show(p)
+
+box_query = lambda i,j,k,l: np.sum( \
+  (dgm[1]['birth'] >= i) & (dgm[1]['birth'] <= j) & \
+  (dgm[1]['death'] >= k) & (dgm[1]['death'] <= l) \
+)
+box_query(1.48, 1.68, 1.70, 1.88)
+box_query(1.12, 1.28, 1.36, 1.56)
+box_query(1.0, 1.2, 2.0, 2.2)
+
 
 # %% Run exponential search 
 
@@ -558,6 +495,58 @@ show(p)
 
 # %% 
 
+# %% Binary / exp search skecthing
+costs = []
+z = np.zeros(1500, dtype=bool)
+for i in range(len(z)-1):
+  # z[i] = True 
+  z[-(i+1)] = True 
+  Z = CostSearch(z)
+  first_true_exp(Z, k=9)
+  costs.append(Z.cost)
+print(np.sum(costs))
+
+costs = []
+for i in range(1500):
+  z = np.zeros(1500, dtype=bool)
+  j = np.random.choice(1500, size=1, p=)
+
+# Doesnt change after at k = np.log2(n) splits
+
+## Check is correct 
+z = np.zeros(1500, dtype=bool)
+first_true_exp(z, 0, len(z)-1)
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_exp(z, 0, len(z)-1) == (len(z) - i - 1)
+
+
+z = np.zeros(1500, dtype=bool)
+assert first_true_exp(z) == -1
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_exp(z) == (len(z) - i - 1)
+
+print(first_true_exp(z, lb=0, ub=len(L)-1))
+
+z = np.zeros(1500, dtype=bool)
+first_true_bin(z, 0, len(z)-1)
+for i in range(len(z)-1):
+  z[-(i+1)] = True 
+  assert first_true_bin(z, 0, len(z)-1) == (len(z) - i - 1)
+
+first_true_bin(L, 0, len(L)-1)
+
+def binary_search_first(seq: Sequence, lb: int = 0, ub: int = None):
+  lb, ub = max(0, lb), len(seq) - 1 if ub is None else min(ub, len(seq) - 1)
+  while lb <= ub:
+    mid = lb + (ub - lb) // 2
+    val = seq[mid]
+    if val:
+      return mid
+    left, right = (mid + 1, right) if val < target else (left, mid - 1)
+  return None # Element not found
+
 
 
 
@@ -570,12 +559,12 @@ show(p)
 
 
 # %% 
-from metricspaces import MetricSpace
-from greedypermutation import clarksongreedy, Point
-point_set = [Point(x) for x in X]
-M = MetricSpace(point_set)
-G = list(clarksongreedy.greedy(M))
-G_hashes = [hash(g) for g in G]
-P_hashes = [hash(p) for p in point_set]
+# from metricspaces import MetricSpace
+# from greedypermutation import clarksongreedy, Point
+# point_set = [Point(x) for x in X]
+# M = MetricSpace(point_set)
+# G = list(clarksongreedy.greedy(M))
+# G_hashes = [hash(g) for g in G]
+# P_hashes = [hash(p) for p in point_set]
 
 
