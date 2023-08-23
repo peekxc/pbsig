@@ -62,7 +62,7 @@ def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = Fals
   return p
 
 def plot_dgm(*args, **kwargs) -> None:
-  show(dgm_figure(*args, **kwargs))
+  show(figure_dgm(*args, **kwargs))
 
 def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
   n = inverse_choose(len(d), 2)
