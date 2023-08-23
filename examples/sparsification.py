@@ -6,7 +6,6 @@ import numpy as np
 import open3d as o3
 from more_itertools import chunked, pairwise
 from pbsig.betti import Sieve
-from pbsig.linalg import eigvalsh_solver
 from scipy.sparse.csgraph import floyd_warshall
 from splex import *
 
@@ -36,29 +35,34 @@ def geodesics(mesh):
   AG = floyd_warshall(A.tocsr())
   return AG
 
-# %% Test code
-elephant_mesh = mesh_loader[0]
-A = geodesics(elephant_mesh)
-mesh_ecc = A.max(axis=1)
-ecc_weight = lower_star_weight(mesh_ecc)
-S = simplicial_complex(np.asarray(elephant_mesh.triangles))
-sieve = Sieve(S, family=[ecc_weight], p = 1)
-sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
-sieve.sift()
-sieve.summarize(spectral_rank)
-
-# %% 
+# %% Test code the box has the right multiplicity
 from pbsig.betti import Sieve
 from pbsig.linalg import spectral_rank
+# elephant_mesh = mesh_loader[0]
+# A = geodesics(elephant_mesh)
+# mesh_ecc = A.max(axis=1)
+# ecc_weight = lower_star_weight(mesh_ecc)
+# S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+# sieve = Sieve(S, family=[ecc_weight], p = 1)
+# sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+# sieve.sift()
+# sieve.summarize(spectral_rank)
 
+# %% Generalize the build process
 def mesh_loader(index: int):
   mesh_loader = pose_meshes(simplify=index, which=["elephant"]) # 8k triangles takes ~ 40 seconds
   elephant_mesh = mesh_loader[0]
+  
+  elephant_mesh.remove_degenerate_triangles()
+  elephant_mesh.remove_duplicated_triangles()
+  elephant_mesh.remove_duplicated_vertices()
+  elephant_mesh.remove_unreferenced_vertices()
+  # return elephant_mesh
   A = geodesics(elephant_mesh)
   mesh_ecc = A.max(axis=1)
   ecc_weight = lower_star_weight(mesh_ecc)
-  S = simplicial_complex(np.asarray(elephant_mesh.triangles))
-  return S, ecc_weight
+  S = simplicial_complex(np.asarray(elephant_mesh.triangles), "tree")
+  return S, ecc_weight, elephant_mesh
 
 ## Create the Sequence container for the search
 class SieveSparsifier(Sequence):
@@ -72,35 +76,383 @@ class SieveSparsifier(Sequence):
 
   def __getitem__(self, index: int):
     self.accesses.append(index)
-    S, w = self.loader(index)
+    S, w, _ = self.loader(index)
+    # mesh = self.loader(index)
+    # print(f"Index: {index}, Complex: {len(np.asarray(mesh.triangles))}, ")
     print(f"Index: {index}, Complex: {str(S)}, ")
     self.sieve = Sieve(S, family=[w], p = 1)
     self.sieve.pattern = self.pattern
     self.sieve.sift()
     box_count = np.ravel(self.sieve.summarize(f=spectral_rank))
-    # return box_count
-    return np.allclose(box_count, [4,2,1])
+    return np.allclose(box_count, [4,2,1,2])
 
   def __len__(self) -> int: 
     return np.abs(self.ub - self.lb)
 
-
 sparsifier = SieveSparsifier(
   loader = mesh_loader, 
   lb = 100, ub = 80000, 
-  pattern=np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+  pattern=np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2], [1.44, 1.52, 1.54, 1.68]])
 )
 # sparsifier[100]
 
 
-# %% 
+# %% Try open3d again 
+import open3d as o3
+from pbsig.color import bin_color
+from trimesh.transformations import rotation_matrix
+
+S, w, mesh = sparsifier.loader(800)
+v_pos = np.asarray(mesh.vertices)
+v_prin_dir = np.linalg.eigh(np.cov(v_pos.T))[1]
+
+def normalize_direction(mesh):
+  # v_pos = np.asarray(mesh.vertices)
+  # v_prin_dir = np.linalg.eigh(np.cov(v_pos.T))[1]  
+  camera_transformation = np.eye(4)
+  camera_transformation[:3, :3] = v_prin_dir.T
+  mesh.transform(camera_transformation)
+
+## Configure the visualizer
+vis = o3.visualization.Visualizer()
+vis.create_window(window_name="Mesh Sparsification", width=640, height=640, visible=False)
+opt = vis.get_render_option()
+opt.background_color = [1, 1, 1]
+opt.point_size = 5.0
+opt.line_width = 1
+
+## Get screenshots of the sparsified meshes
+# indices = [100, 101, 103, 107, 115, 131, 163, 227, 355, 611, 1123, 867, 995, 994, 931, 963, 979, 987, 991, 993, 994, 993]
+indices = [25,26,28,32,40,56,88,152,280,536,1048,2072,1560,1559,1304,1303,1176,1175,1112,1144,1160,1159,1152,1151,1148,1150,1149] # (25, 80k), k=1 exp search
+for i, t_size in enumerate(indices):
+  S, w, mesh = sparsifier.loader(t_size)
+  mesh.compute_vertex_normals()
+  #tri_ecc = w(np.array(mesh.triangles))
+  #tri_colors = bin_color(tri_ecc, "turbo")
+
+  normalize_direction(mesh)
+  mesh.transform(rotation_matrix(0.35*np.pi, [0,1,0]))
+  #mesh.vertex_colors = o3.utility.Vector3dVector(bin_color(w(faces(S,0)))[:,:3])
+
+  vis.add_geometry(mesh)
+  vis.poll_events() ## don't remove this
+  vis.update_renderer()
+  # vis.capture_depth_image("elephant_depth.png", False)
+  vis.capture_screen_image(f"elephants_expsearch/elephant_{i}_{t_size:05d}.png", False)
+  vis.remove_geometry(mesh)
+  vis.poll_events() ## don't remove this
+  vis.update_renderer()
+  # vis.capture_screen_image(f"elephants/elephant_{i:05d}_removed.png", False)
+
+mesh_loader = pose_meshes(simplify=None, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+elephant_mesh = mesh_loader[0]
+elephant_mesh.remove_degenerate_triangles()
+elephant_mesh.remove_duplicated_triangles()
+elephant_mesh.remove_duplicated_vertices()
+elephant_mesh.remove_unreferenced_vertices()
+mesh = elephant_mesh
+
+# %% Run exponential search to find the optimal sparsification
 from pbsig import first_true_exp
-first_true_exp(sparsifier, lb=100, ub=80000)
+first_true_exp(sparsifier, lb=25, ub=80000) ## [25, 80000] == 1150
+sparsifier.accesses
+
+# %% Log scale plot for the search
+all_indices = np.array(indices + [80000])
+markers = np.where(all_indices <= 1150, "x", "inverted_triangle")
+markers[-1] = "square"
+colors = np.where(all_indices <= 1150, "#ff0000a1", "#00ff00a1")
+colors[-1] = "gray"
+from bokeh.models import ColumnDataSource
+scatter_data = ColumnDataSource({
+  "x": all_indices, 
+  "y": np.zeros(len(all_indices)),
+  "marker" : markers, 
+  "color":  colors 
+})
+p = figure(width=3920, height=int(0.6*100*(3920/1200)), x_axis_type="log", tools="") # x_axis_label="Sparsification Number of triangles"
+p.output_backend = "svg"
+p.scatter("x", "y", color="color", line_width=4, size=31.5, marker="marker", source=scatter_data)
+p.yaxis.visible = False
+# p.xaxis.axis_label = "Number of triangles"
+p.xaxis.axis_line_width = 5
+p.xaxis.minor_tick_out = 8
+p.xaxis.minor_tick_line_width = 4.5
+p.xaxis.major_tick_line_width = 6.5
+p.xaxis.major_label_text_font_size = '48px'
+p.toolbar_location = None
+show(p)
+
+from bokeh.io import export_png, export_svg
+# plot.output_backend = "svg"
+export_png(p, filename="elephants_expsearch/x_axis.png", width=3920, height=int(0.6*100*(3920/1200)))
+# export_svg(p, filename="elephants_expsearch/x_axis.svg")
+
+# %% Save the elephant images found during the exponential search
+from pbsig.persistence import ph
+from pbsig.vis import figure_dgm
+from bokeh.models import Range1d
+
+box_query = lambda dgm,i,j,k,l: np.sum( \
+  (dgm[1]['birth'] >= i) & (dgm[1]['birth'] <= j) & \
+  (dgm[1]['death'] >= k) & (dgm[1]['death'] <= l) \
+)
+## Compute ground-truth eccentricities for edges and vertices
+## Final boxes: 
+## card([1.48, 1.68] x [1.70, 1.88]) == 4   (legs)
+## card([1.12, 1.28] x [1.36, 1.56]) == 2   (ears)
+## card([1.0, 1.2] x [2.0, 2.2]) == 1       (torso)
+## card([1.44, 1.52] x [1.54, 1.68]) == 2   (tusks)
+## Rep: [25, 56, 536, 1149, 2072]
+for index in [25, 56, 536, 1149, 2072]:
+  mesh_loader = pose_meshes(simplify=index+1, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+  elephant_mesh = mesh_loader[0]
+  elephant_mesh.remove_degenerate_triangles()
+  elephant_mesh.remove_duplicated_triangles()
+  elephant_mesh.remove_duplicated_vertices()
+  elephant_mesh.remove_unreferenced_vertices()
+  
+  ## Compute the filtration + diagram
+  A = geodesics(elephant_mesh)
+  mesh_ecc = A.max(axis=1)
+  ecc_weight = lower_star_weight(mesh_ecc)
+  K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
+  dgm = ph(K_ecc, engine="dionysus")
+
+  ## Test constraints 
+  c1 = "#00ff0051" if box_query(dgm, 1.48, 1.68, 1.70, 1.88) == 4 else "#ff000051"
+  c2 = "#00ff0051" if box_query(dgm, 1.12, 1.28, 1.36, 1.56) == 2 else "#ff000051"
+  c3 = "#00ff0051" if box_query(dgm, 1.00, 1.20, 2.00, 2.20) == 1 else "#ff000051"
+  c4 = "#00ff0051" if box_query(dgm, 1.44, 1.52, 1.54, 1.68) == 2 else "#ff000051"
+  reformat_box = lambda box: dict(x=box[0]+(box[1]-box[0])/2,y=box[2]+(box[3]-box[2])/2, width=box[1]-box[0],height=box[3]-box[2])
+
+  p = figure_dgm(dgm[1], tools="box_select", pt_size=10)
+  p.output_backend = "svg"
+  # p.rect(**reformat_box([1.48, 1.68, 1.70, 1.88]), fill_color=c1, line_color="black")
+  # p.rect(**reformat_box([1.12, 1.28, 1.36, 1.56]), fill_color=c2, line_color="black")
+  # p.rect(**reformat_box([1.0, 1.2, 2.0, 2.2]), fill_color=c3, line_color="black")
+  # p.rect(**reformat_box([1.44, 1.52, 1.54, 1.68]), fill_color=c4, line_color="black")
+  p.x_range = Range1d(0.98, 2.22)
+  p.y_range = Range1d(0.98, 2.22)
+  # p.title.text = f"Persistence diagram (Elephant w/ {index} triangles)"
+  p.title.visible = False
+  p.xaxis.visible = False 
+  p.yaxis.visible = False 
+  p.toolbar_location = None
+
+  # show(p)
+  export_svg(p, filename=f"elephants_expsearch/dgm_full.svg")
+  export_svg(p, filename=f"elephants_expsearch/dgm_{index}.png")
+  # export_png(p, filename=f"elephants_expsearch/dgm_{index}.png")
+
+# %% Elephant filtration animation
+mesh_loader = pose_meshes(simplify=8000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+mesh = mesh_loader[0]
+mesh.remove_degenerate_triangles()
+mesh.remove_duplicated_triangles()
+mesh.remove_duplicated_vertices()
+mesh.remove_unreferenced_vertices()
+A = geodesics(mesh)
+mesh_ecc = A.max(axis=1)
+ecc_weight = lower_star_weight(mesh_ecc)
+K_ecc = filtration(simplicial_complex(np.asarray(mesh.triangles)), ecc_weight)
+dgm = ph(K_ecc, engine="dionysus")
+
+## Show the elpehant with various thresholds of transparency 
+mesh.compute_vertex_normals()
+# tri_ecc = w(np.array(mesh.triangles))
+# tri_colors = bin_color(tri_ecc, "turbo")
+normalize_direction(mesh)
+mesh.transform(rotation_matrix(0.35*np.pi, [0,1,0]))
+vertex_colors = bin_color(w(faces(S,0)))[:,:3]
+
+mesh.vertex_colors = o3.utility.Vector3dVector(vertex_colors)
+
+vis.add_geometry(mesh)
+vis.poll_events() ## don't remove this
+vis.update_renderer()
+# vis.capture_depth_image("elephant_depth.png", False)
+vis.capture_screen_image(f"elephants_expsearch/elephant_{i}_{t_size:05d}.png", False)
+vis.remove_geometry(mesh)
+vis.poll_events() ## don't remove this
+vis.update_renderer()
+
+
+## Use trimesh to color the triangles with transparency
+import trimesh
+from trimesh.visual.color import ColorVisuals
+from trimesh.transformations import rotation_matrix
+NV = len(mesh.vertices)
+V_XYZ = np.array(mesh.vertices)
+V, T = np.arange(NV), np.array(mesh.triangles)
+mesh_t = trimesh.Trimesh(vertices=V_XYZ, faces=T)
+t_ecc, v_ecc = ecc_weight(mesh_t.faces), np.ravel(ecc_weight(V[:,np.newaxis]))
+t_col = (bin_color(t_ecc, "turbo") * 255).astype(np.uint8)
+v_col = (bin_color(v_ecc, "turbo") * 255).astype(np.uint8)
+# mesh_t.show()
+# np.min(tri_ecc), np.max(tri_ecc)
+# tri_col[tri_ecc > 1.2, 3] = 0
+import io
+import copy
+import time
+from PIL import Image
+# scene = trimesh.scene.Scene()
+
+# sel_vertices = ecc_weight([[v] for v in range(NV)]) <= t
+# mesh_t = trimesh.Trimesh(vertices=V[sel_vertices], faces=T[ecc_weight(T) <= t])
+thresholds = np.linspace(1.01*np.min(t_ecc), np.max(t_ecc), 90)
+for i, t in enumerate(thresholds):
+
+  scene = trimesh.scene.Scene()
+  mesh_t = trimesh.Trimesh(vertices=V_XYZ, faces=T)
+  TC, VC = copy.deepcopy(t_col), copy.deepcopy(v_col)
+  TC[t_ecc >= t,-1] = 0
+  VC[v_ecc >= t,-1] = 0
+  print(f"number of visible vertices: {np.sum(VC[:,-1] != 0)}, triangles: {np.sum(TC[:,-1] != 0)}")
+  mesh_t.visual = ColorVisuals(face_colors=TC, vertex_colors=VC)
+  # mesh_t.visual.update_faces(ecc_weight(T) <= t) #
+  mesh_name = scene.add_geometry(mesh_t, node_name=f"mesh_{i}")
+  scene.apply_transform(rotation_matrix(np.pi/2.5, [0,1,0], scene.extents))
+  data = scene.save_image(resolution=(400, 400), visible=True)
+  time.sleep(2.25)
+  image = Image.open(io.BytesIO(data))
+  image.save(f'./elephant_animation/frame_{i}.png', format='PNG')
+  # scene.delete_geometry(f"mesh_{i}")
+
+# scene.export("./elephant_animation/ani1")
+
+# mesh.visual.face_colors = (bin_color(w(faces(S, 2)), "turbo") * 255).astype(np.uint8)
+
+camera_transformation = np.eye(4)
+# camera_transformation[:3, :3] = v_prin_dir.T
+# scene.apply_transform(camera_transformation)
+
+
+
+
+# o3.visualization.draw_geometries([mesh])
+
+#
+# device = o3.core.Device("CPU:0")
+# dtype_f = o3.core.float32
+# dtype_i = o3.core.int32
+# mesh_t = o3.t.geometry.TriangleMesh(device)
+# mesh_t.vertex.positions = o3.core.Tensor(np.asarray(mesh.vertices), dtype_f, device)
+# mesh_t.triangle.indices = o3.core.Tensor(np.array(mesh.triangles), dtype_i, device)
+# mesh_t.vertex.normals = o3.core.Tensor(np.array(mesh.vertex_normals), dtype_f, device)
+# mesh_t.vertex['colors'] = o3.core.Tensor(tri_colors, dtype_f, device)
 
 
 
 
 
+
+
+
+# import open3d.visualization.rendering as rendering
+# render = rendering.OffscreenRenderer(640, 480)
+# img = render.render_to_image()
+
+
+
+
+
+# %% Make an animation of the sparsification search
+from splex import * 
+from pbsig.linalg import pca
+from pbsig.color import bin_color
+import trimesh
+from trimesh.transformations import rotation_matrix
+
+S, w, mesh_ = sparsifier.loader(200)
+v_pos = np.asarray(mesh_.vertices)
+v_prin_dir = np.linalg.eigh(np.cov(v_pos.T))[1]
+mesh = trimesh.Trimesh(v_pos, np.asarray(mesh_.triangles), process=False)
+
+## Color the triangles 
+from trimesh.visual.color import ColorVisuals
+tri_ecc = w(np.array(mesh_.triangles))
+mesh.visual = ColorVisuals(face_colors=(bin_color(tri_ecc, "turbo") * 255).astype(np.uint8))
+# mesh.visual.face_colors = (bin_color(w(faces(S, 2)), "turbo") * 255).astype(np.uint8)
+
+camera_transformation = np.eye(4)
+camera_transformation[:3, :3] = v_prin_dir.T
+scene = trimesh.scene.Scene()
+scene.add_geometry(mesh)
+scene.apply_transform(camera_transformation)
+scene.apply_transform(rotation_matrix(np.pi, [0,0,1], scene.extents))
+scene.apply_transform(rotation_matrix(-np.pi/1.6, [0,1,0], scene.extents))
+
+from trimesh.scene.lighting import PointLight, autolight
+# scene.lights.append(PointLight(color=[255,255,255], intensity=150.0, radius=150))
+
+scene.lights[0].radius = 10
+scene.lights[1].radius = 10
+scene.lights[0].color = np.array([255,255,255,255], dtype=np.uint8)
+scene.lights[1].color = np.array([255,255,255,255], dtype=np.uint8)
+scene.lights[0].intensity = 1e15
+scene.lights[1].intensity = 1e15
+scene.show()
+
+# %% Try PyRender instead since trimesh is limited and open3d doesnt support headless screenshots
+import pyrender 
+mesh_pr = pyrender.Mesh.from_trimesh(mesh, smooth = False)
+
+scene = pyrender.Scene(
+    ambient_light=[0.02, 0.02, 0.02], 
+    bg_color=[1.0, 1.0, 1.0]
+)
+# light = pyrender.PointLight(color=[1.0, 1.0, 1.0], intensity=2.0)
+cam = pyrender.PerspectiveCamera(yfov=np.pi / 3.0, aspectRatio=1.414)
+
+scene.add_node(pyrender.Node(mesh=mesh_pr, matrix=np.eye(4)))
+scene.add_node(pyrender.Node(cam, matrix=np.eye(4)))
+
+camera = pyrender.PerspectiveCamera(yfov=np.pi / 3.0)
+s = np.sqrt(2)/2
+camera_pose = np.array([
+       [0.0, -s,   s,   0.3],
+       [1.0,  0.0, 0.0, 0.0],
+       [0.0,  s,   s,   0.35],
+       [0.0,  0.0, 0.0, 1.0],
+    ])
+scene.add(camera, pose=camera_pose)
+
+r = pyrender.OffscreenRenderer(viewport_width=640, viewport_height=480, point_size=1.0)
+r.render(scene)
+
+# INteractive 
+# from pyrender.viewer import Viewer
+# Viewer(scene)
+
+
+# import os
+# os.environ['PYOPENGL_PLATFORM'] = 'Pyglet'
+# r = pyrender.OffscreenRenderer(viewport_width=640, viewport_height=480, point_size=1.0)
+# color, depth = r.render(scene)
+
+
+
+## Save image (headless doesnt quite work but that's ok)
+import io
+from PIL import Image
+data = scene.save_image(resolution=(400,400), visible=False)
+image = Image.open(io.BytesIO(data))
+
+
+# p = figure(width=400, height=400)
+# p.x_range.range_padding = p.y_range.range_padding = 0
+# p.scatter(np.arange(10), np.arange(10), color="red")
+# # p.image_rgba(image=[image], x=0, y=0, dw=10, dh=10)
+# p.grid.grid_line_width = 0.5
+# show(p)
+
+# %% Expo search testing 
+# I = []
+# z = np.zeros(80000, dtype=bool)
+# z[912:] = True
+# first_true_exp(z, k=1, intervals=I)
+# I
 
 
 
@@ -295,41 +647,18 @@ from pbsig.datasets import pose_meshes
 
 
 
-## Compute ground-truth eccentricities for edges and vertices
-## Does the mesh eccentricity even show convergent behavior
-mesh_loader = pose_meshes(simplify=1000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
-elephant_mesh = mesh_loader[0]
-A = geodesics(elephant_mesh)
-mesh_ecc = A.max(axis=1)
-ecc_weight = lower_star_weight(mesh_ecc)
-K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
 
-ecc_weight = lower_star_weight(mesh_ecc)
-S = simplicial_complex(np.asarray(elephant_mesh.triangles))
-sieve = Sieve(S, family=[ecc_weight], p = 1)
-sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
-sieve.sift()
-box_counts = np.ravel(sieve.summarize(spectral_rank))
-np.allclose(box_counts, [4,2,1])
+# ecc_weight = lower_star_weight(mesh_ecc)
+# S = simplicial_complex(np.asarray(elephant_mesh.triangles))
+# sieve = Sieve(S, family=[ecc_weight], p = 1)
+# sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
+# sieve.sift()
+# box_counts = np.ravel(sieve.summarize(spectral_rank))
+# np.allclose(box_counts, [4,2,1])
 
 
-## Final boxes: 
-## card([1.48, 1.68] x [1.70, 1.88]) == 4   ()
-## card([1.12, 1.28] x [1.36, 1.56]) == 2
-## card([1.0, 1.2] x [2.0, 2.2]) == 1       (torso)
-from pbsig.persistence import ph
-from pbsig.vis import figure_dgm
-dgm = ph(K_ecc, engine="dionysus")
-p = figure_dgm(dgm[1], tools="box_select")
-show(p)
 
-box_query = lambda i,j,k,l: np.sum( \
-  (dgm[1]['birth'] >= i) & (dgm[1]['birth'] <= j) & \
-  (dgm[1]['death'] >= k) & (dgm[1]['death'] <= l) \
-)
-box_query(1.48, 1.68, 1.70, 1.88)
-box_query(1.12, 1.28, 1.36, 1.56)
-box_query(1.0, 1.2, 2.0, 2.2)
+
 
 
 # %% Run exponential search 

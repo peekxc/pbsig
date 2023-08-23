@@ -17,39 +17,45 @@ from splex import *
 
 
 
-def first_true_bin(seq: Sequence, lb: int, ub: int):
+def first_true_bin(seq: Sequence, lb: int, ub: int, intervals: list = None):
   while lb <= ub:
     mid = lb + (ub - lb) // 2
     val = seq[mid]
     if val and (mid == 0 or not seq[mid - 1]):
       return mid
-    lb,ub = (lb, mid - 1) if val else (mid + 1, ub)
+    lb, ub = (lb, mid - 1) if val else (mid + 1, ub)
+    if intervals is not None: 
+      intervals.append((lb, ub))
   return -1
 
-def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None, k: int = 1):
+def first_true_exp(seq: Sequence, lb: int = 0, ub: int = None, k: int = 1, intervals: list = None):
   """ Searches for the first TRUE via k-rounds of exponential search, followed by a binary search. """
   lb = min(lb, len(seq) - 1)
-  ub = len(seq) - 1 if ub is None else max(ub, len(seq) - 1)
+  ub = len(seq) - 1 if ub is None else min(ub, len(seq) - 1)
+  if intervals is not None: 
+    intervals.append((lb, ub))
   if k <= 0: 
-    return first_true_bin(seq, lb, ub)
+    return first_true_bin(seq, lb, ub, intervals)
   val = seq[lb] # print(f"E: val: {val}, ({lb}, {ub})")
   i = 0
   while not(val) and lb < ub: 
     lb = lb + 2**i
     if lb > ub: 
       lb, ub = (lb - 2**i) + 1, ub 
-      return first_true_exp(seq, lb, ub, k - 1)   
+      return first_true_exp(seq, lb, ub, k - 1, intervals)   
     else: 
       i += 1
       val = seq[lb]
+    if intervals is not None: 
+      intervals.append((lb, ub))
   lb, ub = max(min(lb, ub), 0), min(max(lb, ub), len(seq) - 1)
   if val and i <= 1: # (lb == ub)
     return lb
   elif not val and lb == ub:
     return -1
   else:
-    lb, ub = (lb - 2**(i-1)) + 1, ub
-    return first_true_exp(seq, lb, ub, k - 1)    
+    lb, ub = (lb - 2**(i-1)) + 1, lb
+    return first_true_exp(seq, lb, ub, k - 1, intervals)    
 
 # def plot_dgm(dgm: ArrayLike):
 #   import matplotlib.pyplot as plt
