@@ -1,15 +1,137 @@
+from typing import * 
 import numpy as np 
 from scipy.linalg import eigh_tridiagonal
 from scipy.sparse import coo_array, random
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 from scipy.sparse.linalg._expm_multiply import traceest
 
+from bokeh.plotting import figure, show
+from bokeh.io import output_notebook
+output_notebook()
+
 ## For PROPACK Lanczos bi-orthogonalization, see: scipy.sparse.linalg._svdp
 ## Contains: Lanczos bidiagonalization algorithm with partial reorthogonalization (but returns singular vectors/values)
 
+## TODO: 
+## First implement Stochastic Lanczos quadrature  (works for any f)
+## Then add Hutch++ trace estimator to quadratic form of tridiagonal/Lanczos eigvectors 
+## this should just be ew,ev = eig(T); 
+## == v.T @ (ev @ f(diag(ew)) @ ev.T) @ v 
+## == traceest( (ev @ f(diag(ew)) @ ev.T) )
+
+
+## % Testing expectation 
+outer = lambda v: np.outer(v,v)
+Z = np.zeros(shape=(10,10))
+for i in range(50000):
+  # Z += outer(np.random.normal(size=10, loc=0, scale=1)) 
+  Z += outer(np.random.choice([-1.0, +1.0], size=10))
+Z / 50000
+
+## TODO: make this a generator that yields pairs (Y,Theta)
+## This should be cheapest Lanczos possible that returns n-1 ritz pairs
+def lanczos_eigh(A: LinearOperator, v0: np.ndarray = None, info: bool = False, **kwargs):
+  v0 = np.random.normal(size=A.shape[1], loc=0.0, scale=1.0) if v0 is None else v0
+  _primme_params = dict(k=A.shape[0]-1, ncv=3, maxiter=A.shape[0], method="PRIMME_Arnoldi", tol=np.inf, return_unconverged=True, raise_for_unconverged=False, return_eigenvectors=True)
+  _primme_params |= kwargs
+  _primme_params['v0'] = v0[:,np.newaxis] if v0.ndim == 1 else v0
+  _primme_params['return_stats'] = info
+  return primme.eigsh(A, **_primme_params)
+
 ## Random PSD matrix 
-A = random(40, 40, density=0.05)
+A = random(60, 60, density=0.05)
 A = A @ A.T
+
+true_ew = np.sort(np.linalg.eigh(A.todense())[0])
+v = np.random.choice([-1.0, 1.0], size = A.shape[0])
+# v /= np.linalg.norm(v)
+ew,ev,info = lanczos_eigh(A, info=True, return_unconverged=True, ncv=15, v0=v, tol=0, maxiter=10*A.shape[0])
+np.histogram(ew)
+np.sum(f(ew))
+
+v = np.random.choice([-1.0, 1.0], size = A.shape[0])
+v /= np.linalg.norm(v)
+A @ v
+
+from scipy.sparse.linalg import eigsh
+# eigsh(A, k=A.shape[0]-1, ncv=)
+
+## Stochastic Lanczos quadrature
+from numbers import Integral
+from pbsig.linalg import eigsh_block_shifted
+f = lambda x: np.where(x >= 1e-8, 1.0, 0.0)
+def SLQ(A: LinearOperator, f: Callable, nv: int = 30, dist: str = "rademacher", seed: int = None, **kwargs):
+  """Stochastic Lanczos quadrature"""
+  if seed is not None:
+    np.random.set_state(int(100*np.random.rand()))
+  # rng = np.random.default_rng() if seed is None else np.random.default_rng(seed)
+  n = A.shape[0]
+  tr_est = 0.0
+  running_theta, running_weights = [], []
+  sample_v = lambda: np.random.choice([-1.0, 1.0], size = n) if dist == "rademacher" else np.random.normal(loc=0, scale=1.0, size = n)
+  for j in range(nv):
+    v = sample_v()
+    v /= np.linalg.norm(v)
+    Theta, Y = lanczos_eigh(A, v0 = v, k = k, **kwargs)
+    # Theta, Y = lanczos_eigh(A, return_unconverged=True, ncv=15, v0=v, tol=0, maxiter=10*A.shape[0])
+    print(np.sum(f(Theta)))
+    running_weights.append(np.sum(f(Theta)))
+    running_theta.append(np.sum((Y[0,:]**2)))
+    # running_avg.append(np.sum(f(Theta)))
+    # tr_est += n * np.sum((Y[0,:]**2) * f(Theta)) ## THIS ISNT CORRECT
+    ## np.trace(Y @ np.diag(f(Theta)) @ Y.T) ## THIS WORKS 
+    # e1 = np.zeros(n)[:,np.newaxis]
+    # e1[0] = 1.0
+    ## e1.T @ Y @ np.diag(f(Theta)) @ Y.T @ e1 ## THIS DOES NOT 
+    # tr_est += (Y @ np.diag(f(Theta)) @ Y.T)[0,0]## THIS DOES NOT 
+  # tr_est *= n/nv if dist == "rademacher" else 1.0/nv
+  return running_weights, running_theta
+
+true_ew = np.sort(np.linalg.eigh(A.todense())[0])
+true_rank = np.linalg.matrix_rank(A.todense())
+assert np.sum(f(true_ew)) == true_rank
+
+## SO maxiter is just determining the magnitude basically, up to the order of matrix 
+f = lambda x: np.abs(x)
+# convtest(eval, evec, resNorm)
+rw,rt = SLQ(A, f, nv=250, dist="rademacher", ncv=15, maxiter=150*A.shape[0], tol=1e-6)
+np.sum(true_ew[true_ew >= 1e-8])
+
+## UNABLE TO REPLICATE
+trace_est_arr = np.array(rw)
+p = figure(width=250, height=200)
+# p.line(np.arange(len(trace_ests)), np.array(trace_ests)*A.shape[0])
+p.line(np.arange(len(trace_est_arr)), (np.cumsum(trace_est_arr))/(np.arange(len(trace_est_arr))+1)) # n*(cnt_est/ii);
+show(p)
+
+
+
+from scipy.sparse.linalg import eigsh
+np.sum(np.abs(eigsh(A, k=A.shape[0]-1, tol=0)[0]))
+
+
+## Yep this is return basically just the order of the matrix
+v = np.random.choice([-1.0, 1.0], size = A.shape[0])
+Theta, Y = lanczos_eigh(A, v0 = v)
+Y_op = aslinearoperator(Y)
+D_op = aslinearoperator(np.diag(f(Theta)))
+traceest(Y_op @ D_op @ Y_op.T, 10)
+
+
+f = lambda x: np.sum(np.abs(x))
+
+# 15 seems good here
+# slq_vars = [np.var([SLQ(A, f, nv=nv) for i in range(30)]) for nv in range(1,100,10)]
+
+
+np.sum(np.abs(true_ew))
+
+
+
+np.sort(lanczos_eigh(A)[0])
+
+np.linalg.matrix_rank(A.todense())
+
 
 ## True rank 
 print(np.linalg.matrix_rank(A.todense()))
@@ -32,15 +154,15 @@ A_lo = aslinearoperator(A)
 #   primme->correctionParams.maxInnerIterations = 0;
 # %% This seems to be a good setup for getting Lanczos eigenvalues + vectors
 import primme
-np.random.seed(1234)
-v0 = np.random.normal(size=A.shape[0], loc=0)
+np.random.seed(45)
+v0 = np.random.normal(size=A.shape[0], loc=0, scale=1.0)
 primme.eigsh(
   A_lo, k=A.shape[0]-1,
   v0=v0[:,np.newaxis],
-  ncv=15, which='LM', 
-  maxiter=A.shape[0]*2,
+  ncv=3, which='LM', 
+  maxiter=A.shape[0],
   maxBlockSize=0,         # defaults to 0, must be < ncv
-  minRestartSize=14,       # defaults to 0, must be < ncv 
+  minRestartSize=5,       # defaults to 0, must be < ncv 
   maxPrevRetain=0,        # defaults to 0.
   method="PRIMME_Arnoldi",
   # convtest=lambda eval, evec, resNorm: True, 
@@ -51,23 +173,9 @@ primme.eigsh(
   return_eigenvectors=False
 )
 
-def lanczos_eigvalsh(A: LinearOperator, v0: np.ndarray):
-  return primme.eigsh(
-    A, k=A.shape[0]-1,
-    v0=v0[:,np.newaxis],
-    ncv=15, which='LM', 
-    maxiter=A.shape[0]*2,
-    maxBlockSize=0,         # defaults to 0, must be < ncv
-    minRestartSize=14,       # defaults to 0, must be < ncv 
-    maxPrevRetain=0,        # defaults to 0.
-    method="PRIMME_Arnoldi",
-    # convtest=lambda eval, evec, resNorm: True, 
-    tol = 0.01,
-    return_stats=True, 
-    return_unconverged=True, 
-    raise_for_unconverged=False,
-    return_eigenvectors=False
-  )
+
+
+lanczos_eigh(A)
 
 ## quadrature over this 
 # https://github.com/f-dangel/curvlinops/blob/45c13bac2b71304a5d77c52267612cbd1d276280/curvlinops/papyan2020traces/spectrum.py#L74

@@ -1031,25 +1031,24 @@ def effective_resistance(L: ArrayLike, method: str = "pinv"):
     cv[i] = cv[j] = 0
   return np.array(er)
 
-def eigsh_block_shifted(A, k: int, b: int = 10, **kwargs):
+from typing import * 
+def eigsh_block_shifted(A, k: int, b: int = 10, locking: bool = False, **kwargs) -> Generator:
   """
   Calculates all eigenvalues in a block-wise manner 
   """
   from primme import eigsh as primme_eigsh
   ni = int(np.ceil(k/b))
-  f_args = dict(tol=np.finfo(np.float32).eps, which='CGT', return_eigenvectors=True, raise_for_unconverged=False, return_history=False)
+  f_args = dict(which='CGT', return_eigenvectors=True, raise_for_unconverged=False)
   f_args = f_args | kwargs
-  evals = np.zeros(ni*b)
   for i in range(ni):
     if i == 0:
       ew, ev = primme_eigsh(A, k=b, **f_args)
     else: 
       #f_args['which'] = min(ew)
       f_args['sigma'] = min(ew)
-      ew, ev = primme_eigsh(A, k=b, lock=ev, **f_args)
-    # print(ew)
-    evals[(i*b):((i+1)*b)] = ew
-  return(evals[-k:])
+      f_args['lock'] = ev if locking else None
+      ew, ev = primme_eigsh(A, k=b, **f_args)
+    yield ew, ev
 
 
 # from pbsig.utility import timeout
