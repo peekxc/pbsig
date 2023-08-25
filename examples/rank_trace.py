@@ -26,6 +26,10 @@ A_lo = aslinearoperator(A)
 # maxBlockSize: Maximum number of vectors added at every iteration.
 # minRestartSize: Number of approximate eigenvectors kept during restart.
 # maxPrevRetain: Number of approximate eigenvectors kept from previous iteration in restart. Also referred as +k vectors in GD+k.
+# if (method == PRIMME_Arnoldi) {
+#   primme->restartingParams.maxPrevRetain      = 0;
+#   primme->correctionParams.precondition       = 0;
+#   primme->correctionParams.maxInnerIterations = 0;
 # %% This seems to be a good setup for getting Lanczos eigenvalues + vectors
 import primme
 np.random.seed(1234)
@@ -47,6 +51,28 @@ primme.eigsh(
   return_eigenvectors=False
 )
 
+def lanczos_eigvalsh(A: LinearOperator, v0: np.ndarray):
+  return primme.eigsh(
+    A, k=A.shape[0]-1,
+    v0=v0[:,np.newaxis],
+    ncv=15, which='LM', 
+    maxiter=A.shape[0]*2,
+    maxBlockSize=0,         # defaults to 0, must be < ncv
+    minRestartSize=14,       # defaults to 0, must be < ncv 
+    maxPrevRetain=0,        # defaults to 0.
+    method="PRIMME_Arnoldi",
+    # convtest=lambda eval, evec, resNorm: True, 
+    tol = 0.01,
+    return_stats=True, 
+    return_unconverged=True, 
+    raise_for_unconverged=False,
+    return_eigenvectors=False
+  )
+
+## quadrature over this 
+# https://github.com/f-dangel/curvlinops/blob/45c13bac2b71304a5d77c52267612cbd1d276280/curvlinops/papyan2020traces/spectrum.py#L74
+# https://github.com/stdogpkg/emate/blob/97965001e14d2c8689df99393036179cfec1124b/emate/symmetric/tfops/slq.py#L49C18-L49C18
+
 ## NOTES: 
 ## Increasing num Lanczos vectors monotonically improves accuracy, though has strong diminishing returns 
 ## Increasing minRestartSize seemed to improve accuracy of extrema Ritz values, but possibly sacrifices accuracy of interior
@@ -56,6 +82,19 @@ primme.eigsh(
 ## maxBlockSize means nothing if minRestartSize = 0, and seems to mean nothing for Lanczos 
 ## Increasing maxiter has no effect if convtest is always True
 ## Setting tol = np.inf is equiv to setting convtest to always return True
+
+
+#%% 
+traceest(A_lo, 10)
+
+# Perform SciPy quad integration
+integral = 0.0
+
+for k in range(num_iterations):
+  integral += alpha[k] * quad(func, -np.inf, np.inf)[0]
+
+
+
 
 # %% 
 def lanczos(A: LinearOperator, k: int, ncv: int) -> tuple[np.ndarray, np.ndarray]:
@@ -94,3 +133,20 @@ def lanczos(A: LinearOperator, k: int, ncv: int) -> tuple[np.ndarray, np.ndarray
   
 traceest(A_lo, 10)
 
+def create_matrix(dim: int = 2000) -> ndarray:
+    """Draw a matrix from the matrix distribution used in papyan2020traces, Figure 15a.
+
+    Args:
+        dim: Matrix dimension.
+
+    Returns:
+        A sample from the matrix distribution.k
+    """
+    X = zeros((dim, dim))
+    X[0, 0] = 5
+    X[1, 1] = 4
+    X[2, 2] = 3
+
+    Z = randn(dim, dim)
+
+    return X + 1 / dim * matmul(Z, Z.transpose())
