@@ -267,3 +267,20 @@ def figure_plain(p):
   p.min_border_top = 0
   p.min_border_bottom = 0
   return p
+
+def g_edges(p: figure, edges: Iterable, pos: ArrayLike, **kwargs):
+  e_scale = 0.75
+  e_x = [pos[e,0] for e in edges]
+  e_y = [pos[e,1] for e in edges]
+  e_sizes = np.ones(len(edges))
+  e_widths = (e_sizes / np.max(e_sizes))*e_scale
+  #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
+  e_data = {
+    'xs' : e_x,
+    'ys' : e_y,
+    'line_width': e_widths
+  } | kwargs
+  # e_source = ColumnDataSource(data=e_data)
+  e_renderer = p.multi_line(**e_data)
+  # e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
+  return p

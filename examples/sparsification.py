@@ -246,7 +246,7 @@ for index in [25, 56, 536, 1149, 2072]:
   # export_png(p, filename=f"elephants_expsearch/dgm_{index}.png")
 
 # %% Elephant filtration animation
-mesh_loader = pose_meshes(simplify=8000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
+mesh_loader = pose_meshes(simplify=2000, which=["elephant"]) # 8k triangles takes ~ 40 seconds
 mesh = mesh_loader[0]
 mesh.remove_degenerate_triangles()
 mesh.remove_duplicated_triangles()
@@ -289,9 +289,8 @@ mesh_t = trimesh.Trimesh(vertices=V_XYZ, faces=T)
 t_ecc, v_ecc = ecc_weight(mesh_t.faces), np.ravel(ecc_weight(V[:,np.newaxis]))
 t_col = (bin_color(t_ecc, "turbo") * 255).astype(np.uint8)
 v_col = (bin_color(v_ecc, "turbo") * 255).astype(np.uint8)
-# mesh_t.show()
-# np.min(tri_ecc), np.max(tri_ecc)
-# tri_col[tri_ecc > 1.2, 3] = 0
+mesh_t.show()
+
 import io
 import copy
 import time
@@ -300,9 +299,10 @@ from PIL import Image
 
 # sel_vertices = ecc_weight([[v] for v in range(NV)]) <= t
 # mesh_t = trimesh.Trimesh(vertices=V[sel_vertices], faces=T[ecc_weight(T) <= t])
+
+## Animation showing the filtration
 thresholds = np.linspace(1.01*np.min(t_ecc), np.max(t_ecc), 90)
 for i, t in enumerate(thresholds):
-
   scene = trimesh.scene.Scene()
   mesh_t = trimesh.Trimesh(vertices=V_XYZ, faces=T)
   TC, VC = copy.deepcopy(t_col), copy.deepcopy(v_col)
@@ -320,6 +320,28 @@ for i, t in enumerate(thresholds):
   # scene.delete_geometry(f"mesh_{i}")
 
 # scene.export("./elephant_animation/ani1")
+
+## Learning what the multiplicity does
+scene = trimesh.scene.Scene()
+mesh_t = trimesh.Trimesh(vertices=V_XYZ, faces=T)
+TC, VC = copy.deepcopy(t_col), copy.deepcopy(v_col)
+# i,j,k,l = [1.48, 1.68, 1.70, 1.88] ## legs
+
+# ## positive terms 
+# VC[:,:] = [255,255,255,255] # reset
+# t_ecc <= k
+# # VC[v_ecc >= t,:] = [0, 0,255,255]
+# TC[t_ecc >= t,-1] = 0
+
+print(f"number of visible vertices: {np.sum(VC[:,-1] != 0)}, triangles: {np.sum(TC[:,-1] != 0)}")
+mesh_t.visual = ColorVisuals(face_colors=TC, vertex_colors=VC)
+  # mesh_t.visual.update_faces(ecc_weight(T) <= t) #
+  mesh_name = scene.add_geometry(mesh_t, node_name=f"mesh_{i}")
+  scene.apply_transform(rotation_matrix(np.pi/2.5, [0,1,0], scene.extents))
+  data = scene.save_image(resolution=(400, 400), visible=True)
+  time.sleep(2.25)
+  image = Image.open(io.BytesIO(data))
+  image.save(f'./elephant_animation/frame_{i}.png', format='PNG')
 
 # mesh.visual.face_colors = (bin_color(w(faces(S, 2)), "turbo") * 255).astype(np.uint8)
 

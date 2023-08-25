@@ -23,8 +23,8 @@ def apparent_pairs(D: ArrayLike, K: List):
 
   Equivalently, for lexicographically-refined simplexwise filtrations, we have that a 
   zero-persistence pair (tau, sigma) is said to be *apparent* iff: 
-    1. tau is the lexicographically maximal facet of sigma w/ diam(tau) = diam(sigma)
-    2. sigma is the lexicographically minimal cofacet of sigma w/ diam(sigma) = diam(tau)
+    1. tau is the lexicographically maximal facet of sigma w/ f(tau) = f(sigma)
+    2. sigma is the lexicographically minimal cofacet of sigma w/ f(sigma) = f(tau)
 
   What is known about apparent pairs: 
     - Any apparent pair in a simplexwise filtration is a persistence pair, regardless of the choice of coefficients
