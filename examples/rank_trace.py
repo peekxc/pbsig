@@ -39,8 +39,117 @@ def lanczos_eigh(A: LinearOperator, v0: np.ndarray = None, info: bool = False, *
   return primme.eigsh(A, **_primme_params)
 
 ## Random PSD matrix 
-A = random(60, 60, density=0.05)
-A = A @ A.T
+from math import prod
+from scipy.sparse.linalg import svds
+from imate import schatten, trace
+n = 500
+A = random(n, 40, density=0.050, random_state=0)
+P = A @ A.T
+sv = np.sort(np.abs(svds(A, k = min(A.shape)-1)[1]))
+ev = np.sort(np.linalg.eigh(P.todense())[0])
+
+print(f"Density of P: {P.nnz/prod(P.shape)}")
+print(f"(A) Schatten-1 / nuclear norm: {np.sum(sv[sv > 1e-16])}")
+print(f"(A) Schatten-2 / frobenius norm: {np.sum(sv[sv > 1e-16]**2)**(1/2)}")
+# print(f"Numpy verified fro norm: {np.linalg.norm(A.todense(), 'fro')}")
+print(f"(P) Schatten-1 / nuclear norm: {np.sum(ev[ev > 1e-16])}")
+print(f"(P) Schatten-2 / frobenius norm: {np.sum(ev[ev > 1e-16]**2)**(1/2)}")
+
+## 
+print(f"(A) Schatten-1 / nuclear norm, derived from P: {np.sum(ev[ev > 1e-16]**(1/2))}")
+print(f"(A) Schatten-2 / frobenius norm, derived from P: {np.sum(ev[ev > 1e-16])**(1/2)}")
+
+
+schatten(P, p=1.0, method="exact")*P.shape[0]
+schatten(P, p=2.0, method="exact")*P.shape[0]**(1/2)
+((1/n)*(P @ P).trace())**(1/2)
+
+schatten(A, gram=True, p=2.0, method="slq")
+schatten(A, gram=True, p=1.0, method="slq")
+
+## Rank / matrix power 
+n = 500
+A = random(n, 40, density=0.050, random_state=0)
+P = A @ A.T
+sv = np.sort(np.abs(svds(A, k = min(A.shape)-1)[1]))
+ev = np.sort(np.linalg.eigh(P.todense())[0])
+
+np.sum(ev > 1e-12)
+np.sum(np.abs(ev)**(1e-6))
+
+## This works: matches the nuclear norm about
+schatten(P, p=1, min_num_samples=100, max_num_samples=200, gram=False, method="slq")*A.shape[0]
+np.sum()
+
+
+schatten(A, p=1, min_num_samples=100, max_num_samples=200, gram=True, method="slq")*A.shape[0]
+
+from imate import InterpolateTrace
+from splex import * 
+from pbsig.linalg import up_laplacian
+from bokeh.models import Range1d
+from bokeh.layouts import row, column
+
+X = np.random.uniform(size=(30,2))
+S = delaunay_complex(X)
+L = up_laplacian(S, p = 1, normed = True)
+L_ew = np.linalg.eigh(L.todense())[0]
+numerical_rank = np.sum(np.where(L_ew > 1e-8, 1.0, 0.0))
+np.histogram(L_ew)
+
+
+normalize = lambda x: (x - min(x))/(max(x) - min(x))
+p = figure(width=500, height=250, x_axis_type="log")
+p.line(L_ew, normalize(np.cumsum(L_ew)), color="red")
+p.scatter(L_ew, normalize(np.cumsum(L_ew)), size=1.5)
+p.x_range = Range1d(1e-6, 3.1)
+# show(p)
+
+ti = np.geomspace(1e-6, 3.0, 150)
+f = InterpolateTrace(L, p=2.0, kind='spl', ti=list(ti))
+ft = np.array([f(t) for t in ti])
+
+# q = figure(width=500, height=200, x_axis_type="log")
+p.line(ti, normalize(ft), color="blue")
+p.scatter(ti, normalize(ft), color="blue",  size=1.5)
+# p.x_range = Range1d(1e-6, 3.1)
+show(p)
+
+show(column(p,q))
+
+
+## Custom function
+
+from imate._trace_estimator import trace_estimator
+from imate.functions import pyFunction
+
+
+
+
+trace(A, p = 0.01, method="slq",  return_info=True)
+
+trace(P, p = 1e-16, method="slq")
+
+
+
+np.linalg.matrix_rank(A.todense())
+
+schatten(A, p=1.0, method="slq")*A.shape[0]
+np.sum(A.todense() == 0)/(1500*1500)
+
+from imate import schatten
+schatten(A, p=1.0, method="exact")
+
+schatten(A, p=1.0, method="exact")*A.shape[0]
+schatten(A, p=1.0, method="exact")*A.shape[0]
+
+import timeit
+timeit.timeit(lambda: np.sum(np.sort(np.linalg.eigh(A.todense())[0])), number=100)/100
+timeit.timeit(lambda: schatten(A, p=1.0)*A.shape[0], number=100)/100
+
+schatten(A, p=0, method="cholesky")
+
+np.sum(np.abs(true_ew))
 
 true_ew = np.sort(np.linalg.eigh(A.todense())[0])
 v = np.random.choice([-1.0, 1.0], size = A.shape[0])

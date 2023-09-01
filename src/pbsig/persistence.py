@@ -16,7 +16,7 @@ from scipy.special import *
 from scipy.spatial.distance import *
 
 ## Relative package imports
-import _boundary as boundary
+# import _boundary as boundary
 import _persistence as pm
 from .apparent_pairs import *
 from .utility import *
