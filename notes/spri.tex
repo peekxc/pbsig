@@ -629,8 +629,8 @@ Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ define
 %	\beta_p^{a,b} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \cap \mathrm{Im}(\partial_{p+1}(K_b)) \; \big) 
 %\end{equation}
 Thus, computing $\beta_p^\ast$ may be reduced to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
-While there are a myriad of options for solving the former (see~\cite{chen2011output}), computing the latter term using basis reduction or projector-based techniques exhibits $\Omega(N^3)$ time and $\Omega(N^2)$ space~\cite{golub2013matrix}.
-Specializations of these direct methods to filtered simplicial complexes have proven challenging to efficiently extend to the parameterized setting~\cite{piekenbrock2021move}, prompting questions of whether alternative expressions (e.g.~\eqref{eq:mu_four}) have any potential computational benefits.
+While there are a myriad of options for solving the former (see~\cite{chen2011output}), computing the latter term using reduction or projector-based techniques exhibits $\Omega(N^3)$ time and $\Omega(N^2)$ space~\cite{golub2013matrix}.
+Specializations of these direct methods to filtered simplicial complexes have proven challenging to efficiently extend to the parameterized setting~\cite{piekenbrock2021move}, prompting questions of whether alternative derivations (e.g.~\eqref{eq:mu_four}) exhibit different computational characteristics.
 
 %$\mathrm{dim}\big(\mathrm{Ker}(\partial_p(K_i))\big) = \mathrm{nullity}(\partial_p(K_i))$
 %Since the nullity of an operator may be reduced to a rank computation via rank-nullity, the complexity of first term may be reduced to the complexity of computing the rank of a sparse $n \times m$ matrix. 
@@ -660,8 +660,8 @@ In contrast, the rank function is permutation invariant, i.e. for any $X \in \ma
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
 % In contrast, the permutation invariance of the rank function suggests $\partial$
-This suggests rank computations need not maintain this ordering---as long as the constitutive terms have the same non-zero pattern as their filtered counterparts, their ranks will be identical.
-In this section, we demonstrate how to exploit this fact to make the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} permutation invariant.
+This suggests rank computations on boundary matrices need not maintain this ordering---as long as they have the same non-zero pattern as their filtered counterparts, their ranks will be identical.
+In this section, we exploit this fact by showing how the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} may be made \emph{permutation invariant}.
 
 %Permutation invariance is a useful property for computation in parameterized setting. 
 %\begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
@@ -698,7 +698,7 @@ Clearly, $\mathrm{rank}(\partial_p(\alpha)) = \mathrm{rank}(\partial_p(K_\preceq
 %	\bar{S}_i(x) = \begin{cases} 1 & \text{if } x > i \\ 0 & \text{otherwise}\end{cases}, \quad \quad S_j(x) = \begin{cases} 1 & \text{if } x \leq j \\ 0 & \text{otherwise}\end{cases}
 %\end{equation}
 % TODO: maybe mention relative chains
-Moreover, since these step functions are non-continuous, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ that interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$, for some $\omega > 0$ (see Figure~\ref{fig:smoothstep}).
+Though these step functions are discontinuous at their chosen thresholds $a$ and $b$, we may retain the element-wise continuity of~\eqref{eq:decouple} by exchanging them with clamped \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$ that interpolate the discontinuous step portion of $S$ along a fixed interval $(a,a+\omega)$, for some $\omega > 0$ (see Figure~\ref{fig:smoothstep}).
 %of the form: 
 %In particular, we swap out the step functions $S : \mathbb{R} \to \{ 0, 1\}$ from~\eqref{eq:param_boundary_matrix} with \emph{smoothstep} functions $\mathcal{S}: \mathbb{R} \to [0, 1]$. 
 %\begin{equation}\label{eq:smoothstep}
@@ -855,7 +855,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
 \subsection{Spectral rank relaxation}\label{sec:spectral_relax}
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
 %Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
-To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1}, we exploit the spectral characterization of the rank function---given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
+%To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1},
+As the boundary operators from~\eqref{eq:rank_equiv_param} can be made to vary continuously in a parameterized setting, the only discontinuous component of the expressions from proposition~\ref{prop:mu_betti_1} is the rank function. Consider the spectral characterization of the rank function---given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -864,8 +865,7 @@ To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_
 	\end{cases}
 \end{equation}
 where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
- As the singular values vary continuously under perturbations in $X$, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function.
- Thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
+ As the singular values vary continuously under perturbations in $X$~\cite{bhatia2013matrix}, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function---thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 %\begin{flalign}\label{eq:rank_sgn}
@@ -891,8 +891,7 @@ Moreover, varying $\tau \in \mathbb{R}_{+}$ in~\eqref{eq:phi} yields an $\tau$-p
 %(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
 %\end{flalign}
 
-Not only do many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}, but augmenting the spectrum using $\phi$ has surprising connection to the theory of \emph{operator monotone} functions~\cite{bhatia2013matrix}.
-In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$ from~\cite{bhatia2013matrix, bi2013approximation}: 
+Many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}. In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$ from~\cite{bhatia2013matrix, bi2013approximation}: 
 \begin{definition}[Spectral $\phi$-approximation]
 	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral $\phi$-approximation} $\Phi_\tau(X)$ of $X$ as:
 %	and its Schatten-1 norm via: 
@@ -919,7 +918,7 @@ In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is con
 \noindent 
 %Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
 %Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, 
-When $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ turns out to have a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
+Moreover, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ exhibits a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
@@ -974,13 +973,13 @@ When $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding oper
 \noindent Noting property (4), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
 replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yield a Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz and the step functions from~\eqref{eq:rank_equiv_param} are smoothed with some $\omega > 0$. 
-We defer the formal definition of such a relaxation and its properties to section~\ref{sec:spri_properties}.
+We defer the formal definition this persistence-based relaxation and its properties to section~\ref{sec:spri_properties}.
 
-	Though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
+It is worth noting that though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
 	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
-note that $\lVert\Phi_\tau(X)\rVert_\ast$ is not fully differentiable on $\mathbb{R}^{n \times m}$ but rather directionally differentiable everywhere in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. 
-However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$, which we exploit in the following section. 
+its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. 
+However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
  
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
@@ -998,7 +997,7 @@ However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-
 
 %Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
 \subsection{Parameterized Laplacians}\label{sec:laplacian_theory2}
-For the sake of generality, it is important to make the class of relaxations derived from operators from section~\ref{sec:spectral_relax} as large as possible.
+ For the sake of generality, it is important to make the class of relaxations derived from operators from section~\ref{sec:spectral_relax} as large as possible.
 %elucidate the necessary conditions under which the spectral operators from section~\ref{sec:spectral_relax} are differentiable, so as to make the class of such operators as large as possible. 
 Towards this end, we exploit another identity of the rank function:
 % for zero characteristic fields: 
@@ -1006,8 +1005,7 @@ Towards this end, we exploit another identity of the rank function:
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
 As both $\partial_p \circ \partial_p^T$ and $\partial_p^T \circ \partial_p$ are positive semi-definite by definition, studying the spectra of these operators is equivalent to studying the singular values of boundary operators~\cite{horak2013spectra}.  
 % study of spectra of \emph{combinatorial Laplacians}
-
-The operator given by $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}---a natural extension to simplicial complexes has been coined \emph{$p$-th combinatorial Laplacian} $\Delta_p$, whose explicit representation is given by: 
+Moreover, as the operator given by $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, it is natural to consider its $p$-dimension generalization stemming from simplicial complexes, which have been called \emph{$p$-th combinatorial Laplacians} $\Delta_p$: 
 \begin{equation}\label{eq:comb_lap}
 	\Delta_p(K) = 
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^\ast}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^\ast  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
@@ -1021,14 +1019,16 @@ All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are sym
 where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 Thus, from a rank-based perspective, it suffices to consider any one of these operators.
 
+Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 
 
-We now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
-$$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
-Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using step (or smoothstep) functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. 
-Algebraically, 
+Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
+
+% Maybe not relevent anymore
+% We now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
+%$$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
+%Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using step (or smoothstep) functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. 
+%Algebraically, 
 %$\mathcal{L}_{a,b}(\cdot, \alpha) : C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})$
-
-Unlike $\partial_p(\alpha)$, however, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
  
 %Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized  \emph{spectral multiplicity} of $R$ as:
 %	\begin{equation}\label{eq:mu_cont_lap}

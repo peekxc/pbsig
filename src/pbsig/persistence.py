@@ -73,11 +73,12 @@ def low_entry(D: lil_array, j: Optional[int] = None):
   If D is CSC, low(D,j) takes O(1) time
   
   """
+  from scipy.sparse import sparray
   #assert isinstance(D, csc_matrix)
   if j is None: 
-    assert isinstance(D, spmatrix) or isinstance(D, np.ndarray)
+    assert (isinstance(D, spmatrix) or isinstance(D, sparray)) or isinstance(D, np.ndarray)
     m = np.repeat(-1, D.shape[1])
-    r,c = D.nonzero() if isinstance(D, spmatrix) else np.argwhere(D != 0).T
+    r,c = D.nonzero() if isinstance(D, sparray) else np.argwhere(D != 0).T
     np.maximum.at(m,c,r)
     return m
     # return(np.array([low_entry(D, j) for j in range(D.shape[1])], dtype=int))
@@ -85,7 +86,7 @@ def low_entry(D: lil_array, j: Optional[int] = None):
     if isinstance(D, csc_matrix):
       nnz_j = np.abs(D.indptr[j+1]-D.indptr[j]) 
       return(D.indices[D.indptr[j]+nnz_j-1] if nnz_j > 0 else -1)
-    elif isinstance(D, spmatrix): 
+    elif isinstance(D, spmatrix) or isinstance(D, sparray): 
       return(-1 if D[:,[j]].getnnz() == 0 else max(D[:,[j]].nonzero()[0]))
       # max(zip(*R[:,[1]].nonzero()), key=lambda rc: (rc[0], rc[1] != 0))
     elif isinstance(D, np.ndarray):
@@ -159,7 +160,7 @@ def is_reduced(R: lil_array) -> bool:
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
 
-def validate_decomp(D: spmatrix, R: spmatrix, V: spmatrix, epsilon: float = 10*np.finfo(float).eps, warn: bool = True):
+def validate_decomp(D: sparray, R: sparray, V: sparray, epsilon: float = 10*np.finfo(float).eps, warn: bool = True):
   tol = 10*np.finfo(R.dtype).eps if not np.issubdtype(R.dtype, np.integer) else 0
   _is_reduced = is_reduced(R)
   dv_r_diff = abs(((D @ V) - R).data)
@@ -172,10 +173,10 @@ def validate_decomp(D: spmatrix, R: spmatrix, V: spmatrix, epsilon: float = 10*n
     warnings.warn(f"Decomposition failed validation checks.\n 1. R is reduced? {_is_reduced}\n 2. R=DV? {_is_rv_decomp} \n 3. V is upper-triangular? {_is_upper_tri}")
   return(valid)
 
-def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
+def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
-  sdim = np.array([s.dim() for s in iter(K.values())])
+  sdim = np.array([s.dim() for s in faces(K)])
   
   ## Get the indices of the creators and destroyers
   if any(rlow == -1):
@@ -196,8 +197,8 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
   if len(creator_dim) == 0: return dict()
 
   ## Match the barcodes with the index set of the filtration
-  key_dtype = type(next(K.keys()))
-  filter_vals = np.fromiter(K.keys(), dtype=key_dtype)
+  key_dtype = type(next(iter(K))[0])
+  filter_vals = np.array([fval for fval, s in K], dtype=key_dtype)
   index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { essential : essential} | { -essential : -essential}
   birth = np.array([index2f[i] for i in birth])
   death = np.array([index2f[i] for i in death])
@@ -212,11 +213,11 @@ def generate_dgm(K: FiltrationLike, R: spmatrix, collapse: bool = True, generato
   ## Split diagram based on homology dimension
   dgm = { p : np.take(dgm, np.flatnonzero(creator_dim == p)) for p in np.sort(np.unique(creator_dim)) }
   for p in dgm.keys():
-    if dgm[p] == 0:
+    if len(dgm[p]) == 0:
       dgm[p] = np.empty((0,2),dtype=[('birth', 'f4'), ('death', 'f4')])
   return dgm 
 
-def cycle_generators(K: FiltrationLike, V: spmatrix, R: spmatrix = None, collapse: bool = True):
+def cycle_generators(K: FiltrationLike, V: sparray, R: sparray = None, collapse: bool = True):
   G = []
   piv = np.flatnonzero(low_entry(R))
   # G = dict(zip(np.flatnonzero(piv == -1), repeat([])))
@@ -336,6 +337,75 @@ def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: 
 #     F := Iterable over (p-1)-faces
 #   """ 
 #   array('I')
+
+
+def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool = True, verbose: bool = False):
+  assert len(ind) == 4 and tuple(sorted(ind)) == ind, "Invalid box given. Must be in upper-half plane."
+  i,j,k,l = ind 
+  if mu == 1 and (i == j if splitrows else k == l):
+    piv = i if splitrows else k
+    if verbose: print(f"[{mu}]: ({i},{j},{k},{l}): creator = {i}, destroyer = {k} ({piv})")
+    yield piv
+  else:
+    p = int(np.floor((i+j)/2)) if splitrows else int(np.floor((k+l)/2)) # pivot
+    ind_lc = (i,p,k,l) if splitrows else (i,j,k,p)
+    ind_rc = (p+1,j,k,l) if splitrows else (i,j,p+1,l)
+    mu_lc = mu_q(*ind_lc) #np.linalg.matrix_rank(M[i:(piv+1),k:(l+1)].todense())
+    mu_rc = mu_q(*ind_rc) #np.linalg.matrix_rank(M[(piv+1):(j+1),k:(l+1)].todense())
+    if verbose: print(f"[{mu}]: ({i},{j},{k},{l}), L:{mu_lc}, R:{mu_rc}")
+    assert mu == mu_lc + mu_rc
+    if mu_lc > 0:
+      yield from bisection_tree_top_down(mu_q,ind_lc,mu_lc,splitrows)
+    if mu_rc > 0:
+      yield from bisection_tree_top_down(mu_q,ind_rc,mu_rc,splitrows)
+
+def pairs_in_box(box: tuple, mu_rank: Callable):
+  assert len(box) == 4 and tuple(sorted(box)) == box
+  dgm_res = []
+  creators = list(bisection_tree_top_down(mu_rank, ind=box, mu=mu_rank(*box), splitrows=True))
+  for idx in creators:
+    d = list(bisection_tree_top_down(mu_rank, ind=(idx, idx, box[2], box[3]), mu=mu_rank(idx, idx, box[2], box[3]), splitrows=False))
+    assert len(d) == 1
+    dgm_res.append([idx, d[0]])
+  return dgm_res 
+
+## Generate all the boxes between [a,b] into the list 'res'
+def generate_boxes(a: int, b: int, res: list = []):
+  res.append((a, (a+b) // 2, (a+b) // 2, b))
+  if abs(a-b) <= 1: 
+    return  
+  else:
+    generate_boxes(a, (a+b) // 2, res)
+    generate_boxes((a+b) // 2, b, res)
+
+from more_itertools import collapse, chunked, unique_everseen
+from scipy.sparse import spmatrix, sparray 
+
+def ph_rank(D: sparray = None):
+  """Chens rank-based persistence algorithm.
+  
+  Computes the persistence pairing constituting a diagram from only rank-based multplicity queries. 
+
+  Currently limited to dense, full boundary matrix inputs and naive rank computations.
+  """
+  assert isinstance(D, sparray) or isinstance(D, spmatrix), "Must be one of sparse matrix or array"
+  ## If not given, use a default dense multiplicity algorithm
+  B = D.todense()
+  rrank = lambda i,j,k,l: 0 if len(B[i:j,k:l]) == 0 else np.linalg.matrix_rank(B[i:j,k:l])
+  mu_rank = lambda i,j,k,l: rrank(i,l+1,i,l+1) - rrank(i,k,i,k) - rrank(j+1,l+1,j+1,l+1) + rrank(j+1,k,j+1,k)
+
+  ## Generate all 2n-1 boxes 
+  boxes = []
+  generate_boxes(0, B.shape[1], boxes) ## these are square boxes; need way of generating rectangular
+
+  ## Compute all the persistence pairs 
+  pairs = [pairs_in_box(box, mu_rank) for box in boxes]
+
+  ## Post-process to produce a nice diagram 
+  pairs = list(chunked(collapse(pairs), 2))
+  pairs = np.fromiter(iter(set(map(tuple, pairs))), dtype=[('birth', 'f4'), ('death', 'f4')])
+  return pairs
+
 
 def sw_parameters(bounds: Tuple, d: int = None, tau: float = None,  w: float = None, L: int = None):
   """ 

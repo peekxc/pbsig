@@ -9,40 +9,52 @@ from pbsig.persistence import *
 from pbsig.betti import boundary_matrix
 from pbsig.simplicial import * 
 import _persistence as pm
-
+from splex import *
+from bokeh.plotting import show, figure 
+from bokeh.io import output_notebook
+output_notebook()
 
 ## Test output sensitive algorithm 
-S = SimplicialComplex([[0,1,2], [0,1,3]])
-K = MutableFiltration(S)
+S = simplicial_complex([[0,1,2], [0,1,3]])
+K = filtration(S)
 D = boundary_matrix(K)
 R, V = D.copy().tolil(), eye(len(K)).tolil()
 pHcol(R, V)
 assert is_reduced(R)
 dgm = generate_dgm(K, R)
-plot_dgm(dgm[0])
 
+from pbsig.vis import figure_dgm
+show(figure_dgm(dgm[0]))
 
 ## Cone complex 
-K = MutableFiltration(S)
-K += ([(-np.inf,[-1])]) ## add dummy vertex
-K += (list(sorted([(np.inf, Simplex(list(s) + [-1])) for s in K.values() if s[0] != -1], key=K._key_dim_lex_poset)))
-# plot_complex(S)
-# plot_complex(SimplicialComplex(K.values()))
+K = filtration(S)
+K.add(ValueSimplex([-1], value=-np.inf)) # dummy vertex
+K.update([ValueSimplex(list(s) + [-1], value=10) for s in faces(K)]) # should this be inf?
 
-R = R.todense()
-rrank = lambda i,j,k,l: 0 if len(R[i:j,k:l]) == 0 else np.linalg.matrix_rank(R[i:j,k:l])
+## Now recompute diagram
+# dgm_coned = ph(K)
+# dgm_coned = { p : np.fromiter(iter(filter(lambda pair: pair[0] != -np.inf, dgm)), dtype=dgm.dtype) for p, dgm in dgm_coned.items() }
+# show(figure_dgm(dgm_coned[0]))
+
+## Convert to np.ndarray
+B = boundary_matrix(K).todense()
+# B = R.todense()
+rrank = lambda i,j,k,l: 0 if len(B[i:j,k:l]) == 0 else np.linalg.matrix_rank(B[i:j,k:l])
 mu_rank = lambda i,j,k,l: rrank(i,l+1,i,l+1) - rrank(i,k,i,k) - rrank(j+1,l+1,j+1,l+1) + rrank(j+1,k,j+1,k)
-ind = (0, 3, 3, 6)
+ind = (0, 3, 3, 7)
+
+## Check every low-left matrix 
+mu_rank(0,5,5,10) 
+mu_rank(0,5,5,10) 
+mu_rank(7,7,7,9)  # pivot for H1! 
 
 
-def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool = True):
-  """ 
-  
-  """
+def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool = True, verbose: bool = False):
+  assert len(ind) == 4 and tuple(sorted(ind)) == ind, "Invalid box given. Must be in upper-half plane."
   i,j,k,l = ind 
   if mu == 1 and (i == j if splitrows else k == l):
     piv = i if splitrows else k
-    print(f"[{mu}]: ({i},{j},{k},{l}): creator = {i}, destroyer = {k} ({piv})")
+    if verbose: print(f"[{mu}]: ({i},{j},{k},{l}): creator = {i}, destroyer = {k} ({piv})")
     yield piv
   else:
     p = int(np.floor((i+j)/2)) if splitrows else int(np.floor((k+l)/2)) # pivot
@@ -50,23 +62,81 @@ def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool
     ind_rc = (p+1,j,k,l) if splitrows else (i,j,p+1,l)
     mu_lc = mu_q(*ind_lc) #np.linalg.matrix_rank(M[i:(piv+1),k:(l+1)].todense())
     mu_rc = mu_q(*ind_rc) #np.linalg.matrix_rank(M[(piv+1):(j+1),k:(l+1)].todense())
-    print(f"[{mu}]: ({i},{j},{k},{l}), L:{mu_lc}, R:{mu_rc}")
+    if verbose: print(f"[{mu}]: ({i},{j},{k},{l}), L:{mu_lc}, R:{mu_rc}")
     assert mu == mu_lc + mu_rc
     if mu_lc > 0:
       yield from bisection_tree_top_down(mu_q,ind_lc,mu_lc,splitrows)
     if mu_rc > 0:
       yield from bisection_tree_top_down(mu_q,ind_rc,mu_rc,splitrows)
 
-ind = (0, 3, 3, 6)
+## First find creators, then identify each corresponding destroyer in the unique pair with bisection again
 dgm_res = []
 creators = list(bisection_tree_top_down(mu_rank, ind=ind, mu=mu_rank(*ind), splitrows=True))
 for i in creators:
   d = list(bisection_tree_top_down(mu_rank, ind=(i, i, ind[2], ind[3]), mu=mu_rank(i, i, ind[2], ind[3]), splitrows=False))
   assert len(d) == 1
   dgm_res.append([i, d[0]])
+print(dgm_res)
+
+## TODO: implement either SLICING/subsetting or MASKING for a linear operator, also checks for nnz, todense, etc
+def pairs_in_box(box: tuple):
+  assert len(box) == 4 and tuple(sorted(box)) == box
+  dgm_res = []
+  creators = list(bisection_tree_top_down(mu_rank, ind=box, mu=mu_rank(*box), splitrows=True))
+  for idx in creators:
+    d = list(bisection_tree_top_down(mu_rank, ind=(idx, idx, box[2], box[3]), mu=mu_rank(idx, idx, box[2], box[3]), splitrows=False))
+    assert len(d) == 1
+    dgm_res.append([idx, d[0]])
+  return dgm_res 
+
+## Now, come up with set of mu query windows that completely recover the diagram
+## The idea: start with finding all pairs (a,m,m,b) where a=1, b=N, and m = floor((b-a)/2)
+## then recursively split on the intervals (a,*,*,m) and (m,*,*,b)
+box_index_rng = lambda a,b: (a, int((a+b)/2), int((a+b)/2), b)
+
+## Generate all the boxes
+def generate_boxes(a: int, b: int, res: list = []):
+  res.append((a, (a+b) // 2, (a+b) // 2, b))
+  if abs(a-b) <= 1: 
+    return  
+  else:
+    generate_boxes(a, (a+b) // 2, res)
+    generate_boxes((a+b) // 2, b, res)
+
+boxes = []
+generate_boxes(0, len(K), boxes)
+
+## All the persistence pairs! 
+from more_itertools import collapse, chunked, unique_everseen
+pairs = list(chunked(collapse([pairs_in_box(box) for box in boxes]), 2))
+pairs = np.fromiter(iter(set(map(tuple, pairs))), dtype=dgm[0].dtype)
+
+list(unique_everseen(chunked(map(tuple, collapse([pairs_in_box(box) for box in boxes])), 2)))
+
+# %% Construct the diagram 
+from pbsig.persistence import ph_rank
+D = boundary_matrix(K, p=1)
+ph_rank(D)
 
 
 
+
+## Screw pylops, wayyyy too many inconsistencies, lets just roll our own. 
+import pylops
+lo_scipy = aslinearoperator(D)
+lo_pylops = pylops.aslinearoperator(lo_scipy)
+lo_pylops.matvec(np.random.uniform(size=11))
+lo_pylops.apply_columns([0,1,2,3]).adjoint().matvec(np.random.uniform(size=4))
+
+isinstance(lo_pylops.apply_columns([0,1,2,3]), pylops.LinearOperator)
+
+
+
+
+
+
+
+## 
 mu = mu_query(i,j,k,l)
 creators = list(bisection_tree_top_down(D,mu_query,(i,j,k,l),mu,splitrows=True))
 
