@@ -980,6 +980,42 @@ It is worth noting that though $\Phi_\tau$ is a continuously differentiable oper
 	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
 its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. 
 However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
+\subsubsection{Interpretation}
+A common approach used in sparse inverse problems is to regularize a given objective function to such that optimization is more amenable. 
+For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
+ \begin{equation}\label{eq:tikhonov}
+	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
+\end{equation}
+When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\tau > 0$ solutions $x_\tau^\ast$ with small norm are favored. 
+%\begin{equation}\label{eq:least_squares}
+%	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
+%\end{equation}
+% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
+%The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
+%\begin{equation}\label{eq:tikhonov_soln}
+%	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
+%\end{equation}
+%To illustrate the relevance of TR with our proposed approximation, 
+Similarly, by parameterizing
+%\footnote{Similar regularization interpretations may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}
+$\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains via ~\eqref{eq:phi}:
+\begin{equation}
+	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+\end{equation}
+By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
+\begin{equation}\label{eq:tikhonov_1}
+%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
+	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
+	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
+\end{equation}
+The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectrum of the inverse of a given Laplacian; 
+%$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
+in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
+
+ One interpretation of the relaxation parameter $\tau$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
+Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximations of the rank.
+This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
+
  
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
@@ -1497,41 +1533,7 @@ In contrast, these operators differ in the nonzero part of the spectrum, which e
 
 \subsection{Filtration optimization}
 
-\noindent \textbf{Interpretation:} A common approach used in sparse inverse problems is to impose a regularization scheme. 
-For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
- \begin{equation}\label{eq:tikhonov}
-	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
-\end{equation}
-When $\tau = 0$, one recovers the standard $\ell_2$ minimization, whereas when $\tau > 0$ solutions $x_\tau^\ast$ with small norm are favored. 
-%\begin{equation}\label{eq:least_squares}
-%	x^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert A x - b \rVert^2	
-%\end{equation}
-% ng $A = X$, solutions $x_\epsilon^\ast$ to TR problems in standard form satisfy 
-%The solution to~\eqref{eq:tikhonov} is given by the regularized form of the pseudo-inverse given below:  
-%\begin{equation}\label{eq:tikhonov_soln}
-%	x_\epsilon^\ast = (A^T A + \epsilon I)^{-1} A^T b
-%\end{equation}
-%To illustrate the relevance of TR with our proposed approximation, 
-Similarly, by parameterizing
-%\footnote{Similar regularization interpretations may be derived for other choices of $\nu(\epsilon)$ and $p(x)$.}
-$\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains via ~\eqref{eq:phi}:
-\begin{equation}
-	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
-\end{equation}
-By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
-\begin{equation}\label{eq:tikhonov_1}
-%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
-	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
-	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
-\end{equation}
-The connection between TR and the proposed spectral relaxation is now clear: augmenting the singular value decomposition of $\partial_p$ (or $\partial_p^T$) with a spectral function $\phi$ is akin to the regularizing the spectrum of the inverse of a given Laplacian; 
-%$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
-in this sense, we interpret $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ as \emph{regularized approximations of the rank invariant}.
-
- One interpretation of the relaxation parameter $\tau$ is as a bias term that preferences the (pseudo)-inverse towards smaller singular values.
-Larger values of $\tau$ smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values of $\tau$ lead to a more faithful approximations of the rank.
-This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy. 
-
+\noindent \textbf{Interpretation:} 
 A common setting in topological data analysis is the setting wherein one has access to a means of building a filtration $(K,f)$ where $f : K \to \mathbb{R}$ is a filter function satisfying $f(\tau) \leq f(\sigma)$ for all $\tau \subseteq \sigma \in K$, but the filter function $f$ itself is parameterized by some hyper-parameters. 
 For example, a common setting is the one where the data set $(X, d_X)$ comes equipped with some notion of density $f: X \to \mathbb{R}_+$, and one would like to build a persistence diagram on $d_X$ in a way that is robust to local fluctuations in density. 
 This is a common practical setting often encountered in practice, as it is known that persistence is unstable with respect to \emph{strong outliers}~\cite{}, which prevents persistent homology from detecting a spaces prominent underlying topological structure, when it exists. 

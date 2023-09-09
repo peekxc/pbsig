@@ -31,9 +31,9 @@ X = np.random.uniform(size=(50,2), low=0, high=1)
 S = delaunay_complex(X)
 
 ## Generic way to generate multiple plots with colored vertices
-def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, lb, ub, **kwargs):
+def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, lb: float = None, ub: float = None, **kwargs):
   p = figure_complex(S, X, **kwargs)
-  v_color = bin_color(vertex_weights, color_pal="inferno", lb=lb, ub=ub)
+  v_color = bin_color(vertex_weights, color_pal="inferno", lb=lb, ub=ub) if lb is not None else bin_color(vertex_weights, color_pal="inferno")
   p.scatter(*X.T, color=v_color, size=10.5)
   return p
 
@@ -41,7 +41,8 @@ def figure_heat(S: ComplexLike, X: ArrayLike, vertex_weights: Sequence, lb, ub, 
 ind = np.argmin(X @ np.array([0,1]))
 HK = HeatKernel(timepoints=6, approx="mesh", bounds="informative").fit(X, S=S)
 heat_diffusion = list(HK.diffuse(subset=ind))
-figs = [figure_heat(S, X, heat, lb = 0.0, ub = max(heat), width=200, height=200) for heat in heat_diffusion]
+figs = [figure_heat(S, X, heat, lb = 0.0, ub = max(heat), width=200, height=200) for heat in heat_diffusion] # geometrically accurate
+# figs = [figure_heat(S, X, heat, width=200, height=200) for heat in heat_diffusion] # pretty, nice geometrically accurate
 show(row(*figs))
 ```
 
@@ -69,7 +70,7 @@ show(p)
 ```
 
 ```{python}
-#| label: REPLACE
+#| label: TO REPLACE: adds triangles along a sliding window such that there is non-trivial curvature 
 from scipy.sparse import diags
 from pbsig.distance import dist
 from pbsig.utility import cycle_window
@@ -114,12 +115,12 @@ show(row(p,q,r,s))
 ```
 
 The below uses `signal_dist` to resolve the correspondence problem per-signature. Because of this, there is no natural embedding 
-for each timepoint/signature, as although they are all 1-dimensional the metric varies per pair. 
+for each timepoint/signature, as although they are all 1-dimensional as the metric varies per pair. 
 
 Since the number of vertices is fixed, if a fixed correspondence between shapes was set, we could use graph diffusion distance instead.  
 
 ```{python}
-#| label: MDS + HKS + dist plot over time
+#| label: Minimum HKS distances for varying t 
 #| description: Compare each individual feature vector in HKS w/ MDS embedding plot where each row represents a different t
 from pbsig.dsp import signal_dist
 HK = HeatKernel(approx="mesh", timepoints = 6, bounds = "effective")
@@ -137,7 +138,7 @@ for i in range(6):
   emb = cmds(squareform(sigs_norm_shift**2))
 
   ## MDS plot
-  p = figure_scatter(emb, color=["red"]*7 + ["green"]*7 + ["blue"]*7, width=180, height=180)
+  p = figure_scatter(emb, color=["red"]*7 + ["green"]*7 + ["blue"]*7, title="MDS emb of min HKS dist", width=180, height=180)
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False
@@ -153,7 +154,7 @@ for i in range(6):
   figs.append(column(shape_row))
 
   ## Distance plot 
-  figs.append(column(figure_dist(sigs_norm_shift, width=180, height=180)))
+  figs.append(column(figure_dist(sigs_norm_shift, title="min HKS dist", width=180, height=180)))
 
   ## Combine
   cfigs.append(row(*figs))
@@ -163,11 +164,10 @@ show(column(*cfigs))
 
 TODO: Figure out way to give more weight to closer distances in signal distance, say with gaussian exp kernel...  
 
-Next, we generate an "average" heat kernel signature for each class of shapes at some fixed time `t > 0`. To do this, we phase-align the HKS of each 
-signature at time `t` to fixed but arbitrary reference signature by minimizing the cross-correlation. This gives a canonical correspondence 
+Next, we generate an "average" heat kernel signature for each class of shapes at some fixed time `t > 0`. To do this, we phase-align the HKS of each signature at time `t` to fixed but arbitrary reference signature by minimizing the cross-correlation. This gives a canonical correspondence 
 between each pair of vectors. We then take the average at each point using the correspondence, for all shapes in the given class.
 
-To do this for multiple values of `t`, one can perform the same steps with a slight augmentation: in step 1, rather than minimizing cross correlation, minimize multiple cross correlation simulataneously across mutliple signals. This is like simultanous signal phase alignment. Then, in step 2, use generalized procrustes analysis...
+To do this for multiple values of `t`, one can perform the same steps with a slight augmentation: in step 1, rather than minimizing cross correlation, minimize multiple cross correlation simulataneously across multiple signals. This is like simultanous signal phase alignment. Then, in step 2, use generalized procrustes analysis...
 
 ```{python}
 #| label: Class-specific signature barycenters for a fixed time t.  
@@ -185,7 +185,7 @@ HK = HeatKernel(approx="mesh")
 
 ## First fit takes about 22 seconds to complete once
 ## Takes ~15 seconds to refit 21 models 1500 times, => about 0.15 seconds need to change sample-weight
-norm_dist = partial(signal_dist, normalize="sum") # improves scores dramatically
+norm_dist = partial(signal_dist, normalize="sum") # improves scores dramatically, but O(n^2)
 hk_model = HeatKernelClassifier(HK, dimension = 2, metric=norm_dist) # euclidean assumes correspondence
 hk_model.initial_fit(X=X, y=y, S=S, normed=True, approx="mesh")
 hk_model.fit(X, y)
@@ -207,51 +207,6 @@ hk_model.transform(X)
 # scores = np.array([hk_model.fit(X, y).score(X, y) for _ in range(30)])
 
 ```
-
-Why doens't sklearn respect clone? Ahh, needs >= 1.3
-```{python}
-from sklearn.base import BaseEstimator, ClassifierMixin
-from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
-from sklearn.utils.multiclass import unique_labels
-from sklearn.metrics import euclidean_distances
-class TemplateClassifier(BaseEstimator, ClassifierMixin):
-  def __init__(self, demo_param='demo'):  
-    self.demo_param = demo_param
-
-  def fit(self, X, y):
-    X, y = check_X_y(X, y)
-    self.classes_ = unique_labels(y)
-    self.X_, self.y_ = X, y
-    return self
-
-  def predict(self, X):
-    check_is_fitted(self)
-    X = check_array(X)
-    closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
-    return self.y_[closest]
-  
-  def clone(self):
-    print("clone called")
-    return self
-  
-  def __copy__(self):
-    print("copy called")
-    return self
-
-  def __deepcopy__(self):
-    print("deepcopy called")
-    return self
-  
-  def __sklearn_clone__(self):
-    print("sklearn clone called")
-    return self
-
-
-from sklearn import clone
-C = TemplateClassifier()
-c = clone(C)
-```
-
 
 ```{python}
 #| label: Expanded MPEG random classifiers 
@@ -311,6 +266,52 @@ profiler.print_stats(output_unit=1e-3, stripzeros=True)
 ab.predict(X)
 ab.score(X, y)
 ```
+
+
+Why doens't sklearn respect clone? Ahh, needs >= 1.3
+```{python}
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
+from sklearn.metrics import euclidean_distances
+class TemplateClassifier(BaseEstimator, ClassifierMixin):
+  def __init__(self, demo_param='demo'):  
+    self.demo_param = demo_param
+
+  def fit(self, X, y):
+    X, y = check_X_y(X, y)
+    self.classes_ = unique_labels(y)
+    self.X_, self.y_ = X, y
+    return self
+
+  def predict(self, X):
+    check_is_fitted(self)
+    X = check_array(X)
+    closest = np.argmin(euclidean_distances(X, self.X_), axis=1)
+    return self.y_[closest]
+  
+  def clone(self):
+    print("clone called")
+    return self
+  
+  def __copy__(self):
+    print("copy called")
+    return self
+
+  def __deepcopy__(self):
+    print("deepcopy called")
+    return self
+  
+  def __sklearn_clone__(self):
+    print("sklearn clone called")
+    return self
+
+
+from sklearn import clone
+C = TemplateClassifier()
+c = clone(C)
+```
+
 
 ```{python}
 ## The 1-dimensional case for a fixed time point is easy 

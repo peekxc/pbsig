@@ -4,12 +4,12 @@ from numpy.typing import ArrayLike
 from scipy.special import comb
 from itertools import combinations
 
-def apparent_pairs(D: ArrayLike, K: List):
+def apparent_pairs(d: ArrayLike, K: List):
   """
-  Given a set of pairwise distances 'D', a Rips complex 'K', and a homological dimension 0 <= p < 2, 
+  Given a vector of pairwise distances 'd', a flag complex 'K', and a homological dimension 0 <= p < 2, 
   this function identifies the apparent pairs (\sigma_p, \sigma_{p+1}) 
 
-  TODO: should be given some epsilon + distances, enumerate edges and find cofacets, not rips complex
+  TODO: should be given some epsilon + distances, enumerate edges instead of triangles and find cofacets, not rips complex
 
   A persistence pair (tau, sigma) is said to be *apparent* iff: 
     1. tau is the youngest facet of sigma 
@@ -37,7 +37,7 @@ def apparent_pairs(D: ArrayLike, K: List):
   result = []
   for T in K['triangles']:  
     T_facets = rank_combs(combinations(T, 2), k=2, n=len(K['vertices']))
-    max_facet = T_facets[np.max(np.flatnonzero(D[T_facets] == np.max(D[T_facets])))] # lexicographically maximal facet 
+    max_facet = T_facets[np.max(np.flatnonzero(d[T_facets] == np.max(d[T_facets])))] # lexicographically maximal facet 
     n = len(K['vertices'])
     u, v = unrank_comb(max_facet, k=2, n=n)
     same_diam = np.zeros(n, dtype=bool)
@@ -46,8 +46,8 @@ def apparent_pairs(D: ArrayLike, K: List):
         continue
       else: 
         cofacet = np.sort(np.array([u,v,j], dtype=int))
-        cofacet_diam = np.max(np.array([D[rank_comb(face, k=2, n=n)] for face in combinations(cofacet, 2)]))
-        if cofacet_diam == D[max_facet]:
+        cofacet_diam = np.max(np.array([d[rank_comb(face, k=2, n=n)] for face in combinations(cofacet, 2)]))
+        if cofacet_diam == d[max_facet]:
           same_diam[j] = True
     if np.any(same_diam):
       j = np.min(np.flatnonzero(same_diam))
