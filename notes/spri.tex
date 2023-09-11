@@ -467,7 +467,7 @@ as a function of time $\alpha \in \mathbb{R}$ (top) and a real-valued spectral r
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 %In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
-The following results summarize some technical observations motivating this effort, which will be used in several proofs. Collectively, these observations suggest the rank invariant computation admits several advantages in the vector space setting. 
+The following results summarize some technical observations motivating this effort, which will be used in several proofs. Though these observations appear as minor results individually, they collectively  suggest the rank invariant computation admits several advantages in the vector space setting, which is the main setting for this effort. 
 
 %There is an alternative approach to computing~\eqref{eq:pbn_simple} that exploits the structure of persistence. 
 Among the most widely known results for persistence is the structure theorem~\cite{zomorodian2004computing}, which shows 1-parameter persistence modules decompose in an \emph{essentially unique} way. Computationally, 
@@ -973,15 +973,15 @@ Moreover, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the correspo
 \noindent Noting property (4), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
 replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yield a Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz and the step functions from~\eqref{eq:rank_equiv_param} are smoothed with some $\omega > 0$. 
-We defer the formal definition this persistence-based relaxation and its properties to section~\ref{sec:spri_properties}.
-
-It is worth noting that though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
+\begin{remark} 
+	It is worth noting that though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
 	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
-its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. 
-However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
-\subsubsection{Interpretation}
-A common approach used in sparse inverse problems is to regularize a given objective function to such that optimization is more amenable. 
+its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
+%We defer the formal definition this persistence-based relaxation and its properties to section~\ref{sec:spri_properties}.
+\end{remark}
+\noindent
+\textbf{Interpretations:} A common approach used in sparse inverse problems is to regularize a given objective function to such that optimization is more amenable. 
 For example, the classical least-squares approach to solving the [possibly ill-posed] linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
  \begin{equation}\label{eq:tikhonov}
 	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
@@ -1002,7 +1002,7 @@ $\phi$ by $\nu(\tau) = \sqrt{\tau}$ and $p(x) = 2x (x^2 + 1)^{-2}$, one obtains 
 \begin{equation}
 	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{2}{\tau}\int\limits_{0}^z z \cdot  \big((z/\sqrt{\tau})^2+1\big)^{-2} dz = \frac{x^2}{x^2 + \tau} % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
 \end{equation}
-By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} via the following identities:
+By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular value function~\eqref{def:lowner}, the corresponding spectral rank approximation reduces\footnote{See Theorem 2 of~\cite{zhao2012approximation} for a proof of the second equality.} to the following trace :
 \begin{equation}\label{eq:tikhonov_1}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
 	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n \frac{\sigma_i(A)^2}{\sigma_i(A)^2 + \tau} = \mathrm{Tr}\left[(A^T A + \tau \, I)^{-1} A^T A \right]
