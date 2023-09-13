@@ -177,6 +177,7 @@ Unlike the rank invariant, these spectrally-derived families enjoy a number of s
 %By exploiting a connection to combinatorial Laplacian operators, we find that the non-harmonic spectra from which our interpolation derives encodes rich geometric information about the underlying space, providing several avenues for geometric data analysis. 
 By leveraging its relationship with combinatorial Laplacian operators, we find the non-harmonic spectra of our proposed relaxation encode valuable geometric information about the underlying space, prompting several avenues for geometric data analysis.
 %Surprisingly, we find the relaxation may be efficiently standard persistence computation and it may be iteratively approximated in a "matrix-free" fashion. 
+As these Laplacian operators are trace-class operators, we also find the corresponding relaxation can be efficiently approximated with a randomized algorithm based on the stochastic Lanczos quadrature method.
 We investigate the utility of our relaxation with applications in topological data analysis and machine learning, such as parameter optimization and shape classification.
 
 \end{abstract}
@@ -1041,18 +1042,19 @@ Towards this end, we exploit another identity of the rank function:
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
 As both $\partial_p \circ \partial_p^T$ and $\partial_p^T \circ \partial_p$ are positive semi-definite by definition, studying the spectra of these operators is equivalent to studying the singular values of boundary operators~\cite{horak2013spectra}.  
 % study of spectra of \emph{combinatorial Laplacians}
-Moreover, as the operator given by $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, it is natural to consider its $p$-dimension generalization stemming from simplicial complexes, which have been called \emph{$p$-th combinatorial Laplacians} $\Delta_p$: 
+Moreover, as $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, it is natural to consider its $p$-dimension generalization, which have been called \emph{$p$-th combinatorial Laplacians} $\Delta_p$: 
 \begin{equation}\label{eq:comb_lap}
 	\Delta_p(K) = 
 	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^\ast}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^\ast  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
 \noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact---moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
+All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact---moreover, the inertia of their spectra is equivalent, implying they must have identical ranks~\cite{horak2013spectra}. % TODO: verify
+%moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
+%where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 %\begin{equation}\label{eq:lap_spectra_conn}
 %	\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \stackrel{\cdot}{\cup} \Lambda(L_p^{\text{dn}}), \quad \quad \Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1}^{\text{dn}})
 %\end{equation}
-where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
 Thus, from a rank-based perspective, it suffices to consider any one of these operators.
 
 Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 
@@ -1647,20 +1649,7 @@ It would be beneficial to have an invariant that was sensitive to the geometries
 \newpage
 
 \subsection{Combinatorial Laplacians}\label{sec:laplacian_theory}
-%To better understand the interpretation of the smoothed relaxations of the counting invariants from definition~\ref{def:smooth_mu}, it is imperative to understand what the spectral information  constitutive terms encodes. 
-%In section~\ref{sec:param_boundary}, we exploited permutation invariance to simplify the persistence rank invariants~\eqref{eq:betti_four} and~\eqref{eq:mu_four} and in section~\ref{sec:spectral_relax} we used the fact\footnote{
-%This fact can be proven using the spectral theorem or observed directly due to the inertia theorem~\cite{bhatia2013matrix}. %Section I.2 of stewart 
-%} that $\sigma_i(X) > 0$ whenever $\mathrm{rank}(X) \leq i$ to derive a spectral relaxation of the rank function. 
-% 3.1 gives permutation invariance + continuous boundary operators, 
-% 3.2 gives Lipshitz-smooth boundary operators + continuous rank approximations
-% 3.3 gives ingredients necessary to reduce complexity from O(n^3) to (n^2), and different geometry
-Continuing the theme of studying invariances of the rank function to simplify expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four}, in this section we exploit another well known identity of the rank function for zero characteristic fields: 
-$$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
-On the spectral side, it is well-known the square roots of the non-zero eigenvalues of either $XX^T$ or $X^T X$ yield the singular values of $X$. Since $\partial_1 \partial_1^T$ is the well studied \emph{graph Laplacian}, we may consider the study of spectra of \emph{combinatorial Laplacians}---generalizations of the graph Laplacian---as the study of singular values of boundary operators.  
-%Towards revealing  
 % "Many combinatorial operations that one can perform on a simplicial complex do not affect its homology typically leave characteristic traces in the spectrum of a suitable Laplace operator. In the weighted case, there is additional geometric information that likewise influences the spectrum." 
-% TODO: rewrite somehow to avoid bloat? talk about endowing differentiability and reducing runtime complexity
-
 The natural extension of the graph Laplacian $L$ to simplicial complexes is the \emph{$p$-th combinatorial Laplacian} $\Delta_p$, whose explicit matrix representation is given by: 
 \begin{equation}\label{eq:comb_lap}
 	\Delta_p(K) = 
@@ -1839,12 +1828,12 @@ Furthermore, by using the adjacency relation $i \sim j$ as in~\cite{chung1997spe
 	 x^T L x = \sum\limits_{i \sim j} (x_i - x_j)^2  & &&
 %	  x^T L x = \sum\limits_{i \sim j} f(v_i, v_j) (x_i - x_j)^2  & &&
 \end{flalign}
-If $G$ has $m$ edges and $n$ vertices taking labels in the set $[n]$, computing the product from~\eqref{eq:lap_quad_from} requires just $O(m)$ time and $O(n)$ storage via two edge traversals: one to accumulate vertex degrees and one to remove components from incident edges. By precomputing the degrees, the operation reduces further to a single $O(n)$ product and $O(m)$ edge pass, which is useful when repeated evaluation for varying $x$ is necessary. 
+If $G$ has $m$ edges and $n$ vertices taking labels in the set $[n]$, computing the product from~\eqref{eq:lap_quad_from} requires just $O(m)$ time and $O(n)$ storage via two edge traversals: one to accumulate vertex degrees and one to remove components from incident edges. By precomputing the degrees, the operation reduces further to a single $O(n)$ product and $O(m)$ edge pass, which is useful when repeated evaluations for varying values of $x$ are necessary. 
 %As we show below, generalizing this procedure when $p > 0$ requires .
 %, as the orientations of $[\sigma] \in K^{p+1}$ change the sign of the off-diagonal entries in $L_p^\ast$. 
 %In particular, writing down a succinct expression for $x \mapsto L_p^{\textrm{up}} x$ (or $x \mapsto L_p^{\textrm{dn}} x$) requires a generalization of the notion of path-connectedness between $p$-simplices, as well as knowledge of the orientation of every simplex to evaluate the sign..
 
-To extend the two-pass algorithm outlined above when $p > 0$, we first require a generalization of the path-connected relation from~\eqref{eq:lap_quad_from}.
+To extend the two-pass algorithm outlined above when $p > 0$, we first require a generalization of the connected relation from~\eqref{eq:lap_quad_from}.
  Denote with $\mathrm{co}(\tau) = \{ \, \sigma \in K^{p+1} \mid \tau \subset \sigma \, \}$ the set of proper cofaces of $\tau \in K^p$, or \emph{cofacets}, and the (weighted) \emph{degree} of $\tau \in K^p$ with: 
 $$\mathrm{deg}_w(\tau) = \sum_{\sigma \in \mathrm{co}(\tau)} w(\sigma) $$
 Note setting $w(\sigma) = 1$ for all $\sigma \in K$ recovers the integral notion of degree representing the number of cofacets a given $p$-simplex has. 
@@ -1860,15 +1849,11 @@ Thus, we may use a relation $\tau \overset{\sigma}{\sim} \tau'$ to rewrite the o
 \end{align}
 where $s_{\tau, \tau'} = \mathrm{sgn}([\tau], \partial[\sigma]) \, \cdot \, \mathrm{sgn}([\tau], \partial[\sigma])$. Ordering the $p$-faces $\tau \in K^p$ along a total order and choosing an indexing function $h : K^p \to [n]$ enables explicit computation of the corresponding matrix-vector product: 
 \begin{equation}\label{eq:l_up_matvec}
-	(L_p^{\textrm{up}} \, x)_i =  \mathrm{deg}_w(\tau) \cdot w(\tau) \cdot x_i + \sum\limits_{\tau \overset{\sigma}{\sim} \tau'} s_{\tau, \tau'} \cdot x_{h(\tau')} \cdot  w^{+/2}(\tau) \cdot w(\sigma) \cdot w^{+/2}(\tau') 
+	(L_p^{\textrm{up}} \, x)_i =  \mathrm{deg}_w(\tau_i) \cdot w^{+}(\tau_i) \cdot x_i + w^{+/2}(\tau_i) \sum\limits_{\tau_j \overset{\sigma}{\sim} \tau_i} s_{\tau_i, \tau_j} \cdot x_{j} \cdot w(\sigma) \cdot w^{+/2}(\tau_j) 
 \end{equation}
 Observe~\eqref{eq:l_up_matvec} can be evaluated now via a very similar two-pass algorithm as described for the graph Laplacian if the simplices of $K^{p+1}$ can be quickly enumerated and the indexing function $h$ can be efficiently evaluated.
 
-\subsection*{Lanczos2}
-The spectral theorem implies $A$ is orthogonally diagonalizable~\cite{bhatia2013matrix} and that $\Lambda(A)$ may be obtained via successive QR factorizations of $K_j(A,v) = Q_j R_j$ for all $j \in [n]$.
-Symmetry in $A$ and orthogonality in $Q_j$ imply $q_k^T A q_l = q_l^T A^T q_k = 0$ for all $k > l + 1$, giving the corresponding\footnote{Unlike the spectral decomposition, there is no canonical choice of $T_j$ due to $v$ being arbitrary, however the iterates $K_j(A,v)$ are related to the full tridiagonalization of $A$ in the sense that if $Q^T A Q = T$ is tridiagonal and $Q= [\, q_1 \mid q_2 \mid \dots \mid q_n \,]$ is an $n \times n$ orthogonal matrix then $K_n(A, q_1) = Q[ \, e_1 \mid T e_1 \mid T^2 e_1 \mid \dots \mid T^{n-1} e_1 \, ]$ is the QR factorization of $K_n(A, q_1)$.} $T_j = Q_j^T A Q_j$ a tridiagonal structure.
-
-\subsection*{Lanczos}
+\subsection*{Lanczos background}
 Computing eigen-decompositions $A = V \Lambda V^T$ of symmetric matrices $A \in S_n$ generally consists of two phases: (1) reduction to tridiagonal form $Q^T A Q = T$ via orthogonal similarity transformations $Q$, and (2) diagonalization of the tridiagonal form $T = Y \Theta Y^T$. 
 % For phase (2), also see: https://www.cs.utexas.edu/users/flame/laff/alaff-beta/chapter10-francis-implicit-qr-step.html
 While the latter may be performed in $O(n \log n)$ time~\cite{gu1995divide}, the former is effectively bounded below by $\Omega(n^3)$ for dense full-rank matrices using traditional (i.e. non-Strassen) matrix operations, and thus it is the reduction to tridiagonal form that dominates the computation. 
@@ -2372,8 +2357,8 @@ Note the degree computation occurs only once.
 \Ensure Weight functions $w_{p+1}: K^{p+1} \to \mathbb{R}_{+}$ and  $w_{p}^l, w_{p}^r: K^p \to \mathbb{R}_{+}$
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 \Ensure $y = \langle \, L_p^{\mathrm{up}}, x \, \rangle =  (W_p \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p)x$
-\State \# Precompute weighted degrees $\mathrm{deg}_w$ 
-\State $h : K^p \to [ \, n \, ]$ 
+\State // Precompute weighted degrees $\mathrm{deg}_w$ 
+\State Define $h : K^p \to [ \, n \, ]$ 
 \State $\mathrm{deg}_w \gets \mathbf{0}$
 \For{$\sigma \in K^{p+1}$}: 
 	\For{$\tau \in \partial[\sigma]$}:

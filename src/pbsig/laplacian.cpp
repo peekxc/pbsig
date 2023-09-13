@@ -139,6 +139,8 @@ void declare_laplacian(py::module &m, std::string typestr, bool colex = false) {
       return _faces(L);
     })
     .def("precompute_degree", &Class::precompute_degree)
+    .def("precompute_indices", &Class::precompute_indices)
+    // .def("apply_mask", &Class::apply_mask)
     // .def("compute_indexes", &Class::compute_indexes)
     .def("_matvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })
     .def("_rmatvec", [](const Class& L, const py::array_t< F >& x) { return _matvec(L, x); })

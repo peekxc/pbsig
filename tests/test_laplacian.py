@@ -18,26 +18,31 @@ def test_generate():
   assert isinstance(X, np.ndarray)
   assert isinstance(K, ComplexLike)
 
-# def test_spectral_norm():
-#   stretch = []
-#   for i in range(1500):
-#     q = np.random.uniform(size=L.shape[0], low=0, high=1)
-#     stretch.append((q @ (L @ q))/(q @ q))
-#   max(stretch)
-    
+# def test_masking():
+#   X, K = generate_dataset(10)
+#   wv = np.random.uniform(size=card(K,1), low=0, high=150)
+#   LN = up_laplacian(K, p=0, weight=lower_star_weight(wv), form='lo', normed=True)
+#   # LN @ np.eye(LN.shape[0])
+#   fq, fpl, fpr = np.array(LN.fq), np.array(LN.fpl), np.array(LN.fpr)
+#   ## test turning off vertices + edges
+#   # fq[:5] = 0
+#   # fpl[:2] = 0
+#   # fpr[:2] = 0
+#   # LN.apply_mask(False)
+#   # LN.precompute_indices()
+
+
 def test_matprop():
   X, K = generate_dataset(50)
   wv = np.random.uniform(size=card(K,1), low=0, high=150)
   LN = up_laplacian(K, p=1, weight=lower_star_weight(wv), form='array', normed=True)
-  # abs(LN - np.diag(LN.diagonal())).sum(axis=0)
-  max(np.abs(np.linalg.eigvalsh(LN - np.diag(LN.diagonal()))))
-  # sum(np.sqrt(abs(np.linalg.eigvalsh(LN.todense()))))
-  np.linalg.cond((LN + (1e-5)*np.eye(LN.shape[0])))
-  np.linalg.cond(LN.todense())
+  cond1 = np.linalg.cond((LN + (1e-5)*np.eye(LN.shape[0])))
+  cond2 = np.linalg.cond(LN.todense())
+  assert cond1 < cond2 
 
 def test_energy_props():
   S = simplicial_complex([[0,1,2,3], [4,5,6,7], [8,9,10,11]])
-  wv = np.random.uniform(size=card(K,0), low=0, high=150)
+  wv = np.random.uniform(size=card(S,0), low=0, high=150)
   LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
   ## || LN ||_ast = 
   # plt.spy(LN)
@@ -51,7 +56,7 @@ def test_energy_props():
 
   ## Ensure singletons don't contribute to energy
   S = simplicial_complex([[0,1,2,3], [4], [5,6,7,8], [9], [10,11,12,13], [14]])
-  wv = np.random.uniform(size=card(K,0), low=0, high=150)
+  wv = np.random.uniform(size=card(S,0), low=0, high=150)
   LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
   c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[0:4,0:4]))))
   c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[5:9,5:9]))))
@@ -97,7 +102,7 @@ def test_laplacian_op_api():
     ## use indicator vectors to assert equlity between matrix rep's
     n = card(S, p)
     for i in range(n):
-      cv = np.array([0]*i + [1] + [0]*(n-i-1))
+      cv = np.array([0]*i + [1] + [0]*int(n-i-1))
       assert np.isclose(np.max(abs(LM.todense()[i,:] - (LO @ cv))), 0)
 
     ## Ensure matvec is correct
@@ -110,7 +115,7 @@ def test_stability():
   # fv = np.array([1,1,1,1])
   fe = np.array([lower_star_weight(fv)(e) for e in faces(S, 1)])
   L1 = up_laplacian(S, p=0, normed=True, weight=lower_star_weight(fv))
-  solver = eigvalsh_solver(L1)
+  solver = PsdSolver()
   ew = solver(L1)
 
   def additive_noise(x: np.ndarray, eps: float = 1e-5):
@@ -175,16 +180,8 @@ def test_stability():
   print(np.linalg.norm(R.T @ L1 @ R - L2.todense()))
   print(np.sqrt(np.sum((ew1-ew2)**2)))
   # np.sqrt(np.sum((ew1 - ew2)**2))
-  max(abs(np.linalg.eigvalsh(np.eye(4)-Q.T @ Q)))
+  print(max(abs(np.linalg.eigvalsh(np.eye(4)-Q.T @ Q))))
 
-  print(L1.todense())
-  print(L2.todense())
-
-
-  np.linalg.norm(L2.todense())
-  
-  L1.todense() - L2.todense()
-  D1 = boundary_matrix(S, p = 1).todense()
 
 
 def benchmark_matvec():
@@ -193,11 +190,12 @@ def benchmark_matvec():
   p = 1
   fv = np.random.uniform(size=card(S,0), low=0, high=5)
   LO = up_laplacian(S, p=p, form='lo', weight=lower_star_weight(fv))
-  # LM = up_laplacian(S, p=p, form='array', weight=lower_star_weight(fv))
+  LM = up_laplacian(S, p=p, form='array', weight=lower_star_weight(fv))
   x = np.random.uniform(size=card(S,p), low=-1, high=1)
-  timeit.timeit(lambda: LO @ x, number=1000)
-  # timeit.timeit(lambda: LM @ x, number=1000)
+  time_linearop = timeit.timeit(lambda: LO @ x, number=1000)
+  time_spmatrix = timeit.timeit(lambda: LM @ x, number=1000)
   assert max(abs((LM @ x) - (LO @ x))) <= 1e-5
+  assert time_linearop <= time_spmatrix * 10, "Linear operator is more then an order of magnitude slower than sparse matrix multiplication"
   
 ## Test elementwise definitions
 # D1 = boundary_matrix(S, p=1)

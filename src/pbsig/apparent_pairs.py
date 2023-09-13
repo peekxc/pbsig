@@ -4,6 +4,8 @@ from numpy.typing import ArrayLike
 from scipy.special import comb
 from itertools import combinations
 
+from combin import rank_to_comb, comb_to_rank
+
 def apparent_pairs(d: ArrayLike, K: List):
   """
   Given a vector of pairwise distances 'd', a flag complex 'K', and a homological dimension 0 <= p < 2, 

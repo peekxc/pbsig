@@ -17,7 +17,7 @@
 #include <ranges>
 #include <unordered_set>
 #include <omp.h>
-
+#include <cassert>
 
 using namespace combinatorial;
 
@@ -80,17 +80,17 @@ struct UpLaplacian {
   static constexpr bool colex_order = S_Iterable::colex_order; // whether to use colex ordering for boundary bijection 
   using value_type = F;                   // field coefficient type
   const size_t nv;                        // number of vertices
-  const size_t nq;                        // number of cofaces
-  size_t np;                              // number of faces
-  array< size_t, 2 > shape;               // non-const due due to masking 
+  mutable size_t nq;                      // number of cofaces
+  mutable size_t np;                      // number of faces 
   S_Iterable simplices;                   // q simplex range
+  mutable array< size_t, 2 > shape;       // non-const due due to masking 
   mutable vector< F > y;                  // workspace
   mutable H index_map;                    // indexing function
   vector< F > fpl;                        // p-simplex left weights 
   vector< F > fpr;                        // p-simplex right weights 
   vector< F > fq;                         // (p+1)-simplex weights
   vector< F > degrees;                    // weighted degrees; pre-computed
-  vector< uint32_t > face_indices;        // precomputed face indices  
+  vector< uint32_t > face_indices;        // precomputed face indices; not needed if the index map is fast enough
 
   UpLaplacian(S_Iterable S, const size_t nv_, const size_t np_ = 0) // np is needed for p-faces having no codim-1 faces! 
     : nv(nv_), nq(std::distance(S.begin(), S.end())), simplices(S)  {
@@ -103,28 +103,62 @@ struct UpLaplacian {
     fq = vector< F >(nq, 1.0); 
     degrees = vector< F >(np, 0.0);
 
-    // Build the Hash table mappping face ranks -> indices
+    // Build the Hash table mapping face ranks -> indices
     vector< std::pair< uint64_t, uint32_t > > key_values; 
     key_values.reserve(pr.size());
     for (uint64_t i = 0; i < pr.size(); ++i){
       key_values.push_back(std::make_pair(pr[i], i));
     }
-    index_map = H(key_values.begin(), key_values.end());
-    precompute_indices();
+    index_map = H(key_values.begin(), key_values.end()); // 
+    precompute_indices(false);
   }
 
-  void precompute_indices(){
+  // Masks zero-weighted simplices, re-indexing the simplices and re-sizing the following attributes: 
+  // - degrees
+  // - shape 
+  // All other attributes, including function weights (fp,fq), simplices, and constants (np,nq,nv) are unchanged. 
+  // TODO: revisit, there are applications where it's useful to deflate the kernel e.g. reducing eigenvector memory 
+  // Maybe consider instead writing a compress() function that produces a new operator
+  // void apply_mask(){
+  //   auto pr = unique_face_ranks(simplices, false); // NEED colex or lex ordering to ensure sign pattern is constant
+  //   assert(pr.size() == fpr.size());
+  //   vector< std::pair< uint64_t, uint32_t > > key_values; 
+  //   key_values.reserve(pr.size());
+  //   size_t new_np = 0;
+  //   for (uint64_t i = 0; i < pr.size(); ++i){
+  //     if (fpr[i] != 0.0 and fpl[i] != 0.0){
+  //       key_values.push_back(std::make_pair(pr[i], new_np)); // map face rank -> [n]
+  //       new_np++;
+  //     }
+  //   }
+  //   // Parametrizes the map H: < p ranks > -> (0, 1, ..., new_np-1)
+  //   index_map = H(key_values.begin(), key_values.end());
+  //   shape = { new_np, new_np };
+  //   precompute_indices(true); // populates face_indices with relative indices 
+  // }
+
+  // TODO: revisit masking 
+  // Enable masking by just detecting 0.0's 
+  void precompute_indices(bool mask_zeros = false){
+    assert(index_map.size() > 0);
+    face_indices.clear();
     if constexpr(p == 0){
-      face_indices.clear();
-      for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
-        const auto [i,j] = s_it.boundary_ranks();
-        const auto ii = index_map[i], jj = index_map[j];
-        face_indices.push_back(ii);
-        face_indices.push_back(jj);
+      size_t qi = 0; // nq_masked = 0; 
+      for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it, ++qi){
+        if (mask_zeros && fq[qi] == 0.0){
+          continue;
+        } else {
+          // nq_masked++;
+          const auto [i,j] = s_it.boundary_ranks();
+          const auto ii = index_map[i], jj = index_map[j];
+          face_indices.push_back(ii);
+          face_indices.push_back(jj);
+        }
       }
+      assert((face_indices.size() % 2) == 0);
+      // nq = nq_masked;
     }
     else if constexpr(p == 1){
-      face_indices.clear();
       face_indices.reserve(3*nq);
       for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
         const auto [i,j,k] = s_it.boundary_ranks();
@@ -133,6 +167,7 @@ struct UpLaplacian {
         face_indices.push_back(jj);
         face_indices.push_back(kk);
       }
+      assert((face_indices.size() % 3) == 0);
     } 
     // else if constexpr(p == 2) {
     //   face_indices.clear();
@@ -147,7 +182,6 @@ struct UpLaplacian {
     //   }
     else {
       size_t cc = 0; 
-      face_indices.clear();
       face_indices.reserve((dim+2)*nq);
       auto p_ind = array< uint64_t, dim+2 >();
       for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it){
@@ -155,28 +189,32 @@ struct UpLaplacian {
         s_it.boundary_ranks([this, &cc, &p_ind](auto face_rank){ p_ind[cc++] = index_map[face_rank]; });
         face_indices.insert(face_indices.end(), p_ind.begin(), p_ind.end()); 
       }
+      assert((face_indices.size() % (dim+1)) == 0);
     }
   }
 
+  // Precomputes the degree vector so subsequent matvecs can be used as-is
   void precompute_degree(){
-    if (fpl.size() != np || fq.size() != nq || fpl.size() != np){ return; }
+    assert(fpl.size() == np && fq.size() == nq && fpl.size() == np);
     std::fill_n(degrees.begin(), degrees.size(), 0);
     size_t qi = 0; 
     for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it, ++qi){
       // std::cout << "qi: " << qi << std::endl;
       s_it.boundary_ranks([&](auto face_rank){ 
-        const auto ii = index_map[face_rank]; 
+        const auto ii = index_map[face_rank];  // in the range [0, new_np-1]
         degrees.at(ii) += fpl.at(ii) * fq.at(qi) * fpr.at(ii);
       });
     }
   }
 
   // Internal matvec; outputs y = L @ x
+  // For vectorization, see: https://stackoverflow.com/questions/43168661/openmp-and-reduction-on-stdvector
   inline void __matvec(F* x) const noexcept { 
     // Start with the degree computation
     std::transform(degrees.begin(), degrees.end(), x, y.begin(), std::multiplies< F >());
 
     if constexpr(p == 0){
+      // assert((face_indices.size() % 2) == 0);
       // #pragma omp parallel for schedule (static,16)
       for (size_t qi = 0; qi < nq; ++qi){
         const auto ii = face_indices[qi*2], jj = face_indices[qi*2+1];
@@ -194,6 +232,7 @@ struct UpLaplacian {
       }
     }
     
+    // Using the index map 
     // #pragma omp parallel for simd schedule (static,16)
     // size_t qi = 0; 
     // for (auto s_it = simplices.begin(); s_it != simplices.end(); ++s_it, ++qi){
