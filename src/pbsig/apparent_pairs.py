@@ -38,24 +38,24 @@ def apparent_pairs(d: ArrayLike, K: List):
   """
   result = []
   for T in K['triangles']:  
-    T_facets = rank_combs(combinations(T, 2), k=2, n=len(K['vertices']))
+    T_facets = comb_to_rank(combinations(T, 2), k=2, n=len(K['vertices']), order="lex")
     max_facet = T_facets[np.max(np.flatnonzero(d[T_facets] == np.max(d[T_facets])))] # lexicographically maximal facet 
     n = len(K['vertices'])
-    u, v = unrank_comb(max_facet, k=2, n=n)
+    u, v = rank_to_comb(max_facet, k=2, n=n)
     same_diam = np.zeros(n, dtype=bool)
     for j in range(n):
       if j == u or j == v: 
         continue
       else: 
         cofacet = np.sort(np.array([u,v,j], dtype=int))
-        cofacet_diam = np.max(np.array([d[rank_comb(face, k=2, n=n)] for face in combinations(cofacet, 2)]))
+        cofacet_diam = np.max(np.array([d[comb_to_rank(face, k=2, n=n, order="lex")] for face in combinations(cofacet, 2)]))
         if cofacet_diam == d[max_facet]:
           same_diam[j] = True
     if np.any(same_diam):
       j = np.min(np.flatnonzero(same_diam))
       cofacet = np.sort(np.array([u,v,j], dtype=int))
       if np.all(cofacet == T):
-        pair = (max_facet, rank_comb(cofacet, k=3, n=n))
+        pair = (max_facet, comb_to_rank(cofacet, k=3, n=n, order="lex"))
         result.append(pair)
   ap = np.array(result)
   return(ap)

@@ -173,10 +173,10 @@ def validate_decomp(D: sparray, R: sparray, V: sparray, epsilon: float = 10*np.f
     warnings.warn(f"Decomposition failed validation checks.\n 1. R is reduced? {_is_reduced}\n 2. R=DV? {_is_rv_decomp} \n 3. V is upper-triangular? {_is_upper_tri}")
   return(valid)
 
-def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, generators: bool = False, essential: float = float('inf')) -> ArrayLike :
+def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, simplex_pairs: bool = False, essential: float = float('inf')) -> ArrayLike :
   """ Returns the persistence diagram from (K, R) """
   rlow = low_entry(R)
-  sdim = np.array([s.dim() for s in faces(K)])
+  sdim = np.array([dim(s) for s in faces(K)])
   
   ## Get the indices of the creators and destroyers
   if any(rlow == -1):
@@ -197,14 +197,26 @@ def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, generator
   if len(creator_dim) == 0: return dict()
 
   ## Match the barcodes with the index set of the filtration
-  key_dtype = type(next(iter(K))[0])
-  filter_vals = np.array([fval for fval, s in K], dtype=key_dtype)
-  index2f = {i:fv for i, fv in zip(np.arange(len(K)), filter_vals)} | { essential : essential} | { -essential : -essential}
-  birth = np.array([index2f[i] for i in birth])
-  death = np.array([index2f[i] for i in death])
-  
+  # from more_itertools import collapse
+  filter_vals = np.ravel(np.array([fval for fval, s in K])) # np.ravel(np.fromiter(K.indices(), dtype=key_type)) if hasattr(K, "indices") else 
+  index2fv = dict(zip(np.arange(len(K)), filter_vals)) | { essential : essential} | { -essential : -essential}
+
   ## Assemble the diagram
-  dgm = np.fromiter(zip(birth, death), dtype=[('birth', 'f4'), ('death', 'f4')])
+  if simplex_pairs:
+    assert isinstance(K, Sequence), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
+    dgm_dtype = [('birth', 'f4'), ('death', 'f4'), ('creators', 'O'), ('destroyers', 'O')]
+    creators = (Simplex(K[b]) for b in birth)
+    destroyers = (Simplex(K[int(d)]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
+    birth = np.array([index2fv[i] for i in birth])
+    death = np.array([index2fv[i] for i in death])
+    dgm = np.fromiter(zip(birth, death, creators, destroyers), dtype=dgm_dtype)
+  else:
+    dgm_dtype = [('birth', 'f4'), ('death', 'f4')]
+    birth = np.array([index2fv[i] for i in birth])
+    death = np.array([index2fv[i] for i in death])
+    dgm = np.fromiter(zip(birth, death), dtype=dgm_dtype)
+  
+  ## Collapse zero-persistence pairs if warranted
   if collapse:
     nonzero_ind = ~np.isclose(dgm['death'], dgm['birth'], equal_nan=True) 
     dgm = dgm[nonzero_ind]
@@ -278,7 +290,7 @@ def ph(K: FiltrationLike, p: Optional[int] = None, output: str = "dgm", engine: 
       assert validate_decomp(D, R, V) if validate else True
       return generate_dgm(K, R, **kwargs) if output == "dgm" else (R,V)
     elif engine == "dionysus":
-      assert output == "dgm"
+      assert output == "dgm", "Dionysus only produces diagram outputs. Please use a different engine."
       dgm = ph_dionysus(K)
       return dgm
     else: 
