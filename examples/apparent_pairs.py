@@ -33,13 +33,13 @@ dgm[1]['destroyers'] = [tuple(s) for s in dgm[1]['destroyers']]
 
 np.sort(dgm[1], order=['creators'])
 
-
+from splex import is_complex_like
 from splex import SimplexTree
 simplices = [[0], [1], [2], [3], [2,3], [0,1], [1,3], [0,2], [0,3], [1,2], [1,2,3]]
 simplices += [[0,2,3], [0,1,3], [0,1,2], [0,1,2,3]]
 simplices = [tuple(s) for s in simplices]
 f_values = [0]*4 + [3]*2 + [4]*2 + [5]*7
-f = lambda s: f_values[simplices.index(tuple(s))]
+f = lambda s: np.array([f_values[simplices.index(Simplex(si))] for si in s]) if is_complex_like(s) else f_values[simplices.index(Simplex(s))]
 K = filtration(simplices, f=f)
 
 R, V = ph(K, output="rv")
@@ -51,7 +51,7 @@ generate_dgm(K, R, collapse=False, simplex_pairs=True)[1]
 # dgm_index[1]
 
 
-ap = apparent_pairs_H1(K, np.vectorize(f))
+ap = apparent_pairs_H1(K, f)
 
 
 # apparent_pairs(pdist(X), K)
@@ -102,7 +102,7 @@ def apparent_pairs_H1(K: ComplexLike, f: Callable):
 
   ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
   for t in T_ranks:
-    i, j, k = rank_to_comb(t, k=3, n=20, order='lex')
+    i, j, k = rank_to_comb(t, k=3, n=n, order='lex')
     facets = [[i,j], [i,k], [j,k]]
     facet_weights = f(facets)
     same_value = np.isclose(facet_weights, f([i,j,k]))
@@ -121,11 +121,11 @@ def apparent_pairs_H1(K: ComplexLike, f: Callable):
     max_cofacet = None
     for k in reversed(range(n)):
       if k != i and k != j and np.isclose(f([i,j,k]), facet_weight):
-        max_cofacet = (i,j,k)
+        max_cofacet = Simplex((i,j,k))
         break
     
     ## If the relation is symmetric, then the two form an apparent pair
-    if max_cofacet is not None and tuple(max_cofacet) == tuple(t):
+    if max_cofacet is not None and max_cofacet == Simplex(t):
       true_pairs.append((tuple(e), max_cofacet))
   
   return true_pairs
