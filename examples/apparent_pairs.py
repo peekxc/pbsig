@@ -2,22 +2,35 @@ import numpy as np
 from scipy.spatial.distance import pdist, cdist, squareform
 from splex import *
 from more_itertools import first_true
+from pbsig.persistence import ph, generate_dgm
+from pbsig.apparent_pairs import apparent_pairs
 
-X = np.random.uniform(size=(20,2))
+## Random geometric rips complex 
+X = np.random.uniform(size=(14,2))
 f = flag_weight(pdist(X))
 er = enclosing_radius(pdist(X))
 K = rips_complex(X, radius=er, p=2)
 
-## TODO: check which one is correct
-from pbsig.apparent_pairs import apparent_pairs
-from pbsig.persistence import ph, generate_dgm
-S = dict(vertices=list(faces(K,0)), edges=list(faces(K,1)), triangles=list(faces(K,2)))
-len(apparent_pairs(pdist(X), S))
-
-
+## Filter by fla weight and do full ph validation 
 F = filtration(K, f)
-R, V = ph(F, output="rv")
-f([0,1,7])
+R, V = ph(F, output="rv", validate=True)
+D = boundary_matrix(F)
+assert all(((D @ V) == R).data) 
+
+## Check apparent pairs
+dgm = generate_dgm(F, R, collapse=False, simplex_pairs=True)
+ap = apparent_pairs(K, f)
+all_pairs_dgm = sorted([(tuple(cr),tuple(de)) for (birth,death,cr,de) in dgm[1]])
+ap_dgm = sorted([(tuple(cr),tuple(de)) for (birth,death,cr,de) in dgm[1] if np.isclose(death-birth, 0.0)])
+ap_com = sorted([(tuple(c),tuple(d)) for c,d, in ap])
+assert ap_com == ap_dgm
+
+## This is not gaurenteed to be true 
+# for p in range(2):
+#   for c,d in zip(dgm[p]['creators'], dgm[p]['destroyers']):
+#     assert (Simplex(c) <= Simplex(d)) or np.isnan(d[0])
+
+
 
 ## (0,1), (0,1,7) reported as pair in peristence diagram 
 ## but apparent pairs reports ((0,1), (0,1,8))
@@ -26,12 +39,25 @@ f([0,1,7])
 
 ## Let's jump implement the example from Ripser paper
 
+
+## TODO: check which one is correct
+# from pbsig.apparent_pairs import apparent_pairs
+
+# S = dict(vertices=list(faces(K,0)), edges=list(faces(K,1)), triangles=list(faces(K,2)))
+# len(apparent_pairs(pdist(X), S))
+
 # %% 
 dgm = generate_dgm(F, R, collapse=False, simplex_pairs=True)
 dgm[1]['creators'] = [tuple(s) for s in dgm[1]['creators']]
 dgm[1]['destroyers'] = [tuple(s) for s in dgm[1]['destroyers']]
 
-np.sort(dgm[1], order=['creators'])
+np.sort(dgm[1], order=['destroyers', 'creators'])
+
+## dgm def wrong
+ap_dgm = sorted(list(zip(dgm[1]['creators'], dgm[1]['destroyers'])))
+ap_comp = sorted(ap)
+
+np.sum(dgm[1]['birth'] == dgm[1]['death']) == len(ap)
 
 from splex import is_complex_like
 from splex import SimplexTree
@@ -78,57 +104,6 @@ ap = apparent_pairs_H1(K, f)
 #       result.append(pair)
 # ap = np.array(result)
 # return(ap)
-
-
-## --- H1 apparent pairs ---
-def apparent_pairs_H1(K: ComplexLike, f: Callable):
-  """Finds the H1 apparent pairs of lexicographically-refined clique filtration.
-
-  Parameters: 
-    K: Simplicial complex.
-    f: filter function defined on K.
-  
-  Returns: 
-    pairs (e,t) with zero-persistence in the H1 persistence diagram.
-  """
-  import combin 
-  from combin import comb_to_rank, rank_to_comb
-  n = card(K, 0)
-  triangles = np.array(list(faces(K,2))).astype(np.uint16)
-  T_ranks = comb_to_rank(triangles, n=n, order='lex')
-
-  ## Store the initial list of apparent pair candidates
-  pair_candidates = []
-
-  ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
-  for t in T_ranks:
-    i, j, k = rank_to_comb(t, k=3, n=n, order='lex')
-    facets = [[i,j], [i,k], [j,k]]
-    facet_weights = f(facets)
-    same_value = np.isclose(facet_weights, f([i,j,k]))
-    if any(same_value):
-      ## Choose the lexicographically minimal facet 
-      lex_min_ind = int(np.flatnonzero(same_value)[0])
-      pair_candidates.append((facets[lex_min_ind], [i,j,k]))
-    
-  ## Now filter the existing pairs via scanning through each p-face's cofacets
-  true_pairs = []
-  for e,t in pair_candidates:
-    i,j = e
-    facet_weight = f(e)
-    
-    ## Find the lexicographically maximal cofacet
-    max_cofacet = None
-    for k in reversed(range(n)):
-      if k != i and k != j and np.isclose(f([i,j,k]), facet_weight):
-        max_cofacet = Simplex((i,j,k))
-        break
-    
-    ## If the relation is symmetric, then the two form an apparent pair
-    if max_cofacet is not None and max_cofacet == Simplex(t):
-      true_pairs.append((tuple(e), max_cofacet))
-  
-  return true_pairs
 
 
 # E_cofacets = []

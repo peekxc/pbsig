@@ -5,71 +5,111 @@ from scipy.special import comb
 from itertools import combinations
 
 from combin import rank_to_comb, comb_to_rank
+from splex import * 
 
-def apparent_pairs(d: ArrayLike, K: List):
-  """
-  Given a vector of pairwise distances 'd', a flag complex 'K', and a homological dimension 0 <= p < 2, 
-  this function identifies the apparent pairs (\sigma_p, \sigma_{p+1}) 
-
-  TODO: should be given some epsilon + distances, enumerate edges instead of triangles and find cofacets, not rips complex
+def apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
+  """Finds the H1 apparent pairs of lexicographically-refined clique filtration.
 
   A persistence pair (tau, sigma) is said to be *apparent* iff: 
     1. tau is the youngest facet of sigma 
     2. sigma is the oldest cofacet of tau 
     3. the pairing has persistence |f(sigma)-f(tau)| = 0 
-
-  Observe tau is the facet of sigma with the largest filtration value, i.e. f(tau) >= f(tau') for any tau' \in facets(sigma)
-  and sigma is cofacet of tau with the smallest filtration value, i.e. f(sigma) <= f(sigma') for any sigma' \in cofacets(tau). 
-  There are potentially several cofacets of a given tau, to ensure uniqueness, we rely on lexicographically-refined 
-  simplexwise filtrations.
-
-  Equivalently, for lexicographically-refined simplexwise filtrations, we have that a 
-  zero-persistence pair (tau, sigma) is said to be *apparent* iff: 
-    1. tau is the lexicographically maximal facet of sigma w/ f(tau) = f(sigma)
-    2. sigma is the lexicographically minimal cofacet of sigma w/ f(sigma) = f(tau)
-
-  What is known about apparent pairs: 
-    - Any apparent pair in a simplexwise filtration is a persistence pair, regardless of the choice of coefficients
-    - Apparent pairs of a simplexwise filtrations form a discrete gradient in the sense of Discrete Morse theory 
-    - If K is a Rips complex and all pairwise distances are distinct, the persistent pairs w/ 0 persistence of K 
-      in dimension 1 are precisely the apparent pairs
   
-  Empirically, it also known that apparent pairs form a large portion of the total number of persistence pairs. 
-  """
-  result = []
-  for T in K['triangles']:  
-    T_facets = comb_to_rank(combinations(T, 2), k=2, n=len(K['vertices']), order="lex")
-    max_facet = T_facets[np.max(np.flatnonzero(d[T_facets] == np.max(d[T_facets])))] # lexicographically maximal facet 
-    n = len(K['vertices'])
-    u, v = rank_to_comb(max_facet, k=2, n=n)
-    same_diam = np.zeros(n, dtype=bool)
-    for j in range(n):
-      if j == u or j == v: 
-        continue
-      else: 
-        cofacet = np.sort(np.array([u,v,j], dtype=int))
-        cofacet_diam = np.max(np.array([d[comb_to_rank(face, k=2, n=n, order="lex")] for face in combinations(cofacet, 2)]))
-        if cofacet_diam == d[max_facet]:
-          same_diam[j] = True
-    if np.any(same_diam):
-      j = np.min(np.flatnonzero(same_diam))
-      cofacet = np.sort(np.array([u,v,j], dtype=int))
-      if np.all(cofacet == T):
-        pair = (max_facet, comb_to_rank(cofacet, k=3, n=n, order="lex"))
-        result.append(pair)
-  ap = np.array(result)
-  return(ap)
+  Parameters: 
+    K: Simplicial complex.
+    f: filter function defined on K.
+    refinement: the choice of simplexwise refinement. Only 'lex' is supported for now. 
 
+  Returns: 
+    pairs (e,t) with zero-persistence in the H1 persistence diagram.
+
+  Details: 
+    Observe tau is the facet of sigma with the largest filtration value, i.e. f(tau) >= f(tau') for any tau' \in facets(sigma)
+    and sigma is cofacet of tau with the smallest filtration value, i.e. f(sigma) <= f(sigma') for any sigma' \in cofacets(tau). 
+    There are potentially several cofacets of a given tau, thus to ensure uniqueness, this function assumes the 
+    filtration induced by f is a lexicographically-refined simplexwise filtrations. 
+    
+    Equivalently, for lexicographically-refined simplexwise filtrations, we have that a 
+    zero-persistence pair (tau, sigma) is said to be *apparent* iff: 
+      1. tau is the lexicographically *maximal* facet of sigma w/ f(tau) = f(sigma)
+      2. sigma is the lexicographically *minimal* cofacet of sigma w/ f(sigma) = f(tau)
+
+    Note that Bauer define similar notions but under the reverse colexicographical ordering, in which case the notions 
+    of minimal and maximal are reversed.
+
+    What is known about apparent pairs: 
+      - Any apparent pair in a simplexwise filtration is a persistence pair, regardless of the choice of coefficients
+      - Apparent pairs often form a large portion of the total number of persistence pairs in clique filtrations. 
+      - Apparent pairs of a simplexwise filtrations form a discrete gradient in the sense of Discrete Morse theory 
+
+    Moreover, if K is a Rips complex and all pairwise distances are distinct, it is knonw that the persistent pairs 
+    w/ 0 persistence of K in dimension 1 are precisely the apparent pairs.
+  """
+  n = card(K, 0)
+  triangles = np.array(list(faces(K,2))).astype(np.uint16)
+  T_ranks = comb_to_rank(triangles, n=n, order='lex')
+
+  ## Store the initial list of apparent pair candidates
+  pair_candidates = []
+
+  ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
+  for t in T_ranks:
+    i, j, k = rank_to_comb(t, k=3, n=n, order='lex')
+    facets = [[i,j], [i,k], [j,k]]
+    facet_weights = f(facets)
+    same_value = np.isclose(facet_weights, f([i,j,k]))
+    if any(same_value):
+      ## Choose the "youngest" facet, which is the *maximal* in lexicographical order
+      lex_min_ind = int(np.flatnonzero(same_value)[-1])
+      pair_candidates.append((facets[lex_min_ind], [i,j,k]))
+    
+  ## Now filter the existing pairs via scanning through each p-face's cofacets
+  true_pairs = []
+  for e,t in pair_candidates:
+    i,j = e
+    facet_weight = f(e)
+    
+    ## Find the "oldest" cofacet, which is the *minimal* in lexicographical order
+    max_cofacet = None
+    for k in range(n): # reversed for maximal
+      ## NOTE: equality is necessary here! Using <= w/ small rips filtration yields 16 pairs, whereas equality yields 48 pairs. 
+      if k != i and k != j and np.isclose(facet_weight, f([i,j,k])): 
+        max_cofacet = Simplex((i,j,k))
+        break
+    
+    ## If the relation is symmetric, then the two form an apparent pair
+    if max_cofacet is not None and max_cofacet == Simplex(t):
+      true_pairs.append((tuple(e), max_cofacet))
+  
+  return true_pairs
+
+  # result = []
+  # for T in K['triangles']:  
+  #   T_facets = comb_to_rank(combinations(T, 2), k=2, n=len(K['vertices']), order="lex")
+  #   max_facet = T_facets[np.max(np.flatnonzero(d[T_facets] == np.max(d[T_facets])))] # lexicographically maximal facet 
+  #   n = len(K['vertices'])
+  #   u, v = rank_to_comb(max_facet, k=2, n=n)
+  #   same_diam = np.zeros(n, dtype=bool)
+  #   for j in range(n):
+  #     if j == u or j == v: 
+  #       continue
+  #     else: 
+  #       cofacet = np.sort(np.array([u,v,j], dtype=int))
+  #       cofacet_diam = np.max(np.array([d[comb_to_rank(face, k=2, n=n, order="lex")] for face in combinations(cofacet, 2)]))
+  #       if cofacet_diam == d[max_facet]:
+  #         same_diam[j] = True
+  #   if np.any(same_diam):
+  #     j = np.min(np.flatnonzero(same_diam))
+  #     cofacet = np.sort(np.array([u,v,j], dtype=int))
+  #     if np.all(cofacet == T):
+  #       pair = (max_facet, comb_to_rank(cofacet, k=3, n=n, order="lex"))
+  #       result.append(pair)
+  # ap = np.array(result)
+  # return(ap)
+
+## From ripser paper: 
 # pair_totals = np.array([18145, 32167, 230051, 2192209, 1386646, 122324, 893])
 # non_ap = np.array([ 53, 576, 2466, 14006, 576, 438, 39 ])
 # (pair_totals-non_ap)/pair_totals
 # array([0.99707909, 0.98209345, 0.98928064, 0.99361101, 0.99958461, 0.99641935, 0.95632699])
-
-# ## Test unrank works
-# C = np.array([unrank_comb(c, k=3, n=10) for c in range(int(comb(10,3)))])
-# np.all(np.array(list(combinations(range(10), 3))) == C)
-
-# ## Test rank works
-# np.all(np.array([rank_comb(c, 3, 10) for c in C]) == np.array(range(C.shape[0])))
-
 

@@ -14,16 +14,17 @@ from .persistence import lower_star_ph_dionysus
 from .utility import progressbar
 from .shape import *
 
-
 # from pbsig.utility import multigen
-def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: bool = True):
-  """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of _nd_ filter directions on the d-sphere. 
+# See https://arxiv.org/pdf/1912.12759.pdf
+# also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
+def directional_transform(X: ArrayLike, dv: Union[int, ArrayLike], normalize: bool = True, nonnegative: Union[bool, float] = True):
+  """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of _nd_ filter functions on the d-sphere. 
 
   Assumes a lower-star filtration is wanted. 
 
   Parameters: 
     X: point cloud in euclidean space. 
-    dv: direction vectors filter view X from, or the number indicating the of equi-spaced such vectors to filter _X_.
+    dv: direction vectors used to parameterize the filter functions on X, or the number indicating how many directions to sample from the d-sphere (equi-spaced).
     normalize: whether to translate and scale _X_ using the direction vectors. Defaults to True.
     nonnegative: whether to shift the filter function to ensure its non-negative. Defaults to True. 
   
@@ -34,7 +35,8 @@ def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: 
   V = stratify_sphere(X.shape[1]-1, dv) if isinstance(dv, Integral) else dv
   assert isinstance(V, np.ndarray) and V.ndim == 2 and V.shape[1] == X.shape[1], "Invalid direction vectors given. Must be 2-d arrays matching the dimension of _X_."
   X = normalize_shape(X, V) if normalize else X
-  max_radius = 0.5*np.max(pdist(X)) if nonnegative else 0.0
+  eps = 1e-2 if isinstance(nonnegative, bool) else float(nonnegative)
+  max_radius = (0.5 + eps)*np.max(pdist(X)) if nonnegative else 0.0
   # def _dt_iterable() -> Generator:
   #   yield from (lower_star_weight((X @ np.array(v)) + max_radius) for v in V)
   # return multigen(_dt_iterable())
@@ -48,41 +50,14 @@ def parameterize_dt(X: ArrayLike, dv: int, normalize: bool = True, nonnegative: 
     def __len__(self) -> int:
       return len(self.V)
   return DT_Iterable(X, V, max_radius)
-
-## What is the directional transfrom?
-## Maybe it should be an iterable of filter functions (defined for every simplex!)
-# See https://arxiv.org/pdf/1912.12759.pdf
-# also https://stackoverflow.com/questions/1376438/how-to-make-a-repeating-generator-in-python
-# def directional_transform(X: ArrayLike, theta: Union[int, ArrayLike] = 32, preprocess: bool = True, **kwargs):
-#   """Parameterizes an dim-(d+1) embedded point cloud _X_ with a sequence of filter directions on the d-sphere. 
-#   """
-#   from splex import lower_star_weight
-#   class DT_Iterable:
-#     def __init__(self, V: np.ndarray):
-#       self.V = V
-#     def __iter__(self):
-#       yield from [lower_star_weight(X @ np.array(v)) for v in self.V]
-#     def __len__(self) -> int:
-#       return len(self.V)
-#   V = stratify_sphere(X.shape[1]-1, theta)
-
-#   else: 
-#     raise ValueError(f"Invalid theta input {theta} given")
-
-
-  # assert isinstance(theta, Integral) or isinstance(theta, Iterable)
-  # theta = np.linspace(0, 2*np.pi, theta, endpoint=False) if isinstance(theta, Integral) else np.array(theta)
-
   
-
-
 def pht_preprocess_path_2d(n_directions: int = 32, n_segments: int = 100):
   """
   Params: 
-    n_directions := number of directions around S1 to use to center shape 
-    n_segments := number of linear segments to discretize path by
+    n_directions : number of directions around S1 to use to center shape 
+    n_segments : number of linear segments to discretize path by
   Return: 
-    preprocess := function that takes as input a path and returns a set of 2d points centered at 0 / scaled barycentrically
+    preprocess : function that takes as input a path and returns a set of 2d points centered at 0 / scaled barycentrically
   """
   V_dir = np.array(list(uniform_S1(n_directions)))
   def _preprocess(path):
@@ -108,8 +83,6 @@ def pht_0(X: ArrayLike, E: ArrayLike, nd: int = 32, transform: bool = True, prog
       dgm[which_inf,1] = max(fv)
       dgms0[i] = dgm
   return(dgms0)
-
-
 
 def wasserstein_mod_rot(D0, D1, p: float = 1.0, **kwargs) -> float:
   """

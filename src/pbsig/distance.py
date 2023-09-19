@@ -2,7 +2,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import * 
 from scipy.spatial.distance import cdist, pdist, squareform
-
+from .meta import *
 
 def dist(x: ArrayLike, y: Optional[ArrayLike] = None, paired = False, metric : Union[str, Callable] = 'euclidean', **kwargs):
 	"""Provides a common framework to calculate distances.
@@ -23,15 +23,17 @@ def dist(x: ArrayLike, y: Optional[ArrayLike] = None, paired = False, metric : U
 	if (x.shape[0] == 1 or x.ndim == 1) and y is None: 
 		return(np.zeros((0, np.prod(x.shape))))
 	if y is None:
+		pdist_kwargs = function_kwargs(pdist, exclude=['self'], **kwargs)
 		#return(cdist(x, x, metric, **kwargs) if (as_matrix) else pdist(x, metric, **kwargs))
-		return(squareform(pdist(x, metric, **kwargs)) if paired else pdist(x, metric, **kwargs))
+		return(squareform(pdist(x, metric, **pdist_kwargs)) if paired else pdist(x, metric, **pdist_kwargs))
 	else:
+		cdist_kwargs = function_kwargs(cdist, exclude=['self'], **kwargs)
 		n, y = x.shape[0], np.asanyarray(y)
 		if paired:
 			if x.shape != y.shape: raise Exception("x and y must have same shape if paired=True.")
-			return(np.array([cdist(x[ii:(ii+1),:], y[ii:(ii+1),:], metric, **kwargs).item() for ii in range(n)]))
+			return(np.array([cdist(x[ii:(ii+1),:], y[ii:(ii+1),:], metric, **cdist_kwargs).item() for ii in range(n)]))
 		else:
 			if x.ndim == 1: x = np.reshape(x, (1, len(x)))
 			if y.ndim == 1: y = np.reshape(y, (1, len(y)))
-			return(cdist(x, y, metric, **kwargs))
+			return(cdist(x, y, metric, **cdist_kwargs))
 	

@@ -264,14 +264,20 @@ def logsample(start: float, end: float, num: Union[int, np.ndarray] = 50, endpoi
   #   raise ValueError(f"Unknown heuristic method '{method}' passed. Must be one 'local' or 'full'")
   # return timepoints
 
-def vertex_masses(S: ComplexLike, X: ArrayLike) -> np.ndarray:
+def vertex_masses(S: ComplexLike, X: ArrayLike, use_triangles: bool = True) -> np.ndarray:
   """Computes the cumulative area or 'mass' around every vertex"""
   # TODO: allow area to be computed via edge lengths?
-  from pbsig.shape import triangle_areas
-  areas = triangle_areas(S, X)
   vertex_mass = np.zeros(card(S,0))
-  for t, t_area in zip(faces(S,2), areas):
-    vertex_mass[t] += t_area / 3.0
+  if use_triangles:
+    from pbsig.shape import triangle_areas
+    areas = triangle_areas(S, X)
+    for t, t_area in zip(faces(S,2), areas):
+      vertex_mass[t] += t_area / 3.0
+  else:
+    for i,j in faces(S,1):
+      edge_weight = np.linalg.norm(X[i] - X[j])
+      vertex_mass[i] += edge_weight / 2.0
+      vertex_mass[j] += edge_weight / 2.0
   return vertex_mass
 
 
@@ -285,11 +291,11 @@ def gauss_similarity(S: ComplexLike, X: ArrayLike, sigma: Union[str, float] = "d
   return w
 
 def geomspace(start: float, stop: float, p: Union[int, np.ndarray] = 50, base: float = 2.0, reverse: bool = False):
-  """Return numbers spaced on a log scale (a geometric progression).
+  """Returns a subset of numbers in the interval [start,stop] spaced in log scale (a geometric progression).
 
-  If p is an integer, then this function matches the output of np.geomspace for an arbitrary logarithm-base, returning
-  p points between [start, stop] evenly spaced in logscale. Otherwise, if p is an array, its assumed to specify the 
-  proportions in log-space to select in the [start,stop] interval. 
+  If p is an integer, then this function matches the output of np.geomspace, returning p points between [start, stop] 
+  evenly spaced in logscale (for an arbitrary base). If p is an array, its values are used to specify proportions in 
+  log-space to select the samples the [start,stop] interval. 
   
   If reverse = True, then the sequence returned is logarithimically scaled from the stop to start. 
   """
@@ -300,14 +306,6 @@ def geomspace(start: float, stop: float, p: Union[int, np.ndarray] = 50, base: f
   if start == 0.0:
     logspaced[0] = 0.0
   return logspaced if not reverse else start + (stop - logspaced)
-
-def function_kwargs(f: Callable, **kwargs):
-  f_keys = inspect.getfullargspec(f).args ## NOTE: this is not recursive! 
-  f_kwargs = dict((k, kwargs[k]) for k in f_keys if k in kwargs)
-  return f_kwargs
-
-def pass_kwargs(f: Callable, **kwargs):
-  return f(function_kwargs(f, **kwargs))
 
 class HeatKernel:
   ## "any parameter that can have a value assigned prior to having access to the data should be an __init__ keyword argument."
@@ -338,11 +336,11 @@ class HeatKernel:
       
   ## Parameterize the laplacian approximation
   @staticmethod
-  def param_laplacian(approx: Union[str, LinearOperator] = "unweighted", X: ArrayLike = None, S: ComplexLike = None, **kwargs):
+  def param_laplacian(approx: Union[str, LinearOperator] = "unweighted", X: ArrayLike = None, S: ComplexLike = None, use_triangles: bool = True, **kwargs):
     """Parameterizes the laplacian and mass operators, with input validation."""
-    from scipy.sparse import spmatrix
+    from scipy.sparse import spmatrix, sparray
     laplacian_kwargs = function_kwargs(up_laplacian, **kwargs)
-    if isinstance(approx, LinearOperator) or isinstance(approx, spmatrix):
+    if isinstance(approx, LinearOperator) or isinstance(approx, sparray) or isinstance(approx, spmatrix):
       assert hasattr(approx, "diagonal"), f"Laplacian approximation operator '{approx}' must has .diagonal() method!"
       laplacian_ = approx
       d = laplacian_.diagonal()
@@ -355,7 +353,7 @@ class HeatKernel:
     elif approx == "mesh":
       assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
       laplacian_ = up_laplacian(S, p=0, weight=gauss_similarity(S, X), **laplacian_kwargs)
-      mass_matrix_ = diags(vertex_masses(S, X))     
+      mass_matrix_ = diags(vertex_masses(S, X, use_triangles))     
       return laplacian_, mass_matrix_
     elif approx == "cotangent":
       raise NotImplementedError("Haven't implemented yet")
@@ -374,21 +372,34 @@ class HeatKernel:
   ## Fit + all the param_< attribute > methods enact side-effects, but should be idempotent! 
   def fit(self, X: ArrayLike = None, y: np.ndarray = None, **kwargs):
     """Computes the eigensets to use to construct (or approximate) the heat kernel
-    
+  
     Parameters: 
       X: positions of an (n x d) point cloud embedding in Euclidean space. Required for "mesh"  or "cotangent" approximation. 
       y: unused. 
-      kwargs: additional keyword-arguments are forwarded to the appropriate param_< method >(...) methods. 
+      kwargs: additional keyword-arguments are forwarded to the param_laplacian(...) and param_solver(...) methods. 
+    
+    Returns: 
+      self: returns the self instance modified with fitted 'laplacian_', 'mass_matrix_', 'eigvecs_', and 'eigvals_'
     """
-    solver_kwargs = (dict(solver=self.solver) | kwargs)
-    laplacian_kwargs = (dict(approx=self.approx) | kwargs)
+    
+    ## Parameterize the solver -- note we just pass kwargs as-is and leave terminal leaves to handle restrictions
+    solver_kwargs = dict(solver=self.solver) | kwargs
+    # solver_kwargs.update(function_kwargs(self.param_solver, kwargs))
+    # solver_kwargs.update(function_kwargs(self.PsdSolver, kwargs))
     self.solver_ = self.param_solver(**solver_kwargs)                                  ## should be idempotent for fixed params + kwargs
+    
+    ## Parameterize the laplacian
+    laplacian_kwargs = dict(approx=self.approx) | kwargs
+    # laplacian_kwargs.update(function_kwargs(self.param_laplacian, kwargs))
+    # laplacian_kwargs.update(function_kwargs(self.up_laplacian, kwargs))
     self.laplacian_, self.mass_matrix_ = self.param_laplacian(X=X, **laplacian_kwargs) ## should be idempotent for fixed params + kwargs
     assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
+
+    ## Do the call to the solver 
     solver_kwargs = dict(A=self.laplacian_, M=self.mass_matrix_) | function_kwargs(self.solver_, **kwargs)
     ew, ev = self.solver_(**solver_kwargs) ## solve Ax = \lambda M x 
     self.eigvecs_ = ev
-    self.eigvals_ = np.maximum(ew, 0.0)
+    self.eigvals_ = np.maximum(ew, 0.0) ## enforce positive semi-definiteness
     return self
 
   def time_bounds(self, bound: str, interval: tuple = (0.0, 1.0), dtype = None):
@@ -793,7 +804,7 @@ def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: flo
     return sum(ew > tol)
   elif method == 2:
     ## Dynamic method: tests multiple thresholds for detecting rank deficiency up to the prescribed precision, 
-    ## choosing the one that appears the most frequently 
+    ## choosing the one that appears the most frequently / seems to be the most stable
     C = 1.0/np.exp(np.linspace(1,36,100))
     i = len(C)-np.searchsorted(np.flip(C), prec)
     C = C[:i]

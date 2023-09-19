@@ -3,6 +3,16 @@ from typing import *
 from numpy.typing import ArrayLike
 from .combinatorial import * 
 
+def function_kwargs(f: Callable, exclude: list = [''], **kwargs):
+  import inspect
+  f_keys = inspect.getfullargspec(f).args ## NOTE: this is not recursive! 
+  f_keys = set(f_keys) - set(exclude)
+  f_kwargs = dict((k, kwargs[k]) for k in f_keys if k in kwargs)
+  return f_kwargs
+
+def pass_kwargs(f: Callable, **kwargs):
+  return f(function_kwargs(f, **kwargs))
+
 def is_distance_matrix(x: ArrayLike) -> bool:
 	''' Checks whether 'x' is a distance matrix, i.e. is square, symmetric, and that the diagonal is all 0. '''
 	x = np.array(x, copy=False)

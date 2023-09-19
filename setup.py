@@ -5,6 +5,7 @@ import distutils.sysconfig
 from typing import Any, Dict
 from setuptools import setup, Extension, find_packages
 from pybind11.setup_helpers import Pybind11Extension, build_ext
+from os.path import normpath
 
 ## Get base path to package
 base_path = os.path.dirname(__file__)
@@ -20,89 +21,28 @@ compile_args += ["-std=c++20", "-Wall", "-Wextra", "-O2"]
 link_args = []
 # link_args = ["-fopenmp"]
 
-
-# compile_args += ["-march=native", "-O3", "-fopenmp"] ## If optimizing for performance "-fopenmp"
-# extra_compile_args += "-O0" ## debug mode  
-# extra_compile_args = list(set(extra_compile_args))
+## Configure includes + extension modules
+extensions = ['laplacian', 'combinatorial', 'persistence', 'landmark']
+include_dirs = [
+  normpath(base_path + '/include'), 
+  normpath(base_path + '/extern/pybind11/include'), 
+  normpath(base_path + '/extern/eigen'),
+  normpath(base_path + '/pbsig/src/pbsig/')
+]
 
 ## Configure the native extension modules
-ext_modules = [
-  # Pybind11Extension(
-  #   '_boundary', 
-  #   sources = ['src/pbsig/boundary.cpp'], 
-  #   # include_dirs=['/Users/mpiekenbrock/diameter/extern/pybind11/include'], 
-  #   extra_compile_args=compile_args,
-  #   language='c++17', 
-  #   cxx_std=1
-  # ), 
-  # Pybind11Extension(
-  #   '_lanczos', 
-  #   sources = ['src/pbsig/lanczos_spectra.cpp'], 
-  #   include_dirs=[
-  #     '/Users/mpiekenbrock/pbsig/extern/eigen',
-  #     '/Users/mpiekenbrock/pbsig/extern/pybind11/include',
-  #     '/Users/mpiekenbrock/pbsig/extern/spectra/include'
-  #   ], 
-  #   extra_compile_args=compile_args,
-  #   language='c++17', 
-  #   cxx_std=1
-  # ),
-  Pybind11Extension(
-    '_laplacian', 
-    sources = ['src/pbsig/laplacian.cpp'], 
-    include_dirs=[
-      '/Users/mpiekenbrock/pbsig/include',
-      '/Users/mpiekenbrock/pbsig/extern/pybind11/include', 
-      # '/Users/mpiekenbrock/pbsig/extern/pthash/include',
-      # '/Users/mpiekenbrock/pbsig/extern/pthash/external', 
-      '/Users/mpiekenbrock/pbsig/src/pbsig/'
-    ], 
+ext_modules = []
+for ext in extensions:
+  ext_module = Pybind11Extension(
+    f"_{ext}", 
+    sources = [normpath(f"src/pbsig/{ext}.cpp")], # setuptools require relative paths 
+    include_dirs=include_dirs, 
     extra_compile_args=compile_args,
     extra_link_args=link_args,
     language='c++20', 
     cxx_std=1
-  ), 
-  Pybind11Extension(
-    '_combinatorial', 
-    sources = ['src/pbsig/combinatorial.cpp'], 
-    include_dirs=[
-      '/Users/mpiekenbrock/pbsig/include', 
-      '/Users/mpiekenbrock/pbsig/extern/pybind11/include'
-    ], 
-    extra_compile_args=compile_args,
-    language='c++20', 
-    cxx_std=1
-  ),
-  # Pybind11Extension(
-  #   '_pbn', 
-  #   sources = ['src/pbsig/pbn.cpp'], 
-  #   extra_compile_args=compile_args,
-  #   language='c++17', 
-  #   cxx_std=1
-  # ), 
-  Pybind11Extension(
-    '_persistence', 
-    sources = ['src/pbsig/persistence.cpp'], 
-    include_dirs=[
-      '/Users/mpiekenbrock/pbsig/include', 
-      '/Users/mpiekenbrock/pbsig/extern/eigen'
-    ], 
-    extra_compile_args=compile_args,
-    language='c++20', 
-    cxx_std=1
-  ), 
-   Pybind11Extension(
-    '_landmark', 
-    sources = ['src/pbsig/landmark.cpp'], 
-    include_dirs=[
-      '/Users/mpiekenbrock/pbsig/include', 
-      '/Users/mpiekenbrock/pbsig/extern/eigen'
-    ], 
-    extra_compile_args=compile_args,
-    language='c++20', 
-    cxx_std=1
   )
-]
+  ext_modules.append(ext_module)
 
 # Develop: pip install --editable . --no-deps --no-build-isolation
 # Build: python -m build --skip-dependency-check --no-isolation --wheel

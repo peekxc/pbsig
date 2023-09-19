@@ -3,6 +3,7 @@ import numpy as np
 from itertools import * 
 import networkx as nx
 from typing import * 
+from numbers import Number
 
 from .combinatorial import inverse_choose
 from .color import *
@@ -18,6 +19,33 @@ from bokeh.io import output_notebook, show, save
 from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
+## Meta-programming to the rescue! 
+def valid_parameters(el: Any, prefix: str = "", **kwargs):
+  """Extracts valid parameters for a bokeh plotting element. 
+  
+  This function takes as input a bokeh model (i.e. figure, Scatter, MultiLine, Patch, etc.) and a set of keyword arguments prefixed by 'prefix', 
+  and extracts from the the given keywords a dictionary of valid parameters for the given element, with the chosen prefix removed. 
+
+  Example: 
+
+    >>> valid_parameters(MultiLine, prefix="multiline_", multiline_linewidth=2.0)
+    # { 'linewidth' : 2.0 }
+
+  Parameters: 
+    el: bokeh model or glyph element with a .parameters() function
+    prefix: prefix to extract. Defaults to empty string. 
+    kwargs: keyword arguments to extract the valid parameters from.
+
+  """
+  assert hasattr(el, "parameters"), f"Invalid bokeh element '{type(el)}'; must have valid parameters() call"
+  param_names = { param[0].name for param in el.parameters() }
+  stripped_params = { k[len(prefix):] for k in kwargs.keys() if k.startswith(prefix) }
+  valid_params = { p : kwargs[prefix+p] for p in (stripped_params & param_names) }
+  return valid_params
+
+# def intersect_dict(d1: dict, d2: dict):
+#   intersect_keys = set(d1.keys() & d2.keys())
+#   { d1}
 
 def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = False, **kwargs):
   default_figkwargs = dict(width=400, height=400, match_aspect=True,aspect_scale=1, title="Persistence diagram")
@@ -110,24 +138,25 @@ def figure_point_cloud(X: ArrayLike, **kwargs):
 def figure_complex(
   S: ComplexLike, 
   pos: ArrayLike = None, 
-  color: Optional[ArrayLike] = None, palette: str = "viridis", bin_kwargs = None, 
-  simplex_kwargs = None,
+  color: Optional[ArrayLike] = None, 
+  palette: str = "viridis", 
+  bin_kwargs = None, 
   **kwargs
 ):
   """
-  Plots a simplicial complex in 2D with Bokeh 
+  Plots a simplicial complex in 2D with Bokeh. 
   
   Parameters: 
     S: _ComplexLike_ representing a simplicial complex.
     pos: where to position the vertices. Can be one of 'mds', 'spring', or a ndarray instance of vertex positions.
     color: either a 2-d ndarray of colors, or a 1-d array of weights to infer colors from via _palette_
-    palette: color palette (string) indicating which color palette to use
+    palette: color palette (string) indicating which color palette to use. 
     bin_kwargs: arguments to pass to _bin\_color()_ when _color_ is supplied
     simplex_kwargs: 
     kwargs := additional arguments to pass to figure()
   """
   TOOLTIPS = [ ("index", "$value") ]
-  simplex_kwargs = simplex_kwargs if simplex_kwargs is not None else {}
+  # simplex_kwargs = simplex_kwargs if simplex_kwargs is not None else {}
 
   ## Default color values == dimension of the simplex 
   d = np.array([len(s)-1 for s in faces(S)], dtype=np.int8)
@@ -174,6 +203,7 @@ def figure_complex(
     raise ValueError("Unimplemented layout")
 
   ## Create a plot — set dimensions, toolbar, and title
+  fig_params = valid_parameters(figure, **kwargs)
   x_rng = np.array([np.min(pos[:,0]), np.max(pos[:,0])])*[0.90, 1.10]
   y_rng = np.array([np.min(pos[:,1]), np.max(pos[:,1])])*[0.90, 1.10]
   p = figure(
@@ -183,7 +213,7 @@ def figure_complex(
     # x_range=x_rng, 
     # y_range=y_rng,  
     tooltips=TOOLTIPS,
-    **kwargs
+    **fig_params
   )
   p.axis.visible = use_grid_lines
   p.xgrid.visible = use_grid_lines
@@ -192,6 +222,7 @@ def figure_complex(
 
   ## Create the (p == 2)-simplex renderer
   if card(S, 2) > 0:
+    from bokeh.models import Patch
     t_x = [pos[[i,j,k],0] for (i,j,k) in faces(S, 2)]
     t_y = [pos[[i,j,k],1] for (i,j,k) in faces(S, 2)]
     t_data = {
@@ -201,44 +232,54 @@ def figure_complex(
       # 'value' : t_color
     }
     t_source = ColumnDataSource(data=t_data)
-    t_renderer = p.patches('xs', 'ys', color='color', alpha=0.20, line_width=2, source=t_source)
+    patch_params = valid_parameters(Patch, prefix="patch_", **kwargs)
+    patch_params.update(valid_parameters(Patch, prefix="triangle_", **kwargs))
+    patch_params['alpha'] = patch_params.get('alpha', 0.20)
+    patch_params['line_width'] = patch_params.get('line_width', 2)
+    t_renderer = p.patches('xs', 'ys', color='color', source=t_source, **patch_params)
 
   ## Create edge renderer
   if card(S, 1) > 0:
-    e_scale = 0.75
+    from bokeh.models import MultiLine
+    edge_params = valid_parameters(MultiLine, prefix="multiline_", **kwargs)
+    edge_params.update(valid_parameters(MultiLine, prefix="edge_", **kwargs))
+    e_line_width = edge_params.pop('line_width', 0.75)
+    e_alpha = edge_params.pop('line_alpha', 1.0)
     e_x = [pos[e,0] for e in faces(S, 1)]
     e_y = [pos[e,1] for e in faces(S, 1)]
-    e_sizes = np.ones(card(S, 1)) #np.array(e_sizes)
-    e_widths = (e_sizes / np.max(e_sizes))*e_scale
     #ec = bin_color(ec, linear_gradient(["gray", "red"], 100)['hex'], min_x = 0.0, max_x=1.0)
     e_data = {
       'xs' : e_x,
       'ys' : e_y,
       'color' : color[d == 1], # np.repeat("#808080", len(edge_x)),
-      'line_width': e_widths
+      'line_width': np.repeat(e_line_width, card(S,1)) if isinstance(e_line_width, Number) else e_line_width, 
+      'alpha' : np.repeat(e_alpha, card(S,1)) if isinstance(e_alpha, Number) else e_alpha, 
     }
     e_source = ColumnDataSource(data=e_data)
-    e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', alpha=1.00, source=e_source)
+    e_renderer = p.multi_line('xs', 'ys', color='color', line_width='line_width', source=e_source, **edge_params)
     
   ## Create node renderer
   if card(S, 0) > 0:
-    v_scale = simplex_kwargs[0]['size'] if (0 in simplex_kwargs.keys() and 'size' in simplex_kwargs[0].keys()) else 10.0
+    from bokeh.models import Circle
+    vertex_params = valid_parameters(Circle, prefix="circle_", **kwargs)
+    vertex_params.update(valid_parameters(Circle, prefix="vertex_", **kwargs))
+    v_alpha = vertex_params.pop('alpha', 1.0)
+    v_size = vertex_params.pop('size', 6.0)
     v_data = {
       'x' : pos[:,0],
       'y' : pos[:,1],
-      'size' : np.repeat(v_scale, card(S, 0)), 
+      'size' : np.repeat(v_size, card(S, 0)) if isinstance(v_size, Number) else v_size, 
+      'alpha' : np.repeat(v_alpha, card(S, 0)) if isinstance(v_alpha, Number) else v_alpha,
       'color' : color[d == 0]
     }
     v_source = ColumnDataSource(data=v_data)
-    v_renderer = p.circle(x='x', y='y', color='color', size='size', alpha=1.0, source=v_source)
+    v_renderer = p.circle(x='x', y='y', color='color', size='size', source=v_source, **vertex_params)
+  
   p.toolbar.logo = None
-  #show(p)
   return p 
 
 def plot_complex(*args, **kwargs) -> None:
   show(figure_complex(*args, **kwargs))
-
-from bokeh.models import Scatter, Plot
 
 def figure_scatter(X: ArrayLike, **kwargs):
   fig_params = { param[0].name for param in figure.parameters() }

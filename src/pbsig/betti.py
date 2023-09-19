@@ -25,22 +25,41 @@ def rect_intersect(r1,r2) -> bool:
   return intervals_intersect(r1[[0,1]], r2[[0,1]]) and intervals_intersect(r1[[2,3]], r2[[2,3]])
 
 ## Generate a random set of rectangles in the upper half plane 
-def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0, 0.05), max_asp = 5, disjoint: bool = False):  
+def sample_rect_halfplane(n: int, lb: float = 0.0, ub: float = 1.0, area: tuple = (0.01, 0.05), max_asp = 5, disjoint: bool = False):  
   """Generate random rectangles with min/max _area_ and maximum aspect ratio _max asp_ in upper-half plane via rejection sampling.
 
+  Parameters: 
+    n: number of rectangles to generate 
+    lb: lower bound on the sampling area (x and y)
+    ub: upper bound on the sampling area (x and y)
+    area: relative min/max proportiate area each rectangle should have relative to the total area.
+    max_asp: maximum aspect ratio allowed for any given rectangle. Supplying 1.0 is equivalent to sampling squares. 
+    disjoint: whether to require the rectangles to be disjoint. 
+
   Returns: 
-    - an array of rectangles each of the form [a,b]x[c,d] specified as (a,b,c,d) 
+    rectangles: a np.array of rectangles [a,b]x[c,d] given as rows (a,b,c,d) 
   """
-  cc = 0
+  assert max_asp >= 1.0, "Aspect ratio must be >= 1.0"
+  cc, n_tries = 0, 0
+  def r_sample(max_asp):
+    if max_asp == 1.0:
+      i,j,k = np.sort(np.random.uniform(size=3, low=lb, high=ub)) 
+      l = k + (j-i)
+      return i,j,k,l
+    else:
+      return np.sort(np.random.uniform(size=4, low=lb, high=ub))
   R = []
+  area_min = area[0] * abs(ub-lb)**2
+  area_max = area[1] * abs(ub-lb)**2
   while cc < n:
-    r = np.sort(np.random.uniform(size=4, low = lb, high=ub))
+    r = r_sample(max_asp)
     dx, dy = abs(r[1]-r[0]), abs(r[3]-r[2])
-    asp = max(dx/dy, dy/dx)
-    ra = dx*dy
-    if ra >= area[0] and ra <= area[1] and asp < max_asp and not(any([rect_intersect(r, r_) for r_ in R])):
+    asp, ra = max(dx/dy, dy/dx), dx*dy
+    area_check = ra >= area_min and ra <= area_max and asp <= (1.0 + 1e-6)*max_asp
+    if area_check and (not(disjoint) or not(any([rect_intersect(r, r_) for r_ in R]))):
       R.append(r)
     else: 
+      n_tries += 1
       continue
     cc += 1
   return np.array(R)
@@ -476,6 +495,12 @@ def mu_query(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertib
   else: 
     raise ValueError(f"Invalid form '{form}'.")
   return _transform_mult_ew(EW, shape=(card(S,p), card(S,p+1)), **kwargs)
+
+# def spri_query(L: Union[sparray, LinearOperator], matrix_f: Callable[float, float], p: int, R: tuple):
+#   """
+#   """
+
+
 
 def mu_query_mat(S: Union[FiltrationLike, ComplexLike], f: Callable[SimplexConvertible, float], p: int, R: tuple, w: float = 0.0, biased: bool = True,  form = 'array', normed=False, **kwargs):
   """

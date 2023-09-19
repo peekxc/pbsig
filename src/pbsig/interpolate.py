@@ -6,6 +6,45 @@ from more_itertools import pairwise, triplewise, chunked, peekable, spy
 from splex import *
 from splex.predicates import is_repeatable
 from typing import * 
+from scipy.sparse import diags
+
+class ParameterizedLaplacian():
+  def __init__(self, S: ComplexLike, p: int = 0):
+    self.p_faces = np.array(list(faces(S, p)))
+    self.q_faces = np.array(list(faces(S, p+1)))
+    self.BM = boundary_matrix(S, p = p+1)
+  
+  def interpolate_family(self, F: Iterable[Callable], interval=(0.0, 1.0)) -> None: 
+    """Interpolates a 1-parameter family of filtration values."""
+    filter_values = [[f(self.p_faces), f(self.q_faces)] for f in F]
+    n_parameters = len(filter_values)
+    p_filter_values = np.array([f[0] for f in filter_values], dtype=np.float32)
+    q_filter_values = np.array([f[1] for f in filter_values], dtype=np.float32)
+    del filter_values
+
+    ## Interpolate the filter path of each simplex (simplexwise) with a polynomial curve
+    self.domain_ = interval
+    domain_points = np.linspace(*interval, num=n_parameters) # knot vector
+    self.p_splines_ = [CubicSpline(domain_points, p_fv) for p_fv in p_filter_values.T]
+    self.q_splines_ = [CubicSpline(domain_points, q_fv) for q_fv in q_filter_values.T]
+    
+  def laplace(self, t: float, normed: bool = False):
+    assert hasattr(self, "domain_") and hasattr(self, "q_splines_"), "Must fit to parameterized family first!"
+    assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
+    from pbsig.linalg import pseudoinverse
+    wp = np.array([pf(t) for pf in self.p_splines_])
+    wq = np.array([qf(t) for qf in self.q_splines_])
+    L = self.BM @ diags(wq) @ self.BM.T
+    if normed: 
+      deg = (diags(np.sign(wp)) @ L @ diags(np.sign(wp))).diagonal() ## retain correct nullspace
+      L = (diags(np.sqrt(pseudoinverse(deg))) @ L @ diags(np.sqrt(pseudoinverse(deg)))).tocoo()
+    else:
+      L = (diags(np.sqrt(pseudoinverse(wp))) @ L @ diags(np.sqrt(pseudoinverse(wp)))).tocoo()
+    return L
+  
+  def figure_curves(self):
+    import bokeh
+
 
 # def interpolate_family(S: ComplexLike, x: ArrayLike, y: Iterable[ArrayLike], bs: int = 1, method: str = "cubic", **kwargs):
 #   """"""

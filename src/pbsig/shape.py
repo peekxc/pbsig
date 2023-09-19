@@ -18,7 +18,7 @@ def cart2pol(x, y):
 def shells(X: ArrayLike, bins: Union[int, ArrayLike], center: Optional[ArrayLike] = None, **kwargs):
   """Vectorizes a point cloud via a histogram of distances emanating from its barycenter.
   
-  Rotation-invariant. 
+  Rotation-invariant and scale-variant. 
   """
   barycenter = X.mean(axis=0) if center is None else center
   return np.histogram(np.linalg.norm(X - barycenter, axis=1), bins=bins, **kwargs)[0]
@@ -26,7 +26,7 @@ def shells(X: ArrayLike, bins: Union[int, ArrayLike], center: Optional[ArrayLike
 def sectors(X: ArrayLike, k: int, center: Optional[ArrayLike] = None, **kwargs):
   """Vectorizes a point cloud via a histogram of point-angles emanating from its barycenter.
   
-  Depends on rotation of X around _center_. 
+  Rotation-variant and scale-invariant.
   """
   assert isinstance(X, np.ndarray) and X.shape[1] == 2, "Invalid object; must be point cloud in 2D."
   barycenter = X.mean(axis=0) if center is None else center

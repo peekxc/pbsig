@@ -570,7 +570,7 @@ dist_button = Button(label="Load boxes", button_type="default", width=int(w/4))
 ap = figure(width=w, height=h) # Aligned plot 
 data_choice = MultiChoice(value=[], options=DATA_OPTIONS, placeholder="Data set(s) to compare")
 def choose_comparison_cb(attr: str, old: List, new: List):
-  from pbsig.signal import phase_align
+  from pbsig.dsp import phase_align
   print(old)
   print(new)
   

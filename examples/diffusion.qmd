@@ -623,20 +623,28 @@ S2 = cycle_graph(5) # pentagon graph
 S3 = simplicial_complex([*cycle_window(range(7)), *cycle_window(range(7,14)), [14,0], [14,7]]) # simple dumbbell 
 S4 = simplicial_complex([*faces(range(7), 1), *faces(range(7, 14), 1), [14,0], [14,7]])        # complex dumbbell 
 
-normed = True
-timepoints = logspaced_timepoints(10, lb=0, ub=2.0)
-HK1 = HeatKernel(S1).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
-HK2 = HeatKernel(S2).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
-HK3 = HeatKernel(S3).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
-HK4 = HeatKernel(S4).param_laplacian(normed=normed).param_solver(shift_invert=False).fit()
+normed = False
+timepoints = geomspace(1e-2, 1024, 30)
+HK = HeatKernel(approx="unweighted")
+# HK1 = HK.fit(S=S1, normed=normed, shift_invert=False)
+# HK2 = HK.fit(S=S2, normed=normed, shift_invert=False)
+# HK3 = HK.fit(S=S3, normed=normed, shift_invert=False)
+# HK4 = HK.fit(S=S4, normed=normed, shift_invert=False)
 
-## The trace is discriminating, but notice that they scale essentially by |V|
-## Normalizing doesn't seem to affect the trace almost at all 
-p = figure(width=200, height=200, x_axis_type="log")
-p.line(timepoints, HK1.trace(timepoints)/4, color="red")
-p.line(timepoints, HK2.trace(timepoints)/5, color="green")
-p.line(timepoints, HK3.trace(timepoints)/15, color="blue")
-p.line(timepoints, HK4.trace(timepoints)/15, color="cyan")
+## The trace is still discriminating when normalized by |V|, but not by too much (about 10% off)
+p = figure(width=250, height=150, x_axis_type="log")
+p.line(timepoints, HK.fit(S=S1, normed=normed, shift_invert=False).trace(timepoints)/4, color="red")
+p.line(timepoints, HK.fit(S=S2, normed=normed, shift_invert=False).trace(timepoints)/5, color="green")
+p.line(timepoints, HK.fit(S=S3, normed=normed, shift_invert=False).trace(timepoints)/15, color="blue")
+p.line(timepoints, HK.fit(S=S4, normed=normed, shift_invert=False).trace(timepoints)/15, color="cyan")
+show(p)
+
+## Up to a constant shift, this looks very similar to the paper
+p = figure(width=250, height=150, x_axis_type="log")
+p.line(timepoints, HK.fit(S=S1, normed=normed, shift_invert=False).trace(timepoints), color="red")
+p.line(timepoints, HK.fit(S=S2, normed=normed, shift_invert=False).trace(timepoints), color="green")
+p.line(timepoints, HK.fit(S=S3, normed=normed, shift_invert=False).trace(timepoints), color="blue")
+p.line(timepoints, HK.fit(S=S4, normed=normed, shift_invert=False).trace(timepoints), color="cyan")
 show(p)
 
 ## The un-scaled heta content is discriminating, but the vertex-scaled versions are very close in norm

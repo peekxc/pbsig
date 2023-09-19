@@ -119,12 +119,12 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \;\, \forall \; \tau \subseteq \sigma \in K
 %	\item For every $\alpha \in \mathcal{A}$, $(K, f_\alpha)$ is a filtration satisfying $f_\alpha(\tau) \leq f_\alpha(\sigma)$ whenever $\tau \subseteq \sigma$, for any $\tau,\sigma \in K$
 %	\item For every $\sigma \in K$, $f_\alpha(\sigma) : \mathbb{R} \to \mathbb{R}$ is a continuous function in $\alpha \in \mathcal{A}$
 %\end{enumerate}
-Intuitively, when $\mathcal{A} = \mathbb{R}$, one can think of $\alpha$ as a \emph{time} parameter (see Figure~\ref{fig:overview}) and each $f_\alpha(\sigma)$ as tracing a curve in $\mathbb{R}^2$ parameterized by $\mathcal{A}$.  
+Intuitively, when $\mathcal{A} = \mathbb{R}$, one can think of $\alpha$ as a \emph{time} parameter (see Figure~\ref{fig:overview}) and each $f_\alpha(\sigma)$ as tracing a curve in $\mathbb{R}^2$ parameterized by $\alpha$.  
 Examples of parameterized filtrations include:
 \begin{itemize}[itemsep=0.25em, parsep=0.25em]
-	\item (Constant filtration) Given a filtration $(K, f)$, declaring $f_\alpha(\sigma) = f(\sigma)$ for all $\alpha \in \mathcal{A}$ and all $\sigma \in K$ recovers definition of filtration in the non-parameterized setting
-	\item (Dynamic Rips) When $K$ derives from a metric space $(X,d_X)$ via $f(\sigma) = \max_{x, x' \in \sigma} d_X(x,x')$ and $\mathcal{A} = \mathbb{R}$, the pair $(K, f_\alpha)$ is akin to a time-varying Rips filtration over a dynamic metric space~\cite{kim2021spatiotemporal}  
-	\item (Multi-filtrations) A natural class of $\mathcal{A}$-parameterized filtrations are obtained by filtering $K$ along several real-valued functions, such as a density and distance.
+	\item (Constant filtration) For a filter $f : K \to \mathbb{R}$, let $(K, f_\alpha)$ denote the parameterized filtration obtained by declaring $f_\alpha(\sigma) = f(\sigma)$ for all $\alpha \in \mathcal{A}$ and all $\sigma \in K$. We refer to $(K, f_\alpha)$ as the \emph{constant filtration}. 
+	\item (Dynamic Metric Spaces) For a finite set $X$, let $\gamma_X = (X, d_X(\cdot))$ denote a dynamic metric space~\cite{kim2021spatiotemporal}, where $d_X(\cdot) : \mathbb{R} \times X \times X$ denotes a time-varying metric. For any fixed $K \subset \mathcal{P}(X)$, the pair $(K, f_\alpha)$ obtained by setting $f_\alpha(\sigma) = \max_{x, x' \in \sigma} d_X(\alpha)(x,x')$ recovers the notion of a \emph{time-varying Rips filtration}.
+	\item (Multi-filtrations) Let $f, g: K \to \mathbb{R}$ denote aA natural class of $\mathcal{A}$-parameterized filtrations are obtained by filtering $K$ along several real-valued functions, such as a density and distance.
 %	In this setting, we interpret $\mathcal{A}$ as parameterizing the product space of the chosen filters. 
 \end{itemize} 
 
