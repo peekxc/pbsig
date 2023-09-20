@@ -1,4 +1,5 @@
 import numpy as np 
+from numbers import Number
 from typing import *
 from scipy.sparse import diags
 from scipy.sparse.linalg import eigsh
@@ -728,7 +729,7 @@ class MuFamily:
           sig[cc,:] += s*self.elementwise_row_sum(T, smoothing)
     return sig
 
-
+from pbsig.linalg import ParameterizedLaplacian
 
 class Sieve:
   """ 
@@ -736,35 +737,30 @@ class Sieve:
   
   Parameters: 
     S: Fixed simplicial complex 
-    F: Iterable of filter functions, each representing scalar-products equipped to S. Each f should respect the face poset. 
+    F: Iterable of filter functions. Each f should respect the face poset. (optional)
     p: Homology dimension of interest. Defaults to 0 (connected components).
     form: Representation of the Laplacian operator. Defaults to 'lo' (LinearOperator).
 
   Attributes:
-    complex: the stored simplicial complex (ComplexLike).
+    p_faces: the stored simplicial complex (ComplexLike).
+    p_faces: the stored simplicial complex (ComplexLike).
 
   Methods: 
     precompute: precomputes the signature
   """
-  def __init__(self, S: ComplexLike, family: Iterable, p: int = 0, form: str = "lo"):
+  def __init__(self, S: ComplexLike, family: Union[Iterable, Callable] = None, p: int = 0, form: str = "lo"):
     from pbsig.linalg import PsdSolver
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
-    if isinstance(family, Iterable):
-      assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
-      assert isinstance(family, Sized), "The family of iterables must be sized"
-      f, _ = spy(family)
-      assert isinstance(f[0], Callable), "Iterable family must be a callables!"
-      self.family = family
-    else: 
-      assert isinstance(family, Callable), "family must be iterable or Callable"
-      self.family = family
-    self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
-    self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
-    self.p = p
-    self.np = card(S, p)
-    self.nq = card(S, p+1)
-    self.form = form
-    self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
+    # if family is not None: 
+    #   self.family = family  # also does input validation
+    # self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
+    # self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
+    # self.p = p
+    # self.np = card(S, p)
+    # self.nq = card(S, p+1)
+    # self.form = form
+    # self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
+    self.operators = ParameterizedLaplacian(S, family, p, form=form)
     self.solver = PsdSolver(eigenvectors=False)
     self.delta = np.finfo(float).eps
     self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
@@ -772,25 +768,6 @@ class Sieve:
     self.bounds_range = (0, 1)  # bounds on the range of the filter functions
     self._default_val = { "eigenvalues" : array('d'), "lengths" : array('I') }
 
-  # @property
-  # def family(self): 
-  #   """The _family_ refers to the parameter space of the Sieve. 
-
-  #   Each Sieve is parameterized by a parameter space of filter functions. This space is either: 
-
-  #   (1) an Iterable of Callables, the inner of which are filter function 
-  #   (2) a Callable itself, in which case bounds should be properly set 
-  #   """
-  #   return self._family
-  
-  # @family.setter
-  # def family(self, f1: Union[Callable, Iterable], f2: Union[Callable, Iterable] = None, *args):
-  #   """ Sets the parameterized family to the product """
-  #   if f2 is None: 
-  #     # Single parameter setting
-  #   else: 
-
-  
   @property
   def pattern(self):
     """ Sets the sieve pattern to the union of rectangles given by _R_. """
@@ -820,11 +797,13 @@ class Sieve:
           IND.append(idx)
       self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
   
-  def randomize_pattern(self, n_rect: int = 1, **kwargs):
+  def randomize_sieve(self, n_rect: int = 1, plot: bool = False, **kwargs):
+    from bokeh.io import show
     kwargs = dict(area=(0.0025, 0.050), disjoint=True) | kwargs 
     self.pattern = sample_rect_halfplane(n_rect, **kwargs)  # must be disjoint 
+    if plot: show(self.figure_sieve())
 
-  def figure_pattern(self, p = None, rect_opts = {}, **kwargs):
+  def figure_sieve(self, p = None, rect_opts = {}, **kwargs):
     from pbsig.vis import figure_dgm
     from bokeh.models import Range1d
     p = figure_dgm(**kwargs) if p is None else p
@@ -843,127 +822,101 @@ class Sieve:
   def detect_bounds():
     pass
 
+  def restrict_family(self, i: float, j: float, w: float, **kwargs) -> ArrayLike:
+    """ Restricts the weights supplied to the Laplacian family of operators to point (i,j) in the upper half plane. 
+     
+    Specifically, this function parameterizes the family of Laplacian operators by a post composition of the supplied filter function 'f' 
+
+    """
+    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+    self.operators.post_p = si
+    self.operators.post_q = sj  
+    # self.operators = ParameterizedLaplacian(S, family, self.operators.p, form=self.operators.form)
+    # 
+    # fp, fq = f(self.operators.p_faces), f(self.operators.q_faces)
+    # fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
+    # self.operators.param_weights(fq, fp)
+  
   def sift(self, w: float = 0.0, progress: bool = True, **kwargs):
     """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
     if len(self._pattern) == 0:
       raise ValueError("No rectilinear pattern has been chosen! Consider using 'randomize_pattern'.")
     ## Setup the main iterator
-    n_pts, n_family = len(self.pattern), len(self.family)
-    pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
-    corner_it = zip(self.pattern['i'], self.pattern['j'])
-    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
+    n_corner_pts, n_family = len(self.pattern), len(self.operators.family)
+    # corner_point_group_ids = np.floor(np.arange(n_corner_pts * n_family) / n_family).astype(int)
+    corner_iter = zip(self.pattern['i'], self.pattern['j'])
+    # main_it = zip(product(corner_it, self.operators.family), pt_indices) # fix corner pt, iterate through family
     # main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
 
     ## Sets up progress bar, if requested 
-    if progress: 
-      status_f = lambda j: f" (family: {(j % n_family)}/{n_family}, corners: {int(np.floor(j / n_family))}/{n_pts})"
-      main_it = progressbar(main_it, count=n_pts * n_family, f=status_f)
+    # if progress: 
+    #   status_f = lambda j: f" (family: {(j % n_family)}/{n_family}, corners: {int(np.floor(j / n_family))}/{n_corner_pts})"
+    #   main_it = progressbar(main_it, count=n_corner_pts * n_family, f=status_f)
     
     ## Setup the default values in the dict
-    self.spectra = { pt_ind : copy.deepcopy(self._default_val) for pt_ind in pt_indices }
+    self.spectra = { corner_id : copy.deepcopy(self._default_val) for corner_id in range(n_corner_pts) }
 
     ## Projects each point (i,j) of the sieve onto a Krylov subspace
-    for ((i,j), f), pt_ind in main_it:  
-      ew = self.project(i=i, j=j, w=w, f=f, **kwargs)
-      self.spectra[pt_ind]['eigenvalues'].extend(ew)
-      self.spectra[pt_ind]['lengths'].extend([len(ew)])
+    post_q, post_p = self.operators.post_q, self.operators.post_p
+    for cc, (i,j) in progressbar(enumerate(corner_iter), len(self.pattern)):  
+      self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
+      for laplacian_op in self.operators:
+        ew = self.solver(laplacian_op)
+        # print(len(ew))
+        self.spectra[cc]['eigenvalues'].extend(ew)
+        self.spectra[cc]['lengths'].extend([len(ew)])
+    
+    ## Reset the parameterized family to whatever they were prior
+    self.operators.post_q = post_q
+    self.operators.post_p = post_p
 
   ## TODO: add ability to handle not just length-dependent function, but pure elementwise ufunc
-  def summarize(self, f: Callable = None, **kwargs) -> ArrayLike:
-    n_pts, n_family = len(self.pattern), len(self.family)
-    f = np.sum if f is None else f
+  def summarize(self, spectral_func: Callable[Number, ArrayLike] = None, **kwargs) -> ArrayLike:
+    """Applies a spectral function to the precomputed eigenvalues.
+    
+    The spectral function can either be vector-valued (in which case the sum is used as a reduction) or scalar-valued. 
+    """
+    n_pts, n_family = len(self.pattern), len(self.operators.family)
+    f = np.sum if spectral_func is None else spectral_func
     assert isinstance(f, Callable), "reduce function must be Callable"
-    r = f(np.zeros(10))
+    r, vector_valued = f(np.zeros(10)), False
+
+    ## Handle if f is vector valued or scalar-valued
     if isinstance(r, Container) and len(r) == 10:
       assert np.allclose(r, 0.0), "elementwise function must map [0,...,0] -> [0,...,0]"
-      values = np.zeros(shape=(n_pts, n_family))
-      for ii,d in enumerate(self.spectra.values()):
-        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
-        for jj,ew in enumerate(ew_split):
-          values[ii,jj] = np.sum(f(ew))
+      vector_valued = True
     elif isinstance(r, Number):
       assert np.isclose(r, 0.0), "reduction function must map [0,...,0] -> 0"
-      values = np.zeros(shape=(n_pts, n_family))
-      for ii,d in enumerate(self.spectra.values()):
-        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
-        for jj,ew in enumerate(ew_split):
-          values[ii,jj] = f(ew)
+      vector_valued = False
     else: 
       raise ValueError("Unknown type of output of function _f_.")
+    
+    ## Apply f to the precomputed eigenvalues
+    values = np.zeros(shape=(n_pts, n_family))
+    for ii,d in enumerate(self.spectra.values()):
+      ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+      for jj, ew in enumerate(ew_split):
+        values[ii,jj] = np.sum(f(ew)) if vector_valued else f(ew)
 
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
     n_summaries = len(np.unique(self._pattern['index']))
     summary = np.zeros(shape=(n_summaries, n_family))
     np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
-    
-
-  ## Compute the spectrum of a normalized version of the given combinatorial laplacian operator
-  ## This method augments the weights of the outer and inner diagonal terms directly
-  def _project(self, fpi: ArrayLike, fqj: ArrayLike, **kwargs):
-    I = np.where(np.isclose(fpi, 0.0), 0.0, 1.0)
-    self.laplacian.set_weights(I,fqj,I)
-    d = np.sqrt(pseudoinverse(self.laplacian.degrees))
-    # self.laplacian.set_weights(d, fqj, d)
-    self.laplacian.face_right_weights = d
-    self.laplacian.face_left_weights = d
-    self.laplacian.precompute_degree()
-    return self.solver(self.laplacian, **kwargs)
   
-  def project(self, i: float, j: float, w: float, f: Callable, **kwargs) -> ArrayLike:
-    """ Projects the normalized weight Laplacian L(S,f) onto a Krylov subspace at point (i,j)  """
-    # if i > j: return
-    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp, fq = f(self.p_faces), f(self.q_faces)
-    fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
-    if self.form == 'lo':
-      return self._project(fp, fq, **kwargs)
-    else:
-      raise NotImplementedError("Array form of projection not implemented")
-    
-  def staged_project(self, w: float) -> Generator:
-    ## Setup the main iterator
-    n_pts, n_family = len(self.pattern), len(self.family)
-    pt_indices = np.floor(np.arange(n_pts * n_family) / n_family).astype(int)
-    corner_it = zip(self.pattern['i'], self.pattern['j'], self.pattern['sign'])
-    main_it = zip(product(corner_it, self.family), pt_indices) # fix corner pt, iterate through family
-    for ((i,j,sgn), f), pt_ind in main_it:  
-      si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-      fp, fq = f(self.p_faces), f(self.q_faces)
-      fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
-      I = np.where(np.isclose(fp, 0.0), 0.0, 1.0)
-      self.laplacian.set_weights(I,fq,I)
-      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
-      self.laplacian.face_right_weights = d
-      self.laplacian.face_left_weights = d
-      self.laplacian.precompute_degree()
-      yield (i,j,sgn,pt_ind), self.laplacian
-    
-  def project_corner(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):
-    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp, fq = si(fp), sj(fq) 
-    if self.form == 'lo':
-      self._project(fp, fq, **kwargs)
-    else:
-      raise NotImplementedError("Array form of projection not implemented")
-
-  def operator_at(self, family_index: int, i: float, j: float, w: float = 0.0, **kwargs):
-    assert family_index < len(self.family) and family_index >= 0, "Invalid family index (out of bounds)"
-    f = self.family[family_index]
-    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-    fp, fq = si(f(self.p_faces)), sj(f(self.q_faces))
-    if self.form == 'lo':
-      I = np.where(np.isclose(fp,0),0.0,1.0)
-      self.laplacian.set_weights(I,fq,I)
-      d = np.sqrt(pseudoinverse(self.laplacian.degrees))
-      if any(np.isnan(d)):
-        nan_ind = np.flatnonzero(np.isnan(d))
-        raise ValueError(f"Failed to project ({i:.5f},{j:.5f}); nan detected in pseudo-inverse of {self.laplacian.degrees[nan_ind[0]]}.")
-      self.laplacian.set_weights(d,fq,d)
-      return self.laplacian
-    else:
-      raise NotImplementedError("Array form of projection not implemented")
+  # def restrict(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):
+  #   si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+  #   fp, fq = si(fp), sj(fq) 
+  #   if self.form == 'lo':
+  #     self._project(fp, fq, **kwargs)
+  #   else:
+  #     raise NotImplementedError("Array form of projection not implemented")
   
+  def compute_dgms(self, S: ComplexLike):
+    ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", engine="dionysus")
+    self.dgms = [ph_dgm(filter_f) for filter_f in self.operators.family]
+    return self.dgms
+
   def partition_rect():
     """ Increases the discrimatory power by adding two interior points to the pattern"""
     pass
@@ -976,15 +929,15 @@ class Sieve:
   def __call__(self, filter_f: Callable, phi: Callable, i: float = None, j: float = None, w: float = 0.0, **kwargs):
     """Computes the spectral rank invariant for a specified filter function _filter_. 
     
-    Optionally regularized by _phi_. If a corner point _(i,j)_ are supplied, then the spectral function is evaluated 
+    Optionally regularized by matrix function _phi_. If a corner point _(i,j)_ are supplied, then the spectral function is evaluated 
     at that point; otherwise all of the spectral invariants are computed for the stored _pattern_ and then they are 
     combined according to the inclusion/exclusion aggregation rule. 
     """
     if isinstance(i, Number) and isinstance(j, Number):
-      return np.sum(phi(self.project(i=i, j=j, w=w, f=filter_f, **kwargs)))
+      return np.sum(phi(self.restrict(i=i, j=j, w=w, f=filter_f, **kwargs)))
     elif i is None and j is None:
       corner_it = zip(self.pattern['i'], self.pattern['j'])
-      F = np.array([np.sum(phi(self.project(i=i, j=j, w=w, f=filter_f, **kwargs))) for i,j in corner_it])
+      F = np.array([np.sum(phi(self.restrict(i=i, j=j, w=w, f=filter_f, **kwargs))) for i,j in corner_it])
       f_obj = np.zeros(len(np.unique(self._pattern['index'])))
       np.add.at(f_obj, self._pattern['index'], self._pattern['sign']*F)
       return f_obj
@@ -1051,6 +1004,11 @@ class Sieve:
         return grads
     else: 
       raise ValueError(f"Invalid parameters {i}, {j}")
+
+
+
+
+
 
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
   """

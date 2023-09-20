@@ -394,6 +394,7 @@ class HeatKernel:
     # laplacian_kwargs.update(function_kwargs(self.up_laplacian, kwargs))
     self.laplacian_, self.mass_matrix_ = self.param_laplacian(X=X, **laplacian_kwargs) ## should be idempotent for fixed params + kwargs
     assert hasattr(self, "laplacian_"), "Heat kernel must have laplacian parameterized"
+    # self.approx_ = laplacian_kwargs.pop("approx", "unweighted")
 
     ## Do the call to the solver 
     solver_kwargs = dict(A=self.laplacian_, M=self.mass_matrix_) | function_kwargs(self.solver_, **kwargs)
@@ -1660,6 +1661,122 @@ def is_symmetric(A) -> bool:
   vl = vl[sortl]
   vu = vu[sortu]
   return np.allclose(vl, vu)
+
+from scipy.interpolate import CubicSpline
+
+class ParameterizedLaplacian(Callable):
+  def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = 0, **kwargs):
+    self.p_faces = np.array(list(faces(S, p)))
+    self.q_faces = np.array(list(faces(S, p+1))) ## to remove
+    if family is not None: 
+      self.family = family  # also does input validation
+    else: 
+      from splex.Simplex import filter_weight
+      self.family = filter_weight(lambda s: 1)
+    self.param_laplacian(S, p=p, **kwargs)  ## this call is independent of the family
+    self.post_p = lambda fp: fp             ## family-wide post-composition of family filter function (p)
+    self.post_q = lambda fq: fq             ## family-wide post-composition of family filter function (q)
+
+  def clear_post(self):
+    self.post_p = lambda fp: fp             ## family-wide post-composition of family filter function (p)
+    self.post_q = lambda fq: fq             ## family-wide post-composition of family filter function (q)
+
+  @property
+  def family(self): 
+    """The _family_ refers to the parameter space of filter functions. 
+
+    (1) an Iterable of Callables, the inner of which are filter function 
+    (2) a Callable itself, in which case bounds should be properly set 
+    """
+    return self._family
+  
+  @family.setter
+  def family(self, family: Union[Callable, Iterable], *args):
+    """ Sets the parameterized family to the product """
+    from more_itertools import spy
+    if isinstance(family, Iterable):
+      assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
+      assert isinstance(family, Sized), "The family of iterables must be sized"
+      f, _ = spy(family)
+      assert isinstance(f[0], Callable), "Iterable family must be a callables!"
+      self._family = family
+    else: 
+      assert isinstance(family, Callable), "family must be iterable or Callable"
+      self._family = [family]
+  
+  def param_laplacian(self, S: ComplexLike, p: int = 0, normed: bool = False, form: str = "array"):
+    ## Set the underlyign matrix representation
+    if form == "array":
+      self.p = p
+      self.form = form 
+      self.normed = normed
+      self.bm = boundary_matrix(S, p = p+1)
+      self.__dict__.pop('op', None)
+    elif form == "lo":
+      self.p = p
+      self.form = form 
+      self.normed = normed
+      self.op = up_laplacian(S, p = p, form = "lo")
+      self.__dict__.pop('bm', None)
+    else:
+      raise ValueError(f"Invalid given form '{form}'")
+
+  def interpolate_family(self, interval=(0.0, 1.0)) -> None: 
+    """Interpolates the stored 1-parameter family of filtration values."""
+    filter_values = [[f(self.p_faces), f(self.q_faces)] for f in self.family]
+    n_parameters = len(filter_values)
+    p_filter_values = np.array([self.post_p(f[0]) for f in filter_values], dtype=np.float32)
+    q_filter_values = np.array([self.post_q(f[1]) for f in filter_values], dtype=np.float32)
+    del filter_values
+
+    ## Interpolate the filter path of each simplex (simplexwise) with a polynomial curve
+    self.domain_ = interval
+    domain_points = np.linspace(*interval, num=n_parameters) # knot vector
+    self.p_splines_ = [CubicSpline(domain_points, p_fv) for p_fv in p_filter_values.T]
+    self.q_splines_ = [CubicSpline(domain_points, q_fv) for q_fv in q_filter_values.T]
+    
+  def param_weights(self, q_weights: ArrayLike = None, p_weights: ArrayLike = None):
+    """Sets the laplacian attribute appropriately """
+    p_weights = np.ones(len(self.p_faces)) if p_weights is None else p_weights
+    q_weights = np.ones(len(self.q_faces)) if q_weights is None else q_weights
+    assert len(p_weights) == len(self.p_faces) and len(q_weights) == len(self.q_faces), "Invalid weights given. Must match length of faces."
+    assert self.form in ["array", "lo"]
+    if self.form == "array":
+      assert hasattr(self, "bm"), "No boundary matrix attribute set"
+      L = self.bm @ diags(q_weights) @ self.bm.T
+      if self.normed: 
+        deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
+        self.laplacian = (diags(np.sqrt(pseudoinverse(deg))) @ L @ diags(np.sqrt(pseudoinverse(deg)))).tocoo()
+      else:
+        self.laplacian = (diags(np.sqrt(pseudoinverse(p_weights))) @ L @ diags(np.sqrt(pseudoinverse(p_weights)))).tocoo()
+    else:
+      assert hasattr(self, "op"), "No operator attribute set"
+      I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
+      if self.normed: 
+        self.op.set_weights(I,q_weights,I)
+        d = np.sqrt(pseudoinverse(self.op.degrees))
+        self.op.face_right_weights = d
+        self.op.face_left_weights = d
+        self.op.precompute_degree()
+      else:
+        p_inv_sqrt = np.sqrt(pseudoinverse(p_weights))
+        self.op.set_weights(p_inv_sqrt, q_weights, p_inv_sqrt)
+      self.laplacian = self.op
+
+  def __call__(self, t: Union[float, int], **kwargs):
+    assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
+    assert hasattr(self, "domain_") and hasattr(self, "q_splines_"), "Cannot interpolate without calling interpolat fmaily first! "
+    wp = np.array([pf(t) for pf in self.p_splines_])
+    wq = np.array([qf(t) for qf in self.q_splines_])
+    self.param_weights(wq, wp, **kwargs)
+    return self.laplacian
+  
+  def __iter__(self) -> Generator:
+    """Iterates through the family, yielding the parameterized operators"""
+    for f in self.family:
+      wp, wq = self.post_p(f(self.p_faces)), self.post_q(f(self.q_faces))
+      self.param_weights(wq, wp)
+      yield self.laplacian
 
 # from enum import Enum
 def projector_intersection(A, B, space: str = "RR", method: str = "neumann", eps: float = 100*np.finfo(float).resolution):

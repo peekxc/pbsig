@@ -3,7 +3,7 @@ from pbsig import *
 from pbsig.linalg import * 
 from pbsig.datasets import mpeg7
 from pbsig.betti import *
-from pbsig.pht import pht_preprocess_pc, rotate_S1
+# from pbsig.pht import pht_preprocess_pc, rotate_S1
 from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph, filtration
 from splex import *
@@ -17,7 +17,7 @@ dataset = mpeg7()
 
 # %% Compute mu queries 
 X = dataset[('turtle',1)]
-S = cycle_graph(X)
+S = cycle_graph(len(X))
 radius = np.max(pdist(X))/2
 L = up_laplacian(S, p=0, form='lo', weight=lower_star_weight((X @ np.array([0,1])) + radius))
 
@@ -26,23 +26,13 @@ print(dataset.keys())
 
 # %%
 from pbsig.pht import directional_transform
-dt = directional_transform(X, theta=32)
+dt = directional_transform(X, 32)
 
 # %% 
 from pbsig.betti import Sieve
 sieve = Sieve(S, dt)
-sieve.precompute()
-
-
-from scipy.sparse.linalg import eigsh
-eigsh(L, k=100, return_eigenvectors=False)
-
-
-lower_star_weight((X @ np.array([0,1])) + radius)
-
-# from scipy.sparse import eye
-# from scipy.sparse.linalg import aslinearoperator
-# cI = aslinearoperator(0.01*eye(L.shape[0]))
+sieve.randomize_pattern()
+sieve.sift()
 
 ## Sample a couple rectangles in the upper half-plane and plot them 
 R = sample_rect_halfplane(1, area=(0.10, 1.00))
@@ -51,7 +41,7 @@ R = sample_rect_halfplane(1, area=(0.10, 1.00))
 from pbsig.color import bin_color
 E = np.array(list(S.faces(1)))
 vir_colors = bin_color(range(64))
-for ii, v in enumerate(uniform_S1(64)):
+for ii, v in enumerate(stratify_sphere(n=64, d=1)):
   dgm = ph0_lower_star(X @ v, E, max_death='max')
   plt.scatter(*dgm.T, color=vir_colors[ii], s=1.25)
   i,j,k,l = R[0,:]
@@ -59,49 +49,12 @@ for ii, v in enumerate(uniform_S1(64)):
   kl = np.logical_and(dgm[:,1] >= k, dgm[:,1] <= l) 
   #if np.any(np.logical_and(ij, kl)): print(ii)
 
-from pbsig.betti import MuSignature
-
-def directional_transform(X: ArrayLike):
-  def _transform(theta: float):
-    fv = X @ np.array([np.cos(theta), np.sin(theta)])
-    return lambda s: max(fv[s])
-  return _transform
-
-## Check idempotency
-X = dataset[('watch',1)]
-S = cycle_graph(X)
-Theta = np.linspace(0, 2*np.pi, 64, endpoint=False)
-dt = directional_transform(X)
-family = [dt(theta) for theta in Theta]
-sig = MuSignature(S, family, R[0,:])
-
-# sig.precompute(pp=0.30, tol=1e-4, w=0.30)
-# s_true = sig()
-# #print((id(sig.L), id(sig.R), id(sig.family)))181.59507751464844, CW: 53.28591875103302, RW: 181.59507751464844
-# sig.precompute(pp=0.30, tol=1e-4, w=0.30)
-# # print((id(sig.L), id(sig.R), id(sig.family)))
-# s_test = sig()
-# plt.plot(s_test);plt.plot(s_true)
-## assert idempotency 
-
-import line_profiler
-profile = line_profiler.LineProfiler()
-profile.add_function(sig.precompute)
-# profile.add_function(sig.L._matvec)
-# profile.add_function(sig.L._matmat)
-# profile.add_function(sig.L.L_up.precompute_degree)
-# profile.add_function(sig.update_weights)
-profile.enable_by_count()
-sig.precompute()
-profile.print_stats(output_unit=1e-3)
-
 ## compare signatures manually 
 Sigs = {}
 for k, X in dataset.items():
   #if k[0] == 'watch':
-  S = cycle_graph(X)
+  S = cycle_graph(len(X))
   dt = directional_transform(X)
-  family = [dt(theta) for theta in Theta]
   Sigs[k] = MuSignature(S, family, R[0,:], form="lo")
 
 ## Precompute the singular values associated with the DT for each shape 
@@ -126,7 +79,7 @@ plt.plot(*dataset[('watch',2)].T)
 ## Stabilize signature with PoU 
 
 ## See if they align
-from pbsig.signal_tools import phase_align
+from pbsig.dsp import phase_align
 import bokeh 
 from bokeh.io import output_notebook
 from bokeh.layouts import column

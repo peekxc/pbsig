@@ -14,6 +14,7 @@ from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph
 from splex import *
 from scipy.spatial.distance import pdist, squareform
+from splex.Simplex import filter_weight
 
 # %% Load dataset
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
@@ -22,17 +23,40 @@ X_, y_ = mpeg7(simplify=200, return_X_y=True)
 print(dataset.keys())
 
 # %% Construct an interpolated operator 
-from pbsig.interpolate import ParameterizedLaplacian
+from pbsig.linalg import ParameterizedLaplacian
 from pbsig.pht import directional_transform
+from pbsig.shape import normalize_shape, stratify_sphere
 
 ## Make a parameterized laplacian over a *fixed* complex
 S = cycle_graph(200-1)
-LP = ParameterizedLaplacian(S, p=0)
+LP = ParameterizedLaplacian(S, p=0, form="lo")
 
 ## Choose a data set to parameterize a directional transform over
-X = dataset[('bat',1)]
-F = directional_transform(X, dv=16, normalize=True, nonnegative=1.0)
-LP.interpolate_family(F, interval=[0, 1])
+X = normalize_shape(dataset[('bat',1)], stratify_sphere(1, 16))
+F = directional_transform(X, dv=16, normalize=False, nonnegative=1.0)
+
+LP.family = F
+LP.interpolate_family(interval=[0, 1])
+
+# %% Sample some boxes 
+from pbsig.betti import Sieve
+sieve = Sieve(S, form="array")
+sieve.operators = LP
+sieve.randomize_sieve(n_rect=5, plot = False)
+sieve.sift(w=1.0)
+sieve.summarize()
+
+L = next(iter(sieve.operators))
+sieve.solver(L)
+
+# sieve.compute_dgms(S)
+from pbsig.vis import figure_dgm
+for filter_f in sieve.operators.family:
+  K = filtration(S, filter_f)
+  dgms = ph(K)
+  show(figure_dgm(dgms[0]))
+
+
 
 # %% Try the heat trace?
 from pbsig.vis import figure_complex
@@ -47,28 +71,38 @@ show(p)
 # np.array([HK.trace(LP.laplace(t), p=0.5, gram=False, method='eigenvalue') for t in np.linspace(0,1,32)])
 
 
-# %% Try the heat trace?
-from pbsig.linalg import HeatKernel
-from pbsig.utility import progressbar
-HK = HeatKernel(approx="mesh")
+# # %% Try the heat trace?
+# from pbsig.linalg import HeatKernel
+# from pbsig.utility import progressbar
+# HK = HeatKernel(approx="mesh")
 
-hk_traces = []
-for data_key, X in progressbar(dataset.items()):
-  HK.fit(X=X, S=S, use_triangles=False)
-  hk_traces.append(HK.trace())
+# hk_traces = []
+# for data_key, X in progressbar(dataset.items()):
+#   HK.fit(X=X, S=S, use_triangles=False)
+#   hk_traces.append(HK.trace())
 
-## Plot the heat traces for varying t 
-from pbsig.color import bin_color, colors_to_hex
-class_colors = bin_color(np.unique(y_), 'turbo')
-p = figure(width=250, height=200)
-for label, tr in zip(y_, hk_traces):
-  line_color = tuple((class_colors[label][:3]*255).astype(int))
-  p.line(np.arange(len(tr)), tr, line_color=line_color)
-show(p)
+# ## Plot the heat traces for varying t 
+# from pbsig.color import bin_color, colors_to_hex
+# class_colors = bin_color(np.unique(y_), 'turbo')
+# p = figure(width=250, height=200)
+# for label, tr in zip(y_, hk_traces):
+#   line_color = tuple((class_colors[label][:3]*255).astype(int))
+#   p.line(np.arange(len(tr)), tr, line_color=line_color)
+# show(p)
+
+# # %% Show the heat trace on the parameterized laplacian for a single t
+# heat_traces = []
+# for theta in np.linspace(0, 1, 32):
+#   L = LP.laplace(theta)
+#   HK.fit(approx=L, use_triangles=False)
+#   heat_traces.append(HK.trace())
 
 
-
-
+# heat_traces = np.array(heat_traces)
+# p = figure(width=250, height=200)
+# p.line(np.arange(32), heat_traces[:,-8])
+# p.scatter(np.arange(32), heat_traces[:,-8])
+# show(p)
 
 
 
