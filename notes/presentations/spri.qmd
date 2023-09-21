@@ -160,7 +160,7 @@ See [@bubenik2020persistence] for an overview.
 
 :::
 
-## We have many goals in common...
+## Many goals in common...
 
 :::: {.columns}
 
@@ -174,13 +174,13 @@ See [@bubenik2020persistence] for an overview.
 
 ::: {.fragment fragment-index=2}
 
-- Optimize persistence invariants 
+- Leverage the stability of persistence
 
 :::
 
 ::: {.fragment fragment-index=3}
 
-- Leverage the stability of persistence
+- Optimize persistence invariants 
 
 :::
 
@@ -575,12 +575,13 @@ $$
 
 :::{.aside}
 
-@edelsbrunner2000topological noted (1) in passing showing correctness of reduction; @dey2022computational explicitly prove (2); (3) was used by @chen2011output. (2) & (3) are connected to relative homology.
+To our knowledge: (1) noted in passing by @edelsbrunner2000topologica, though @dey2022computational first to explicitly prove (2). (3) has been exploited by @chen2011output. (2) & (3) are connected to relative homology.
 
 :::
 
 ::: {.notes}
-- Lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.
+
+- (1) was mentioned in passing by Edelsbrunner et al.
 - The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. 
 - Corollary Bauer et al.  studied in the context of reducing the sparsity of the matrices
 - Has a geometric/algbraic interpretation using releative homology 
@@ -589,28 +590,28 @@ $$
 
 ## Overview 
 
-<div style="color: #7F7F7F;"> 
+:::{style="color: #7F7F7F;"}
 
 - Introduction \& Motivation 
   - Diagram vectorization and optimization
   - The effective intractability of reduction
   - Duality between diagrams and their ranks
 
-</div> 
+:::
 
 - Derivation of relaxation 
-  - Parameterizing $p$-chains with $\mathbb{R}$ coefficients
+  - Parameterizing p-chains with $\mathbb{R}$-coefficients
   - Replacing boundary operators with Löwner operators
   - Connections to combinational Laplacians
 
-<div style="color: #7F7F7F;"> 
+:::{style="color: #7F7F7F;"}
 
 - Experiments 
   - Shape signatures via directional transform
   - Shape signatures via intrinsic metrics  
   - Codensity example 
 
-</div>
+:::
 
 ## The Implication: Rank Invariance
 
@@ -950,7 +951,7 @@ $$
 
 ::: {.footer} 
 
-[1]: https://thaddeus-segura.com/lasso-ridge/
+[1]: Great LASSO introduction: https://thaddeus-segura.com/lasso-ridge/
 
 ::: 
 
@@ -1041,6 +1042,10 @@ By construction, $\hat{\mu}_p^R(K, f_\alpha)$ is not only continuous, but varyin
   - Shape signatures via directional transform
   - Shape signatures via intrinsic metrics  
   - Codensity example 
+
+## Computation
+
+![](lanczos_krylov.gif){width=90%}
 
 
 ## Experiment \#1: Directional Transform 

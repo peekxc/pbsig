@@ -160,11 +160,13 @@ See [@bubenik2020persistence] for an overview.
 
 :::
 
-## We have many goals in common...
+## Many goals in common...
+
+<hr/> 
 
 :::: {.columns}
 
-::: {.column width=40% layout-align="left" style="margin-left: 2em;"}
+::: {.column width=40% layout-align="left" style="margin-left: 2em; margin-top: 1em;"}
 
 ::: {.fragment fragment-index=1}
 
@@ -203,7 +205,7 @@ See [@bubenik2020persistence] for an overview.
 
 ![](stability.gif){.fragment fragment-index=3 width="400" height="300"}
 
-![](lsst.png){.fragment fragment-index=4 width="250" height="250"}
+![](lsst.png){.fragment fragment-index=4 width="375" height="375"}
 
 :::
 
@@ -215,7 +217,7 @@ See [@bubenik2020persistence] for an overview.
 
 <div style="text-align: center; font-size: 35px;" >
 
-__Can we achieve them without computing diagrams?$^\ast$__
+__Can we achieve these goals without computing diagrams?__
 
 </div>
 
@@ -234,11 +236,11 @@ $$\mathrm{dgm}(K) \leftrightarrow R = \partial V $$
 
 ::: -->
 
-:::{.aside}
+<!-- :::{.aside}
 
 Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/
 
-:::
+::: -->
 
 <br> 
 
@@ -252,9 +254,9 @@ In this talk we introduce a <span style="color:orange"> _spectral-relaxation_ </
 <div style="margin-left:2.5em;">
 
 1. Continuously interpolates the _persistent rank_ function
-2. is smooth + differentiable on $\mathbf{S}_+$
-3. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time
-4. Vectorizes non-harmonic spectra of Laplacian operators
+2. Vectorizes the spectra of Laplacian operators
+3. Is smooth + differentiable$^*$
+4. $(1{\textstyle -}\epsilon)$ approximates $\beta_p^{i,j}$ for any $\epsilon > 0$ + essentially $O(n^2)$ time 
 5. Is computable in a "matrix-free" fashion in $O(n)$ memory 
 
 </div>
@@ -264,39 +266,15 @@ In this talk we introduce a <span style="color:orange"> _spectral-relaxation_ </
 
 :::{.fragment .fade-in style="text-align: left"}
 
-![](spri_overview.png){width=88% height=100% fig-align="center"}
+![](spri_overview.png){width=68% height=80% fig-align="center"}
 
 :::
 
-
-## Setting: Parameterized filtrations
-
-Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
-
-$$
-f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K \text{ and } \alpha \in \mathbb{R}
-$$
-
-:::{layout-ncol=2}
-
-![](family.gif){width=48% height=100% fig-align="right"}
-
-![](complex_plain.gif){width=48% height=100% fig-align="left"}
-
+:::{.aside}
+\* The relaxation derives from Schatten-1 norms that are continuously differentiable over the positive semi-definite cone 
 :::
 
-
-## Application: optimizing filtrations
-
-![](codensity_dgm_ex.png){width=68% height=100% fig-align="center"}
-
-:::{.fragment}
-
-$$ \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) $$
-
-:::
-
-## The rank invariants with pictures
+## The rank invariants{style="text-align: center;"}
 
 ::::{.columns}
 
@@ -326,8 +304,105 @@ $\mu_p^R(K)$
 
 ::::
 
+## Setting: Parameterized filtrations
 
-## Why the rank invariant?
+Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
+
+$$
+f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K \text{ and } \alpha \in \mathbb{R}
+$$
+
+:::{layout-ncol=2}
+
+![](family.gif){width=48% height=100% fig-align="right"}
+
+![](complex_plain.gif){width=48% height=100% fig-align="left"}
+
+:::
+
+
+## Application: optimizing filtrations
+
+![](codensity_dgm_ex.png){width=68% height=100% fig-align="center"}
+
+:::{.fragment}
+
+$$ \alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \mathrm{card}\big(\, \left.\mathrm{dgm}(K_\bullet, \, f_\alpha) \right|_{R} \, \big) $$
+
+:::
+
+
+## Why not just use diagrams?
+
+<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
+
+:::: {.columns}
+
+:::{.fragment}
+
+::: {.column width="45%" layout-align="right" style="margin-left: 1em;"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="45%" height="1em" layout-align="left"}
+![](complex_plain.gif){width=90%}
+:::
+
+:::
+
+::::
+
+:::{style="text-align: center;"}
+
+__Pro:__ Diagrams are stable, well-studied, and information rich.
+
+:::
+
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+
+## Why not just use diagrams?
+
+
+:::: {.columns}
+
+::: {.column width="33%"}
+![](vineyard.gif){width=90%}
+:::
+
+::: {.column width="33%" height="1em"}
+![](complex_updated.gif){width=90%}
+:::
+
+::: {.column width="33%"}
+![](spy_matrices.gif){width=90%}
+:::
+::::
+
+:::{style="text-align: center;"}
+
+__Con:__ Extending the $R = \partial V$ to parameterized settings is non-trivial
+
+:::
+
+<div style="text-align: center;">
+
+Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
+
+</div>
+
+:::{.aside}
+For details, see @piekenbrock2021move or @bauer2022keeping (also @lesnick2015interactive)
+:::
+
+::: {.notes}
+Reduction algorithm is a restricted form of gaussian elimination. 
+:::
+
+## Duality of the rank invariant
 
 
 :::{.fragment}
@@ -353,76 +428,6 @@ $$\beta_p^{k,l} = \sum\limits_{i \leq k} \sum\limits_{j > l} \mu_p^{i,j}$$
 - Stability in context of multidimensional persistence [@cerri2013betti] 
 - Generalizations of rank invariant via Möbius inversion [@mccleary2022edit] and via zigzag persistence[@dey2021computing]
 
-:::
-
-
-## Why _not use_ diagrams?
-
-
-<div style="text-align: center;">
-
-__Pro:__ Diagrams are stable, well-studied, and information rich.
-
-</div>
-
-<!-- Extending the reduction algorithm to parameterized settings is highly non-trivial -->
-
-:::: {.columns}
-
-:::{.fragment}
-
-::: {.column width="45%" layout-align="right"}
-![](vineyard.gif){width=90%}
-:::
-
-::: {.column width="45%" height="1em" layout-align="left"}
-![](complex_plain.gif){width=90%}
-:::
-
-:::
-
-::::
-
-::: {.notes}
-Reduction algorithm is a restricted form of gaussian elimination. 
-:::
-
-
-## Why _not use_ diagrams?
-
-<div style="text-align: center;">
-
-__Con:__ Extending the $R = \partial V$ to parameterized settings is highly non-trivial
-
-</div>
-
-:::: {.columns}
-
-::: {.column width="33%"}
-![](vineyard.gif){width=90%}
-:::
-
-::: {.column width="33%" height="1em"}
-![](complex_updated.gif){width=90%}
-:::
-
-::: {.column width="33%"}
-![](spy_matrices.gif){width=90%}
-:::
-::::
-
-<div style="text-align: center;">
-
-Maintaining the $R = \partial V$ decomposition "across time" $\implies$ huge memory bottleneck
-
-</div>
-
-:::{.aside}
-For more details on the computations, see "Move Schedules" @piekenbrock2021move
-:::
-
-::: {.notes}
-Reduction algorithm is a restricted form of gaussian elimination. 
 :::
 
 ## Revisiting the rank computation
@@ -529,12 +534,8 @@ __Take-a-way:__ Can deduce the $\mathrm{dgm}$ from ranks of "lower-left" submatr
 
 ## Key technical observation
 
-<!-- $$ \mathrm{sgn}_+(R[i,j]) = \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) $$ -->
-
 $$ 
-\begin{equation}
 \mathrm{rank}(R^{i,j}) = \mathrm{rank}(\partial^{i,j})  
-\end{equation}
 $$
  
 <hr>
@@ -579,40 +580,111 @@ $$
 
 :::
 
-::: {.notes}
-- Lower-left matrices having their rank preserved during reduction was mentioned in passing by Edelsbrunner et al.
-- The fact that one can exploit this to express the rank invariant using only unfactored submatrices was first proven explicitly to my knowledge by Wang and Dey in their book. 
-- Corollary Bauer et al.  studied in the context of reducing the sparsity of the matrices
-- Has a geometric/algbraic interpretation using releative homology 
+## Overview
+
+<ul>
+<li>Introduction &amp; Motivation   <ul>
+<li>Diagram vectorization and optimization</li>
+<li>The effective intractability of reduction</li>
+<li>Duality between diagrams and their ranks</li>
+</ul>
+</li>
+</ul>
+<ul>
+<li><p>Derivation of relaxation </p>
+<ul>
+<li>Parameterizing $p$-chains with $\mathbb{R}$ coefficients</li>
+<li>Replacing boundary operators with Löwner operators</li>
+<li>Connections to combinational Laplacians</li>
+</ul>
+</li>
+<li><p>Experiments </p>
+<ul>
+<li>Shape signatures via directional transform</li>
+<li>Shape signatures via intrinsic metrics  </li>
+<li>Codensity example </li>
+</ul>
+</li>
+</ul>
+
+
+## The Implications
+
+
+:::{style="text-size: 14px; text-align: center; margin-top: 1em;"}
+
+From now on, we work strictly with field coefficients in $\mathbb{R}$
 
 :::
 
-## Overview 
+<br/> 
 
-<div style="color: #7F7F7F;"> 
+$$
+	\mu_p^{R} = 
+	\mathrm{rank}\begin{bmatrix} \partial_{p+1}^{j + 1, k} & 0 \\
+	0 & \partial_{p+1}^{i + 1, l}
+	\end{bmatrix}
+	- 
+	\mathrm{rank}\begin{bmatrix} \partial_{p+1}^{i + 1, k} & 0 \\
+	0 & \partial_{p+1}^{j + 1, l}
+	\end{bmatrix}
+$$
 
-- Introduction \& Motivation 
-  - Diagram vectorization and optimization
-  - The effective intractability of reduction
-  - Duality between diagrams and their ranks
+<br/>
 
-</div> 
+:::{style="text-size: 14px; text-align: center;"}
+There are advantages to preferring _this_ expression for $\mu_p^R$ :
 
-- Derivation of relaxation 
-  - Parameterizing $p$-chains with $\mathbb{R}$ coefficients
-  - Replacing boundary operators with Löwner operators
-  - Connections to combinational Laplacians
+<ol>
+  <li> The inner terms are _unfactored_ linear operators </li>
+  <li> The rank functions may be characterized _spectrally_ </li>
+  <li> We can better leverage the theory of _persistent measures_$^{\ast}$</li>
+</ol>
 
-<div style="color: #7F7F7F;"> 
+:::
 
-- Experiments 
-  - Shape signatures via directional transform
-  - Shape signatures via intrinsic metrics  
-  - Codensity example 
+::: aside 
 
-</div>
+Chazal, Frédéric, Vin De Silva, Marc Glisse, and Steve Oudot. 2016. The Structure and Stability of Persistence Modules.
 
-## The Implication: Rank Invariance
+:::
+
+
+## Parameterized _boundary matrices_
+
+:::{.fragment style="text-align: center;"}
+
+__Relaxation \#1__: Parameterize $C_p(K; \mathbb{R})$ with $\mathcal{S} \circ f_\alpha : K \to \mathbb{R}_+$ 
+
+where $\mathcal{S}: \mathbb{R} \to [0,1]$ is a _smoothstep_ function 
+
+:::
+
+:::{.fragment style="text-align: center;"}
+
+![](smoothstep.png){width=88% height=100% fig-align="center"}
+
+:::
+
+:::{.fragment style="text-align: center;"}
+
+$$ \partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) $$ 
+
+:::
+
+
+:::{.fragment style="text-align: center;"}
+
+__Note__: $\partial_p^{i,j}(\alpha)$ has rank $= \mathrm{rank}(R_p^{i,j}(\alpha))$ for all $\alpha \in \mathbb{R}$. 
+
+:::
+
+:::{.aside style="text-align: center;"}
+Replacing $S \mapsto \mathcal{S}$ ensures continuity of $\partial_p^{i,j}(\alpha)$
+:::
+
+
+## Rank Invariances when $\mathbb{F} = \mathbb{R}$
 
 ::: {.fragment .fade-in style="text-align: left"}
 
@@ -670,57 +742,7 @@ __Q: Can we exploit some of these to speed up the computation?__
 
 :::
 
-
-## Parameterized filtrations
-
-Suppose we have an $\alpha$-parameterized filtration $(K, f_\alpha)$ where $f_\alpha : K \to \mathbb{R}_+$ satisfies:
-
-$$
-f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K 
-$$
-
-:::{layout-ncol=2}
-
-![](family.gif){width=48% height=100% fig-align="right"}
-
-![](complex_plain.gif){width=48% height=100% fig-align="left"}
-
-:::
-
-## Parameterized _boundary matrices_
-
-<br> 
-
-:::{.fragment style="text-align: center;"}
-
-__Idea \#1__: Parameterize $p$-chains $c \in C_p(K; \mathbb{R})$ with  $f_\alpha : K \to \mathbb{R}_+$
-
-$$ \partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) $$ 
-
-:::
-
-:::{.fragment style="text-align: center;"}
-
-![](smoothstep.png){width=88% height=100% fig-align="center"}
-
-:::
-
-:::{.fragment style="text-align: center;"}
-
-Replacing $S \mapsto \mathcal{S}$ ensures $\partial_p^{i,j}(\alpha)$ is element-wise continuous
-
-:::
-
-:::{.fragment style="text-align: center;"}
-
-__Note__: $\partial_p^{i,j}(\alpha)$ has rank $= \mathrm{rank}(R_p^{i,j}(\alpha))$ for all $\alpha \in \mathbb{R}$. 
-
-:::
-
-
 ## Spectral functions 
-
-<!-- Both $\beta_p^{i,j}(K_\bullet)$ and $\mu_p^{R}(K_\bullet)$ expressible with _ranks_ of _unfactored matrices_ -->
 
 :::{style="text-align: center"} 
 
@@ -795,13 +817,8 @@ Used in convex analysis + nonexpansive mappings [@bauschke2011convex]
 
 :::
 
-::: footer 
-
-Spectral approximations to rank 
-
-::: 
-
 ## Lowner Operators
+
 [@bi2013approximation] show that for any smoothed Dirac delta function^[Any $\hat{\delta}$ of the form $\nu(1/\epsilon) p (z \cdot \nu (1/\epsilon))$ where $p$ is a density function and $\nu$ positive and increasing is sufficient.] $\hat{\delta}$ and differentiable _operator monotone_ function $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$, we have:
 
 <!-- <div class="columns" style="margin-left: 2.5em; "> -->
@@ -950,7 +967,7 @@ $$
 
 ::: {.footer} 
 
-[1]: https://thaddeus-segura.com/lasso-ridge/
+https://thaddeus-segura.com/lasso-ridge/
 
 ::: 
 
