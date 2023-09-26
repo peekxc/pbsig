@@ -855,9 +855,9 @@ class Sieve:
     
     ## Setup the default values in the dict
     self.spectra = { corner_id : copy.deepcopy(self._default_val) for corner_id in range(n_corner_pts) }
-
-    ## Projects each point (i,j) of the sieve onto a Krylov subspace
     post_q, post_p = self.operators.post_q, self.operators.post_p
+    
+    ## Projects each point (i,j) of the sieve onto a Krylov subspace
     for cc, (i,j) in progressbar(enumerate(corner_iter), len(self.pattern)):  
       self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
       for laplacian_op in self.operators:

@@ -5,9 +5,15 @@
   list-style-type: none !important;
 }
 
+section h2 {
+  font-size: 1.6em !important;
+  text-align: center;
+}
 
 aside {
-	bottom: 5px !important;
+  margin-top: 3em !important;
+	bottom: 0px !important;
+  text-align: center !important;
 }
 
 h1 .title {
@@ -20,3 +26,7 @@ h1 .title {
 .quarto-figure {
   margin-bottom: 0 !important;
 }
+
+/* .aside-footnotes {
+  text-align: justify !important;
+} */

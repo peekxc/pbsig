@@ -15,12 +15,22 @@ from pbsig.simplicial import cycle_graph
 from splex import *
 from scipy.spatial.distance import pdist, squareform
 from splex.Simplex import filter_weight
+import bokeh
+from bokeh.io import output_notebook
+from bokeh.layouts import row, column
+from bokeh.plotting import figure, show
+output_notebook()
+
 
 # %% Load dataset
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
 dataset = mpeg7(simplify=200)
 X_, y_ = mpeg7(simplify=200, return_X_y=True)
 print(dataset.keys())
+dir_vect = stratify_sphere(1, 16)
+as_2d = lambda x: x.reshape(len(x) // 2, 2)
+X_ = np.array([np.ravel(normalize_shape(as_2d(x), dir_vect)) for x in X_])
+shape_keys = list(dataset.keys())
 
 # %% Construct an interpolated operator 
 from pbsig.linalg import ParameterizedLaplacian
@@ -29,25 +39,198 @@ from pbsig.shape import normalize_shape, stratify_sphere
 
 ## Make a parameterized laplacian over a *fixed* complex
 S = cycle_graph(200-1)
-LP = ParameterizedLaplacian(S, p=0, form="lo")
+LP = ParameterizedLaplacian(S, p=0, form="lo", normed=True)
 
 ## Choose a data set to parameterize a directional transform over
-X = normalize_shape(dataset[('bat',1)], stratify_sphere(1, 16))
-F = directional_transform(X, dv=16, normalize=False, nonnegative=1.0)
-
-LP.family = F
+LP.family = directional_transform(as_2d(X_[shape_keys.index(('bird', 1)),:]), dv=32, normalize=False, nonnegative=1.0)
 LP.interpolate_family(interval=[0, 1])
+
+# %% Show various norms
+solver = PsdSolver()
+# nnorm = np.array([np.sum(np.sqrt(solver(L))[:5]) for L in LP])
+
+from itertools import product 
+
+shape_classes = ['turtle', 'bird', 'bone']
+shape_eigen = {}
+for shape_class, j in product(shape_classes, range(1, 8)):
+  ind = shape_keys.index((shape_class, j))
+  LP.family = directional_transform(as_2d(X_[ind]), dv=132, normalize=False, nonnegative=1.0)
+  shape_ew = np.array([solver(L) for L in LP]) 
+  shape_eigen[ind] = shape_ew
+
+# %% 
+f = lambda x: np.sqrt(np.abs(x))      ## nuclear norm 
+f = lambda x: np.exp(-0.5*np.abs(x))  ## heat trace 
+f = lambda x: np.exp(-0.5*np.abs(x))  ##
+
+shape_colors = dict(zip(shape_classes, ['green', 'red', 'blue']))
+p = figure(width=250, height=200)
+for shape_class, j in product(shape_classes, range(1, 6)):
+  ind = shape_keys.index((shape_class, j))
+  p.line(np.arange(132), f(shape_eigen[ind][:,65:]).sum(axis=1), color=shape_colors[shape_class])
+show(p)
+
+# %% 
+from bokeh.models import Span
+from pbsig.color import bin_color
+
+theta = np.arange(132)/(2*np.pi)
+theta_colors = bin_color(theta, "viridis")
+ind = shape_keys.index(('turtle', 1))
+trace_summary = f(shape_eigen[ind][:,55:]).sum(axis=1)
+xs = list(pairwise(theta))
+ys = list(pairwise(trace_summary))
+
+def trace_figure(t: float):
+  p = figure(width=600, height=250, title="Directional transform w/ heat trace")
+  p.output_backend = 'svg'
+  #p.line(theta, trace_summary, line_color=(theta_colors*255).astype(np.uint8))
+  p.multi_line(xs, ys, line_color=(theta_colors*255).astype(np.uint8)[:-1], line_width=2.5)
+  p.yaxis.visible = False
+  p.toolbar_location = None
+  p.xaxis.axis_label = r'Circle coordinate'
+  it_line = Span(location=t, dimension='height', line_color='red', line_width=2)
+  p.add_layout(it_line)
+  return p 
+
+from bokeh.io import export_svg
+anim_path = "/Users/mpiekenbrock/pbsig/animations/trace_summary/"
+for frame_id, t in enumerate(theta): 
+  export_svg(
+    trace_figure(t), 
+    filename = anim_path + f"svgs/frame_{frame_id:03}.svg"
+  )
+show(p)
+
+# %% 
+from html2image import Html2Image
+hti = Html2Image(output_path=anim_path+"frames/")
+for frame_id in range(len(theta)):
+  hti.screenshot(
+    other_file = anim_path + 'svgs/' + f'frame_{frame_id:03}.svg', 
+    save_as = f'frame_{frame_id:03}.png', 
+    size = (600,250)
+  )
+
+
+# %%  Vineyards data 
+from pbsig.vis import figure_dgm
+DT = directional_transform(shape_xy, dv=132, normalize=False, nonnegative=1.0)
+dgms = [ph(filtration(S, filter_f)) for filter_f in DT]
+DT_theta = np.linspace(0, 2*np.pi, 132)
+
+for i, filter_f in enumerate(DT):
+  d = dgms[i][0]
+  d['death'][np.isinf(d['death'])] = np.max(filter_f(faces(S,0)))
+  dgms[i][0] = d
+
+# %% Animation of a single transform
+from bokeh.transform import linear_cmap
+from bokeh.models import Arrow, NormalHead, Range1d, ColorBar, ColorMapper, ContinuousColorMapper, ColumnDataSource
+from pbsig.color import bin_color
+from more_itertools import collapse
+from splex import lower_star_weight
+from pbsig.vis import figure_dgm
+from pbsig.color import rgb_to_hex
+shape_xy = as_2d(X_[shape_keys.index(('turtle', 5))])
+shape_xy[:,1] = -shape_xy[:,1] 
+
+def figure_dt(S: ComplexLike, shape_xy: np.ndarray, t: float):
+  """Creates the DT figure at some theta 't' in [0, 2*pi]"""
+  theta = np.linspace(0, 2*np.pi, 512, endpoint=True)
+  unit_circle = np.c_[np.cos(theta), np.sin(theta)]
+  turbo_cm = ContinuousColorMapper(low=-1, high=1, palette="Turbo256")
+  shape_diam = max(pdist(shape_xy))
+  f_lb, f_ub = -shape_diam/2, shape_diam/2
+
+  p = figure(width=400, height=425, title="Directional transform")
+  p.output_backend = 'svg'
+  p.x_range = Range1d(-2.0, 2.0)
+  p.y_range = Range1d(-2.0, 2.0)
+  p.line(*(unit_circle*1.5).T, color='black') 
+  p.patch(*shape_xy.T, color='#d1d1d1a0')
+  p.title.text_font_size = '18pt'
+
+  dv = np.array([np.cos(t), np.sin(t)])
+  filter_dv = lower_star_weight(shape_xy @ dv)
+  line_xs = [shape_xy[e,0] for e in faces(S,1)]
+  line_ys = [shape_xy[e,1] for e in faces(S,1)]
+  dv_e_color = (bin_color(filter_dv(faces(S,1)), 'turbo', lb=f_lb, ub=f_ub) * 255).astype(np.uint8)
+  p.multi_line(line_xs, line_ys, line_color = dv_e_color, line_width=3.5)
+
+  source = ColumnDataSource(dict(x=shape_xy[:,0], y=shape_xy[:,1], fv=filter_dv(faces(S,0))))
+  cmap = linear_cmap('fv', palette='Turbo256', low=f_lb, high=f_ub)
+  sg = p.scatter(x='x', y='y', size=3.6, line_alpha=0.0, fill_color=cmap, source=source) #fill_color = dv_v_color
+  nh = NormalHead(fill_color='black', size=10, fill_alpha=0.75, line_color='black')
+  p.add_layout(Arrow(end=nh, line_color='black', line_width=2, x_start=dv[0]*1.2, y_start=dv[1]*1.2, x_end=dv[0]*1.8, y_end=dv[1]*1.8))
+  color_bar = sg.construct_color_bar(padding=0)
+  p.add_layout(color_bar, "below")
+  p.toolbar_location = None
+
+  circle_xs = list(pairwise(unit_circle[:,0]*1.5))
+  circle_ys = list(pairwise(unit_circle[:,1]*1.5))
+  source_circle = ColumnDataSource(dict(xs=circle_xs, ys=circle_ys, theta=np.linspace(0, 2*np.pi, len(circle_ys))))
+  theta_cmap = linear_cmap('theta', palette='Viridis256', low=0, high=2*np.pi)
+  ml = p.multi_line(xs='xs', ys='ys', line_width=3.5, line_color=theta_cmap, source=source_circle) 
+  circle_color_bar = ml.construct_color_bar(padding=0) # p.add_layout(circle_color_bar, "below")
+  p.axis.visible = False 
+
+  ## Second plot: vineyard diagrams 
+  theta_colors = bin_color(np.arange(132), 'viridis')
+  j = np.searchsorted(DT_theta, t)
+
+  q = figure_dgm(title="DT Vineyard", width=400, height=425)
+  q.title.text_font_size = '18pt'
+  q.output_backend = 'svg'
+  q.x_range = Range1d(2.25, 5.25)
+  q.y_range = Range1d(2.25, 5.25)
+  for i, (dgm, theta) in enumerate(zip(dgms, DT_theta)):
+    dv_color = rgb_to_hex(theta_colors[i,:]*255)
+    dv_color = dv_color[:-2] + ('ff' if (i == j) else '20')
+    q.scatter(dgm[0]['birth'], dgm[0]['death'], color=dv_color)
+  q.toolbar_location = None
+  q.axis.visible = False
+  q.add_layout(circle_color_bar, "below")
+
+  from bokeh.layouts import row, column
+  return row(p, q)
+
+# %% 
+from bokeh.io import export_svg
+anim_path = "/Users/mpiekenbrock/pbsig/applications/directional_transform_anim/"
+for i, t in enumerate(DT_theta):
+  dt_plot = figure_dt(S, shape_xy, t)
+  export_svg(dt_plot, filename=anim_path + f"shape_dt_{i:03}.svg")
+
+# %% 
+from html2image import Html2Image
+hti = Html2Image(output_path=anim_path+"frames/")
+for frame_id in range(len(DT_theta)):
+  hti.screenshot(
+    other_file = anim_path + f'shape_dt_{frame_id:03}.svg', 
+    save_as = f'frame_{frame_id:03}.png', 
+    size = (800,425)
+  )
+# show(dt_plot)
+
+
+
+# %% 
+
+
+
 
 # %% Sample some boxes 
 from pbsig.betti import Sieve
-sieve = Sieve(S, form="array")
+sieve = Sieve(S, p=0)
 sieve.operators = LP
 sieve.randomize_sieve(n_rect=5, plot = False)
 sieve.sift(w=1.0)
 sieve.summarize()
 
 L = next(iter(sieve.operators))
-sieve.solver(L)
+
 
 # sieve.compute_dgms(S)
 from pbsig.vis import figure_dgm
@@ -60,11 +243,6 @@ for filter_f in sieve.operators.family:
 
 # %% Try the heat trace?
 from pbsig.vis import figure_complex
-import bokeh
-from bokeh.io import output_notebook
-from bokeh.layouts import row, column
-from bokeh.plotting import figure, show
-output_notebook()
 
 p = figure_complex(S, pos = X, width = 250, height = 250, vertex_size=2, edge_line_width=5.5, edge_line_color="red")
 show(p)

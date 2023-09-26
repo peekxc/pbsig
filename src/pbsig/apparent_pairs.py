@@ -7,7 +7,86 @@ from itertools import combinations
 from combin import rank_to_comb, comb_to_rank
 from splex import * 
 
-def apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
+def _h0_apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
+  n = card(K, 0)
+  if card(K,1) == 0: return []
+  edges = np.array(list(faces(K,1))).astype(np.uint16)
+  E_ranks = comb_to_rank(edges, n=n, order='lex')
+
+  ## Store the initial list of apparent pair candidates
+  pair_candidates = []
+
+  ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
+  for e in E_ranks:
+    i, j = rank_to_comb(e, k=2, n=n, order='lex')
+    facets = [[i], [j]]
+    facet_weights = f(facets)
+    same_value = np.isclose(facet_weights, f([i,j]))
+    if any(same_value):
+      ## Choose the "youngest" facet, which is the *maximal* in lexicographical order
+      lex_min_ind = int(np.flatnonzero(same_value)[-1])
+      pair_candidates.append((facets[lex_min_ind], [i,j]))
+    
+  ## Now filter the existing pairs via scanning through each p-face's cofacets
+  true_pairs = []
+  for v,e in pair_candidates:
+    facet_weight = f(v)
+    
+    ## Find the "oldest" cofacet, which is the *minimal* in lexicographical order
+    max_cofacet = None
+    for k in range(n): # reversed for maximal
+      ## NOTE: equality is necessary here! Using <= w/ small rips filtration yields 16 pairs, whereas equality yields 48 pairs. 
+      if Simplex(k) != Simplex(v) and np.isclose(facet_weight, f(Simplex([v,k]))): 
+        max_cofacet = Simplex((k,v))
+        break
+    
+    ## If the relation is symmetric, then the two form an apparent pair
+    if max_cofacet is not None and max_cofacet == Simplex(e):
+      true_pairs.append((tuple([v]), max_cofacet))
+  
+  return true_pairs
+
+def _h1_apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
+  n = card(K, 0)
+  if card(K,2) == 0: return []
+  triangles = np.array(list(faces(K,2))).astype(np.uint16)
+  T_ranks = comb_to_rank(triangles, n=n, order='lex')
+
+  ## Store the initial list of apparent pair candidates
+  pair_candidates = []
+
+  ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
+  for t in T_ranks:
+    i, j, k = rank_to_comb(t, k=3, n=n, order='lex')
+    facets = [[i,j], [i,k], [j,k]]
+    facet_weights = f(facets)
+    same_value = np.isclose(facet_weights, f([i,j,k]))
+    if any(same_value):
+      ## Choose the "youngest" facet, which is the *maximal* in lexicographical order
+      lex_min_ind = int(np.flatnonzero(same_value)[-1])
+      pair_candidates.append((facets[lex_min_ind], [i,j,k]))
+    
+  ## Now filter the existing pairs via scanning through each p-face's cofacets
+  true_pairs = []
+  for e,t in pair_candidates:
+    i,j = e
+    facet_weight = f(e)
+    
+    ## Find the "oldest" cofacet, which is the *minimal* in lexicographical order
+    max_cofacet = None
+    for k in range(n): # reversed for maximal
+      ## NOTE: equality is necessary here! Using <= w/ small rips filtration yields 16 pairs, whereas equality yields 48 pairs. 
+      if k != i and k != j and np.isclose(facet_weight, f([i,j,k])): 
+        max_cofacet = Simplex((i,j,k))
+        break
+    
+    ## If the relation is symmetric, then the two form an apparent pair
+    if max_cofacet is not None and max_cofacet == Simplex(t):
+      true_pairs.append((tuple(e), max_cofacet))
+  
+  return true_pairs
+
+def apparent_pairs(K: ComplexLike, f: Callable, p: int = 0, refinement: str = "lex"):
   """Finds the H1 apparent pairs of lexicographically-refined clique filtration.
 
   A persistence pair (tau, sigma) is said to be *apparent* iff: 
@@ -45,43 +124,12 @@ def apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
     Moreover, if K is a Rips complex and all pairwise distances are distinct, it is knonw that the persistent pairs 
     w/ 0 persistence of K in dimension 1 are precisely the apparent pairs.
   """
-  n = card(K, 0)
-  triangles = np.array(list(faces(K,2))).astype(np.uint16)
-  T_ranks = comb_to_rank(triangles, n=n, order='lex')
-
-  ## Store the initial list of apparent pair candidates
-  pair_candidates = []
-
-  ## Since n >> k in almost all settings, start by getting apparent pair candidates from the p+1 simplices
-  for t in T_ranks:
-    i, j, k = rank_to_comb(t, k=3, n=n, order='lex')
-    facets = [[i,j], [i,k], [j,k]]
-    facet_weights = f(facets)
-    same_value = np.isclose(facet_weights, f([i,j,k]))
-    if any(same_value):
-      ## Choose the "youngest" facet, which is the *maximal* in lexicographical order
-      lex_min_ind = int(np.flatnonzero(same_value)[-1])
-      pair_candidates.append((facets[lex_min_ind], [i,j,k]))
-    
-  ## Now filter the existing pairs via scanning through each p-face's cofacets
-  true_pairs = []
-  for e,t in pair_candidates:
-    i,j = e
-    facet_weight = f(e)
-    
-    ## Find the "oldest" cofacet, which is the *minimal* in lexicographical order
-    max_cofacet = None
-    for k in range(n): # reversed for maximal
-      ## NOTE: equality is necessary here! Using <= w/ small rips filtration yields 16 pairs, whereas equality yields 48 pairs. 
-      if k != i and k != j and np.isclose(facet_weight, f([i,j,k])): 
-        max_cofacet = Simplex((i,j,k))
-        break
-    
-    ## If the relation is symmetric, then the two form an apparent pair
-    if max_cofacet is not None and max_cofacet == Simplex(t):
-      true_pairs.append((tuple(e), max_cofacet))
-  
-  return true_pairs
+  if p == 0: 
+    return _h0_apparent_pairs(K,f,refinement)
+  elif p == 1: 
+    return _h1_apparent_pairs(K,f,refinement)
+  else: 
+    raise NotImplementedError("Haven't implemented higher AP calculations")
 
   # result = []
   # for T in K['triangles']:  
