@@ -566,25 +566,28 @@ $$
 ## Overview
 
 <ul>
+  <div style="color: #7F7F7F;"> 
   <li>Introduction</li>
   <ul>
     <li>Rank duality</li>
     <li>Bypassing diagrams</li>
     <li>Technical observations</li>
   </ul>
+  </div>
   <li><p>Spectral rank relaxation</p></li>
   <ul>
     <li>Parameterizing $C(K, \mathbb{R})$</li>
     <li>Spectral functions</li>
     <li>Variational interpretations + examples</li>
   </ul>
-  <li><p>Computation</p>
+  <div style="color: #7F7F7F;"> 
+  <li><p>Computation</p></li>
   <ul>
     <li>Lanczos Iteration</li>
     <li>Stochastic trace estimation</li>
     <li>Scalability</li>
   </ul>
-</li>
+  </div>
 </ul>
 
 
@@ -676,7 +679,7 @@ Parameterize $C_p(K; \mathbb{R})$ with $\mathcal{S} \circ f_\alpha : K \to \math
 
 $$ 
 \boxed{
-\partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) 
+\partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K_\preceq) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha) 
 }
 $$ 
 
@@ -1422,6 +1425,7 @@ When $m = \lvert V \rvert$, computing $d_{\mathrm{DT}}(X, Y)$  $\xcancel{d_{\mat
 ## Overview 
 
 <ul>
+  <div style="color: #7F7F7F;"> 
   <li>Introduction</li>
   <ul>
     <li>Rank duality</li>
@@ -1434,6 +1438,7 @@ When $m = \lvert V \rvert$, computing $d_{\mathrm{DT}}(X, Y)$  $\xcancel{d_{\mat
     <li>Spectral functions</li>
     <li>Variational interpretations + examples</li>
   </ul>
+  </div>
   <li><p>Computation</p>
   <ul>
     <li>Lanczos Iteration</li>
@@ -1491,7 +1496,7 @@ This is the renowned *__Lanczos method__* for Krylov subspace expansion
 
 </div>
 
-<img src="images/lanczos_top_10.png" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -65%); height: 60vh !important; width: 100%;"> </img>
+<!-- <img src="images/lanczos_top_10.png" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -65%); height: 65vh !important; width: 95%;"> </img> -->
 
 
 :::
@@ -1592,7 +1597,7 @@ Where $n \sim \lvert K^p \rvert$, and both $l, s \sim O(1)$ are small constants$
 
 :::
 
-## Scalability
+## Scalability: $\mathrm{matvecs}$'s are all you need
 
 ![](images/imate_trace_bench.png){width=750 height=100% fig-align="center"}
 
@@ -1619,7 +1624,7 @@ __Theorem [@chen2011output]__: For a simplicial complex $K$ of size $\lvert K \r
 :::
 
 
-## Conclusion 
+<!-- ## Conclusion 
 
 Spectral relaxation of rank invariant using _matrix functions_ 
 
@@ -1627,7 +1632,7 @@ Spectral relaxation of rank invariant using _matrix functions_
 - Differentiable + amenable for optimization 
 - Stable to perturbations in $f_\alpha$ when $\tau > 0$ 
 - Excellent compute properties. Implementation ongoing. 
-- Better optimizer implementation also ongoing. 
+- Better optimizer implementation also ongoing.  -->
 
 <!-- Looking for collaborators + ideas! In particular: -->
 
@@ -1640,6 +1645,13 @@ Spectral relaxation of rank invariant using _matrix functions_
 - Understanding connections to other areas of math
 
 ::: -->
+
+## Other applications (time permitting)
+
+![](images/dw_chi_comp.png){width=50% height=90% fig-align="center"}
+
+![](images/elephant_sparsify.png){width=80% height=100% fig-align="center"}
+
 
 ## Acknowledgements & Advertising
 
@@ -1679,21 +1691,9 @@ Thanks for listening!
   };
 </script>
 
-## Other applications (time permitting)
-
-![](images/dw_chi_comp.png)
 
 
-## Lanczos 
-
-Spectra of Laplacian operators well-studied: 
-
-- Iterative Krylov methods / Lanczos dominate solving sparse systems$^2$
-- Many laplacian preconditioning methods known [@jambulapati2021ultrasparse]
-- Nearly optimal algorithms known for SDD [@stathopoulos2007nearly]
-
-
-## Computation 
+## Computation {visibility="hidden"}
 
 :::{.fragment}
 
@@ -1707,6 +1707,24 @@ Spectra of Laplacian operators well-studied:
 
 ::: 
 
+:::{.fragment}
+
+- Iterative Krylov methods / Lanczos dominate solving sparse systems$^2$
+
+::: 
+
+:::{.fragment}
+
+- Many laplacian preconditioning methods known [@jambulapati2021ultrasparse]
+
+::: 
+
+:::{.fragment}
+
+- Nearly optimal algorithms known for SDD [@stathopoulos2007nearly]
+
+::: 
+
 :::{.aside}
 
 See [@komzsik2003lanczos, @parlett1995we] for an overview of the Lanczos. See [@boissonnat2014simplex] for representing complexes.
@@ -1714,21 +1732,17 @@ See [@komzsik2003lanczos, @parlett1995we] for an overview of the Lanczos. See [@
 :::
 
 
-## Computation 
+## Computation {visibility="hidden"}
 
-
-Preliminary experiments suggest the scalability is promising 
+Preliminary experiments suggest scalability is promising 
 
 ![](images/watts_strogatz_perf.png)
 
-- $\approx \, \leq 25$ Lanczos vectors to approximate full spectrum at $ > 0$
+- $\approx \, \leq 25$ Lanczos vectors to approximate full spectrum at any $\epsilon > 0$
 - $\implies O(n)$ memory to obtain $\lVert \cdot \rVert_\ast$ in $O(n^2)$ time (with small constants!)
-- Larger values $$ or lower numerical tolerances $\implies$ essentially linear time compute
-- Previousy computed eigenvectors can be re-used for "warm restarts"
+- Previously computed eigenvectors can be re-used for "warm restarts"
 
-
-
-## Experiment \#1: Directional Transform  
+## Experiment \#1: Directional Transform  {visibility="hidden"}
 
 ![](images/shape_signatures.png){width=80% height=100% fig-align="center"}
 
@@ -1796,7 +1810,7 @@ __Right:__
 
 
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 <div style="text-align: center;"> 
 
@@ -1812,7 +1826,7 @@ __Challenge:__ Recognize intrinsic shape categories (via a distance metric)
 
 </div>
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 The _Gromov-Hausdorff_ distance yields a metric on the set of compact metric spaces $\mathcal{X}$
 
@@ -1834,7 +1848,7 @@ Unfortunately, the GH distance is NP-hard to compute [@memoli2012some]
 
 :::
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 <div style="text-align: center;"> 
 
@@ -1858,7 +1872,7 @@ Motivates use of persistence in metric settings for e.g. shape classification!
 
 </div> 
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 <div style="text-align: center;"> 
 
@@ -1875,7 +1889,7 @@ The lower bound on $d_{\mathrm{GH}}$ could be totally useless!
 </div> 
 
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 :::{.fragment}
 Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
@@ -1923,7 +1937,7 @@ Size of $L$ depends on the choice of $f$ + each $\lambda$ produces a new signatu
 
 :::
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 <div style="text-align: center;"> 
 
@@ -1941,7 +1955,7 @@ Augmenting via a fraction of $e_X^1$ modifies the diagrams of the ellipsoid sign
 </div> 
 
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 Lower bounds extend to Rips filtrations _augmented_ with real-valued functions $f, g$: 
 
@@ -1970,7 +1984,7 @@ Larger values of $\lambda$ yield worse bounds, but can lead to simpler diagrams
 <!-- Extra structure combines stability of persistence with flexibility of metrics -->
 
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 
 <div style="text-align: center;"> 
@@ -1989,8 +2003,7 @@ Which value of $\lambda$ to choose?
 
 
 
-## Experiment \#2: Intrinsic signatures
-
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
 
 <div style="text-align: center;"> 
 
@@ -2012,7 +2025,8 @@ We sample from $\Delta_+$ randomly, retaining signatures with sufficient topolog
 
 </div>
 
-## Experiment \#2: Intrinsic signatures
+## Experiment \#2: Intrinsic signatures {visibility="hidden"}
+
 ...and compared the computed spectral signatures under the relative distance metric: 
 
 <!-- \partial_p^\ast = U \Sigma V^T -->
@@ -2033,4 +2047,4 @@ $$
 
 <!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
 
-## Overview 
+## Overview {visibility="hidden"}

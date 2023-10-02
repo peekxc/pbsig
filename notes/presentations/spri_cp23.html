@@ -641,6 +641,7 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <section id="overview" class="slide level2">
 <h2>Overview</h2>
 <ul>
+<div style="color: #7F7F7F;">
 <li>
 Introduction
 </li>
@@ -655,6 +656,7 @@ Bypassing diagrams
 Technical observations
 </li>
 </ul>
+</div>
 <li>
 <p>
 Spectral rank relaxation
@@ -671,10 +673,12 @@ Spectral functions
 Variational interpretations + examples
 </li>
 </ul>
+<div style="color: #7F7F7F;">
 <li>
 <p>
 Computation
 </p>
+</li>
 <ul>
 <li>
 Lanczos Iteration
@@ -686,7 +690,7 @@ Stochastic trace estimation
 Scalability
 </li>
 </ul>
-</li>
+</div>
 </ul>
 </section>
 <section id="the-implications" class="slide level2">
@@ -772,7 +776,7 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <div class="fragment" style="text-align: center; border: 1;">
 <p><span class="math display">
 \boxed{
-\partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha)
+\partial_p^{i,j}(\alpha) = D_p(\mathcal{S}_i \circ f_\alpha) \circ \partial_p(K_\preceq) \circ D_{p+1}(\mathcal{S}_j \circ f_\alpha)
 }
 </span></p>
 </div>
@@ -1218,6 +1222,7 @@ Phase-aligning two <em>periodic</em> signals via FFT ( <span class="math inline"
 <section id="overview-1" class="slide level2">
 <h2>Overview</h2>
 <ul>
+<div style="color: #7F7F7F;">
 <li>
 Introduction
 </li>
@@ -1248,6 +1253,7 @@ Spectral functions
 Variational interpretations + examples
 </li>
 </ul>
+</div>
 <li>
 <p>
 Computation
@@ -1294,7 +1300,7 @@ T_j &amp;= Q_j^T A Q_j &amp;&amp;
 <div style="text-align: center; font-size: 34px;">
 <p>This is the renowned <em><strong>Lanczos method</strong></em> for Krylov subspace expansion</p>
 </div>
-<p><img src="images/lanczos_top_10.png" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -65%); height: 60vh !important; width: 100%;"> </p>
+<!-- <img src="images/lanczos_top_10.png" style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -65%); height: 65vh !important; width: 95%;"> </img> -->
 </div>
 </div>
 <aside><ol class="aside-footnotes"><li id="fn6"><p>Assumes the standard matrix multiplication model for simplicity (i.e.&nbsp;excludes the Strassen-family)</p></li></ol></aside></section>
@@ -1358,8 +1364,8 @@ $\Phi_\tau(X)$ are _trace-class_, satisfy $\mathtt{tr}(\Phi_\tau(X)) = \sum\limi
 <aside><div>
 <p>(1) See <span class="citation" data-cites="ubaru2017fast">Ubaru, Chen, and Saad (<a href="#/references" role="doc-biblioref" onclick="">2017</a>)</span>. (2) We found setting the lanczos polynomial degree <span class="math inline">l \leq 20</span> and number of Monte-carlo iterations <span class="math inline">s \leq 200</span> was sufficient for most applications.</p>
 </div></aside></section>
-<section id="scalability" class="slide level2">
-<h2>Scalability</h2>
+<section id="scalability-mathrmmatvecss-are-all-you-need" class="slide level2">
+<h2>Scalability: <span class="math inline">\mathrm{matvecs}</span>’s are all you need</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
 <p><img data-src="images/imate_trace_bench.png" style="height:100.0%" width="750"></p>
@@ -1392,17 +1398,15 @@ $\Phi_\tau(X)$ are _trace-class_, satisfy $\mathtt{tr}(\Phi_\tau(X)) = \sum\limi
 <p><strong>Theorem <span class="citation" data-cites="chen2011output">(<a href="#/references" role="doc-biblioref" onclick="">Chen and Kerber 2011</a>)</span></strong>: For a simplicial complex <span class="math inline">K</span> of size <span class="math inline">\lvert K \rvert = n</span>, computing the <span class="math inline">\Gamma</span>-persistent pairs requires <span class="math inline">O(C_{(1-\delta)\Gamma}\mathrm{R}(n) \log n)</span> time and <span class="math inline">O(n + \mathrm{R}(n))</span> space, where <span class="math inline">R(n)</span> (<span class="math inline">R_S(n)</span>) is the time (space) complexity of computing the rank of a <span class="math inline">n \times n</span> boundary matrix.</p>
 </div>
 </div>
-</section>
-<section id="conclusion" class="slide level2">
-<h2>Conclusion</h2>
-<p>Spectral relaxation of rank invariant using <em>matrix functions</em></p>
-<ul>
-<li>Suitable for parameterized families of filtrations</li>
-<li>Differentiable + amenable for optimization</li>
-<li>Stable to perturbations in <span class="math inline">f_\alpha</span> when <span class="math inline">\tau &gt; 0</span></li>
-<li>Excellent compute properties. Implementation ongoing.</li>
-<li>Better optimizer implementation also ongoing.</li>
-</ul>
+<!-- ## Conclusion 
+
+Spectral relaxation of rank invariant using _matrix functions_ 
+
+- Suitable for parameterized families of filtrations
+- Differentiable + amenable for optimization 
+- Stable to perturbations in $f_\alpha$ when $\tau > 0$ 
+- Excellent compute properties. Implementation ongoing. 
+- Better optimizer implementation also ongoing.  -->
 <!-- Looking for collaborators + ideas! In particular: -->
 <!-- :::{.incremental}
 
@@ -1413,6 +1417,19 @@ $\Phi_\tau(X)$ are _trace-class_, satisfy $\mathtt{tr}(\Phi_\tau(X)) = \sum\limi
 - Understanding connections to other areas of math
 
 ::: -->
+</section>
+<section id="other-applications-time-permitting" class="slide level2">
+<h2>Other applications (time permitting)</h2>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/dw_chi_comp.png" style="width:50.0%;height:90.0%"></p>
+</figure>
+</div>
+<div class="quarto-figure quarto-figure-center">
+<figure>
+<p><img data-src="images/elephant_sparsify.png" style="width:80.0%;height:100.0%"></p>
+</figure>
+</div>
 </section>
 <section id="acknowledgements-advertising" class="slide level2">
 <h2>Acknowledgements &amp; Advertising</h2>
@@ -1564,279 +1581,23 @@ Zomorodian, Afra, and Gunnar Carlsson. 2004. <span>“Computing Persistent Homol
   };
 </script>
 </section>
-<section id="other-applications-time-permitting" class="slide level2">
-<h2>Other applications (time permitting)</h2>
-
-<img data-src="images/dw_chi_comp.png" class="r-stretch"></section>
-<section id="lanczos" class="slide level2">
-<h2>Lanczos</h2>
-<p>Spectra of Laplacian operators well-studied:</p>
-<ul>
-<li>Iterative Krylov methods / Lanczos dominate solving sparse systems<span class="math inline">^2</span></li>
-<li>Many laplacian preconditioning methods known <span class="citation" data-cites="jambulapati2021ultrasparse">(<a href="#/references" role="doc-biblioref" onclick="">Jambulapati and Sidford 2021</a>)</span></li>
-<li>Nearly optimal algorithms known for SDD <span class="citation" data-cites="stathopoulos2007nearly">(<a href="#/references" role="doc-biblioref" onclick="">Stathopoulos and McCombs 2007</a>)</span></li>
-</ul>
-</section>
-<section id="computation" class="slide level2">
-<h2>Computation</h2>
-<div class="fragment">
-<ul>
-<li>Permutation invariance <span class="math inline">\implies</span> can optimize memory access of <span class="math inline">\mathtt{SpMat}</span> operation</li>
-</ul>
-</div>
-<div class="fragment">
-<ul>
-<li>Any complex data structure suffices, e.g.&nbsp;tries<span class="math inline">^2</span>, combinadics, etc…</li>
-</ul>
-</div>
-
-<aside><div>
-<p>See <span class="citation" data-cites="komzsik2003lanczos">Parlett (<a href="#/references" role="doc-biblioref" onclick="">1995</a>)</span> for an overview of the Lanczos. See <span class="citation" data-cites="boissonnat2014simplex">(<a href="#/references" role="doc-biblioref" onclick="">Boissonnat and Maria 2014</a>)</span> for representing complexes.</p>
-</div></aside></section>
-<section id="computation-1" class="slide level2">
-<h2>Computation</h2>
-<p>Preliminary experiments suggest the scalability is promising</p>
-
-<img data-src="images/watts_strogatz_perf.png" class="r-stretch"><ul>
-<li><span class="math inline">\approx \, \leq 25</span> Lanczos vectors to approximate full spectrum at $ &gt; 0$</li>
-<li><span class="math inline">\implies O(n)</span> memory to obtain <span class="math inline">\lVert \cdot \rVert_\ast</span> in <span class="math inline">O(n^2)</span> time (with small constants!)</li>
-<li>Larger values $$ or lower numerical tolerances <span class="math inline">\implies</span> essentially linear time compute</li>
-<li>Previousy computed eigenvectors can be re-used for “warm restarts”</li>
-</ul>
-</section>
-<section id="experiment-1-directional-transform" class="slide level2">
-<h2>Experiment #1: Directional Transform</h2>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/shape_signatures.png" style="width:80.0%;height:100.0%"></p>
-</figure>
-</div>
-<aside class="notes">
-<p>Luis mentioned modding out rotations and translations adn scale to compare shapes. We can handle rotations via phase alignment.</p>
-<p>Sarah mentioned handling orientation.</p>
-<style type="text/css">
-        span.MJX_Assistive_MathML {
-          position:absolute!important;
-          clip: rect(1px, 1px, 1px, 1px);
-          padding: 1px 0 0 0!important;
-          border: 0!important;
-          height: 1px!important;
-          width: 1px!important;
-          overflow: hidden!important;
-          display:block!important;
-      }</style></aside>
-</section>
 
 
 
-<section id="experiment-2-intrinsic-signatures" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p><strong>Dataset:</strong> 3D meshes of animals in different poses <span class="citation" data-cites="chazal2009gromov">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2009</a>)</span></p>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/gh_data_pose.png" style="height:100.0%" width="425"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p><strong>Challenge:</strong> Recognize intrinsic shape categories (via a distance metric)</p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-1" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<p>The <em>Gromov-Hausdorff</em> distance yields a metric on the set of compact metric spaces <span class="math inline">\mathcal{X}</span></p>
-<p><span class="math display">
-d_{GH}(d_X, d_Y) = \sup_{x \in X, y \in Y} \lvert d_X(x, \psi(y)) - d_Y(y, \phi(x))\rvert
-</span></p>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/camel_gh.png" style="height:100.0%" width="600"></p>
-</figure>
-</div>
-<p>Using intrinsic metric makes <span class="math inline">d_{\mathrm{GH}}</span> blind to e.g.&nbsp;shapes represented in different <em>poses</em></p>
-<div class="fragment">
-<div style="text-align: center;">
-<p>Unfortunately, the GH distance is NP-hard to compute <span class="citation" data-cites="memoli2012some">(<a href="#/references" role="doc-biblioref" onclick="">Mémoli 2012</a>)</span></p>
-</div>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-2" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p>It’s known <span class="math inline">d_B</span> (<span class="math inline">d_W</span>) on Rips filtrations <span class="math inline">\mathcal{R}(X, d_X)</span> lower bound GH (GW) distance</p>
-</div>
-<p><span class="math display">
-d_B(\mathrm{dgm}_p(\mathcal{R}(X, d_X)), \mathrm{dgm}_p(\mathcal{R}(Y, d_Y))) \; \leq \; d_{GH}((X, d_X), (Y, d_Y))
-</span></p>
-<div class="quarto-layout-panel">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/camel_gh_rips_comparison.png" width="875"></p>
-</figure>
-</div>
-</div>
-</div>
-</div>
-<div style="text-align: center;">
-<p>Motivates use of persistence in metric settings for e.g.&nbsp;shape classification!</p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-3" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p><strong>Issue:</strong> Diagrams are far from injective, cannot distinguish e.g.&nbsp;stretched shapes</p>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/dgm_noninjective.png" style="height:100.0%" width="575"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p>The lower bound on <span class="math inline">d_{\mathrm{GH}}</span> could be totally useless!</p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-4" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div class="fragment">
-<p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
-<p><span class="math display">
-\mathcal{R}(f) \triangleq \mathcal{R}(X, d_X, f) = \{\mathcal{R}_\alpha(X_\alpha)\}_{\alpha &gt; 0}, \quad X_\alpha \triangleq f^{-1}((-\infty, \alpha)) \subseteq X
-</span></p>
-</div>
-<div class="fragment">
-<p>The diagrams from <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span> represent <em>stable signatures</em> for each <span class="math inline">\lambda &gt; 0</span>:</p>
-<p><span class="math display">
-d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
-</span></p>
-</div>
-<!-- <div style="text-align: center;">  -->
-<!-- </div>  -->
-<!-- <hr>  -->
-<div class="fragment">
-<p>Chazal showed these bounds extend to metrics on <em>augmented</em> metric spaces:</p>
-<p><span class="math display">
-\mathcal{X}_1 = \{ (X, d_X, f_X) \mid (X, d_X, f_X) \in \mathcal{X}, f_X: X \to \mathbb{R} \text{ continuous }\}
-</span></p>
-<p>These signatures also extend to measure metric spaces, see <span class="citation" data-cites="chazal2009gromov">(<a href="#/references" role="doc-biblioref" onclick="">Chazal et al. 2009</a>)</span></p>
-</div>
-<div class="fragment">
-<p><br></p>
-<p><span style="color: red;"> NOTE: </span> Size of <span class="math inline">L</span> depends on the choice of <span class="math inline">f</span> + each <span class="math inline">\lambda</span> produces a new signature!</p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-5" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p><strong>Ex:</strong> The <em>eccentricity</em> function <span class="math inline">e_X^1(x) = \max_{x' \in X} d_X(x,x')</span> has <span class="math inline">L = 2</span></p>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/dgm_noninjective2.png" style="height:100.0%" width="775"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p>Augmenting via a fraction of <span class="math inline">e_X^1</span> modifies the diagrams of the ellipsoid significantly <!-- , while the ones for the sphere hardly change due to the fact that the eccentricity is constant --></p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-6" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<p>Lower bounds extend to Rips filtrations <em>augmented</em> with real-valued functions <span class="math inline">f, g</span>:</p>
-<p><span class="math display">
-d_B(\mathcal{R}(\lambda \cdot f_X), \mathcal{R}(\lambda \cdot f_Y)) \leq \max(1, \lambda L) \cdot d_{\mathrm{GH}}(X, Y)
-</span></p>
-<div class="quarto-layout-panel">
-<div class="quarto-layout-row quarto-layout-valign-top">
-<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<div class="quarto-figure quarto-figure-left">
-<figure>
-<p><img data-src="images/camel1_rips.png" width="450"></p>
-</figure>
-</div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<div class="quarto-figure quarto-figure-left">
-<figure>
-<p><img data-src="images/camel_dgm_rips.png" width="450"></p>
-</figure>
-</div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<div class="quarto-figure quarto-figure-left">
-<figure>
-<p><img data-src="images/camel1_ecc.png" width="450"></p>
-</figure>
-</div>
-</div>
-<div class="quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<div class="quarto-figure quarto-figure-left">
-<figure>
-<p><img data-src="images/camel_dgm_ecc.png" width="450"></p>
-</figure>
-</div>
-</div>
-</div>
-</div>
-<div style="text-align: center;">
-<p>Larger values of <span class="math inline">\lambda</span> yield worse bounds, but can lead to simpler diagrams</p>
-</div>
-<!-- Extra structure combines stability of persistence with flexibility of metrics -->
-</section>
-<section id="experiment-2-intrinsic-signatures-7" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p>Each choice of <span class="math inline">\lambda &gt; 0</span> yields a <em>stable signature</em> via <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span></p>
-</div>
-<div style="text-align: center;">
-<p>Which value of <span class="math inline">\lambda</span> to choose?</p>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/camel1_interp1.png" style="height:100.0%" width="950"></p>
-</figure>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-8" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<div style="text-align: center;">
-<p>Each choice of <span class="math inline">\lambda &gt; 0</span> yields a <em>stable signature</em> via <span class="math inline">\mathcal{R}(\lambda \cdot f_X)</span></p>
-</div>
-<div style="text-align: center;">
-<p>Which value of <span class="math inline">\lambda</span> to choose?</p>
-</div>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/camel1_interp2.png" style="height:100.0%" width="950"></p>
-</figure>
-</div>
-<div style="text-align: center;">
-<p>We sample from <span class="math inline">\Delta_+</span> randomly, retaining signatures with sufficient topological activity</p>
-</div>
-</section>
-<section id="experiment-2-intrinsic-signatures-9" class="slide level2">
-<h2>Experiment #2: Intrinsic signatures</h2>
-<p>…and compared the computed spectral signatures under the relative distance metric:</p>
-<!-- \partial_p^\ast = U \Sigma V^T -->
-<p><span class="math display">
-\Lambda(\mu_p^R) = \{\sigma_1, \sigma_2, \dots, \sigma_n \}, \quad \quad \chi(\mathbf{\sigma}, \mathbf{\tilde{\sigma}}) = \sum\limits_{i=1}^n \frac{\lvert \sigma_i - \tilde{\sigma}_i \rvert}{\sqrt{\sigma_i + \tilde{\sigma}_i}}
-</span></p>
-<div class="quarto-figure quarto-figure-center">
-<figure>
-<p><img data-src="images/dw_chi_comp.png" style="height:100.0%" width="750"></p>
-</figure>
-</div>
-<!-- ## Experiment \#3: Filtration optimization -->
-<!-- ![](images/smoothed_mu.png){width=55% height=100%} -->
-<!-- __Summary:__ We can obtain $\mu_p^R(K, f_\alpha)$ for varying $\alpha$ by using thresholded versions of $f_\alpha$ as scalar-products  -->
-</section>
-<section id="overview-2" class="slide level2">
-<h2>Overview</h2>
-<div class="footer footer-default">
 
-</div>
-</section>
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     </div>
   </div>
