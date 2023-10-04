@@ -10,6 +10,7 @@ from scipy.sparse.linalg import *
 from scipy.sparse.csgraph import *
 from splex.combinatorial import rank_combs
 from more_itertools import collapse
+from scipy.interpolate import CubicSpline
 
 ## Local imports
 from .meta import *
@@ -1660,9 +1661,7 @@ def is_symmetric(A) -> bool:
   sortu = np.lexsort((ru, cu))
   vl = vl[sortl]
   vu = vu[sortu]
-  return np.allclose(vl, vu)
-
-from scipy.interpolate import CubicSpline
+  return np.allclose(vl, vu)    
 
 class ParameterizedLaplacian(Callable):
   def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = 0, **kwargs):

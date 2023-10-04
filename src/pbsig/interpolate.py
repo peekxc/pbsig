@@ -4,11 +4,13 @@ from scipy.interpolate import CubicSpline, UnivariateSpline
 from more_itertools import pairwise, triplewise, chunked, peekable, spy
 # from scipy.interpolate import splrep, insert
 from splex import *
+from splex import faces, dim
 from splex.predicates import is_repeatable
 from typing import * 
 from scipy.sparse import diags
 from pbsig.linalg import smooth_dnstep, smooth_upstep
 from pbsig.linalg import pseudoinverse
+from numbers import Integral
 
   # def apply_box(self, t: float, a: float, b: float, c: float, d: float, w: float = 1.0, normed: bool = False) -> Generator:
   #   """ Yields a set of four Laplacian operators representing the multiplicity formula at a box [a,b] x [c,d]
@@ -52,6 +54,78 @@ from pbsig.linalg import pseudoinverse
 #     for i, c in zip(s_ind, curves):
 #       BS[i] = CubicSpline(x, c, **kwargs)
 #   return BS 
+
+class ParameterizedFilter(Callable):
+  """Stores 1-parameter of filter functions over a fixed simplicial complex, optionally interpolated."""
+  def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = None, **kwargs):
+    self.complex = S
+    p = range(dim(S)+1) if p is None else p
+    self.dims = [p] if isinstance(p, Integral) else p 
+    assert isinstance(self.dims, Iterable), "Must give set of dimensions to store"
+    # self.faces = { pi : np.array(list(faces(S, pi))) for pi in p }
+    if family is not None: 
+      self.family = family  # also does input validation
+    else: 
+      from splex.Simplex import filter_weight
+      self.family = filter_weight(lambda s: 1)
+
+  @property
+  def family(self): 
+    """The _family_ refers to the parameter space of filter functions. 
+
+    (1) an Iterable of Callables, the inner of which are filter function 
+    (2) a Callable itself, in which case bounds should be properly set 
+    """
+    return self._family
+  
+  @family.setter
+  def family(self, family: Union[Callable, Iterable], *args):
+    """ Sets the parameterized family to the product """
+    from more_itertools import spy
+    if isinstance(family, Iterable):
+      assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
+      assert isinstance(family, Sized), "The family of iterables must be sized"
+      f, _ = spy(family)
+      assert isinstance(f[0], Callable), "Iterable family must be a callables!"
+      self._family = family
+    else: 
+      assert isinstance(family, Callable), "family must be iterable or Callable"
+      self._family = [family]
+
+  def interpolate(self, interval=(0.0, 1.0), **kwargs) -> None: 
+    """Interpolates the stored 1-parameter family of filtration values.
+    
+    Interpolates the filter path of each simplex (simplexwise) with a polynomial curve
+    """
+    self.domain_ = interval
+    self.splines_ = {}
+    domain_points = np.linspace(*interval, num=len(self.family)) # knot vector
+    for p in self.dims:
+      filter_values = np.array([f(faces(self.complex, p)) for f in self.family])
+      self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
+    
+  def figure_interp(self, p: int = None):
+    import bokeh
+    dims = self.dims if p is None else p
+    # fig = figure(width=350, height = 200)
+
+  def __call__(self, p: int, t: Union[float, int], **kwargs):
+    assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
+    assert hasattr(self, "domain_") and hasattr(self, "splines_"), "Cannot interpolate without calling interpolat fmaily first! "
+    assert p in self.splines_.keys(), f"Invalid dimension {p} given"
+    return np.array([sp(t) for sp in self.splines_[p]])
+      
+    # def _custom_filter(sigma: tuple):
+    #   p = len(sigma) - 1
+    #   if p in self.splines_.keys():
+    #     p_splines = self.splines_[p]
+    # f = filter_weight(_custom_filter)
+    # return f(simplices)
+  
+  def __iter__(self) -> Generator:
+    """Iterates through the family, yielding the parameterized operators"""
+    yield from self.family
+
 
 
 ## TODO: expand functionality to allow time to be tuple or Iterable, then use time[0], time[-1] to 

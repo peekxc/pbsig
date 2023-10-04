@@ -295,6 +295,24 @@ def figure_patch(X: ArrayLike, **kwargs):
   p.patch(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
   return p
 
+def figure_hist(hist, edges, **kwargs):
+  from bokeh.palettes import HighContrast3
+  blue, orange, red = HighContrast3[0], HighContrast3[1], HighContrast3[2]
+  p = figure(tools='', background_fill_color="#fafafa", **kwargs)
+  p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], fill_color=blue, line_color="white", alpha=0.5)
+  p.y_range.start = 0
+  p.xaxis.axis_label = 'x'
+  p.yaxis.axis_label = 'Pr(x)'
+  p.grid.grid_line_color="white"
+  return p
+
+def figure_vineyard(dgms: Sequence[dict], **kwargs):
+  p = figure_dgm(**kwargs)
+  vine_colors = bin_color(np.arange(len(dgms)), "viridis")
+  for dgm, vc in zip(dgms, vine_colors):
+    p.scatter(dgm[0]['birth'], dgm[0]['death'], color=vc)
+  return p
+
 
 def figure_plain(p):
   """Turns off the visibility of the toolbar, grid axis, and background lines of a given figure."""
