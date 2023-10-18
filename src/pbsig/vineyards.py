@@ -726,7 +726,7 @@ def move_right(R: lil_array, V: lil_array, i: int, j: int, copy: bool = False) -
   #assert all(J_check == J), "J index check failed"
   dR, dV = restore_right(R, V, I)
   restore_right(R, V, J) # this should not affect the number of non-reduced columns
-  #_MOVE_STATS["n_cols_right"] += max(len(I)-1 + len(J), 0)
+  # _MOVE_STATS["n_cols_right"] += max(len(I)-1 + len(J), 0) ## this is taken care of in restore
   permute_cylic(R, i, j, "both") ## change if full boundary matrix is used
   permute_cylic(V, i, j, "both")
   R[:,[j]], V[:,[j]] = permute_cylic_pure(dR, i, j, "rows"), permute_cylic_pure(dV, i, j, "rows")
