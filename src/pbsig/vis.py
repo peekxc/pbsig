@@ -48,7 +48,7 @@ def valid_parameters(el: Any, prefix: str = "", **kwargs):
 #   { d1}
 
 def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = False, **kwargs):
-  default_figkwargs = dict(width=400, height=400, match_aspect=True,aspect_scale=1, title="Persistence diagram")
+  default_figkwargs = dict(width=300, height=300, match_aspect=True, aspect_scale=1, title="Persistence diagram")
   fig_kwargs = default_figkwargs.copy()
   if dgm is None or len(dgm) == 0:
     fig_kwargs["x_range"] = (0, 1)
@@ -66,11 +66,19 @@ def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = Fals
     fig_kwargs["y_range"] = (min_val, max_val)
 
   ## Parameterize the figure
-  fig_kwargs |= kwargs
-  p = figure(**fig_kwargs)
+  from bokeh.models import PolyAnnotation
+  fig_kwargs = valid_parameters(figure, fig_kwargs | kwargs)
+  p = kwargs.get('figure', figure(**fig_kwargs))
   p.xaxis.axis_label = "Birth"
   p.yaxis.axis_label = "Death"
-  p.patch([min_val-100, max_val+100, max_val+100], [min_val-100, min_val-100, max_val+100], line_width=0, fill_color="gray", fill_alpha=0.80)
+  polygon = PolyAnnotation(
+    fill_color="gray", fill_alpha=0.80,
+    xs=[min_val-100, max_val+100, max_val+100],
+    ys=[min_val-100, min_val-100, max_val+100],
+    line_width=0
+  )
+  p.add_layout(polygon)
+  # p.patch([min_val-100, max_val+100, max_val+100], [min_val-100, min_val-100, max_val+100], line_width=0, fill_color="gray", fill_alpha=0.80)
   
   ## Plot non-essential points, where applicable 
   if dgm is not None and any(dgm["death"] != np.inf):
@@ -109,8 +117,8 @@ def figure_dist(d: Sequence[float], palette: str = "viridis", **kwargs):
     D_view[i,i,1] = base_color[1]
     D_view[i,i,2] = base_color[2]
     D_view[i,i,3] = 255
-  fig_kw = dict(width=200, height=200) | kwargs
-  p = figure(**fig_kw)
+  fig_kw = valid_parameters(figure, **(dict(width=300, height=300) | kwargs))
+  p = kwargs.get('figure', figure(**fig_kw))
   p.x_range.range_padding = p.y_range.range_padding = 0
   # p.y_range.flipped = True
   # p.y_range = Range1d(0,-10)
@@ -130,7 +138,7 @@ def plot_dist(*args, **kwargs) -> None:
   show(dist_figure(*args, **kwargs))
 
 def figure_point_cloud(X: ArrayLike, **kwargs):
-  p = figure(**kwargs)
+  p = kwargs.get('figure', figure(**kwargs))
   p.scatter(X[:,0], X[:,1])
   return p
 
@@ -206,15 +214,8 @@ def figure_complex(
   fig_params = valid_parameters(figure, **kwargs)
   x_rng = np.array([np.min(pos[:,0]), np.max(pos[:,0])])*[0.90, 1.10]
   y_rng = np.array([np.min(pos[:,1]), np.max(pos[:,1])])*[0.90, 1.10]
-  p = figure(
-    tools="pan,wheel_zoom,reset", 
-    active_scroll=None,
-    active_drag="auto",
-    # x_range=x_rng, 
-    # y_range=y_rng,  
-    tooltips=TOOLTIPS,
-    **fig_params
-  )
+  fig_params |= dict(tools="pan,wheel_zoom,reset", active_scroll=None, active_drag="auto", tooltips=TOOLTIPS)
+  p = kwargs.get('figure', figure(**fig_params))
   p.axis.visible = use_grid_lines
   p.xgrid.visible = use_grid_lines
   p.ygrid.visible = use_grid_lines
@@ -284,21 +285,21 @@ def plot_complex(*args, **kwargs) -> None:
 def figure_scatter(X: ArrayLike, **kwargs):
   fig_params = { param[0].name for param in figure.parameters() }
   # scatter_params = { param[0].name for param in Scatter.parameters() }
-  p = figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params }))
+  p = kwargs.get('figure', figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params })))
   p.scatter(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
   return p
 
 def figure_patch(X: ArrayLike, **kwargs):
   fig_params = { param[0].name for param in figure.parameters() }
   # patch_params = { param[0].name for param in Scatter.parameters() }
-  p = figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params }))
+  p = kwargs.get('figure', figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params })))
   p.patch(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
   return p
 
 def figure_hist(hist, edges, **kwargs):
   from bokeh.palettes import HighContrast3
   blue, orange, red = HighContrast3[0], HighContrast3[1], HighContrast3[2]
-  p = figure(tools='', background_fill_color="#fafafa", **kwargs)
+  p = kwargs.get('figure', figure(tools='', background_fill_color="#fafafa"))
   p.quad(top=hist, bottom=0, left=edges[:-1], right=edges[1:], fill_color=blue, line_color="white", alpha=0.5)
   p.y_range.start = 0
   p.xaxis.axis_label = 'x'
@@ -306,16 +307,23 @@ def figure_hist(hist, edges, **kwargs):
   p.grid.grid_line_color="white"
   return p
 
-def figure_vineyard(dgms: Sequence[dict], **kwargs):
-  p = figure_dgm(**kwargs)
+def figure_vineyard(dgms: Sequence[dict], p: int = None, **kwargs):
+  from pbsig.color import rgb_to_hex
+  fig = figure_dgm(**kwargs)
   vine_colors = bin_color(np.arange(len(dgms)), "viridis")
+  vine_colors = (vine_colors*255).astype(np.uint8)
+  p = [p] if isinstance(p, Integral) else p
+  assert isinstance(p, Iterable), "dimension 'p' must be a iterable or an integer."
   for dgm, vc in zip(dgms, vine_colors):
-    p.scatter(dgm[0]['birth'], dgm[0]['death'], color=vc)
-  return p
+    for p_dim in p: 
+      fig.scatter(dgm[p_dim]['birth'], dgm[p_dim]['death'], color=rgb_to_hex(vc))
+  fig.match_aspect = True
+  return fig
 
 
-def figure_plain(p):
+def figure_plain(p: figure):
   """Turns off the visibility of the toolbar, grid axis, and background lines of a given figure."""
+  assert isinstance(p, figure), "Supplied object is not a figure object!"
   p.toolbar_location = None
   p.xaxis.visible = False
   p.yaxis.visible = False

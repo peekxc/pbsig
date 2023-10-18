@@ -12,6 +12,17 @@ from .simplicial import *
 _MOVE_STATS = { "n_right" : 0, "n_left" : 0, "n_cols_left" : 0, "n_cols_right" : 0 }
 _VINE_STATS = { "n_cols" : 0, "n_tr" : 0 }
 
+def spearman_footrule_dist(a, b: Sequence = None):
+  b = np.arange(len(a)) if b is None else b
+  assert len(a) == len(b), "Rank sequences must be the same size"
+  n = len(a)
+  a, b = np.array(a), np.array(b)
+  abs_disp1 = np.sum(np.abs(a[np.argsort(b)] - np.arange(n)))
+  abs_disp2 = np.sum(np.abs(b[np.argsort(a)] - np.arange(n)))
+  abs_disp3 = np.sum(np.abs(a - b))
+  assert np.isclose(abs_disp1 - abs_disp2, 0) and np.isclose(abs_disp2 - abs_disp3, 0), "Left-invariance failed"
+  return abs_disp1
+
 def permutation_matrix(p: Sequence[int]):
   """ 
   Returns the column representation of a permutation 

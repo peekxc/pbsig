@@ -18,17 +18,31 @@ def pixel_circle(n):
     return np.exp(e*(abs(x_dist - radius)/width)).reshape((n,n))
   return _circle
 
+# from refactored.simplicial import freudenthal
 n = 9
 C = pixel_circle(n)
 S = freudenthal(C(0))
 
 from pbsig.vis import plot_complex
-from pbsig.simplicial import freudenthal, SimplicialComplex, MutableFiltration
+# from pbsig.simplicial import SimplicialComplex, MutableFiltration
 
 G = np.array(list(product(range(n), range(n))))
 #normalize_unit = lambda x: (x - min(x))/(max(x) - min(x))
 plot_complex(S, pos=G, color = C(0.56).flatten(), palette="gray", bin_kwargs = dict(lb=0.0, ub=1.0))
 
+
+## 
+from splex import filtration, flag_weight, lower_star_weight
+from pbsig.vis import figure_dgm
+from bokeh.plotting import show
+
+for t in np.linspace(0, 1.5, 150):
+  F = filtration(S, lower_star_weight(-C(0.20).flatten()))
+  dgms = ph(F, collapse=False)
+  print(len(dgms[1]))
+
+plot_complex(S, pos=G, color = 1-C(0.20).flatten(), palette="gray", bin_kwargs = dict(lb=0.0, ub=1.0))
+show(figure_dgm(dgms[0]))
 
 ## Benchmark regular phcol 
 from pbsig.vineyards import move_stats

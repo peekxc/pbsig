@@ -8,7 +8,6 @@ from math import *
 from scipy.sparse import *
 from scipy.sparse.linalg import * 
 from scipy.sparse.csgraph import *
-from splex.combinatorial import rank_combs
 from more_itertools import collapse
 from scipy.interpolate import CubicSpline
 
@@ -1663,15 +1662,13 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)    
 
+from splex.Simplex import filter_weight
+
 class ParameterizedLaplacian(Callable):
   def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = 0, **kwargs):
     self.p_faces = np.array(list(faces(S, p)))
     self.q_faces = np.array(list(faces(S, p+1))) ## to remove
-    if family is not None: 
-      self.family = family  # also does input validation
-    else: 
-      from splex.Simplex import filter_weight
-      self.family = filter_weight(lambda s: 1)
+    self.family = family if family is not None else filter_weight(lambda s: 1) # also does input validation
     self.param_laplacian(S, p=p, **kwargs)  ## this call is independent of the family
     self.post_p = lambda fp: fp             ## family-wide post-composition of family filter function (p)
     self.post_q = lambda fq: fq             ## family-wide post-composition of family filter function (q)
@@ -1720,19 +1717,19 @@ class ParameterizedLaplacian(Callable):
     else:
       raise ValueError(f"Invalid given form '{form}'")
 
-  def interpolate_family(self, interval=(0.0, 1.0)) -> None: 
-    """Interpolates the stored 1-parameter family of filtration values."""
-    filter_values = [[f(self.p_faces), f(self.q_faces)] for f in self.family]
-    n_parameters = len(filter_values)
-    p_filter_values = np.array([self.post_p(f[0]) for f in filter_values], dtype=np.float32)
-    q_filter_values = np.array([self.post_q(f[1]) for f in filter_values], dtype=np.float32)
-    del filter_values
+  # def interpolate_family(self, interval=(0.0, 1.0)) -> None: 
+  #   """Interpolates the stored 1-parameter family of filtration values."""
+  #   filter_values = [[f(self.p_faces), f(self.q_faces)] for f in self.family]
+  #   n_parameters = len(filter_values)
+  #   p_filter_values = np.array([self.post_p(f[0]) for f in filter_values], dtype=np.float32)
+  #   q_filter_values = np.array([self.post_q(f[1]) for f in filter_values], dtype=np.float32)
+  #   del filter_values
 
-    ## Interpolate the filter path of each simplex (simplexwise) with a polynomial curve
-    self.domain_ = interval
-    domain_points = np.linspace(*interval, num=n_parameters) # knot vector
-    self.p_splines_ = [CubicSpline(domain_points, p_fv) for p_fv in p_filter_values.T]
-    self.q_splines_ = [CubicSpline(domain_points, q_fv) for q_fv in q_filter_values.T]
+  #   ## Interpolate the filter path of each simplex (simplexwise) with a polynomial curve
+  #   self.domain_ = interval
+  #   domain_points = np.linspace(*interval, num=n_parameters) # knot vector
+  #   self.p_splines_ = [CubicSpline(domain_points, p_fv) for p_fv in p_filter_values.T]
+  #   self.q_splines_ = [CubicSpline(domain_points, q_fv) for q_fv in q_filter_values.T]
     
   def param_weights(self, q_weights: ArrayLike = None, p_weights: ArrayLike = None):
     """Sets the laplacian attribute appropriately """
@@ -1764,9 +1761,12 @@ class ParameterizedLaplacian(Callable):
 
   def __call__(self, t: Union[float, int], **kwargs):
     assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
-    assert hasattr(self, "domain_") and hasattr(self, "q_splines_"), "Cannot interpolate without calling interpolat fmaily first! "
-    wp = np.array([pf(t) for pf in self.p_splines_])
-    wq = np.array([qf(t) for qf in self.q_splines_])
+    # assert hasattr(self, "domain_") and hasattr(self, "q_splines_"), "Cannot interpolate without calling interpolat fmaily first! "
+    assert isinstance(self.family, Callable), "Parameterized family must be callable!"
+    # wp = np.array([pf(t) for pf in self.p_splines_])
+    # wq = np.array([qf(t) for qf in self.q_splines_])
+    wp = np.array(self.family(t, p=0))
+    wq = np.array(self.family(t, p=1))
     self.param_weights(wq, wp, **kwargs)
     return self.laplacian
   

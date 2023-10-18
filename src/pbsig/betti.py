@@ -731,7 +731,7 @@ class MuFamily:
 
 from pbsig.linalg import ParameterizedLaplacian
 
-class Sieve:
+class SpectralRankInvariant:
   """ 
   A sieve M is a statistic M(i) generated over a parameterized family of F = { f1, f2, ..., fk }
   
@@ -763,21 +763,21 @@ class Sieve:
     self.operators = ParameterizedLaplacian(S, family, p, form=form)
     self.solver = PsdSolver(eigenvectors=False)
     self.delta = np.finfo(float).eps
-    self._pattern = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
+    self._sieve = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
     self.bounds_domain = (0, 1) # bounds on the domain of the family, if Callable
     self.bounds_range = (0, 1)  # bounds on the range of the filter functions
     self._default_val = { "eigenvalues" : array('d'), "lengths" : array('I') }
 
   @property
-  def pattern(self):
-    """ Sets the sieve pattern to the union of rectangles given by _R_. """
-    return self._pattern
+  def sieve(self):
+    """ Sets the sieve to the union of rectangles given by _R_. """
+    return self._sieve
   
-  @pattern.setter
-  def pattern(self, R: ArrayLike = None):
-    """ Sets the sieve pattern to the union of rectangles given by _R_. """
+  @sieve.setter
+  def sieve(self, R: ArrayLike = None):
+    """ Sets the sieve to the union of rectangles given by _R_. """
     if R is None: 
-      return self._pattern 
+      return self._sieve 
     elif isinstance(R, np.ndarray) and R.shape[1] == 2:
       I,J,SGN,IND = [],[],[],[]
       for cc, (i,j) in enumerate(R): # (x1,x2,y1,y2)
@@ -785,7 +785,7 @@ class Sieve:
         J.append(j)
         SGN.append(1)
         IND.append(cc)
-      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
+      self._sieve = np.fromiter(zip(I,J,SGN,IND), dtype=self._sieve.dtype)
     else:
       assert isinstance(R, np.ndarray) and R.shape[1] == 4, "Invalid rectangle set given"
       I,J,SGN,IND = [],[],[],[]
@@ -795,32 +795,30 @@ class Sieve:
           J.append(pp[1])
           SGN.append(s)
           IND.append(idx)
-      self._pattern = np.fromiter(zip(I,J,SGN,IND), dtype=self._pattern.dtype)
+      self._sieve = np.fromiter(zip(I,J,SGN,IND), dtype=self._sieve.dtype)
   
   def randomize_sieve(self, n_rect: int = 1, plot: bool = False, **kwargs):
     from bokeh.io import show
     kwargs = dict(area=(0.0025, 0.050), disjoint=True) | kwargs 
-    self.pattern = sample_rect_halfplane(n_rect, **kwargs)  # must be disjoint 
+    self.sieve = sample_rect_halfplane(n_rect, **kwargs)  # must be disjoint 
     if plot: show(self.figure_sieve())
 
-  def figure_sieve(self, p = None, rect_opts = {}, **kwargs):
-    from pbsig.vis import figure_dgm
-    from bokeh.models import Range1d
+  def figure_sieve(self, p = None, **kwargs):
+    from pbsig.vis import figure_dgm, valid_parameters
+    from bokeh.models import Rect
     p = figure_dgm(**kwargs) if p is None else p
-    indices = self._pattern['index']
-    rect_opts = { idx : {} for idx in np.unique(indices) } | rect_opts
+    indices = self._sieve['index']
+    # rect_opts = { idx : {} for idx in np.unique(indices) } | 
+    rect_kwargs = valid_parameters(Rect, **kwargs)
     for idx in np.unique(indices):
-      r = self._pattern[indices == idx]
+      r = self._sieve[indices == idx]
       x,y = np.mean(r['i']), np.mean(r['j'])
       w,h = np.max(np.diff(np.sort(r['i']))), np.max(np.diff(np.sort(r['j'])))
-      p.rect(x,y,width=w,height=h, **rect_opts[idx])
-    lb, ub = min(self._pattern['i']) - 1, max(self._pattern['j']) + 1
-    p.x_range = Range1d(lb, ub)
-    p.y_range = Range1d(lb, ub)
+      p.rect(x,y,width=w,height=h, **rect_kwargs)
+    # lb, ub = min(self._sieve['i']) - 1, max(self._sieve['j']) + 1
+    # p.x_range = Range1d(lb, ub)
+    # p.y_range = Range1d(lb, ub)
     return p
-
-  def detect_bounds():
-    pass
 
   def restrict_family(self, i: float, j: float, w: float, **kwargs) -> ArrayLike:
     """ Restricts the weights supplied to the Laplacian family of operators to point (i,j) in the upper half plane. 
@@ -839,12 +837,12 @@ class Sieve:
   
   def sift(self, w: float = 0.0, progress: bool = True, **kwargs):
     """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
-    if len(self._pattern) == 0:
-      raise ValueError("No rectilinear pattern has been chosen! Consider using 'randomize_pattern'.")
+    if len(self._sieve) == 0:
+      raise ValueError("No rectilinear sieve has been chosen! Consider using 'randomize_sieve'.")
     ## Setup the main iterator
-    n_corner_pts, n_family = len(self.pattern), len(self.operators.family)
+    n_corner_pts, n_family = len(self.sieve), len(self.operators.family)
     # corner_point_group_ids = np.floor(np.arange(n_corner_pts * n_family) / n_family).astype(int)
-    corner_iter = zip(self.pattern['i'], self.pattern['j'])
+    corner_iter = zip(self.sieve['i'], self.sieve['j'])
     # main_it = zip(product(corner_it, self.operators.family), pt_indices) # fix corner pt, iterate through family
     # main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
 
@@ -858,7 +856,7 @@ class Sieve:
     post_q, post_p = self.operators.post_q, self.operators.post_p
     
     ## Projects each point (i,j) of the sieve onto a Krylov subspace
-    for cc, (i,j) in progressbar(enumerate(corner_iter), len(self.pattern)):  
+    for cc, (i,j) in progressbar(enumerate(corner_iter), len(self.sieve)):  
       self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
       for laplacian_op in self.operators:
         ew = self.solver(laplacian_op)
@@ -876,7 +874,7 @@ class Sieve:
     
     The spectral function can either be vector-valued (in which case the sum is used as a reduction) or scalar-valued. 
     """
-    n_pts, n_family = len(self.pattern), len(self.operators.family)
+    n_pts, n_family = len(self.sieve), len(self.operators.family)
     f = np.sum if spectral_func is None else spectral_func
     assert isinstance(f, Callable), "reduce function must be Callable"
     r, vector_valued = f(np.zeros(10)), False
@@ -899,11 +897,27 @@ class Sieve:
         values[ii,jj] = np.sum(f(ew)) if vector_valued else f(ew)
 
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
-    n_summaries = len(np.unique(self._pattern['index']))
+    n_summaries = len(np.unique(self._sieve['index']))
     summary = np.zeros(shape=(n_summaries, n_family))
-    np.add.at(summary, self._pattern['index'], np.c_[self._pattern['sign']]*values) # should be fixed based on inclusion/exclusion
+    np.add.at(summary, self._sieve['index'], np.c_[self._sieve['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
   
+  def figure_summary(self, func: Union[np.ndarray, Callable] = None, **kwargs):
+    from pbsig.vis import valid_parameters, bin_color
+    from bokeh.models import Line
+    from bokeh.plotting import figure
+    nt, ns = len(self.operators.family), len(np.unique(self._sieve['index']))
+    fig_kwargs = valid_parameters(figure, **kwargs)
+    p = kwargs.get('figure', figure(width=300, height=300, **fig_kwargs))
+    summary = self.summarize(func) if (isinstance(func, Callable) or func is None) else func
+    assert isinstance(summary, np.ndarray) and summary.shape == (ns, nt)
+    sample_index = np.arange(0, nt)
+    pt_color = (bin_color(sample_index, 'viridis')*255).astype(np.uint8)
+    for f_summary in summary:
+      p.line(sample_index, f_summary, color='red')
+      p.scatter(sample_index, f_summary, color=pt_color)
+    return p
+
   # def restrict(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):
   #   si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
   #   fp, fq = si(fp), sj(fq) 
@@ -912,37 +926,41 @@ class Sieve:
   #   else:
   #     raise NotImplementedError("Array form of projection not implemented")
   
-  def compute_dgms(self, S: ComplexLike):
+  def compute_dgms(self, S: ComplexLike, method: str = "phcol"):
+    """Constructs all the persistence diagrams in the parameterized family.
+    
+    Parameters: 
+      S : the simplicial complex used to construct the parameterized filter
+      method: persistence algorithm to use. Currently ignored. 
+    """
     ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", engine="dionysus")
     self.dgms = [ph_dgm(filter_f) for filter_f in self.operators.family]
     return self.dgms
 
-  def partition_rect():
-    """ Increases the discrimatory power by adding two interior points to the pattern"""
-    pass
-
-  def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:
-    import numdifftools as nd
-    np.array([self.gradient_fd(f=f, phi=phi, alpha0=a0, n_coeff=4, obj=True) for a0 in alpha])
-    # nd.Derivative(exp, full_output=True)
+  # def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:
+  #   import numdifftools as nd
+  #   np.array([self.gradient_fd(f=f, phi=phi, alpha0=a0, n_coeff=4, obj=True) for a0 in alpha])
+  #   # nd.Derivative(exp, full_output=True)
 
   def __call__(self, filter_f: Callable, phi: Callable, i: float = None, j: float = None, w: float = 0.0, **kwargs):
     """Computes the spectral rank invariant for a specified filter function _filter_. 
     
     Optionally regularized by matrix function _phi_. If a corner point _(i,j)_ are supplied, then the spectral function is evaluated 
-    at that point; otherwise all of the spectral invariants are computed for the stored _pattern_ and then they are 
+    at that point; otherwise all of the spectral invariants are computed for the stored sieve and then they are 
     combined according to the inclusion/exclusion aggregation rule. 
     """
     if isinstance(i, Number) and isinstance(j, Number):
       return np.sum(phi(self.restrict(i=i, j=j, w=w, f=filter_f, **kwargs)))
     elif i is None and j is None:
-      corner_it = zip(self.pattern['i'], self.pattern['j'])
+      corner_it = zip(self.sieve['i'], self.sieve['j'])
       F = np.array([np.sum(phi(self.restrict(i=i, j=j, w=w, f=filter_f, **kwargs))) for i,j in corner_it])
-      f_obj = np.zeros(len(np.unique(self._pattern['index'])))
-      np.add.at(f_obj, self._pattern['index'], self._pattern['sign']*F)
+      f_obj = np.zeros(len(np.unique(self._sieve['index'])))
+      np.add.at(f_obj, self._sieve['index'], self._sieve['sign']*F)
       return f_obj
     else: 
       raise ValueError(f"Invalid parameters {i}, {j}")
+
+
 
   def gradient_fd(self, f: Callable, phi: Callable, alpha0: float, da: float = 1e-5, n_coeff: int = 2, obj: bool = False, i: float = None, j: float = None, w: float = 0.0, **kwargs) -> np.ndarray:
     """Computes a uniform finite-difference approximation of the gradient of _f_ at the point _alpha0_ w.r.t fixed parameters (i,j,w).
@@ -951,7 +969,7 @@ class Sieve:
       f: alpha-parameterized Callable that returns a filter-function anywhere in the neighborhood of _alpha0_
       phi: vector- or scalar-valued regularizer to apply to the spectra of the Laplacian operators. 
       alpha0: coordinate to compute the gradient at
-      i,j: fixed upper half-plane points to restrict the Laplacians too. If not supplied (or None), all of gradients of _pattern_ are computed and coombined.
+      i,j: fixed upper half-plane points to restrict the Laplacians too. If not supplied (or None), all of gradients of sieve are computed and coombined.
       w: smoothing/continuity parameter, see project(...) for more details. 
       da: uniform-spacing value for the finite-difference calculation(s). Defaults to 1e-5. 
       n_coeff: number of coefficients to use in the finite-difference calculation(s). Must be positive even number (defaults to 2). Larger values yield more precise differences. 
@@ -986,29 +1004,24 @@ class Sieve:
       else: 
         return grad
 
-    ## Combine the gradients per rectlinear pattern, if warranted
+    ## Combine the gradients per rectlinear sieve, if warranted
     if isinstance(i, Number) and isinstance(j, Number):
       return _f_grad(i,j)
     elif i is None and j is None:
-      corner_it = zip(self.pattern['i'], self.pattern['j'])
+      corner_it = zip(self.sieve['i'], self.sieve['j'])
       G = np.array([_f_grad(i,j) for i,j in corner_it])
-      n_grads = len(np.unique(self._pattern['index']))
+      n_grads = len(np.unique(self._sieve['index']))
       if obj: 
         f_obj, grads = np.zeros(n_grads), np.zeros(n_grads)
-        np.add.at(f_obj, self._pattern['index'], self._pattern['sign']*G[:,0])
-        np.add.at(grads, self._pattern['index'], self._pattern['sign']*G[:,1])
+        np.add.at(f_obj, self._sieve['index'], self._sieve['sign']*G[:,0])
+        np.add.at(grads, self._sieve['index'], self._sieve['sign']*G[:,1])
         return f_obj, grads 
       else: 
         grads = np.zeros(n_grads)
-        np.add.at(grads, self._pattern['index'], self._pattern['sign']*np.ravel(G))
+        np.add.at(grads, self._sieve['index'], self._sieve['sign']*np.ravel(G))
         return grads
     else: 
       raise ValueError(f"Invalid parameters {i}, {j}")
-
-
-
-
-
 
 def lower_star_multiplicity(F: Iterable[ArrayLike], S: ComplexLike, R: Collection[tuple], p: int = 0, method: str = ["exact", "rank"], **kwargs):
   """

@@ -109,6 +109,7 @@ def perfect_hash(S: Iterable[int], output: str = "function", solver: str = "linp
       I += [i] * k
       J += [h(s) for h in HF[:k]]
     H = coo_array(([1]*(N*k), (I,J)), shape=(N, N))
+    ## TODO: make non-data int32 type for newest scipy
     
     ## If the structural rank isn't full rank, no way its feasible
     ## Otherwise, Try to find a pmf with the chosen solver

@@ -55,7 +55,7 @@ from numbers import Integral
 #       BS[i] = CubicSpline(x, c, **kwargs)
 #   return BS 
 
-class ParameterizedFilter(Callable):
+class ParameterizedFilter(Callable, Iterable, Sized):
   """Stores 1-parameter of filter functions over a fixed simplicial complex, optionally interpolated."""
   def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = None, **kwargs):
     self.complex = S
@@ -67,7 +67,14 @@ class ParameterizedFilter(Callable):
       self.family = family  # also does input validation
     else: 
       from splex.Simplex import filter_weight
-      self.family = filter_weight(lambda s: 1)
+      self.family = filter_weight(lambda s: 1) # will turn into an iterable
+
+  def __len__(self) -> int:
+    return len(self.family)
+  
+  def __iter__(self) -> Generator:
+    """Iterates through the family, yielding the parameterized operators"""
+    yield from self.family
 
   @property
   def family(self): 
@@ -106,8 +113,14 @@ class ParameterizedFilter(Callable):
     
   def figure_interp(self, p: int = None):
     import bokeh
+    from bokeh.plotting import figure, show
     dims = self.dims if p is None else p
-    # fig = figure(width=350, height = 200)
+    fig = figure(width=350, height = 200)
+    # if isinstance(dims, Integral):
+    #   for f in self.family:
+    #     simplex_weights = f(S)
+    #     fig.
+    #   fig.scatter(0)
 
   def __call__(self, p: int, t: Union[float, int], **kwargs):
     assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
@@ -122,12 +135,6 @@ class ParameterizedFilter(Callable):
     # f = filter_weight(_custom_filter)
     # return f(simplices)
   
-  def __iter__(self) -> Generator:
-    """Iterates through the family, yielding the parameterized operators"""
-    yield from self.family
-
-
-
 ## TODO: expand functionality to allow time to be tuple or Iterable, then use time[0], time[-1] to 
 ## get bounds to allow for non-uniform discrtization of time. 
 def interpolate_point_cloud(X: Iterable[ArrayLike], time: tuple = None, method: str = "cubic", **kwargs):
