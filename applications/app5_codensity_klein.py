@@ -125,7 +125,7 @@ def stratify_sample(n: int, f: np.ndarray, n_strata: int = 25, return_strata: bo
 
 from pbsig.csgraph import neighborhood_graph
 from scipy.sparse.csgraph import floyd_warshall
-stratified_ind = stratify_sample(150, knn_density)
+stratified_ind = stratify_sample(50, knn_density)
 patch_knn_graph = neighborhood_graph(grayscale_patches[stratified_ind], k = 15, weighted=True)
 patch_geodesic = floyd_warshall(patch_knn_graph.tocsr())
 
@@ -137,10 +137,86 @@ geodesic_filter = flag_weight(patch_geodesic)
 
 # %% Call rivet+console to get the minimal presentation
 # bigraded_betti 
+from pbsig.vis import figure_complex, show
 from splex import rips_complex
+print(f"Is connected? {not(np.any(np.isinf(patch_geodesic)))}")
 f1 = codensity_filter
 f2 = geodesic_filter
+S = rips_complex(patch_geodesic, radius=np.quantile(patch_geodesic, 0.80), p = 2)
+#show(figure_complex(S, pos=pca_patches[stratified_ind,:]))
 
-rips_complex(patch_geodesic, radius=np.quantile(patch_geodesic, 0.15)/2, p = 2)
 
+# %% 2-d persistence
+from splex.filtrations import RankFiltration
+from pbsig.datasets import noisy_circle
+from scipy.spatial.distance import pdist
+np.random.seed(1234)
+X = noisy_circle(35, n_noise=10)
+S = rips_complex(X, radius = np.quantile(pdist(X), 0.45)/2, p = 2)
+show(figure_complex(S, X))
+
+vertex_density = gaussian_kde(X.T).evaluate(X.T) 
+codensity_filter = lower_star_weight(max(vertex_density) - vertex_density)
+diameter_filter = flag_weight(pdist(X))
+f1,f2 = codensity_filter, diameter_filter
+
+inp_file_str = "--datatype bifiltration\n"
+inp_file_str += "--xlabel density\n"
+inp_file_str += "--ylabel diameter\n"
+inp_file_str += "\n"
+for s, fs_1, fs_2 in zip(S, f1(S), f2(S)):
+  inp_file_str += f"{' '.join([str(v) for v in s])} ; {fs_1} {fs_2}\n"
+
+import subprocess
+from tempfile import NamedTemporaryFile
+tf = NamedTemporaryFile()
+with open(tf.name, "w") as inp_file:
+  inp_file.write(inp_file_str)
+output_tf = NamedTemporaryFile()
+# inp_file_str = f"-H {H} --xbins {xbin} --ybins {ybin}\n"
+
+import pathlib
+H, xbin, ybin = 1, 15, 15
+xreverse, yreverse = True, False
+rivet_path = pathlib.Path("/Users/mpiekenbrock/rivet/rivet_console").resolve()
+assert rivet_path.exists(), "Did not find path to 'rivet_console'"
+rivet_path_str = str(rivet_path.absolute())
+rivet_cmd = [rivet_path_str, inp_file.name]
+rivet_cmd += ["--betti", "--homology", str(H), "--xbins", str(xbin), "--ybins", str(ybin)]
+# rivet_cmd += ["--xreverse" if xreverse else ""]
+# rivet_cmd += ["--yreverse" if yreverse else ""]
+rivet_cmd += [">", output_tf.name]
+res = subprocess.call(' '.join(rivet_cmd), shell=True)
+
+with open(output_tf.name) as f:
+  rivet_out_lines = [line.rstrip('\n') for line in f]
+
+xi, yi, di, bi = [rivet_out_lines.index(key) for key in ['x-grades', 'y-grades', 'Dimensions > 0:', 'Betti numbers:']]
+b0,b1,b2 = [rivet_out_lines.index(key) for key in ['xi_0:', 'xi_1:', 'xi_2:']]
+betti_info = {}
+betti_info['x-grades'] = np.array([eval(x) for x in rivet_out_lines[(xi+1):yi] if len(x) > 0])
+betti_info['y-grades'] = np.array([eval(x) for x in rivet_out_lines[(yi+1):di] if len(x) > 0])
+betti_info['hilbert_pts'] = [eval(x) for x in rivet_out_lines[(di+1):bi] if len(x) > 0]
+betti_info['betti_0'] = [eval(x) for x in rivet_out_lines[(b0+1):b1] if len(x) > 0]
+betti_info['betti_1'] = [eval(x) for x in rivet_out_lines[(b1+1):b2] if len(x) > 0]
+betti_info['betti_2'] = [eval(x) for x in rivet_out_lines[(b2+1):] if len(x) > 0]
+
+## Show the Hilbert function 
+xg, yg = betti_info['x-grades'], betti_info['y-grades']
+betti0 = np.array([(xg[i],yg[j]) for i,j,val in betti_info['betti_0']])
+betti1 = np.array([(xg[i],yg[j]) for i,j,val in betti_info['betti_1']])
+hilbert = np.array([(xg[i],yg[j],val) for i,j,val in betti_info['hilbert_pts']])
+
+## basic 
+from pbsig.vis import rgb_to_hex
+p = figure(width=250, height=250)
+p.scatter(*betti0.T, size=10, color=rgb_to_hex([52, 209, 93, int(0.40*255)]))
+p.scatter(*betti1.T, size=10, color=rgb_to_hex([212, 91, 97, int(0.40*255)]))
+p.scatter(*hilbert[:,:2].T, size=10, marker='x', color=np.array(['gray', 'blue'])[hilbert[:,2].astype(int)-1])
+show(p)
+
+
+# %% Show the persistence diagram for a specific combination to optimize for
+offset = -0.0109
+angle = 85.4741
 
