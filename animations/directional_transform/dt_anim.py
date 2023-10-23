@@ -9,7 +9,7 @@ from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph
 from splex import *
 from scipy.spatial.distance import pdist, squareform
-from splex.Simplex import filter_weight
+from splex.filters import generic_filter
 import bokeh
 from bokeh.io import output_notebook
 from bokeh.layouts import row, column
@@ -18,7 +18,7 @@ from bokeh.transform import linear_cmap
 from bokeh.models import Arrow, NormalHead, Range1d, ColorBar, ColorMapper, ContinuousColorMapper, ColumnDataSource
 from pbsig.color import bin_color
 from more_itertools import collapse
-from splex import lower_star_weight
+from splex import lower_star_filter
 from pbsig.vis import figure_dgm
 from pbsig.color import rgb_to_hex
 from pbsig.linalg import ParameterizedLaplacian
@@ -64,7 +64,7 @@ def figure_dt(S: ComplexLike, shape_xy: np.ndarray, t: float):
   p.title.text_font_size = '18pt'
 
   dv = np.array([np.cos(t), np.sin(t)])
-  filter_dv = lower_star_weight(shape_xy @ dv)
+  filter_dv = lower_star_filter(shape_xy @ dv)
   line_xs = [shape_xy[e,0] for e in faces(S,1)]
   line_ys = [shape_xy[e,1] for e in faces(S,1)]
   dv_e_color = (bin_color(filter_dv(faces(S,1)), 'turbo', lb=f_lb, ub=f_ub) * 255).astype(np.uint8)
@@ -265,7 +265,7 @@ from scipy.sparse.linalg import eigsh
 eigsh(L, k=100, return_eigenvectors=False)
 
 
-lower_star_weight((X @ np.array([0,1])) + radius)
+lower_star_filter((X @ np.array([0,1])) + radius)
 
 # from scipy.sparse import eye
 # from scipy.sparse.linalg import aslinearoperator

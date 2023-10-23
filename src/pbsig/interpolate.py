@@ -66,8 +66,8 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     if family is not None: 
       self.family = family  # also does input validation
     else: 
-      from splex.Simplex import filter_weight
-      self.family = filter_weight(lambda s: 1) # will turn into an iterable
+      from splex.filters import generic_filter
+      self.family = generic_filter(lambda s: 1) # will turn into an iterable
 
   def __len__(self) -> int:
     return len(self.family)
@@ -132,7 +132,7 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     #   p = len(sigma) - 1
     #   if p in self.splines_.keys():
     #     p_splines = self.splines_[p]
-    # f = filter_weight(_custom_filter)
+    # f = generic_filter(_custom_filter)
     # return f(simplices)
   
 ## TODO: expand functionality to allow time to be tuple or Iterable, then use time[0], time[-1] to 

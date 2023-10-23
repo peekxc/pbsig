@@ -48,7 +48,7 @@ show(row(p, q))
 
 # %% Color points by density + diameter
 from splex.geometry import delaunay_complex
-diam_f = flag_weight(pdist(X))
+diam_f = flag_filter(pdist(X))
 kde = gaussian_kde(X.T)
 x_density = kde.evaluate(X.T)
 x_codensity = max(x_density) - x_density
@@ -80,13 +80,13 @@ show(row(p, q, r, s))
 
 # %% Parameterized the weight function
 import functools
-from splex.geometry import lower_star_weight
+from splex.geometry import lower_star_filter
 def codensity(alpha: float):
   """Codensity of a point set _X_ with some bandwidth _alpha_."""
   x_density = gaussian_kde(X.T, bw_method=alpha).evaluate(X.T)
   x_density /= max(x_density)
   x_codensity = max(x_density) - x_density
-  return lower_star_weight(x_codensity)
+  return lower_star_filter(x_codensity)
   # return functools.partial(lambda s, c: max(c[s]), c=x_codensity)
 
 # %% Change density parameter

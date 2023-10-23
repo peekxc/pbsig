@@ -7,7 +7,7 @@ from pbsig.apparent_pairs import apparent_pairs
 
 ## Random geometric rips complex 
 X = np.random.uniform(size=(14,2))
-f = flag_weight(pdist(X))
+f = flag_filter(pdist(X))
 er = enclosing_radius(pdist(X))
 K = rips_complex(X, radius=er, p=2)
 

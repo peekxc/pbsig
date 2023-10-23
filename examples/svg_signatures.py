@@ -46,7 +46,7 @@ K = filtration(S, f=lambda s: s)
 s = 0.0
 ext_dgms = []
 for i, v in enumerate(DV):
-  K.reindex(lower_star_weight(np.maximum(X @ v, s*ecc)))
+  K.reindex(lower_star_filter(np.maximum(X @ v, s*ecc)))
   dgms = ph(K, engine="dionysus")
   finite_dgm0 = dgms[0][dgms[0]['death'] != np.inf]
   ext_dgms.append(np.c_[finite_dgm0['birth'], finite_dgm0['death'], np.repeat(i, len(finite_dgm0)).astype(int)])
@@ -71,7 +71,7 @@ show(p)
 
 from pbsig.betti import Sieve
 s = 0.05
-filter_family = [lower_star_weight(np.maximum(X @ v, s*ecc)) for v in DV]
+filter_family = [lower_star_filter(np.maximum(X @ v, s*ecc)) for v in DV]
 sieve = Sieve(S, filter_family)
 sieve.pattern = np.array([[0.4,0.6,0.6,0.8]])
 sieve.sift(pp=1.0)

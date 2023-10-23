@@ -1662,13 +1662,13 @@ def is_symmetric(A) -> bool:
   vu = vu[sortu]
   return np.allclose(vl, vu)    
 
-from splex.Simplex import filter_weight
+from splex.filters import generic_filter
 
 class ParameterizedLaplacian(Callable):
   def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = 0, **kwargs):
     self.p_faces = np.array(list(faces(S, p)))
     self.q_faces = np.array(list(faces(S, p+1))) ## to remove
-    self.family = family if family is not None else filter_weight(lambda s: 1) # also does input validation
+    self.family = family if family is not None else generic_filter(lambda s: 1) # also does input validation
     self.param_laplacian(S, p=p, **kwargs)  ## this call is independent of the family
     self.post_p = lambda fp: fp             ## family-wide post-composition of family filter function (p)
     self.post_q = lambda fq: fq             ## family-wide post-composition of family filter function (q)

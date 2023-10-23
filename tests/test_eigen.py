@@ -38,14 +38,14 @@ def test_operators():
   fv = np.random.uniform(size=card(S,0), low=0, high=0.01)
 
   ## Normalized Laplacians are quite stable
-  LM = up_laplacian(S, p=0, form='array', weight=lower_star_weight(fv), normed=True)
-  LO = up_laplacian(S, p=0, form='lo', weight=lower_star_weight(fv), normed=True)
+  LM = up_laplacian(S, p=0, form='array', weight=lower_star_filter(fv), normed=True)
+  LO = up_laplacian(S, p=0, form='lo', weight=lower_star_filter(fv), normed=True)
   ew0_ar = eigsh(LM, k=30)[0]
   ew0_lo = eigsh(LO, k=30)[0]
   assert np.allclose(ew0_ar - ew0_lo, 0.0)
 
-  LM = up_laplacian(S, p=1, form='array', weight=lower_star_weight(fv), normed=True)
-  LO = up_laplacian(S, p=1, form='lo', weight=lower_star_weight(fv), normed=True)
+  LM = up_laplacian(S, p=1, form='array', weight=lower_star_filter(fv), normed=True)
+  LO = up_laplacian(S, p=1, form='lo', weight=lower_star_filter(fv), normed=True)
   ew0_ar = eigsh(LM, k=30)[0]
   ew0_lo = eigsh(LO, k=30)[0]
   assert np.allclose(ew0_ar - ew0_lo, 0.0)
@@ -63,12 +63,12 @@ def test_matvec():
       assert max(abs((LM @ x) - (LO @ x))) <= 1e-14
 
 
-fe = np.array([lower_star_weight(fv)(e) for e in faces(S,1)])
+fe = np.array([lower_star_filter(fv)(e) for e in faces(S,1)])
 np.array(LO.set_weights(np.sqrt(fv), fe, np.sqrt(fv)).degrees)[:10]
 np.array(LO.set_weights(np.ones(len(fv)), fe, np.ones(len(fv))).degrees)[:10]
 
 noise = np.random.uniform(size=len(fv), low=-1e-8, high=1e-8)
-LO_perturb = up_laplacian(S, p=0, form='lo', weight=lower_star_weight(fv + noise), normed=True)
+LO_perturb = up_laplacian(S, p=0, form='lo', weight=lower_star_filter(fv + noise), normed=True)
 max(abs(eigsh(LO_perturb, k=30)[0] - ew0))
 
 np.where(np.isclose(np.sqrt(LO.degrees), 0.0), 0, 1/np.sqrt(LO.degrees))

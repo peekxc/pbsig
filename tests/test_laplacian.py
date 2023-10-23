@@ -21,7 +21,7 @@ def test_generate():
 # def test_masking():
 #   X, K = generate_dataset(10)
 #   wv = np.random.uniform(size=card(K,1), low=0, high=150)
-#   LN = up_laplacian(K, p=0, weight=lower_star_weight(wv), form='lo', normed=True)
+#   LN = up_laplacian(K, p=0, weight=lower_star_filter(wv), form='lo', normed=True)
 #   # LN @ np.eye(LN.shape[0])
 #   fq, fpl, fpr = np.array(LN.fq), np.array(LN.fpl), np.array(LN.fpr)
 #   ## test turning off vertices + edges
@@ -35,7 +35,7 @@ def test_generate():
 def test_matprop():
   X, K = generate_dataset(50)
   wv = np.random.uniform(size=card(K,1), low=0, high=150)
-  LN = up_laplacian(K, p=1, weight=lower_star_weight(wv), form='array', normed=True)
+  LN = up_laplacian(K, p=1, weight=lower_star_filter(wv), form='array', normed=True)
   cond1 = np.linalg.cond((LN + (1e-5)*np.eye(LN.shape[0])))
   cond2 = np.linalg.cond(LN.todense())
   assert cond1 < cond2 
@@ -43,7 +43,7 @@ def test_matprop():
 def test_energy_props():
   S = simplicial_complex([[0,1,2,3], [4,5,6,7], [8,9,10,11]])
   wv = np.random.uniform(size=card(S,0), low=0, high=150)
-  LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
+  LN = up_laplacian(S, p=0, weight=lower_star_filter(wv), form='array', normed=True)
   ## || LN ||_ast = 
   # plt.spy(LN)
 
@@ -57,7 +57,7 @@ def test_energy_props():
   ## Ensure singletons don't contribute to energy
   S = simplicial_complex([[0,1,2,3], [4], [5,6,7,8], [9], [10,11,12,13], [14]])
   wv = np.random.uniform(size=card(S,0), low=0, high=150)
-  LN = up_laplacian(S, p=0, weight=lower_star_weight(wv), form='array', normed=True)
+  LN = up_laplacian(S, p=0, weight=lower_star_filter(wv), form='array', normed=True)
   c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[0:4,0:4]))))
   c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[5:9,5:9]))))
   c3 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[10:14,10:14]))))
@@ -65,7 +65,7 @@ def test_energy_props():
   assert np.isclose(c1 + c2 + c3, LE_energy)
 
   ## Ensure additivity between disjoint components applies to higher dimensions
-  LN = up_laplacian(S, p=1, weight=lower_star_weight(wv), form='array', normed=True)
+  LN = up_laplacian(S, p=1, weight=lower_star_filter(wv), form='array', normed=True)
   # plt.spy(LN)
   c1 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[0:6,0:6]))))
   c2 = sum(np.sqrt(np.abs(np.linalg.eigvalsh(LN.todense()[6:12,6:12]))))
@@ -113,8 +113,8 @@ def test_stability():
   S = simplicial_complex([[0,1,2], [0,1,3]])
   fv = np.array([1e-15, 0.2, 0.4, 1.5])
   # fv = np.array([1,1,1,1])
-  fe = np.array([lower_star_weight(fv)(e) for e in faces(S, 1)])
-  L1 = up_laplacian(S, p=0, normed=True, weight=lower_star_weight(fv))
+  fe = np.array([lower_star_filter(fv)(e) for e in faces(S, 1)])
+  L1 = up_laplacian(S, p=0, normed=True, weight=lower_star_filter(fv))
   solver = PsdSolver()
   ew = solver(L1)
 
@@ -132,7 +132,7 @@ def test_stability():
   fv = np.maximum(relative_noise(fv, 1e-2), 0.0) ## this should be regarded as a large perturbation
 
   # fv += np.array([-1e-15, 1e-15, 1e-15, 1e-15])
-  L2 = up_laplacian(S, p=0, normed=True, weight=lower_star_weight(fv))
+  L2 = up_laplacian(S, p=0, normed=True, weight=lower_star_filter(fv))
   ew1 = solver(L1)
   ew2 = solver(L2)
   print(f"Absolute error: {max(abs(ew2-ew1)):.12f}")
@@ -189,8 +189,8 @@ def benchmark_matvec():
   X, S = generate_dataset(10000, 2)
   p = 1
   fv = np.random.uniform(size=card(S,0), low=0, high=5)
-  LO = up_laplacian(S, p=p, form='lo', weight=lower_star_weight(fv))
-  LM = up_laplacian(S, p=p, form='array', weight=lower_star_weight(fv))
+  LO = up_laplacian(S, p=p, form='lo', weight=lower_star_filter(fv))
+  LM = up_laplacian(S, p=p, form='array', weight=lower_star_filter(fv))
   x = np.random.uniform(size=card(S,p), low=-1, high=1)
   time_linearop = timeit.timeit(lambda: LO @ x, number=1000)
   time_spmatrix = timeit.timeit(lambda: LM @ x, number=1000)
@@ -200,7 +200,7 @@ def benchmark_matvec():
 ## Test elementwise definitions
 # D1 = boundary_matrix(S, p=1)
 # fv = np.random.uniform(size=card(S,0), low=0, high=1)
-# fe = np.array([lower_star_weight(fv)(e) for e in faces(S,1)])
+# fe = np.array([lower_star_filter(fv)(e) for e in faces(S,1)])
 # F = dict(zip(faces(S,1), fe))
 # W0 = np.diag(fv)
 # W1 = np.diag(fe)
@@ -222,16 +222,16 @@ def benchmark_matvec():
 # np.diag(1/np.sqrt(deg)) @ D1 @ W1 @ D1.T @ np.diag(1/np.sqrt(deg))
 
 # ## Indeed: this matches
-# up_laplacian(S, weight=lower_star_weight(fv), normed=True).todense()
+# up_laplacian(S, weight=lower_star_filter(fv), normed=True).todense()
 
 # ## Matches higher order too 
 # X, S = generate_dataset(30, 2)
 # fv = np.random.uniform(size=card(S,0), low=0, high=5.0)
-# np.diag(up_laplacian(S, weight=lower_star_weight(fv), normed=True, p=1).todense())
-# L = up_laplacian(S, weight=lower_star_weight(fv), normed=True, p=1).todense()
+# np.diag(up_laplacian(S, weight=lower_star_filter(fv), normed=True, p=1).todense())
+# L = up_laplacian(S, weight=lower_star_filter(fv), normed=True, p=1).todense()
 # max(np.linalg.eigvalsh(L)) <= 3 # true
 
-# L2 = up_laplacian(S, weight=lower_star_weight(150*fv), normed=True, p=1).todense()
+# L2 = up_laplacian(S, weight=lower_star_filter(150*fv), normed=True, p=1).todense()
 # max(abs(np.linalg.eigvalsh(L2) - np.linalg.eigvalsh(L)))
 
 # for a,b in zip(np.random.uniform(size=130, low=0, high=2), np.random.uniform(size=130, low=0, high=2)):
@@ -248,10 +248,10 @@ def benchmark_matvec():
 #   fv = np.random.uniform(size=card(K,0), low=0.0, high=5.0)
 #   fv2 = fv + np.random.uniform(size=len(fv), low=-eps, high=eps)
 #   actual_delta = max(abs(fv - fv2))
-#   L = up_laplacian(K, p = 0, weight=lower_star_weight(fv))
-#   L2 = up_laplacian(K, p = 0, weight=lower_star_weight(fv2))
+#   L = up_laplacian(K, p = 0, weight=lower_star_filter(fv))
+#   L2 = up_laplacian(K, p = 0, weight=lower_star_filter(fv2))
   
-#   ev = np.array([lower_star_weight(fv)(e) for e in faces(K, 1)])
+#   ev = np.array([lower_star_filter(fv)(e) for e in faces(K, 1)])
 #   D1 = boundary_matrix(K, p=1)
 #   L = np.diag(1/np.sqrt(fv)) @ D1 @ np.diag(ev) @ D1.T @ np.diag(1/np.sqrt(fv))
 #   L2 = np.diag(1/np.sqrt(fv-0.001)) @ D1 @ np.diag(ev+0.001) @ D1.T @ np.diag(1/np.sqrt(fv-0.001))
@@ -281,7 +281,7 @@ def benchmark_matvec():
 #   from pbsig.interpolate import interpolate_family
 #   S = simplicial_complex([[0,1,2],[2,3,4]])
 #   x_dom = np.linspace(0, 1, 15)
-#   F = [lower_star_weight(np.random.uniform(low=0, high=1, size=card(S,0))) for i in range(len(x_dom))]
+#   F = [lower_star_filter(np.random.uniform(low=0, high=1, size=card(S,0))) for i in range(len(x_dom))]
 #   filter_family = [[f(s) for s in S] for f in F]
 #   # interpolate_family(filter_family)
 #   from scipy.interpolate import CubicSpline, UnivariateSpline

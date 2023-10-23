@@ -34,7 +34,7 @@ show(p)
 from pbsig.persistence import ph
 from pbsig.vis import figure_dgm, g_edges
 dist_to_center = np.linalg.norm(X - X.mean(axis=0), axis=1)
-filt_img = filtration(st, lower_star_weight(-dist_to_center))
+filt_img = filtration(st, lower_star_filter(-dist_to_center))
 dgm = ph(filt_img, engine="dionysus")
 
 ## Show the 0-dimensional persistence diagram
@@ -54,7 +54,7 @@ box_query(dgm, *box)
 # p = figure_complex(filt_img, X[np.ravel(list(faces(S,0))),:], width=350, height=350)
 
 
-filter_f = lower_star_weight(-dist_to_center)
+filter_f = lower_star_filter(-dist_to_center)
 a,b,c,d = box
 
 ## First term 

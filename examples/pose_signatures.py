@@ -83,12 +83,12 @@ eff_f = [np.array(ecc) for ecc in ecc_f]
 
 # %% Compute eccentricity-equipped diagrams 
 from pbsig.persistence import ph
-from splex.geometry import flag_weight
+from splex.geometry import flag_filter
 
 dgms = []
 for i, (X, mesh) in enumerate(meshes):
   S = simplicial_complex(mesh.triangles)
-  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], 0.50*eff_f[i]))
+  diam_filter = flag_filter(np.maximum(mesh_geodesics[i], 0.50*eff_f[i]))
   K = filtration(S, f=diam_filter)
   dgms.append(ph(K, engine="dionysus"))
 
@@ -98,9 +98,9 @@ dgm_vary = []
 X, mesh = meshes[i]
 S = simplicial_complex(mesh.triangles)
 # ecc_p = [0,0.01] + list(np.linspace(0.1, 1, 9)) + list(range(1,6)) + [10,30,50]
-K = filtration(S, f=flag_weight(np.maximum(mesh_geodesics[i], 0.0*eff_f[i])))
+K = filtration(S, f=flag_filter(np.maximum(mesh_geodesics[i], 0.0*eff_f[i])))
 for c in np.linspace(0, 0.10, 6):
-  diam_filter = flag_weight(np.maximum(mesh_geodesics[i], c*eff_f[i]))
+  diam_filter = flag_filter(np.maximum(mesh_geodesics[i], c*eff_f[i]))
   K.reindex(diam_filter)
   dgm_vary.append(ph(K, engine="dionysus"))
 
@@ -200,8 +200,8 @@ sieves = []
 for i, (X, mesh) in enumerate(meshes):
   X, mesh = meshes[i]
   S = simplicial_complex(mesh.triangles, form="tree")
-  # diam_filters = [flag_weight(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
-  f = flag_weight(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
+  # diam_filters = [flag_filter(np.maximum(mesh_geodesics[i], r*eff_f[i])) for r in [0.0, 0.01, 0.1, 0.2, 0.5, 5.0]]
+  f = flag_filter(np.maximum(mesh_geodesics[i], 0.5*eff_f[i]))
   sieve = Sieve(S, [f], p=1)
   sieve.pattern = rects
   # sieve.randomize_pattern(4) # show(sieve.figure_pattern())
@@ -299,11 +299,11 @@ i = 23
 X, mesh = meshes[i]
 # o3.visualization.draw_geometries([mesh])
 
-# tri_weight = flag_weight(mesh_geodesics[i])(np.array(mesh.triangles))
-# tri_weight = lower_star_weight(X @ np.array([0,0,1]))(np.array(mesh.triangles))
-# tri_weight = lower_star_weight(mesh_ecc[i])(np.array(mesh.triangles))
+# tri_weight = flag_filter(mesh_geodesics[i])(np.array(mesh.triangles))
+# tri_weight = lower_star_filter(X @ np.array([0,0,1]))(np.array(mesh.triangles))
+# tri_weight = lower_star_filter(mesh_ecc[i])(np.array(mesh.triangles))
 # 0.  , 0.02, 0.04, 0.06, 0.08, 0.1
-# tri_weight = flag_weight(np.maximum(mesh_geodesics[i], 0.08*eff_f[i]))(np.array(mesh.triangles))
+# tri_weight = flag_filter(np.maximum(mesh_geodesics[i], 0.08*eff_f[i]))(np.array(mesh.triangles))
 
 device = o3.core.Device("CPU:0")
 dtype_f = o3.core.float32

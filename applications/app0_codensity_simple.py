@@ -32,12 +32,12 @@ def codensity(bw: float):
   return x_codensity
 
 # %% Evaluate H1-persistence across a 1-parameter family
-from splex import lower_star_weight
+from splex import lower_star_filter
 from pbsig.interpolate import ParameterizedFilter
 bw_scott = gaussian_kde(X.T, bw_method='scott').factor
 bw_bnds = (bw_scott*0.10, bw_scott*2)
 timepoints = np.linspace(*bw_bnds, 100) # np.geomspace(*bw_bnds, 100)
-codensity_family = [lower_star_weight(codensity(bw)/np.sum(codensity(bw))) for bw in timepoints] # note the normalization 
+codensity_family = [lower_star_filter(codensity(bw)/np.sum(codensity(bw))) for bw in timepoints] # note the normalization 
 P = ParameterizedFilter(S, family = codensity_family, p = 1)
 # P.interpolate(interval=(0, 1.8))
 

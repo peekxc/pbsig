@@ -8,7 +8,7 @@ from .persistence import *
 from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
-from splex.geometry import flag_weight
+from splex.geometry import flag_filter
 from itertools import *
 from more_itertools import spy 
 import copy
@@ -273,7 +273,7 @@ def betti_query(S: Union[LinearOperator, ComplexLike], i: float, j: float, smoot
 ## Cone the complex
 def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
   from scipy.spatial.distance import pdist
-  flag_w = flag_weight(x)
+  flag_w = flag_filter(x)
   def _cone_weight(s):
     s = Simplex(s)
     if s == Simplex([vid]):
@@ -926,14 +926,14 @@ class SpectralRankInvariant:
   #   else:
   #     raise NotImplementedError("Array form of projection not implemented")
   
-  def compute_dgms(self, S: ComplexLike, method: str = "phcol"):
+  def compute_dgms(self, S: ComplexLike, **kwargs):
     """Constructs all the persistence diagrams in the parameterized family.
     
     Parameters: 
       S : the simplicial complex used to construct the parameterized filter
       method: persistence algorithm to use. Currently ignored. 
     """
-    ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", engine="dionysus")
+    ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", **kwargs)
     self.dgms = [ph_dgm(filter_f) for filter_f in self.operators.family]
     return self.dgms
 

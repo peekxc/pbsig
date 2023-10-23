@@ -42,9 +42,9 @@ SHAPE_INTERP = LazyIterable(lambda index: F_interp(float(index/100)), count=100)
 
 ## Generate the parameterized family of filter functions
 from pbsig.itertools import rproduct, rstarmap
-from splex import lower_star_weight
+from splex import lower_star_filter
 parameter_space = rproduct(SHAPE_INTERP, DV) 
-filter_mesh = lambda mesh, v: lower_star_weight(mesh @ v)
+filter_mesh = lambda mesh, v: lower_star_filter(mesh @ v)
 filter_family = rstarmap(filter_mesh, parameter_space)
 
 ## Build the sieve 
@@ -165,7 +165,7 @@ from pbsig.betti import Sieve
 ## Plot the image contours
 # X = SHAPE_INTERP[100]
 X = SHAPE_PCS[3]
-f = lower_star_weight(X @ np.array([1,0]))
+f = lower_star_filter(X @ np.array([1,0]))
 sieve_image = Sieve(S, family=[f],  p=0, form='lo')
 # sieve_image.solver = 
 
@@ -175,7 +175,7 @@ phi = sgn_approx(eps=0.001, p=1.0)
 xi, yi = np.meshgrid(np.linspace(0,1,50), np.linspace(0,1,50))
 z = np.zeros(xi.shape)
 for v in stratify_sphere(1, 32):
-  f = lower_star_weight(X @ v)
+  f = lower_star_filter(X @ v)
   z += np.reshape([np.sum(phi(sieve_image.project(i,j,w=0.25,f=f, k=10))) if i < j else 0.0 for i,j in zip(np.ravel(xi),np.ravel(yi))], xi.shape)
   print(v)
 
@@ -192,7 +192,7 @@ X = SHAPE_PCS[2]
 zero_dgms = []
 K = filtration(S, f=lambda s: s)
 for i, v in enumerate(stratify_sphere(d=1, n=100)):
-  K.reindex(lower_star_weight(X @ v))
+  K.reindex(lower_star_filter(X @ v))
   dgm0 = ph(K, engine="dionysus")[0]
   inessential = dgm0['death'] != np.inf
   dgm0_ext = np.c_[dgm0['birth'][inessential], dgm0['death'][inessential], np.repeat(i, sum(inessential))]

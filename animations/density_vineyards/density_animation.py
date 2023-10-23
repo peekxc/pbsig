@@ -36,7 +36,7 @@ def codensity(bw: float):
   return x_codensity
 
 ## TODO: make vectorized ! and don't assume vertices are labeled 0...(n-1)
-def lower_star_weight(x: ArrayLike) -> Callable:
+def lower_star_filter(x: ArrayLike) -> Callable:
   def _weight(s: SimplexConvertible) -> float:
     return max(x[s])
   return _weight
@@ -84,7 +84,7 @@ def figure_spy(A: spmatrix, highlight = None, **kwargs):
 
 # S = []
 # for alpha in np.linspace(0.15, 0.70, 10):
-#   f = lower_star_weight(codensity(alpha))
+#   f = lower_star_filter(codensity(alpha))
 #   L = filtration(K.values(), f = f)
 #   schedule, _ = linear_homotopy(K, L)
 #   K.reindex(f)
@@ -117,7 +117,7 @@ for i, (alpha, ind) in progressbar(enumerate(zip(alpha_family, chunked(schedule,
     changed_simplices |= set([c,t])
     simplices[ii] = t
     simplices[ii+1] = c
-  f = lower_star_weight(codensity(alpha))
+  f = lower_star_filter(codensity(alpha))
   s_color = bin_color(np.array([f(s) for s in faces(K)]))
   s_color_red = np.array([s_color[i,:] if s not in changed_simplices else [1.0, 0.0, 0.0, 1.0] for i, s in enumerate(faces(K))])
   p = figure_complex(K, pos=X, color=s_color_red, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
@@ -130,7 +130,7 @@ for i, (alpha, ind) in progressbar(enumerate(zip(alpha_family, chunked(schedule,
 dgms = []
 alpha_family = np.linspace(0.15, 0.70, int(np.ceil(len(schedule)/nc)))
 for i, alpha in progressbar(enumerate(alpha_family), count=len(alpha_family)):
-  f = lower_star_weight(codensity(alpha))
+  f = lower_star_filter(codensity(alpha))
   K.reindex(f)
   dgms.append(ph(K, engine="dionysus")[1])
 vineyard = np.array([(float(d['birth']), float(d['death'])) for d in dgms])
@@ -140,7 +140,7 @@ vineyard = np.array([(float(d['birth']), float(d['death'])) for d in dgms])
 from pbsig.vis import figure_dgm, bin_color
 from bokeh.models import Range1d
 for i, pt in progressbar(enumerate(vineyard), count=len(vineyard)):
-  f = lower_star_weight(codensity(alpha))
+  f = lower_star_filter(codensity(alpha))
   #p = figure_complex(K, pos=X, color=s_color_red, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
   p = figure_dgm(width=400, height=400)
   p.scatter(*vineyard.T, color=bin_color(alpha_family))
@@ -159,7 +159,7 @@ for i, pt in progressbar(enumerate(vineyard), count=len(vineyard)):
 from pbsig.vis import figure_complex, bin_color
 from bokeh.models import Range1d
 for i, (alpha, ind) in progressbar(enumerate(zip(alpha_family, chunked(schedule, nc))), count=len(alpha_family)):
-  f = lower_star_weight(codensity(alpha))
+  f = lower_star_filter(codensity(alpha))
   s_color = bin_color(np.array([f(s) for s in faces(K)]))
   p = figure_complex(K, pos=X, color=s_color, title="Complex by codensity", simplex_kwargs={0: {'size': 8}}, width=400, height=400)
   p.toolbar_location = None
@@ -182,7 +182,7 @@ from bokeh.models import Span
 from bokeh.io import export_png
 #int(np.ceil(len(schedule)/nc))
 alpha_family = np.linspace(0.15, 0.70, 604) # 0.15, 0.70
-F = [lower_star_weight(codensity(alpha)) for alpha in alpha_family]
+F = [lower_star_filter(codensity(alpha)) for alpha in alpha_family]
 p = figure(width=400, height=400)
 x_coords = [list(x) for x in pairwise(alpha_family)]
 # x_coords = [list(x) for x in chunked(alpha_family, 20)]
@@ -231,5 +231,5 @@ for i, alpha in progressbar(enumerate(alpha_family), count=len(alpha_family)):
 # p.background_fill_color = "#000000"
 # p.image_rgba(image=[np.flipud(D)], x=0, y=0, dw=10, dh=10, dilate=True, coor='blue')
 
-# update_lower_star(K, R, V, lower_star_weight(codensity(0.10)), vines=True, progress=True)
+# update_lower_star(K, R, V, lower_star_filter(codensity(0.10)), vines=True, progress=True)
 # export_png(plot, filename="plot.png")

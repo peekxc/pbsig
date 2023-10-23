@@ -31,10 +31,10 @@ def vertex_weight(v: int, eps: float, alpha: float):
     return (eps * alpha) - shift(eps)
 
 def relaxed_diam(eps: float):
-  from splex import flag_weight
+  from splex import flag_filter
   vertex_weights = np.array([vertex_weight(i, eps, enc_radius) for i in range(len(X))])
   edge_weights = dx + np.array([wi + wj for wi, wj in combinations(vertex_weights, 2)])
-  return flag_weight(edge_weights, vertex_weights)
+  return flag_filter(edge_weights, vertex_weights)
 
 from pbsig.interpolate import ParameterizedFilter
 K = rips_complex(X, p=2, radius = enc_radius)
@@ -143,10 +143,10 @@ def simplex_birth_time(sigma: tuple, eps: float):
     return max_weight
 
 from pbsig.persistence import ph
-from splex import filter_weight, flag_weight, filtration
+from splex import generic_filter, flag_filter, filtration
 
 # F = filtration(K, f=f_sparse)
-f_sparse = filter_weight(simplex_birth_time)
+f_sparse = generic_filter(simplex_birth_time)
 X_weight = f_sparse(combinations(range(len(X)), 2))
 
 (len(X_weight) - np.sum(X_weight == np.inf))/len(X_weight)

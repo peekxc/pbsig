@@ -38,7 +38,7 @@ show(row(*scatters))
 
 from pbsig.persistence import ph
 from pbsig.vis import plot_dgm
-K = filtration(S, f=flag_weight(X))
+K = filtration(S, f=flag_filter(X))
 dgm = ph(K, engine="dionysus")
 plot_dgm(dgm[1])
 
@@ -46,9 +46,9 @@ from pbsig.betti import MuSignature, mu_query
 from pbsig.linalg import * 
 R = np.array([4, 4.5, 6.5, 7.5])
 T_dom = np.append(np.linspace(0.87*tau, tau, 150, endpoint=False), np.linspace(tau, tau*1.12, 150, endpoint=False))
-t_family = [flag_weight(SW(n=N, d=M, tau=t)) for t in T_dom]
+t_family = [flag_filter(SW(n=N, d=M, tau=t)) for t in T_dom]
 
-MU_f = mu_query(S, R=R, f=flag_weight(SW(n=N, d=M, tau=tau)), p=1, form="array")
+MU_f = mu_query(S, R=R, f=flag_filter(SW(n=N, d=M, tau=tau)), p=1, form="array")
 MU_f(smoothing=None)
 MU_f(smoothing=False)
 MU_f(smoothing=True)

@@ -19,7 +19,7 @@ dataset = mpeg7()
 X = dataset[('turtle',1)]
 S = cycle_graph(len(X))
 radius = np.max(pdist(X))/2
-L = up_laplacian(S, p=0, form='lo', weight=lower_star_weight((X @ np.array([0,1])) + radius))
+L = up_laplacian(S, p=0, form='lo', weight=lower_star_filter((X @ np.array([0,1])) + radius))
 
 ## Inspect the data set
 print(dataset.keys())

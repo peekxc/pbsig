@@ -9,7 +9,7 @@ diam_X = np.max(pdist(X))
 
 fv = np.array(X) @ np.array([0,0,1])
 fv += abs(np.min(fv))
-f = lower_star_weight(fv)
+f = lower_star_filter(fv)
 
 from pbsig.linalg import up_laplacian, pseudoinverse, LaplacianOperator
 op = up_laplacian(S, p=1, form='lo', weight=f, normed=True)
@@ -25,7 +25,7 @@ spri = []
 for pt in progressbar(S2_pts):
   fv = np.array(X) @ np.array(pt)
   fv += abs(np.min(fv))
-  f = lower_star_weight(fv)
+  f = lower_star_filter(fv)
   L.update_scalar_product(f)
   spri.append(eigsh(op, k=20, which='LM', tol=1e-5, return_eigenvectors=False))
 

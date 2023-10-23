@@ -32,12 +32,12 @@ plot_complex(S, pos=G, color = C(0.56).flatten(), palette="gray", bin_kwargs = d
 
 
 ## 
-from splex import filtration, flag_weight, lower_star_weight
+from splex import filtration, flag_filter, lower_star_filter
 from pbsig.vis import figure_dgm
 from bokeh.plotting import show
 
 for t in np.linspace(0, 1.5, 150):
-  F = filtration(S, lower_star_weight(-C(0.20).flatten()))
+  F = filtration(S, lower_star_filter(-C(0.20).flatten()))
   dgms = ph(F, collapse=False)
   print(len(dgms[1]))
 

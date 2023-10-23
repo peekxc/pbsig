@@ -73,7 +73,7 @@ from pbsig.betti import persistent_betti, Sieve
 from splex import *
 nv = len(x)
 E = np.array(list(zip(range(nv-1), range(1, nv))))
-S, filter_f = SimplexTree(E), lower_star_weight(y)
+S, filter_f = SimplexTree(E), lower_star_filter(y)
 sieve = Sieve(S, family=[filter_f], form='lo')
 
 from pbsig.persistence import ph
@@ -102,7 +102,7 @@ sieve.summarize(rank)
 
 from pbsig.betti import mu_query
 # %% 
-mu_query(S, f=lower_star_weight(y), p=0, R=np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps][0], form='array', terms=True, smoothing=True, w=0.01, normed=True)
+mu_query(S, f=lower_star_filter(y), p=0, R=np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps][0], form='array', terms=True, smoothing=True, w=0.01, normed=True)
 
 rect = np.c_[b-machine_eps, b+machine_eps, d-machine_eps, d+machine_eps][0]
 p = figure_dgm(bar0)

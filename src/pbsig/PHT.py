@@ -6,7 +6,7 @@ from typing import *
 from numbers import Integral
 from itertools import combinations
 from numpy.typing import ArrayLike
-from splex import lower_star_weight
+from splex import lower_star_filter
 from scipy.spatial.distance import pdist, squareform
 from typing import * 
 
@@ -38,7 +38,7 @@ def directional_transform(X: ArrayLike, dv: Union[int, ArrayLike], normalize: bo
   eps = 1e-2 if isinstance(nonnegative, bool) else float(nonnegative)
   max_radius = (0.5 + eps)*np.max(pdist(X)) if nonnegative else 0.0
   # def _dt_iterable() -> Generator:
-  #   yield from (lower_star_weight((X @ np.array(v)) + max_radius) for v in V)
+  #   yield from (lower_star_filter((X @ np.array(v)) + max_radius) for v in V)
   # return multigen(_dt_iterable())
   class DT_Iterable:
     def __init__(self, X: np.array, V: np.ndarray, offset: float = 0.0) -> None:
@@ -46,7 +46,7 @@ def directional_transform(X: ArrayLike, dv: Union[int, ArrayLike], normalize: bo
       self.V = V
       self.offset = offset
     def __iter__(self) -> Callable:
-      yield from (lower_star_weight((self.X @ np.array(v)) + self.offset) for v in self.V)
+      yield from (lower_star_filter((self.X @ np.array(v)) + self.offset) for v in self.V)
     def __len__(self) -> int:
       return len(self.V)
   return DT_Iterable(X, V, max_radius)

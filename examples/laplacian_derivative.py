@@ -1,6 +1,6 @@
 import numpy as np 
 from splex import * 
-from splex.geometry import lower_star_weight
+from splex.geometry import lower_star_filter
 from pbsig.linalg import *
 
 S = simplicial_complex([[0,1,2], [1,2,3], [4,5,6,7], [8,9,10], [7,8],[0,7]])
@@ -12,18 +12,18 @@ L = up_laplacian(S, p=1, normed=False)
 print(L.todense())
 print("Eigenvalues: ", np.sort(np.linalg.eigvalsh(L.todense())))
 
-L = up_laplacian(S, weight=lower_star_weight(vf), p=1, normed=False)
+L = up_laplacian(S, weight=lower_star_filter(vf), p=1, normed=False)
 print(L.todense())
 print("Eigenvalues: ", np.sort(np.linalg.eigvalsh(L.todense())))
 
 ## Normalized laplacian should have max spectral norm p+2
-L = up_laplacian(S, weight=lower_star_weight(vf), p=1, normed=True)
+L = up_laplacian(S, weight=lower_star_filter(vf), p=1, normed=True)
 print(L.todense())
 print("Eigenvalues: ", np.sort(np.linalg.eigvalsh(L.todense())))
 
 ## Degree computation 
 from scipy.sparse import diags
-f = lower_star_weight(vf)
+f = lower_star_filter(vf)
 L, d = up_laplacian(S, weight=f, p=1, normed=True, return_diag=True)
 wt = np.array([sum(f(t)*f(e) for e in boundary(t)) for t in faces(S, 2)])
 
@@ -46,7 +46,7 @@ print("Eigenvalues: ", np.sort(np.linalg.eigvalsh(L.todense())))
 
 ## Does it match the trick
 vf[1] = vf[2] = 0.0
-f = lower_star_weight(vf)
+f = lower_star_filter(vf)
 wt = np.array([sum(f(t)*f(e) for e in boundary(t)) for t in faces(S, 2)])
 we = np.array([f(e) for e in faces(S, 1)])
 deg_e = np.zeros(card(S,1))

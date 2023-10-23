@@ -70,10 +70,12 @@ curdoc().clear()
 from bokeh.palettes import gray
 import datashader as ds, pandas as pd
 p = figure(width=600, height=600)
-canvas = ds.Canvas(int(300*1.25), int(300*1.25), x_range=(-1, 1), y_range=(-1, 1))
+canvas = ds.Canvas(int(300*3.5), int(300*3.5), x_range=(-1, 1), y_range=(-1, 1))
 patch_df = pd.DataFrame(dict(x=pca_patches[:,0], y=pca_patches[:,1]))
 agg = canvas.points(patch_df, x="x", y="y")
-im = ds.transfer_functions.shade(agg, cmap=gray(256))
+im = ds.transfer_functions.shade(agg, cmap=gray(256), min_alpha=100, rescale_discrete_levels=False)
+# im = ds.transfer_functions.spread(im)
+im = ds.transfer_functions.dynspread(im, threshold=0.95)
 p.image_rgba(image=[im.to_numpy()], x=-1, y=-1, dw=2, dh=2, dilate=True)
 show(p)
 
@@ -130,10 +132,10 @@ patch_knn_graph = neighborhood_graph(grayscale_patches[stratified_ind], k = 15, 
 patch_geodesic = floyd_warshall(patch_knn_graph.tocsr())
 
 #%% Form the two filter functions to create the bifiltration of
-from splex import flag_weight, lower_star_weight
+from splex import flag_filter, lower_star_filter
 sample_codensity = -(max(knn_density[stratified_ind]) - knn_density[stratified_ind])
-codensity_filter = lower_star_weight(sample_codensity)
-geodesic_filter = flag_weight(patch_geodesic)
+codensity_filter = lower_star_filter(sample_codensity)
+geodesic_filter = flag_filter(patch_geodesic)
 
 # %% Call rivet+console to get the minimal presentation
 # bigraded_betti 
@@ -145,7 +147,6 @@ f2 = geodesic_filter
 S = rips_complex(patch_geodesic, radius=np.quantile(patch_geodesic, 0.80), p = 2)
 #show(figure_complex(S, pos=pca_patches[stratified_ind,:]))
 
-
 # %% 2-d persistence
 from splex.filtrations import RankFiltration
 from pbsig.datasets import noisy_circle
@@ -156,8 +157,8 @@ S = rips_complex(X, radius = np.quantile(pdist(X), 0.45)/2, p = 2)
 show(figure_complex(S, X))
 
 vertex_density = gaussian_kde(X.T).evaluate(X.T) 
-codensity_filter = lower_star_weight(max(vertex_density) - vertex_density)
-diameter_filter = flag_weight(pdist(X))
+codensity_filter = lower_star_filter(max(vertex_density) - vertex_density)
+diameter_filter = flag_filter(pdist(X))
 f1,f2 = codensity_filter, diameter_filter
 
 inp_file_str = "--datatype bifiltration\n"
@@ -220,3 +221,96 @@ show(p)
 offset = -0.0109
 angle = 85.4741
 
+# %%
+## Seems to work -- one persistent H1 has 0.545 lifetime on a line with 1.28 span
+def push_map(X, a, b):
+  """Projects set of points X in the plane onto the line given by f(x) = ax + b
+
+  Returns: 
+    (x,y,f) = projected points (x,y) and the distance to the lowest projected point on the line.
+  """
+  n = X.shape[0] 
+  out = np.zeros((n, 3))
+  for i, (x,y) in enumerate(X):
+    tmp = ((y-b)/a, y) if (x*a + b) < y else (x, a*x + b)
+    dist_to_end = np.sqrt(tmp[0]**2 + (b-tmp[1])**2)
+    out[i,:] = np.append(tmp, dist_to_end)
+  return(out)
+s_codensity, s_diameter = f1(S), f2(S)
+Y = np.c_[s_codensity, s_diameter]
+YL = push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset)
+
+# %% 
+from splex import filtration
+from pbsig.persistence import ph 
+from pbsig.apparent_pairs import apparent_pairs
+from pbsig.vis import figure_dgm
+
+K_proj = filtration(zip(YL[:,2], S), form="rank")
+dgm = ph(K_proj, engine='cpp')
+show(figure_dgm(dgm[1])) # should have 0.545 lifetime h1
+
+
+# %% Make the parameterized family 
+# %% TODO: go into splex and make a generic filter for a fixed simplicial complex matching its _iter_() order
+from pbsig.betti import SpectralRankInvariant
+from pbsig.interpolate import ParameterizedFilter
+from splex.filters import fixed_filter
+
+degrees = np.linspace(83, 90, 30)
+bf_projects = [fixed_filter(S, push_map(Y, a=np.tan(np.deg2rad(d)), b=offset)[:,2]) for d in degrees]
+fibered_filter = ParameterizedFilter(S, family = bf_projects, p = 1)
+ri = SpectralRankInvariant(S, family=fibered_filter, p=1)
+
+from pbsig.vis import figure_vineyard
+from bokeh.plotting import show
+dgms = ri.compute_dgms(S)
+vineyard_fig = figure_vineyard([d for d in dgms if 1 in d.keys()], p = 1)
+show(vineyard_fig)
+
+from splex import Simplex
+bf_projects[0](0)
+
+# %% 
+box = [0.60, 0.70, 1.1, 1.3]
+ri.sieve = np.array([box])
+ri.sift(w=1.0)
+
+# %% Show vineyard + its sieve
+show(ri.figure_sieve(figure=vineyard_fig, fill_alpha=0.15))
+
+# %% Verify rank
+num_rank_f = np.vectorize(lambda x: 1.0 if np.abs(x) > 1e-6 else 0.0)
+show(ri.figure_summary(func = num_rank_f))
+show(ri.figure_summary(func = np.sum))
+
+# %% Try to relax 
+rank_relax_f = np.vectorize(lambda x: x / (x + 0.01))
+show(ri.figure_summary(func = rank_relax_f))
+
+# %% Trying something
+spectra = np.array([np.ravel(ri.summarize(np.vectorize(lambda x: x / (x + eps)))) for eps in [1e-2, 1e-3, 1e-4, 1e-5, 1e-6]])
+spectral_sum = spectra.sum(axis=0)
+# spectral_sum = (np.diag(1.0/np.abs(spectra).sum(axis=1)) @ spectra).sum(axis=0)
+
+from pbsig.vis import figure_scatter
+show(figure_scatter(np.c_[np.arange(30), spectral_sum]))
+
+# %% Make a nice figure using ...
+# from scipy.stats import gaussian_kde
+
+
+gaussian_kde(X.T).evaluate(X.T) 
+
+# Benchmark
+# from pbsig.persistence import validate_decomp, generate_dgm, boundary_matrix 
+# import line_profiler
+# profile = line_profiler.LineProfiler()
+# profile.add_function(filtration)
+# profile.add_function(ph)
+# profile.add_function(boundary_matrix)
+# profile.add_function(generate_dgm)
+# profile.add_function(validate_decomp)
+# profile.enable_by_count()
+# dgm = ph(K_proj, engine='cpp')
+# profile.print_stats(output_unit=1e-3, stripzeros=True)

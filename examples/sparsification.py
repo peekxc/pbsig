@@ -41,7 +41,7 @@ from pbsig.linalg import spectral_rank
 # elephant_mesh = mesh_loader[0]
 # A = geodesics(elephant_mesh)
 # mesh_ecc = A.max(axis=1)
-# ecc_weight = lower_star_weight(mesh_ecc)
+# ecc_weight = lower_star_filter(mesh_ecc)
 # S = simplicial_complex(np.asarray(elephant_mesh.triangles))
 # sieve = Sieve(S, family=[ecc_weight], p = 1)
 # sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
@@ -60,7 +60,7 @@ def mesh_loader(index: int):
   # return elephant_mesh
   A = geodesics(elephant_mesh)
   mesh_ecc = A.max(axis=1)
-  ecc_weight = lower_star_weight(mesh_ecc)
+  ecc_weight = lower_star_filter(mesh_ecc)
   S = simplicial_complex(np.asarray(elephant_mesh.triangles), "tree")
   return S, ecc_weight, elephant_mesh
 
@@ -215,7 +215,7 @@ for index in [25, 56, 536, 1149, 2072]:
   ## Compute the filtration + diagram
   A = geodesics(elephant_mesh)
   mesh_ecc = A.max(axis=1)
-  ecc_weight = lower_star_weight(mesh_ecc)
+  ecc_weight = lower_star_filter(mesh_ecc)
   K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight)
   dgm = ph(K_ecc, engine="dionysus")
 
@@ -254,7 +254,7 @@ mesh.remove_duplicated_vertices()
 mesh.remove_unreferenced_vertices()
 A = geodesics(mesh)
 mesh_ecc = A.max(axis=1)
-ecc_weight = lower_star_weight(mesh_ecc)
+ecc_weight = lower_star_filter(mesh_ecc)
 K_ecc = filtration(simplicial_complex(np.asarray(mesh.triangles)), ecc_weight)
 dgm = ph(K_ecc, engine="dionysus")
 
@@ -670,7 +670,7 @@ from pbsig.datasets import pose_meshes
 
 
 
-# ecc_weight = lower_star_weight(mesh_ecc)
+# ecc_weight = lower_star_filter(mesh_ecc)
 # S = simplicial_complex(np.asarray(elephant_mesh.triangles))
 # sieve = Sieve(S, family=[ecc_weight], p = 1)
 # sieve.pattern = np.array([[1.48, 1.68, 1.70, 1.88], [1.12, 1.28, 1.36, 1.56], [1.0, 1.2, 2.0, 2.2]])
@@ -705,7 +705,7 @@ A.data = np.linalg.norm(elephant_pos[A.row] - elephant_pos[A.col], axis=1)
 #A.data = np.array([np.linalg.norm(X[i,:] - X[j,:]) for i,j in zip(*A.nonzero())], dtype=np.float32)
 AG = floyd_warshall(A.tocsr())
 mesh_ecc = AG.max(axis=1)
-ecc_weight = lower_star_weight(mesh_ecc)
+ecc_weight = lower_star_filter(mesh_ecc)
 
 
 K_ecc = filtration(S, ecc_weight)

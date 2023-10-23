@@ -25,13 +25,13 @@ np.random.seed(1234)
 R = sample_rect_halfplane(1, area=(0.10, 1.00))
 
 ## Plot vineyards 
-from pbsig.persistence import ph, lower_star_weight
+from pbsig.persistence import ph, lower_star_filter
 from bokeh.plotting import figure, show 
 theta_family = np.linspace(0, 2*np.pi, 132, endpoint=False)
 dgms = []
 for theta in theta_family: 
   fv = X @ np.array([np.cos(theta), np.sin(theta)])
-  f = lower_star_weight(fv)
+  f = lower_star_filter(fv)
   K = filtration(S, f=f)
   dgms.append(ph(K, engine="dionysus"))
 

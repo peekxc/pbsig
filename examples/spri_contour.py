@@ -25,7 +25,7 @@ LO = up_laplacian(S, p=0, form='lo', normed=True)
 solver = eigvalsh_solver(LO)
 
 fv = X @ np.array([0,1])
-f = lower_star_weight(fv)
+f = lower_star_filter(fv)
 fe = np.array([f(s) for s in faces(S, 1)])
 
 f_ticks = np.linspace(-diam, diam, 10)
@@ -82,9 +82,9 @@ solver(LO)
 
 K = filtration(S)
 
-K.reindex(lower_star_weight(X @ np.array([1,0])))
+K.reindex(lower_star_filter(X @ np.array([1,0])))
 dgm_v0 = ph(K, engine="dionysus")
-K.reindex(lower_star_weight(X @ np.array([0.5,0.5])))
+K.reindex(lower_star_filter(X @ np.array([0.5,0.5])))
 dgm_v1 = ph(K, engine="dionysus")
 
 
