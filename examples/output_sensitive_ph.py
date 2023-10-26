@@ -29,7 +29,9 @@ show(figure_dgm(dgm[0]))
 ## Cone complex 
 K = filtration(S)
 K.add(ValueSimplex([-1], value=-np.inf)) # dummy vertex
-K.update([ValueSimplex(list(s) + [-1], value=10) for s in faces(K)]) # should this be inf?
+max_weight = max(list(K.indices())) + 1
+for s in faces(K):
+  K.add(ValueSimplex(list(s) + [-1], value=max_weight)) # should this be inf?
 
 ## Now recompute diagram
 # dgm_coned = ph(K)
@@ -47,7 +49,6 @@ ind = (0, 3, 3, 7)
 mu_rank(0,5,5,10) 
 mu_rank(0,5,5,10) 
 mu_rank(7,7,7,9)  # pivot for H1! 
-
 
 def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool = True, verbose: bool = False):
   assert len(ind) == 4 and tuple(sorted(ind)) == ind, "Invalid box given. Must be in upper-half plane."
@@ -94,7 +95,8 @@ def pairs_in_box(box: tuple):
 ## then recursively split on the intervals (a,*,*,m) and (m,*,*,b)
 box_index_rng = lambda a,b: (a, int((a+b)/2), int((a+b)/2), b)
 
-## Generate all the boxes
+## Statically generate all boxes spanning the integer grid [a,b] x [a,b]
+## in a top-down approach
 def generate_boxes(a: int, b: int, res: list = []):
   res.append((a, (a+b) // 2, (a+b) // 2, b))
   if abs(a-b) <= 1: 
@@ -108,15 +110,20 @@ generate_boxes(0, len(K), boxes)
 
 ## All the persistence pairs! 
 from more_itertools import collapse, chunked, unique_everseen
-pairs = list(chunked(collapse([pairs_in_box(box) for box in boxes]), 2))
-pairs = np.fromiter(iter(set(map(tuple, pairs))), dtype=dgm[0].dtype)
+pairs = chunked(collapse([pairs_in_box(box) for box in boxes]), 2)
+pairs = [tuple(p) for p in unique_everseen(pairs)]
+pairs = np.array(pairs, dtype=[('birth', 'f4'), ('death', 'f4')])
 
-list(unique_everseen(chunked(map(tuple, collapse([pairs_in_box(box) for box in boxes])), 2)))
+dgm_coned
+
 
 # %% Construct the diagram 
 from pbsig.persistence import ph_rank
 D = boundary_matrix(K, p=1)
 ph_rank(D)
+
+
+
 
 
 

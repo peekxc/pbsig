@@ -20,8 +20,6 @@ classifiers = [
   'Programming Language :: Python :: Implementation :: CPython'
 ]
 
-
-
 # packages = [
 # 	{ include = "pbsig", from = "src" }, # from = "src/tallem" 
 # 	#{ include = "ext", from = "src/pbsig" }
@@ -38,3 +36,35 @@ classifiers = [
 # ]
 # [tool.hatch.build]
 # dev-mode-dirs = ["."]
+
+
+[tool.ruff]
+exclude = [".git", ".ruff_cache", "build", "dist"]
+line-length = 120
+indent-width = 2
+preview = true
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "C90"]
+ignore = ["COM"]
+unfixable = []
+dummy-variable-rgx = "^(_+|(_+[a-zA-Z0-9_]*[a-zA-Z0-9]+?))$" # Allow underscore-prefixed unused variables
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "tab"
+skip-magic-trailing-comma = true
+line-ending = "auto"
+
+[tool.yapf]
+based_on_style = "chromium"
+spaces_before_comment = 2
+split_before_logical_operator = true
+continuation_align_style = "fixed"
+continuation_indent_width = 2
+column_limit = 120
+use_tabs = true
+join_multiple_lines = true
+indent_blank_lines = false
+allow_short_blocks_on_a_single_line = true
+allow_split_before_default_or_named_assigns = false
