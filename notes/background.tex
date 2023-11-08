@@ -124,7 +124,8 @@ Examples of parameterized filtrations include:
 \begin{itemize}[itemsep=0.25em, parsep=0.25em]
 	\item (Constant filtration) For a filter $f : K \to \mathbb{R}$, let $(K, f_\alpha)$ denote the parameterized filtration obtained by declaring $f_\alpha(\sigma) = f(\sigma)$ for all $\alpha \in \mathcal{A}$ and all $\sigma \in K$. We refer to $(K, f_\alpha)$ as the \emph{constant filtration}. 
 	\item (Dynamic Metric Spaces) For a finite set $X$, let $\gamma_X = (X, d_X(\cdot))$ denote a dynamic metric space~\cite{kim2021spatiotemporal}, where $d_X(\cdot) : \mathbb{R} \times X \times X$ denotes a time-varying metric. For any fixed $K \subset \mathcal{P}(X)$, the pair $(K, f_\alpha)$ obtained by setting $f_\alpha(\sigma) = \max_{x, x' \in \sigma} d_X(\alpha)(x,x')$ recovers the notion of a \emph{time-varying Rips filtration}.
-	\item (Multi-filtrations) Let $f, g: K \to \mathbb{R}$ denote aA natural class of $\mathcal{A}$-parameterized filtrations are obtained by filtering $K$ along several real-valued functions, such as a density and distance.
+	\item (Combinations of filters) For $f, g: K \to \mathbb{R}$ filters over $K$, a natural parameterization of $K$ is the family $(K, h_\alpha)$ where $h_\alpha = (1 - \alpha) f + \alpha g$ such that $\alpha \in [0, 1]$ generates \emph{convex combinations} of $f$ and $g$.
+	\item (Multi-filtrations) More generally, a $d$-dimensional filtration on the category of simplicial complexes $\mathbf{Simp}$ is a functor $\mathcal{F}: \mathbb{R}^d \to \mathbf{Simp}$ satisfying $\mathcal{F}(a, b) : \mathcal{F}_a \to \mathcal{F}_b$ an inclusion for all $a \leq b$~\cite{}. By fixing $K \in \mathbf{Simp}$ and letting $\mathcal{A} = \mathbb{R}^d$, we recover the notion of a \emph{multi-filtration}.
 %	In this setting, we interpret $\mathcal{A}$ as parameterizing the product space of the chosen filters. 
 \end{itemize} 
 

@@ -17,6 +17,8 @@ from .simplicial import *
 from .shape import simplify_outline
 # from .__init__ import _package_data
 
+from scipy.io import loadmat
+
 _ROOT = os.path.abspath(os.path.dirname(__file__))
 def _package_data(path: str = ""):
   return os.path.join(_ROOT, 'data', path)
@@ -63,9 +65,36 @@ def noisy_circle(n: int = 32, n_noise: int = 10, perturb: float = 0.05, r: float
       if all([np.linalg.norm(pt - y) > r for y in Y]):
         pts.append(pt)
     return np.array(pts)
-  noise = _reject_sampler(n_noise, r)
+  noise = _reject_sampler(n_noise, r) if n_noise > 0 else np.empty(shape=(0, 2))
   X = np.vstack((circle, noise))
   return X 
+
+def random_function(n_extrema: int = 10, n_pts: int = 50, order_penalty = 0.10, walk_distance = 0.05, plot: bool = False):
+  from csaps import CubicSmoothingSpline
+  from scipy.optimize import golden
+  walk_distance = (0.50 + walk_distance)
+  movement = np.random.uniform(size=n_pts, low=-walk_distance, high=walk_distance)
+  position = np.cumsum(movement)+0.50
+  x = np.linspace(0, 1, len(position))
+  def objective_f(eps: float) -> float:
+    f = CubicSmoothingSpline(x, position, smooth=1.0-eps)
+    roots = f.spline.derivative(1).roots() # jerk = f.spline.derivative(2)(roots) 
+    n_crit = len(roots)
+    return abs(n_crit - n_extrema) + order_penalty * f.spline.order
+  eps_opt = golden(objective_f, brack=(0, 1e-3))
+  f = CubicSmoothingSpline(x, position, smooth=1-eps_opt)
+  if plot: 
+    from pbsig.vis import figure, show
+    dom = np.linspace(0, 1, 1500)  
+    roots = f.spline.derivative(1).roots()
+    roots = roots[np.logical_and(roots >= 0, roots <= 1)]
+    p = figure(width=300, height=250)
+    p.line(dom, f(dom), color="black")
+    p.scatter(roots, f(roots), size=6, color='red')
+    show(p)
+  return f
+
+
 
 def animal_svgs():
   """
@@ -290,3 +319,117 @@ def pose_meshes(simplify: int = None, which: Union[str, Iterable] = "default", s
     # return X_norm, mesh_smp
   meshes = LazyIterable(load_mesh, len(pose_paths))
   return meshes
+
+
+class PatchData:
+  def __init__(self, lazy: bool = False):
+    from scipy.io import loadmat
+    dct_basis = [None]*8
+    dct_basis[0] = (1/np.sqrt(6)) * np.array([1,0,-1]*3).reshape(3,3)
+    dct_basis[1] = dct_basis[0].T
+    dct_basis[2] = (1/np.sqrt(54)) * np.array([1,-2,1]*3).reshape(3,3)
+    dct_basis[3] = dct_basis[2].T
+    dct_basis[4] = (1/np.sqrt(8)) * np.array([[1,0,-1],[0,0,0],[-1,0,1]])
+    dct_basis[5] = (1/np.sqrt(48)) * np.array([[1,0,-1],[-2,0,2],[1,0,-1]])
+    dct_basis[6] = (1/np.sqrt(48)) * np.array([[1,-2,1],[0,0,0],[-1,2,-1]])
+    dct_basis[7] = (1/np.sqrt(216)) * np.array([[1,-2,-1],[-2,-4,-2],[1,-2,1]])
+    self.dct_basis = np.hstack([np.ravel(b)[:,np.newaxis] for b in dct_basis])
+    self.basis_lb = np.min(self.dct_basis)
+    self.basis_ub = np.max(self.dct_basis)
+    self.basis = "natural"
+    self.lazy = lazy
+    # self.patch_data = dct_patch_data['n50000Dct'] @ self.dct_basis.T
+
+  def load_patch_data(self, basis: str = "natural"):
+    assert basis == "natural" or basis == "dct", "Invalid basis supplied"
+    dct_patch_data = loadmat("/Users/mpiekenbrock/Downloads/n50000Dct.mat")
+    if basis == "natural":
+      return dct_patch_data['n50000Dct'] @ self.dct_basis.T
+    else: 
+      return dct_patch_data['n50000Dct']
+
+  @property
+  def patch_data(self):
+    if hasattr(self, "_patch_data") and self._patch_data[1] == self.basis:
+      return self._patch_data[0]
+    else:
+      patch_data = self.load_patch_data(self.basis)
+      if not self.lazy: 
+        self._patch_data = (patch_data, self.basis)
+      return patch_data
+
+  def patch_rgba(self, patch: np.ndarray):
+    """Returns an array of uint32 RGBa values normalizing the given patch to the range [0,255] """
+    assert len(patch) == 9, "Invalid; must supply a 3x3 patch"
+    normalize_unit = lambda x: (np.clip(x, self.basis_lb, self.basis_ub) - self.basis_lb)/(self.basis_ub - self.basis_lb)
+    patch = normalize_unit(np.ravel(patch))
+    img = np.empty((3,3), dtype=np.uint32)
+    view = img.view(dtype=np.uint8).reshape((3,3,4))
+    for cc, (i,j) in enumerate(product(range(3), range(3))):
+      view[i, j, 0] = int(255 * patch[cc])
+      view[i, j, 1] = int(255 * patch[cc])
+      view[i, j, 2] = int(255 * patch[cc])
+      view[i, j, 3] = 255
+    return img 
+
+  def figure_basis(self, **kwargs):
+    """Constructs a row of figures showing the DCT basis vectors."""
+    from bokeh.plotting import figure 
+    from pbsig.vis import figure_plain
+    from bokeh.layouts import row 
+    fig_kwargs = dict(width=75, height=75) | kwargs
+    basis_figs = [figure_plain(figure(**fig_kwargs)) for i in range(8)]
+    for i, patch in enumerate(self.dct_basis.T):
+      img = self.patch_rgba(patch)
+      basis_figs[i].image_rgba(image=[img], x=-1, y=-1, dw=2, dh=2)
+    return row(*basis_figs)
+
+  def project_2d(self, indices: Union[str, Sequence] = "all") -> np.ndarray:
+    """Projects the patch data onto 2-dimension using the DCT basis"""
+    if isinstance(indices, str) and indices == "all":
+      from pbsig.linalg import pca
+      return pca(self.patch_data, 2)
+    else: 
+      assert len(indices) == 2
+      return self.load_patch_data("natural") @ self.dct_basis[:,np.array(indices)]
+
+  def figure_patches(self, coords: np.ndarray = None, patches: np.ndarray = None, size: float = 0.10, **kwargs):
+    from bokeh.plotting import figure
+    if coords is None and patches is None:
+      from pbsig.shape import landmarks
+      _basis = self.basis 
+      self.basis = "natural"
+      coords = self.project_2d()
+      landmark_ind, _ = landmarks(coords, 15, seed=2971) # 2971 == closest to first basis vector, could also use 10009
+      patches = self.patch_data[landmark_ind,:]
+      coords = coords[landmark_ind,:]
+      self.basis = _basis
+    else:
+      coords, patches = np.atleast_2d(coords), np.atleast_2d(patches)
+    assert patches.shape[1] == 9, "'patches' must be 2-d array with 9 columns representing the patches"
+    assert coords.shape[1] == 2 and len(coords) == len(patches), "Coordinates must be given for each patch"
+    p = kwargs.get("figure", figure(width=300, height=300))
+    imgs = [self.patch_rgba(patch) for patch in patches]
+    half = size / 2.0
+    p.image_rgba(image=imgs, x=coords[:,0]-half, y=coords[:,1]-half, dw=size, dh=size)
+    return p 
+
+  def figure_shade(self, X: np.ndarray = None, **kwargs):
+    """Adds perceptively accurate scatter points 'X' to the supplied figure using datashader."""
+    import datashader as ds
+    import pandas as pd
+    from bokeh.palettes import gray
+    from bokeh.plotting import figure
+    X = self.project_2d() if X is None else np.atleast_2d(X)
+    assert X.ndim == 2, "X must be a two-dimensional point cloud"
+    p = kwargs.get("figure", figure(width=300, height=300))
+    canvas = ds.Canvas(plot_width=600, plot_height=600, x_range=(-1, 1), y_range=(-1, 1))
+    patch_df = pd.DataFrame(dict(x=X[:,0], y=X[:,1]))
+    agg = canvas.points(patch_df, x="x", y="y")
+    im = ds.transfer_functions.shade(agg, cmap=gray(256), min_alpha=100, rescale_discrete_levels=False)
+    # im = ds.transfer_functions.spread(im)
+    im = ds.transfer_functions.dynspread(im, threshold=0.95)
+    p.image_rgba(image=[im.to_numpy()], x=-1, y=-1, dw=2, dh=2, dilate=True)
+    return p
+
+  # p = figure(width=600, height=600)

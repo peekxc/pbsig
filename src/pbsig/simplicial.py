@@ -15,3 +15,10 @@ def complete_graph(n: int):
   E = np.array(list(combinations(range(n), 2)), dtype=np.int32)
   S = simplicial_complex(chain(iter(V), iter(lexsort_rows(E))))
   return(S)
+
+def path_graph(n: int):
+  from more_itertools import pairwise
+  V = np.fromiter(range(n), dtype=np.int32)
+  E = np.array(list(pairwise(V)), dtype=np.int32)
+  S = simplicial_complex(chain(iter(V), iter(lexsort_rows(E))))
+  return S

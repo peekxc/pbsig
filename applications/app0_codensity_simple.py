@@ -1,3 +1,4 @@
+# %%
 import numpy as np
 from typing import * 
 from scipy.sparse import spmatrix
@@ -63,8 +64,7 @@ show(ri.figure_summary(func = num_rank_f))
 show(ri.figure_summary(func = np.sum))
 
 # %% Try multiple summary functions 
-rank_relax_f = np.vectorize(lambda x: x / (x + 0.01))
-
+rank_relax_f = np.vectorize(lambda x: x / (x + 1.0))
 show(ri.figure_summary(func = rank_relax_f))
 
 

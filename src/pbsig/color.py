@@ -4,6 +4,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from typing import *
 from .color_constants import COLORS
+from .meta import ensure
 # Largely from: https://bsouthga.dev/posts/color-gradients-with-python
 
 def colors_to_hex(x):
@@ -19,7 +20,7 @@ def colors_to_hex(x):
 
 
 # hex_to_rgb(colors_to_hex(pt_col*255))
-from matplotlib.colors import to_hex
+# from matplotlib.colors import to_hex
 
 def hex_to_rgb(hex_str: Union[List, str]):
 	''' "#FFFFFF" -> [255,255,255] '''
@@ -31,12 +32,18 @@ def hex_to_rgb(hex_str: Union[List, str]):
 		return np.array([hex_to_rgb(h) for h in hex_str], dtype=np.uint8)
 
 
-def rgb_to_hex(rgb):
-  ''' [255,255,255] -> "#FFFFFF" '''
+## RGB(A) here is defined as an n x (3|4) array of type np.uint8 
+def rgb_to_hex(c: np.ndarray):
+	''' [255,255,255] -> "#FFFFFF" '''
+	c = c if isinstance(c, np.ndarray) else np.atleast_2d([c])
+	c = c.astype(np.uint8)
+	c_str = np.array2string(c, formatter={'int_kind' : lambda x: "%.2x" % x }, separator='')
+	c_hex = np.char.add('#', np.array(c_str.replace('[','').replace(']','').replace('\n','').split(' ')))
+	return np.take(c_hex, 0) if len(c_hex) == 1 else c_hex
+	# 
   # Components need to be integers for hex to make sense
-  rgb = [int(x) for x in rgb]
-  return "#"+"".join(["0{0:x}".format(v) if v < 16 else
-            "{0:x}".format(v) for v in rgb])
+  # rgb = [int(x) for x in rgb]
+  # return "#"+"".join(["0{0:x}".format(v) if v < 16 else "{0:x}".format(v) for v in rgb])
 
 
 def color_dict(gradient):
@@ -134,7 +141,48 @@ def scale_interval(x: Iterable, scaling: str = "linear", min_x: Optional[float] 
 	out = (out_min + x*(out_max-out_min)) if scaling == "linear" else scale_interval(x, "linear", out_min, out_max)
 	return(out)
 
-def bin_color(x: Iterable, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
+def digitize_modulo(x: np.ndarray, bins: np.ndarray):
+	"""Bins values in 'x' into bins by calling digitize, but also returns position information about bins""" 
+	ind = np.digitize(x, bins=bins, right=False)
+	pred_value = bins[np.clip(ind - 1, 0, len(bins)-1)]
+	succ_value = bins[np.clip(ind, 0, len(bins)-1)]
+	bin_width = (succ_value - pred_value)
+	denom = np.reciprocal(np.where(bin_width > 0, bin_width, 1.0))
+	return ind, denom*(x - pred_value)
+
+
+def color_mapper(color_pal: str = 'viridis', lb: Optional[float] = 0.0, ub: Optional[float] = 1.0) -> Callable:
+	import bokeh
+	ensure(isinstance(color_pal, str), "Must be string input")
+	color_pal = color_pal.lower()
+	bokeh_palettes = { p.lower() : p for p in dir(bokeh.palettes) if p[0] != "_" }
+	ensure(isinstance(color_pal, str), f"Unknown color palette '{color_pal}'")
+	
+	## Color palette should be end up as a numpy array of hex strings; if function, get 255 colors and convert
+	COLOR_PAL = getattr(bokeh.palettes, bokeh_palettes[color_pal.lower()])
+	COLOR_PAL = np.array(COLOR_PAL(255)) if isinstance(COLOR_PAL, Callable) else np.array(COLOR_PAL)
+	N_COLORS = len(COLOR_PAL)
+	VALUE_BINS = np.linspace(lb, ub, N_COLORS)
+
+	## 
+	def _color_map(x: Iterable, output: str = ["rgba", "hex"], strategy: str = ["bin", "lerp"]) -> np.ndarray:
+		if strategy == ["bin", "lerp"] or strategy == "bin":
+			ind = np.digitize(np.clip(x, a_min=lb, a_max=ub), bins=VALUE_BINS)
+			ind = np.clip(ind, 0, N_COLORS-1) 	## bound from above and below
+			return COLOR_PAL[ind] if output == "hex" else hex_to_rgb(COLOR_PAL[ind])
+		elif strategy == "lerp":
+			color_values = np.c_[hex_to_rgb(COLOR_PAL)/255.0, np.ones(255)]
+			ind, rel = digitize_modulo(np.clip(x, a_min=lb, a_max=ub), VALUE_BINS)
+			ind = np.clip(ind, 0, N_COLORS-1)
+			succ_values = color_values[np.where(ind < (N_COLORS-1), ind+1, ind)]
+			x_unit = color_values[ind] + rel[:,np.newaxis] * (succ_values - color_values[ind])
+			x_rgba = np.clip(np.round(x_unit * 255).astype(np.uint16), 0, 255)
+			return rgb_to_hex(x_rgba) if output == "hex" else x_rgba
+		else: 
+			raise ValueError(f"Unknown interpolation strategy '{strategy}' given.")
+	return _color_map
+
+def bin_color(x: Iterable = None, color_pal: Optional[Union[List, str]] = 'viridis', lb: Optional[float] = None, ub: Optional[float] = None, **kwargs):
 	''' Bins non-negative values 'x' into appropriately scaled bins matched with the given color range. '''
 	if isinstance(color_pal, str):
 		import bokeh

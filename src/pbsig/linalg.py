@@ -10,6 +10,8 @@ from scipy.sparse.linalg import *
 from scipy.sparse.csgraph import *
 from more_itertools import collapse
 from scipy.interpolate import CubicSpline
+from scipy.sparse import issparse, sparray
+from math import prod
 
 ## Local imports
 from .meta import *
@@ -641,14 +643,16 @@ class PsdSolver:
     else: 
       raise ValueError("Couldn't deduce number of eigenvalues to compute.")
 
+
   ## Equivalent of .fit() 
-  def __call__(self, A: Union[ArrayLike, spmatrix, LinearOperator], **kwargs) -> Union[ArrayLike, tuple]:
+  def __call__(self, A: Union[ArrayLike, sparray, LinearOperator], **kwargs) -> Union[ArrayLike, tuple]:
     assert A.shape[0] == A.shape[1], "A must be square"
-    # assert pp >= 0.0 and pp <= 1.0, "Proportion 'pp' must be between [0,1]"
     n = A.shape[0]
+    if np.all(np.array(A.shape) == 0): 
+      return (np.zeros(1), np.c_[np.zeros(n)]) if self.eigenvectors else np.zeros(1)
     self.k_ = self.param_k(A, kwargs.pop("k", self.k))
     self.solver_, defaults_ = self.param_method(A, kwargs.pop("method", self.method))
-    if (isinstance(A, spmatrix) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or self.k_ == 0: 
+    if (issparse(A) and len(A.data) == 0) or (n == 0 or A.shape[1] == 0) or self.k_ == 0: 
       return (np.zeros(1), np.c_[np.zeros(n)]) if self.eigenvectors else np.zeros(1)
     if isinstance(A, spmatrix) or isinstance(A, LinearOperator): 
       defaults_ |= dict(k=self.k_, maxiter=n*100, ncv=None)
@@ -1663,6 +1667,59 @@ def is_symmetric(A) -> bool:
   return np.allclose(vl, vu)    
 
 from splex.filters import generic_filter
+from scipy.sparse import issparse, sparray
+
+# S: ComplexLike, 
+# p_weights: np.ndarray, 
+# q_weights: np.ndarray, 
+# normed: bool = False, 
+# boundary: bool = False, 
+# out: Union[sparray, LinearOperator] = None
+def param_laplacian(
+  L: Union[sparray, LinearOperator],
+  p_weights: np.ndarray, 
+  q_weights: np.ndarray, 
+  normed: bool = False, 
+  boundary: bool = False, 
+  isometric: bool = True
+):
+  """Parameterizes the given boundary or Laplacian operator/matrix 'L' with weights on the (p, p+1)-simplices in-place.
+  
+  Returns: 
+    Weighted up-Laplacian of the same type passed in
+  """
+  is_linear_op = isinstance(L, LinearOperator)
+  p_func = (lambda x: pseudoinverse(x.astype(float))) if isometric else lambda x: x
+  if is_linear_op and not boundary:
+    assert hasattr(L, "face_left_weights") and hasattr(L, "face_right_weights"), "Must be a Laplacian instance"
+    assert len(p_weights) == len(L.p_faces) and len(q_weights) == len(L.q_faces), "Invalid weights given. Must match length of faces."
+    I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
+    if normed: 
+      L.set_weights(I,q_weights,I)
+      d = np.sqrt(p_func(L.degrees))
+      L.face_right_weights = d
+      L.face_left_weights = d
+      L.precompute_degree()
+    else:
+      p_inv_sqrt = np.sqrt(p_func(p_weights))
+      L.set_weights(p_inv_sqrt, q_weights, p_inv_sqrt)
+  elif is_linear_op and boundary:
+    raise NotImplementedError("Haven't implemented re-weighted boudnary operators yet")
+  else:
+    assert isinstance(L, np.ndarray) or issparse(L), "If given explicit matrix, it must be numpy array or Scipy sparse matrix."
+    if boundary: 
+      B = L
+      if (B.shape[0] == 0):
+        return B @ B.T 
+      L = B @ diags(q_weights) @ B.T
+      if normed: 
+        deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
+        L = (diags(np.sqrt(p_func(deg))) @ L @ diags(np.sqrt(p_func(deg)))).tocoo()
+      else:
+        L = (diags(np.sqrt(p_func(p_weights))) @ L @ diags(np.sqrt(p_func(p_weights)))).tocoo()
+    else:
+      raise NotImplementedError("Haven't implemented re-weighted sparse Laplacian matrices yet")
+    return L
 
 class ParameterizedLaplacian(Callable):
   def __init__(self, S: ComplexLike = None, family: Iterable[Callable] = None, p: int = 0, **kwargs):

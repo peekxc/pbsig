@@ -1,9 +1,7 @@
 # %% Imports
 import numpy as np
 from numpy.fft import fft, ifft
-import matplotlib.pyplot as plt
-from scipy.interpolate import interp1d
-from csaps import CubicSmoothingSpline
+from scipy.interpolate import interp1d, CubicSpline
 from scipy.spatial.distance import pdist 
 
 # %% Bokeh configuration 
@@ -19,14 +17,21 @@ movement = np.random.uniform(size=50, low=-0.55, high=0.55)
 position = np.cumsum(movement)+0.50
 
 ## Find parameter where we have close to 'N_EXTREMA' in the smoothed version
-N_EXTREMA, lb, ub = 12, 0, 1e-3
+N_EXTREMA, lb, ub = 12, 0, 1e-5
 x = np.linspace(0, 1, len(position))
 def n_extrema(eps: float) -> float:
   f = CubicSmoothingSpline(x, position, smooth=1.0-eps)
   roots = f.spline.derivative(1).roots()
   #reg = 1/min(pdist(roots[:,np.newaxis], metric='cityblock'))
-  return abs(len(f.spline.derivative(1).roots()) - N_EXTREMA)# + 0.01*reg
+  # return abs(len(f.spline.derivative(1).roots()) - N_EXTREMA)# + 0.01*reg
+  jerk = f.spline.derivative(2)(roots) 
+  n_crit = len(roots)
+  return abs(n_crit - N_EXTREMA) + 0.10 * f.spline.order # + 0.01 * np.sum(jerk**2)
+  # np.sum(f.spline.derivative(2)(roots)**2)
+
 obj_cost = np.array([n_extrema(eps) for eps in np.linspace(lb, ub, 1500)])
+plt.plot(obj_cost)
+
 
 ## Fit the function
 min_cost = np.min(obj_cost)

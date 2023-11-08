@@ -246,29 +246,55 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
-## TODO: This actually does need to be done
-def betti_query(S: Union[LinearOperator, ComplexLike], i: float, j: float, smoothing: tuple = (0.5, 1.5, 0), solver=None, **kwargs):
-  pass 
-  # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=0, form='lo')
+def betti_query(
+  S: Union[LinearOperator, ComplexLike], 
+  f: Callable[SimplexConvertible, float],
+  matrix_func: Callable[np.ndarray, float],
+  i: Union[float, np.ndarray], 
+  j: Union[float, np.ndarray], 
+  p: int = 0, 
+  w: float = 0.0, 
+  terms: bool = False, 
+  solver: Callable = None, 
+  **kwargs
+) -> Generator:
+  from splex.predicates import is_complex_like
+  # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
   # assert isinstance(L, UpLaplacian)
-  # assert i <= j, f"Invalid point ({i:.2f}, {j:.2f}): must be in the upper half-plane"
-  # fw = np.array([f(s) for s in L.faces])
-  # sw = np.array([f(s) for s in L.simplices])
-  # delta = np.finfo(float).eps                      
-  # fi = smooth_upstep(lb = i, ub = i+w)(fw)          # STEP UP:   0 (i-w) -> 1 (i), includes (i, infty)
-  # fj = smooth_upstep(lb = j, ub = j+w)(fw)          # STEP UP:   0 (j-w) -> 1 (j), includes (j, infty)
-  # fk = smooth_dnstep(lb = k-w, ub = k+delta)(sw)    # STEP DOWN: 1 (k-w) -> 0 (k), includes (-infty, k]
-  # fl = smooth_dnstep(lb = l-w, ub = l+delta)(sw)    # STEP DOWN: 1 (l-w) -> 0 (l), includes (-infty, l]
-  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0)) # scalar pseudo-inverse
-  # atol = kwargs['tol'] if 'tol' in kwargs else 1e-5
-  # EW = [None]*4
-  # ## Multiplicity formula 
-  # for cc, (I,J) in enumerate([(fj, fk), (fi, fk), (fj, fl), (fi, fl)]):
-  #   L.set_weights(None, J, None)
-  #   I_norm = I * L.diagonal() # degrees
-  #   EW[cc] = smooth_rank(L.set_weights(pseudo(np.sqrt(I_norm)), J, pseudo(np.sqrt(I_norm))), smoothing=smoothing, **kwargs)
-  # return EW[0] - EW[1] - EW[2] + EW[3]
+  assert is_complex_like(S)
+  B0, B1 = boundary_matrix(S, p = p), boundary_matrix(S, p = p+1)
+  yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
+  delta = np.finfo(float).eps 
+  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
+  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0, atol=atol)) # scalar pseudo-inverse 
+  p_solver = PsdSolver(k = int(card(S, p-1)-1)) if solver is None else solver
+  q_solver = PsdSolver(k = int(card(S, p)-1)) if solver is None else solver
+  I, J = (np.array([i]), np.array([j])) if isinstance(i, Number) and isinstance(j, Number) else (i,j)
 
+  inc_all = smooth_upstep(0, w)
+  for ii, jj in zip(I, J):
+    assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+    fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
+    fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
+    fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
+    
+    ## Get the eigenvalues 
+    # T0 = diags(fi_inc(fw))
+    # T1 = param_laplacian(B0, p_weights=np.ones(len(yw)), q_weights=fi_inc(fw), normed=True, boundary=True)
+    # T2 = param_laplacian(B1, p_weights=np.ones(len(fw)), q_weights=fj_inc(sw), normed=True, boundary=True)
+
+    T1 = param_laplacian(B0, p_weights=inc_all(yw), q_weights=fi_inc(fw), normed=True, boundary=True, **kwargs)
+    T2 = param_laplacian(B1, p_weights=inc_all(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
+    T3 = param_laplacian(B1, p_weights=fi_exc(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
+
+    t0 = matrix_func(fi_inc(fw)) # instead of solver 
+    t1 = matrix_func(p_solver(T1))
+    t2 = matrix_func(q_solver(T2))
+    t3 = matrix_func(q_solver(T3))
+    yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
+
+    # ii = 3.49905344
+    # ii = 3.50068702
 
 ## Cone the complex
 def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
@@ -419,7 +445,6 @@ class MuQuery():
     #   L.data 
 
   def __call__(self, f: Callable[SimplexConvertible, float], **kwargs):
-    #print("Here")
     fi,fj,fk,fl = update_weights(self.S, f, self.p, self.R, self.w, self.biased)
     EW = [[None] for _ in range(4)]
     if self.form == "lo":
@@ -860,7 +885,6 @@ class SpectralRankInvariant:
       self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
       for laplacian_op in self.operators:
         ew = self.solver(laplacian_op)
-        # print(len(ew))
         self.spectra[cc]['eigenvalues'].extend(ew)
         self.spectra[cc]['lengths'].extend([len(ew)])
     

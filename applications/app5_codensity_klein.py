@@ -1,7 +1,7 @@
 # %% Imports
 from typing import *
-
 import numpy as np
+import splex as sx
 import splex as sx
 from bokeh.io import output_notebook
 from bokeh.plotting import figure, show
@@ -14,66 +14,34 @@ from pbsig.vis import *
 from scipy.interpolate import BSpline, splrep
 from scipy.spatial.distance import pdist
 from scipy.stats import gaussian_kde
-from splex.filters import *
-from scipy.io import loadmat
+from pbsig.datasets import PatchData
+from pbsig.vis import figure_complex, show
 
 output_notebook()
 
-# %% data 
-dct_patch_data = loadmat("/Users/mpiekenbrock/Downloads/n50000Dct.mat")
-dct_patches = dct_patch_data['n50000Dct']
-dct_basis = [None]*8
-dct_basis[0] = (1/np.sqrt(6)) * np.array([1,0,-1]*3).reshape(3,3)
-dct_basis[1] = dct_basis[0].T
-dct_basis[2] = (1/np.sqrt(54)) * np.array([1,-2,1]*3).reshape(3,3)
-dct_basis[3] = dct_basis[2].T
-dct_basis[4] = (1/np.sqrt(8)) * np.array([[1,0,-1],[0,0,0],[-1,0,1]])
-dct_basis[5] = (1/np.sqrt(48)) * np.array([[1,0,-1],[-2,0,2],[1,0,-1]])
-dct_basis[6] = (1/np.sqrt(48)) * np.array([[1,-2,1],[0,0,0],[-1,2,-1]])
-dct_basis[7] = (1/np.sqrt(216)) * np.array([[1,-2,-1],[-2,-4,-2],[1,-2,1]])
-dct_basis_mat = np.hstack([np.ravel(b)[:,np.newaxis] for b in dct_basis])
+# %% Get the data, show the basis vectors  
+Klein = PatchData(lazy=False)
+show(Klein.figure_basis())
 
-## Projection onto the DCT basis
-from pbsig.linalg import pca
-grayscale_patches = dct_patches @ dct_basis_mat.T
-pca_patches = pca(grayscale_patches)
-
+# %% Show the projection onto first 2 eigenvectors 
 p = figure(width=300, height=300)
-p.scatter(*pca_patches.T, color = "#808080a0", size=2)
-
-def figure_img_patch(p: figure, ind: int, w: float = 0.10, h: float = 0.10):
-  lb, ub = grayscale_patches.min(), grayscale_patches.max()
-  normalize = lambda x: (x - lb) / (ub - lb)
-  patch = grayscale_patches[ind]
-  img = np.empty((3,3), dtype=np.uint32)
-  view = img.view(dtype=np.uint8).reshape((3,3, 4))
-  for cc, (i,j) in enumerate(product(range(3), range(3))):
-    view[i, j, 0] = int(255 * normalize(patch[cc]))
-    view[i, j, 1] = int(255 * normalize(patch[cc]))
-    view[i, j, 2] = int(255 * normalize(patch[cc]))
-    view[i, j, 3] = 255
-  patch_x, patch_y = pca_patches[ind]
-  p.image_rgba(image=[img], x=patch_x-w, y=patch_y-h, dw=2*w, dh=2*h)
+p.scatter(*Klein.project_2d().T, color = "#80808010", size=2)
 show(p)
 
-from bokeh.io import curdoc
-curdoc().clear()
-from bokeh.palettes import gray
-import datashader as ds, pandas as pd
-p = figure(width=600, height=600)
-canvas = ds.Canvas(int(300*3.5), int(300*3.5), x_range=(-1, 1), y_range=(-1, 1))
-patch_df = pd.DataFrame(dict(x=pca_patches[:,0], y=pca_patches[:,1]))
-agg = canvas.points(patch_df, x="x", y="y")
-im = ds.transfer_functions.shade(agg, cmap=gray(256), min_alpha=100, rescale_discrete_levels=False)
-# im = ds.transfer_functions.spread(im)
-im = ds.transfer_functions.dynspread(im, threshold=0.95)
-p.image_rgba(image=[im.to_numpy()], x=-1, y=-1, dw=2, dh=2, dilate=True)
+# %% Show some landmarks
+p = Klein.figure_patches(figure=p, size=0.25)
 show(p)
 
-from pbsig.shape import landmarks
-landmark_ind, _ = landmarks(pca_patches, 20)
-for i in landmark_ind:
-  figure_img_patch(p, i)
+# %% Show where the closest data to the basis vectors lie
+# X = klein_data.project_2d()
+# min_indices = [np.argmin(np.linalg.norm(np.abs(klein_data.patch_data - basis), axis=1)) for basis in klein_data.dct_basis.T]
+# p.scatter(*X[min_indices,:].T, color='blue', size=3.5)
+# p.scatter(*X[min_indices[:2],:].T, color='red', size=3.5)
+# show(p)
+
+# %% Alternative: use data shader 
+p = Klein.figure_shade()
+p = Klein.figure_patches(figure=p, size=0.25)
 show(p)
 
 # %% Stratified sampling 
@@ -83,86 +51,124 @@ from scipy.spatial.distance import cdist, pdist, squareform
 from scipy.special import gamma
 
 ## Get a KNN density estimate
-patch_kdtree = KDTree(grayscale_patches)
-knn_dist, knn_ind = patch_kdtree.query(grayscale_patches, k=15)
-vol_ball = lambda n, R: np.pi**(n/2) * np.reciprocal(gamma(n/2 + 1)) * R**n
-N = grayscale_patches.shape[1]
-knn_density = (15 - 1) / N * vol_ball(8, knn_dist.max(axis=1))
-
-## Do proportionate allocation sampling
-def proportional_integers(x: np.ndarray, n: int):
-  """Given an array 'x', find an array of integers 'y' such that sum(y) = n and the x[i]/x[j] ~= y[i]/y[j]"""
-  scaling_factor = n / sum(x)
-  y = np.round(np.array(x) * scaling_factor).astype(int)
-  while sum(y) != n: 
-    idx = np.argmax(x - y) if sum(y) < n else np.argmax(y) 
-    y[idx] += 1 if sum(y) < n else -1
-  return y
-
-def stratify_sample(n: int, f: np.ndarray, n_strata: int = 25, return_strata: bool = False):
-  """Stratify samples _n_ indices in [0, len(f)-1] using proportionate allocation."""
-  assert isinstance(f, np.ndarray), "f must be an array"
-  from array import array
-  from itertools import pairwise
-  bin_counts, bin_edges = np.histogram(f, bins=n_strata)
-  sample_counts = proportional_integers(bin_counts, n)
-  indices = {} if return_strata else array('I') 
-  for cc, ((a,b), ns) in enumerate(zip(pairwise(bin_edges), sample_counts)):
-    stratum_ind = np.flatnonzero(np.logical_and(a <= f, f <= b))
-    sample_ind = np.random.choice(stratum_ind, size=ns, replace=False)
-    if return_strata:
-      indices[cc] = dict(n=ns, stratum=stratum_ind, interval=(a,b))
-    else:
-      indices.extend(sample_ind)
-  return indices if return_strata else np.array(indices)
+k = 30
+Klein.basis = "dct"
+patch_kdtree = KDTree(Klein.patch_data)
+knn_dist, knn_ind = patch_kdtree.query(Klein.patch_data, k=k)
+vol_ball = lambda d: np.pi**(d/2) * np.reciprocal(gamma(d/2 + 1))
+d = Klein.patch_data.shape[1]
+knn_density = ((k - 1) / d) * np.reciprocal(vol_ball(8) * knn_dist.max(axis=1))
 
 from pbsig.csgraph import neighborhood_graph
 from scipy.sparse.csgraph import floyd_warshall
+from pbsig.shape import landmarks, stratify_sample
 # stratified_ind = stratify_sample(50, knn_density)
+# density_threshold = np.quantile(knn_density, 0.95)
+# knn_density[knn_density >= density_threshold] = density_threshold
 
 from more_itertools import collapse
-knn_strata = stratify_sample(300, knn_density, return_strata = True)
+np.random.seed(1234)
+strata_weights = np.ones(25)
+# strata_weights[-5:] = 0
+_, edges = np.histogram(knn_density, 25)
+between = lambda x, a, b: x[np.logical_and(a <= x, x <= b)]
+interval_weight = np.array([between(knn_density, a, b).sum() for a,b in pairwise(edges)])
+strata_weights = interval_weight / np.sum(interval_weight)
+
+knn_strata = stratify_sample(250, knn_density, return_strata = True, n_strata = len(strata_weights), weights = strata_weights)
 strata = []
 for k, v in knn_strata.items():
-  v_str = v['stratum']
+  s_ind = v['stratum']
   if v['n'] > 0: 
-    l_ind, _ = landmarks(grayscale_patches[v_str,:], k=v['n'])
-    strata.append(v_str[l_ind])
+    l_ind, _ = landmarks(Klein.patch_data[s_ind,:], k=v['n'])
+    strata.append(s_ind[l_ind])
 stratified_ind = np.array(list(collapse(strata)))
 
+## alternative approach
+# stratified_ind = np.random.choice(np.arange(len(knn_density)), size = 500, replace=False, p=knn_density / np.sum(knn_density))
+# quantiles = np.quantile(knn_density, q=np.linspace(0, 1, 10)[1:])
+# np.bincount(np.searchsorted(quantiles, knn_density))
 
-for i in stratified_ind:
-  figure_img_patch(p, i, w=0.025, h=0.025)
+# %% Show the stratified sampling
+X = Klein.project_2d()
+p = figure(width=300, height=300)
+p = figure_scatter(X, fill_color = "#808080", fill_alpha = 0.15, size=2, line_width=0.0, figure = p)
+p = figure_scatter(X[stratified_ind], fill_color = "blue", fill_alpha = 0.55, size=3, line_width=0.0, figure = p)
 show(p)
 
-
-patch_knn_graph = neighborhood_graph(grayscale_patches[stratified_ind], k = 15, weighted=True)
-patch_geodesic = squareform(floyd_warshall(patch_knn_graph.tocsr(), directed=False))
+# %% 
+patch_knn_graph = neighborhood_graph(Klein.patch_data, k = k, weighted=True).tocsr()
+# patch_geodesic = squareform(floyd_warshall(patch_knn_graph.tocsr(), directed=False))
+patch_knn_graph.indptr = patch_knn_graph.indptr.astype(np.int32)
+patch_knn_graph.indices = patch_knn_graph.indices.astype(np.int32)
+patch_sps = shortest_path(patch_knn_graph, indices=stratified_ind)
+patch_geodesic = patch_sps[:,stratified_ind]
+patch_geodesic = squareform((patch_geodesic + patch_geodesic.T)/2)
+# shortest_path(patch_knn_graph, directed=False, indices = 0)
 
 #%% Form the two filter functions to create the bifiltration of
-from splex import flag_filter, lower_star_filter
 normalize = lambda x: (x - np.min(x)) / (np.max(x) - np.min(x))
-sample_codensity = max(knn_density[stratified_ind]) - knn_density[stratified_ind]
-codensity_filter = lower_star_filter(normalize(sample_codensity))
-geodesic_filter = flag_filter(normalize(patch_geodesic))
+n_codensity = normalize(max(knn_density[stratified_ind]) - knn_density[stratified_ind])
+n_geodesic = normalize(patch_geodesic)
+codensity_filter = sx.lower_star_filter(n_codensity)
+geodesic_filter = sx.flag_filter(n_geodesic)
 
-# %% Call rivet_console to get the minimal presentation
-# bigraded_betti 
-from pbsig.vis import figure_complex, show
-from splex import rips_complex
+# %% Form the complex + the two filter functions
+from scipy.sparse.csgraph import minimum_spanning_tree
 print(f"Is connected? {not(np.any(np.isinf(patch_geodesic)))}")
 f1 = codensity_filter
 f2 = geodesic_filter
-S = rips_complex(patch_geodesic, radius=np.quantile(normalize(patch_geodesic), 0.25), p = 2)
-#show(figure_complex(S, pos=pca_patches[stratified_ind,:]))
+connected_diam = np.max(minimum_spanning_tree(squareform(n_geodesic)).data)
+S = rips_complex(normalize(patch_geodesic), radius=(connected_diam * 1.5)/2, p = 2)
 
-# %% 
-from pbsig.rivet import figure_betti
-BI = bigraded_betti(S, f1, f2, p=1, xbin=25, ybin=25, input_file="bifilt.txt", output_file="betti_out.txt")
-show(figure_betti(BI))
+# %% Compute the hilbert function 
+from pbsig.rivet import figure_betti, anchors, push_map
+BI = bigraded_betti(S, f1, f2, p=1, xbin=25, ybin=25)
+p = figure_betti(BI, width=350, height=350, highlight=5, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
+show(p)
+
+# %% Choose the intercept + angle by hand 
+offset, angle = 0.11, 29
+line_f = lambda x: np.tan(np.deg2rad(angle)) * x + offset
+p = figure_betti(BI, width=350, height=350, show_coords=True, highlight=5, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
+p.line(x=[0.0, 1.0], y=[line_f(0.0), line_f(1.0)], color='red')
+show(p)
+
+# %% Apply the push map to get a single filtration
+Y = np.c_[f1(S), f2(S)]
+YL = push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset)
+
+# %% Generate curve
+f_min, f_max = np.min(YL[:,2]), np.max(YL[:,2])
+def restrict_filtration(angle):
+  YL = push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset)[:,2]
+  K = sx.RankFiltration(S, fixed_filter(S, YL))
+
+SpectralRankInvariant(S, family=)
+
+# %%
+# K_proj = filtration(zip(YL[:, 2], S), form="rank")
+# dgm = ph(K_proj, engine="cpp")
+# show(figure_dgm(dgm[1]))  # should have 0.545 lifetime h1
 
 
+# import line_profiler
+# profile = line_profiler.LineProfiler()
+# profile.add_function(bigraded_betti)
+# profile.add_function(anchors)
+# profile.add_function(push_map)
+# profile.enable_by_count()
+# BI = bigraded_betti(S, f1, f2, p=1, xbin=15, ybin=15)
+# profile.print_stats(output_unit=1e-3, stripzeros=True)
 
+
+# import line_profiler
+# profile = line_profiler.LineProfiler()
+# profile.add_function(rips_complex)
+# profile.enable_by_count()
+# r = np.quantile(normalize(patch_geodesic), 0.45)
+# rips_complex(patch_geodesic, radius=r, p = 2)
+# profile.print_stats(output_unit=1e-3, stripzeros=True)
 
 ## This derives form all the points so no go 
 # s = splrep(degrees, g(1e-6), w=1/L.std(axis=1))

@@ -7,6 +7,8 @@ from typing import Iterable, Union, Callable
 import numpy as np
 import splex as sx
 
+import re
+
 
 def bigraded_betti(
 	S: sx.ComplexLike,
@@ -33,8 +35,32 @@ def bigraded_betti(
 	inp_file_str += "--xlabel density\n"
 	inp_file_str += "--ylabel diameter\n"
 	inp_file_str += "\n"
-	for s, fs_1, fs_2 in zip(S, f1(S), f2(S)):
-		inp_file_str += f"{' '.join([str(v) for v in s])} ; {fs_1} {fs_2}\n"
+	# for s, fs_1, fs_2 in zip(S, f1(S), f2(S)):
+	# 	inp_file_str += f"{' '.join([str(v) for v in s])} ; {fs_1} {fs_2}\n"
+	## TODO: replace this 
+	from simplextree import SimplexTree
+	rp = re.compile(r'[\[\(,\)\]]')
+	if isinstance(S, SimplexTree):
+		simplex_s = np.array([rp.sub('', str(s)).strip() for s in S.vertices])
+		simplex_f = np.array([f" ; {f1([s])} {f2([s])}" for s in S.vertices])
+		inp_file_str += '\n'.join(np.char.add(simplex_s, simplex_f))
+		inp_file_str += '\n'
+		simplex_s = np.array([rp.sub('', str(s)).strip() + " ; " for s in S.edges])
+		simplex_s = np.char.add(simplex_s, f1(S.edges).astype(str))
+		simplex_s = np.char.add(simplex_s, np.repeat(' ', sx.card(S,1)))
+		simplex_s = np.char.add(simplex_s, f2(S.edges).astype(str))
+		inp_file_str += '\n'.join(simplex_s)
+		inp_file_str += '\n'
+		simplex_s = np.array([rp.sub('', str(s)).strip() + " ; " for s in S.triangles])
+		simplex_s = np.char.add(simplex_s, f1(S.triangles).astype(str))
+		simplex_s = np.char.add(simplex_s, np.repeat(' ', sx.card(S,2)))
+		simplex_s = np.char.add(simplex_s, f2(S.triangles).astype(str))
+		inp_file_str += '\n'.join(simplex_s)
+	else: 
+		simplex_s = np.array([rp.sub('', str(s)).strip() for s in S])
+		simplex_f = np.array([f" ; {f1(s)} {f2(s)}" for s in S])
+		inp_file_str += '\n'.join(np.char.add(simplex_s, simplex_f))
+
 	with open(tf.name, "w") as inp_file:
 		inp_file.write(inp_file_str)
 
@@ -42,15 +68,7 @@ def bigraded_betti(
 	output_tf = NamedTemporaryFile() if output_file is None else open(output_file, "w", encoding="utf-8")
 	xreverse, yreverse = kwargs.get("xreverse", False), kwargs.get("yreverse", False)
 	rivet_cmd = [rivet_path_str, inp_file.name]
-	rivet_cmd += [
-		"--betti",
-		"--homology",
-		str(p),
-		"--xbins",
-		str(xbin),
-		"--ybins",
-		str(ybin),
-	]
+	rivet_cmd += ["--betti", "--homology", str(p), "--xbins", str(xbin), "--ybins", str(ybin)]
 	rivet_cmd += ["--xreverse" if xreverse else ""]
 	rivet_cmd += ["--yreverse" if yreverse else ""]
 	rivet_cmd += [">", output_tf.name]
@@ -117,42 +135,67 @@ def push_map(X: np.ndarray, a: float, b: float) -> np.ndarray:
 	return out
 
 
-def figure_betti(betti: dict, **kwargs):
+def figure_betti(betti: dict, show_coords: bool = False, highlight: int = None, **kwargs):
 	"""Creates a figure of the dimension function + the bigraded Betti numbers"""
 	from bokeh.plotting import figure
 	from pbsig.vis import rgb_to_hex
+	from bokeh.palettes import linear_palette, gray 
 	BI = betti
 	h = BI["hilbert"]
 	xg, yg = BI["x-grades"], BI["y-grades"]
 	x_step, y_step = np.abs(np.diff(xg)[0]), np.abs(np.diff(yg)[0])
-	box_intensity = ((1.0 - (h["value"] / max(h["value"]))) * 255).astype(int)
-	box_color = np.repeat(box_intensity, 3).reshape(len(h["value"]), 3).astype(np.uint8)
+	
+	unique_vals = np.sort(np.unique(h['value']))
+	pal_offset = int(len(unique_vals) * 0.20)
+	gray_pal = np.array(linear_palette(tuple(reversed(gray(255))), pal_offset + len(unique_vals)))
+	color_indices = np.searchsorted(unique_vals, h["value"])
+	# box_intensity = ((1.0 - (h["value"] / max(h["value"]))) * 255).astype(int)
+	# box_color = np.repeat(box_intensity, 3).reshape(len(h["value"]), 3).astype(np.uint8)
 	
 	from bokeh.models import ColumnDataSource
+	highlight = -1 if highlight is None else int(highlight)
+	fill_color = np.where(h["value"] == highlight, "blue", gray_pal[color_indices + pal_offset])
 	r_source = ColumnDataSource(data=dict(
 		x = h["x"] + x_step / 2.0, 
 		y = h["y"] + y_step / 2.0, 
-		fill_color = box_color,
+		fill_color = fill_color,
 		value = h["value"]
 	))
-	r_tooltips = [
-		# ("(x,y)", "(@x,@y)"),
-		("dim", "@value")
-	]
+	r_tooltips = [("dim", "@value")]
+	if show_coords:
+		r_tooltips += [("coords", "(@x, @y)")]
 
 	## Make the figure
-	fig_kwargs = dict(width=250, height=250) | kwargs
+	from pbsig.vis import valid_parameters
+	fig_kwargs = dict(width=250, height=250) | valid_parameters(figure, **kwargs)
 	p = figure(**fig_kwargs, tooltips = r_tooltips)
+
+	## Plot the rectangles
+	from bokeh.models import Rect
+	default_rect_params = dict(fill_alpha=0.50, line_color="black", line_alpha=0.0, line_width=0.0)
+	rect_params = valid_parameters(
+		Rect, 
+		exclude = ["x", "y", "fill_color", "width", "height"], 
+		**(default_rect_params | kwargs)
+	)
 	rect_r = p.rect(
 		x='x', y='y', fill_color= 'fill_color',
 		width=x_step, height=y_step,
-		fill_alpha=0.25, line_color="black", line_alpha=0.0, line_width=0.0, 
-		source = r_source
+		source = r_source, 
+		**rect_params
 	)
 	p.hover.renderers = [rect_r] # hover only for rectangles
-	p.scatter(BI["0"]["x"], BI["0"]["y"], size=12, color=rgb_to_hex([52, 209, 93, int(0.75 * 255)]))
-	p.scatter(BI["1"]["x"], BI["1"]["y"], size=12, color=rgb_to_hex([212, 91, 97, int(0.75 * 255)]))
-	p.scatter(BI["2"]["x"], BI["2"]["y"], size=12, color=rgb_to_hex([254, 255, 140, int(0.75 * 255)]))
+	
+	from bokeh.models import Scatter
+	pt_colors = [rgb_to_hex(c + [int(0.75 * 255)]) for c in [[52, 209, 93],[212, 91, 97],[254, 255, 140]]]
+	scatter_params = valid_parameters(
+		Scatter, 
+		exclude = ["x", "y"],
+		**(dict(size=8) | kwargs)
+	)
+	p.scatter(BI["0"]["x"], BI["0"]["y"], **(scatter_params | dict(color=pt_colors[0])))
+	p.scatter(BI["1"]["x"], BI["1"]["y"], **(scatter_params | dict(color=pt_colors[1])))
+	p.scatter(BI["2"]["x"], BI["2"]["y"],	**(scatter_params | dict(color=pt_colors[2])))
 	return p
 
 

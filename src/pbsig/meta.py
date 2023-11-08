@@ -3,6 +3,11 @@ from typing import *
 from numpy.typing import ArrayLike
 from .combinatorial import * 
 
+
+def ensure(expr_res: bool, message: str):
+	if not expr_res: 
+		raise ValueError(message)
+
 def function_kwargs(f: Callable, exclude: list = [''], **kwargs):
   import inspect
   f_keys = inspect.getfullargspec(f).args ## NOTE: this is not recursive! 

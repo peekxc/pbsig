@@ -508,7 +508,7 @@ Though this observation is typically viewed as a minor fact needed to prove the 
 \begin{corollary}[Bauer et al.~\cite{bauer2022keeping}]
 	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K, f)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
 \end{corollary}
-\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Moreover, due to~\eqref{eq:lower_left_rank}, both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ to be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
+\noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Moreover, due to~\eqref{eq:lower_left_rank}, both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ may be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
 \begin{corollary}[\cite{chen2011output, dey2022computational}]\label{cor:rank_reduction}
 Given a fixed $p \geq 0$, a filtration $(K,f)$ with filtration values $\{ \, a_i \, \}_{i=1}^N$, and a rectangle $R =  [a_i,a_j] \times [a_k,a_l] \subset \Delta_+$,
 %satisfying $1 \leq i < j \leq k < l \leq N$, 
@@ -1364,7 +1364,7 @@ For our purposes, since the graph distance between pairs of nodes scale logarith
 The corresponding incidence matrix $\partial_1 \in \mathbb{R}^{n \times m}$ and up-Laplacians $L_0^{\mathrm{up}} \in \mathbb{R}^{n \times n}$ would have $\approx 5,000$ and  $\approx 5,500$ non-zero entries, were they to be formed explicitly, which are weighted according randomly by embedding the graph in the plane and filtering  graph via its sublevel sets in a random direction. 
 %A much smaller Watts-Strogatz graph of the same type (but with only $50$ nodes) is shown on the left-side of figure~\ref{fig:watts_strogatz}, colored by the filtering of its lower stars. 
 \begin{figure}[t]
-	\includegraphics[width=\textwidth]{presentations/watts_strogatz_perf.png}
+	\includegraphics[width=\textwidth]{presentations/images/watts_strogatz_perf.png}
 	\caption{Random Watts-Strogatz ``Small world'' graph example}
 	\label{fig:watts_strogatz}
 \end{figure}
@@ -1554,7 +1554,7 @@ From another perspective, we refer to this process of choosing appropriate filtr
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width=0.78\textwidth]{presentations/codensity_dgm_ex}
+	\includegraphics[width=0.78\textwidth]{presentations/images/codensity_dgm_ex}
 	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
 	}\label{fig:codensity}
 \end{figure}
@@ -1562,7 +1562,7 @@ From another perspective, we refer to this process of choosing appropriate filtr
 As an introductory example, we sampled $80$ points noisily around $S^1$ and then sampled an additional $30$ points in $[-1,1] \times [-1,1]$ to act as ``strong outliers.'' After constructing a Delaunay complex $K$ of these points, we parameterized a filter function $f_\alpha : K \times \mathbb{R} \to \mathbb{R}_+$ by assigning the filtration values of each simplex according to the lower stars of a kernel (co)density estimate, upon which we computed its vineyard~\cite{cohen2006vines} along a subset $\mathcal{A} \subset \mathbb{R}$. The vineyard, colored by $\alpha$, is shown on the left side of figure~\ref{fig:vineyard_codensity}. In this example, we choose the rectangle $R = \frac{1}{5}([1, 2] \times [3,4])$ out of simplicity; the corresponding multiplicity function is shown in the black curve on the right of figure~\ref{fig:vineyard_codensity}. 
 \begin{figure}[h]
 	\centering
-	\includegraphics[width=0.90\textwidth]{presentations/combined_mult}
+	\includegraphics[width=0.90\textwidth]{presentations/images/combined_mult}
 	\caption{(Left) Vineyard of of the codensity $\alpha$-parameterized filtration from figure~\ref{fig:codensity}. (Right) The exact multiplicity $\mu_1(K, f_\alpha)$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm{e}{-3}$.}\label{fig:vineyard_codensity}
 \end{figure}
 By inspection, the optimal density parameter satisfying~\eqref{eq:mult_opt} is any parameter $\alpha$ lying approximately in the interval $[0.40, 0.44]$. 

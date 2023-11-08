@@ -20,7 +20,7 @@ from bokeh.transform import linear_cmap
 from bokeh.layouts import column
 
 ## Meta-programming to the rescue! 
-def valid_parameters(el: Any, prefix: str = "", **kwargs):
+def valid_parameters(el: Any, prefix: str = "", exclude: list = [], **kwargs):
   """Extracts valid parameters for a bokeh plotting element. 
   
   This function takes as input a bokeh model (i.e. figure, Scatter, MultiLine, Patch, etc.) and a set of keyword arguments prefixed by 'prefix', 
@@ -40,7 +40,7 @@ def valid_parameters(el: Any, prefix: str = "", **kwargs):
   assert hasattr(el, "parameters"), f"Invalid bokeh element '{type(el)}'; must have valid parameters() call"
   param_names = { param[0].name for param in el.parameters() }
   stripped_params = { k[len(prefix):] for k in kwargs.keys() if k.startswith(prefix) }
-  valid_params = { p : kwargs[prefix+p] for p in (stripped_params & param_names) }
+  valid_params = { p : kwargs[prefix+p] for p in (stripped_params & param_names) if not p in exclude }
   return valid_params
 
 # def intersect_dict(d1: dict, d2: dict):
@@ -67,7 +67,7 @@ def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = Fals
 
   ## Parameterize the figure
   from bokeh.models import PolyAnnotation
-  fig_kwargs = valid_parameters(figure, fig_kwargs | kwargs)
+  fig_kwargs = valid_parameters(figure, **(fig_kwargs | kwargs))
   p = kwargs.get('figure', figure(**fig_kwargs))
   p.xaxis.axis_label = "Birth"
   p.yaxis.axis_label = "Death"
@@ -282,11 +282,29 @@ def figure_complex(
 def plot_complex(*args, **kwargs) -> None:
   show(figure_complex(*args, **kwargs))
 
+def dict_setdiff(d1: dict, d2: dict):
+  keys_to_keep = set(d1.keys()) - set(d2.keys())
+  return { k : d1[k] for k in keys_to_keep }
+
 def figure_scatter(X: ArrayLike, **kwargs):
-  fig_params = { param[0].name for param in figure.parameters() }
-  # scatter_params = { param[0].name for param in Scatter.parameters() }
-  p = kwargs.get('figure', figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params })))
-  p.scatter(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
+  from bokeh.models import Scatter
+  # fig_params = { param[0].name for param in figure.parameters() }
+  # # scatter_params = { param[0].name for param in Scatter.parameters() }
+  # p = kwargs.get('figure', figure(**({ k : kwargs[k] for k in kwargs.keys() & fig_params })))
+  # p.scatter(*X.T, **({ k : kwargs[k] for k in kwargs.keys() - fig_params }))
+  fig_kwargs = valid_parameters(figure, kwargs)
+  p = kwargs.get('figure', figure(**fig_kwargs))
+  Scatter_kwargs = valid_parameters(Scatter, **kwargs)
+  Scatter_kwargs['x'] = X[:,0]
+  Scatter_kwargs['y'] = X[:,1]
+  cs_kwargs = { k : v for k,v in Scatter_kwargs.items() if isinstance(v, Sized) and len(v) == len(X) }
+  source = ColumnDataSource(cs_kwargs)
+  Scatter_kwargs = dict_setdiff(Scatter_kwargs, cs_kwargs)
+  for k in cs_kwargs.keys():
+    Scatter_kwargs[k] = str(k)
+  glyph = Scatter(**Scatter_kwargs)
+  p.add_glyph(source, glyph)
+  # p.scatter(*X.T, **scatter_kwargs)
   return p
 
 def figure_patch(X: ArrayLike, **kwargs):

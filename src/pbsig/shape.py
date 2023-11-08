@@ -128,6 +128,45 @@ def landmarks(a: ArrayLike, k: Optional[int] = 15, eps: Optional[float] = -1.0, 
 	assert is_monotone, "Invalid metric: non-monotonically decreasing radii found."
 	return(indices, radii)
 
+def proportional_integers(x: np.ndarray, n: int, weights: np.ndarray = None):
+  """Given an array 'x' and an integer 'n', find an array of integers 'y' such that sum(y) = n and x[i]/x[j] ~= y[i]/y[j]"""
+  x, weights = np.array(x), np.ones(len(x)) if weights is None else np.array(weights)
+  assert len(weights) == len(x), "Weights array must match length of the input"
+  x = x * weights
+  scaling_factor = n / sum(x)
+  y = np.round(x * scaling_factor).astype(int)
+  while sum(y) != n: 
+    idx = np.argmax(x - y) if sum(y) < n else np.argmax(y) 
+    y[idx] += 1 if sum(y) < n else -1
+  return y
+
+def stratify_sample(n: int, f: np.ndarray, n_strata: int = 25, weights: np.ndarray = None, return_strata: bool = False, **kwargs):
+  """Stratify samples _n_ indices in [0, len(f)-1] using proportionate allocation."""
+  assert isinstance(f, np.ndarray), "f must be an array"
+  from array import array
+  from itertools import pairwise
+  bin_counts, bin_edges = np.histogram(f, bins=n_strata) # **kwargs
+  strata_weights = np.ones(n_strata) if weights is None else np.array(weights)
+  sample_counts = proportional_integers(bin_counts, n, strata_weights)
+  indices = {} if return_strata else array('I') 
+  for cc, ((a,b), ns) in enumerate(zip(pairwise(bin_edges), sample_counts)):
+    stratum_ind = np.flatnonzero(np.logical_and(a <= f, f <= b))
+    if return_strata:
+      indices[cc] = dict(n=ns, stratum=stratum_ind, interval=(a,b))
+    else:
+      sample_ind = np.random.choice(stratum_ind, size=ns, replace=False)
+      indices.extend(sample_ind)
+  return indices if return_strata else np.array(indices)
+
+def mean_shift(X: np.ndarray, radius: float, niter: int = 1):
+  centroids = X 
+  for c_it in range(niter):
+    X = centroids.copy()
+    for i, c in enumerate(X):
+      in_ball = np.ravel(cdist(c[np.newaxis,:], X) <= radius)
+      centroids[i] = X[in_ball].mean(axis=0)
+  return centroids
+
 def PL_path(path, k: int, close_path: bool = False, output_path: bool = False): 
   """Convert a SVG collection of paths into a set k-1 piecewise-linear line segments.
   

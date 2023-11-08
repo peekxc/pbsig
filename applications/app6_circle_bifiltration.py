@@ -100,9 +100,11 @@ xlim = [0, dual_pts[:,1].max()]
 ylim = [min(-A[:,1].max(), A[:,1].min()), dual_pts[:,1].max()]
 
 
-from shapely import LineString
+from shapely import GeometryCollection, LineString
+lines = [([xlim[0], d], [xlim[1], xlim[1]*c + d]) for c,d in L]
+A_lines = GeometryCollection(list(map(LineString, lines)))
 
-LineString
+
 
 
 
