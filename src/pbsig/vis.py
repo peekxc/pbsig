@@ -326,6 +326,7 @@ def figure_hist(hist, edges, **kwargs):
   return p
 
 def figure_vineyard(dgms: Sequence[dict], p: int = None, **kwargs):
+  from numbers import Integral
   from pbsig.color import rgb_to_hex
   fig = figure_dgm(**kwargs)
   vine_colors = bin_color(np.arange(len(dgms)), "viridis")
@@ -334,7 +335,8 @@ def figure_vineyard(dgms: Sequence[dict], p: int = None, **kwargs):
   assert isinstance(p, Iterable), "dimension 'p' must be a iterable or an integer."
   for dgm, vc in zip(dgms, vine_colors):
     for p_dim in p: 
-      fig.scatter(dgm[p_dim]['birth'], dgm[p_dim]['death'], color=rgb_to_hex(vc))
+      if p_dim in dgm:
+        fig.scatter(dgm[p_dim]['birth'], dgm[p_dim]['death'], color=rgb_to_hex(vc))
   fig.match_aspect = True
   return fig
 

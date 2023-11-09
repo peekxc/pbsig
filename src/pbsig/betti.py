@@ -754,7 +754,7 @@ class MuFamily:
           sig[cc,:] += s*self.elementwise_row_sum(T, smoothing)
     return sig
 
-from pbsig.linalg import ParameterizedLaplacian
+# from pbsig.linalg import ParameterizedLaplacian
 
 class SpectralRankInvariant:
   """ 
@@ -785,13 +785,39 @@ class SpectralRankInvariant:
     # self.nq = card(S, p+1)
     # self.form = form
     # self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.operators = ParameterizedLaplacian(S, family, p, form=form)
+    self.q_operators = ParameterizedLaplacian(S, family, p, form=form)
+    if p > 0: 
+      self.p_operators = ParameterizedLaplacian(S, family, p-1, form=form)
     self.solver = PsdSolver(eigenvectors=False)
     self.delta = np.finfo(float).eps
-    self._sieve = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int)])
+    ## Note: breaking away from the corner-point per evaluation might not be good due to irregular shapes
+    self._sieve = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int), ('finite', bool)])
     self.bounds_domain = (0, 1) # bounds on the domain of the family, if Callable
     self.bounds_range = (0, 1)  # bounds on the range of the filter functions
     self._default_val = { "eigenvalues" : array('d'), "lengths" : array('I') }
+
+  # @property
+  # def family(self): 
+  #   """The _family_ refers to the parameter space of filter functions. 
+
+  #   (1) an Iterable of Callables, the inner of which are filter function 
+  #   (2) a Callable itself, in which case bounds should be properly set 
+  #   """
+  #   return self._family
+  
+  # @family.setter
+  # def family(self, family: Union[Callable, Iterable], *args):
+  #   """ Sets the parameterized family to the product """
+  #   from more_itertools import spy
+  #   if isinstance(family, Iterable):
+  #     assert not(family is iter(family)), "Iterable 'family' must be repeatable; a generator is not sufficient!"
+  #     assert isinstance(family, Sized), "The family of iterables must be sized"
+  #     f, _ = spy(family)
+  #     assert isinstance(f[0], Callable), "Iterable family must be a callables!"
+  #     self._family = family
+  #   else: 
+  #     assert isinstance(family, Callable), "family must be iterable or Callable"
+  #     self._family = [family]
 
   @property
   def sieve(self):
@@ -813,14 +839,23 @@ class SpectralRankInvariant:
       self._sieve = np.fromiter(zip(I,J,SGN,IND), dtype=self._sieve.dtype)
     else:
       assert isinstance(R, np.ndarray) and R.shape[1] == 4, "Invalid rectangle set given"
-      I,J,SGN,IND = [],[],[],[]
+      R = np.atleast_2d(R).sort(axis=1)
+      I,J,SGN,IND,FINITE = [],[],[],[],[]
       for cc, (i,j,k,l) in enumerate(R): # (x1,x2,y1,y2)
-        for pp, s, idx in zip(product([i,j], [k,l]), [-1,1,1,-1], repeat(cc, 4)):
-          I.append(pp[0])
-          J.append(pp[1])
-          SGN.append(s)
-          IND.append(idx)
-      self._sieve = np.fromiter(zip(I,J,SGN,IND), dtype=self._sieve.dtype)
+        if np.isinf(i) and np.isinf(l):
+          I.append(i)
+          J.append(j)
+          SGN.append(1)
+          IND.append(cc)
+          FINITE.append(FALSE)
+        else: 
+          for pp, s, idx in zip(product([i,j], [k,l]), [-1,1,1,-1], repeat(cc, 4)):
+            I.append(pp[0])
+            J.append(pp[1])
+            SGN.append(s)
+            IND.append(idx)
+            FINITE.append(TRUE)
+      self._sieve = np.fromiter(zip(I,J,SGN,IND,FINITE), dtype=self._sieve.dtype)
   
   def randomize_sieve(self, n_rect: int = 1, plot: bool = False, **kwargs):
     from bokeh.io import show
@@ -852,8 +887,8 @@ class SpectralRankInvariant:
 
     """
     si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-    self.operators.post_p = si
-    self.operators.post_q = sj  
+    self.q_operators.post_p = si
+    self.q_operators.post_q = sj  
     # self.operators = ParameterizedLaplacian(S, family, self.operators.p, form=self.operators.form)
     # 
     # fp, fq = f(self.operators.p_faces), f(self.operators.q_faces)
@@ -864,33 +899,31 @@ class SpectralRankInvariant:
     """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
     if len(self._sieve) == 0:
       raise ValueError("No rectilinear sieve has been chosen! Consider using 'randomize_sieve'.")
+    
     ## Setup the main iterator
-    n_corner_pts, n_family = len(self.sieve), len(self.operators.family)
-    # corner_point_group_ids = np.floor(np.arange(n_corner_pts * n_family) / n_family).astype(int)
-    corner_iter = zip(self.sieve['i'], self.sieve['j'])
-    # main_it = zip(product(corner_it, self.operators.family), pt_indices) # fix corner pt, iterate through family
-    # main_it = zip(product(corner_it, [self.family[i] for i in range(len(self.family))]), pt_indices) 
-
-    ## Sets up progress bar, if requested 
-    # if progress: 
-    #   status_f = lambda j: f" (family: {(j % n_family)}/{n_family}, corners: {int(np.floor(j / n_family))}/{n_corner_pts})"
-    #   main_it = progressbar(main_it, count=n_corner_pts * n_family, f=status_f)
+    n_corner_pts, n_family = len(self.sieve), len(self.q_operators.family)
+    corner_iter = zip(self.sieve['i'], self.sieve['j'], self.sieve['finite'])
     
     ## Setup the default values in the dict
     self.spectra = { corner_id : copy.deepcopy(self._default_val) for corner_id in range(n_corner_pts) }
-    post_q, post_p = self.operators.post_q, self.operators.post_p
+    post_q, post_p = self.q_operators.post_q, self.q_operators.post_p
     
     ## Projects each point (i,j) of the sieve onto a Krylov subspace
-    for cc, (i,j) in progressbar(enumerate(corner_iter), len(self.sieve)):  
-      self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
-      for laplacian_op in self.operators:
-        ew = self.solver(laplacian_op)
-        self.spectra[cc]['eigenvalues'].extend(ew)
-        self.spectra[cc]['lengths'].extend([len(ew)])
-    
+    for cc, (i,j,finite) in progressbar(enumerate(corner_iter), len(self.sieve)):  
+      if finite: 
+        self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
+        for laplacian_op in self.q_operators:
+          ew = self.solver(laplacian_op)
+          self.spectra[cc]['eigenvalues'].extend(ew)
+          self.spectra[cc]['lengths'].extend([len(ew)])
+      else:
+        si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+        self.q_operators.post_p = si
+        self.q_operators.post_q = sj  
+        
     ## Reset the parameterized family to whatever they were prior
-    self.operators.post_q = post_q
-    self.operators.post_p = post_p
+    self.q_operators.post_q = post_q
+    self.q_operators.post_p = post_p
 
   ## TODO: add ability to handle not just length-dependent function, but pure elementwise ufunc
   def summarize(self, spectral_func: Callable[Number, ArrayLike] = None, **kwargs) -> ArrayLike:
@@ -898,7 +931,7 @@ class SpectralRankInvariant:
     
     The spectral function can either be vector-valued (in which case the sum is used as a reduction) or scalar-valued. 
     """
-    n_pts, n_family = len(self.sieve), len(self.operators.family)
+    n_pts, n_family = len(self.sieve), len(self.q_operators.family)
     f = np.sum if spectral_func is None else spectral_func
     assert isinstance(f, Callable), "reduce function must be Callable"
     r, vector_valued = f(np.zeros(10)), False
@@ -930,7 +963,7 @@ class SpectralRankInvariant:
     from pbsig.vis import valid_parameters, bin_color
     from bokeh.models import Line
     from bokeh.plotting import figure
-    nt, ns = len(self.operators.family), len(np.unique(self._sieve['index']))
+    nt, ns = len(self.q_operators.family), len(np.unique(self._sieve['index']))
     fig_kwargs = valid_parameters(figure, **kwargs)
     p = kwargs.get('figure', figure(width=300, height=300, **fig_kwargs))
     summary = self.summarize(func) if (isinstance(func, Callable) or func is None) else func
@@ -958,7 +991,7 @@ class SpectralRankInvariant:
       method: persistence algorithm to use. Currently ignored. 
     """
     ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", **kwargs)
-    self.dgms = [ph_dgm(filter_f) for filter_f in self.operators.family]
+    self.dgms = [ph_dgm(filter_f) for filter_f in self.q_operators.family]
     return self.dgms
 
   # def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:

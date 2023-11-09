@@ -18,19 +18,23 @@ output_notebook()
 # %% Load data 
 from pbsig.datasets import noisy_circle
 from splex.geometry import delaunay_complex
-np.random.seed(1235)
-X = noisy_circle(200, n_noise=10, perturb=0.10) ## 80, 30, 0.15 
+np.random.seed(1234)
+X = noisy_circle(150, n_noise=20, perturb=0.15) ## 80, 30, 0.15 
 S = delaunay_complex(X)
+
+from pbsig.csgraph import WeightedLaplacian
+L = WeightedLaplacian(S, p = 0)
+L @ np.arange(L.shape[0])
 
 # %% 
 show(figure_complex(S, pos=X, width=300, height=300))
 
 # %% Create filtering function
 from scipy.stats import gaussian_kde
-def codensity(bw: float):
+def codensity(bw: float, normalize: bool = True):
   x_density = gaussian_kde(X.T, bw_method=bw).evaluate(X.T)
   x_codensity = max(x_density) - x_density
-  return x_codensity
+  return x_codensity / np.sum(x_codensity) if normalize else x_codensity
 
 # %% Evaluate H1-persistence across a 1-parameter family
 from splex import lower_star_filter
@@ -38,11 +42,12 @@ from pbsig.interpolate import ParameterizedFilter
 bw_scott = gaussian_kde(X.T, bw_method='scott').factor
 bw_bnds = (bw_scott*0.10, bw_scott*2)
 timepoints = np.linspace(*bw_bnds, 100) # np.geomspace(*bw_bnds, 100)
-codensity_family = [lower_star_filter(codensity(bw)/np.sum(codensity(bw))) for bw in timepoints] # note the normalization 
-P = ParameterizedFilter(S, family = codensity_family, p = 1)
-# P.interpolate(interval=(0, 1.8))
+codensity_family = ParameterizedFilter(S, family = [lower_star_filter(codensity(bw)) for bw in timepoints])
+# p_family.interpolate(interval=bw_bnds)
 
 # %% 
+next(iter(ParameterizedLaplacian(S, family = P, p = -1)))
+
 from pbsig.betti import SpectralRankInvariant
 ri = SpectralRankInvariant(S, family = codensity_family, p = 1)
 # spri.randomize_sieve()
@@ -54,7 +59,8 @@ dgms = ri.compute_dgms(S)
 vineyard_fig = figure_vineyard(dgms, p = 1)
 
 # %% Basically anything in [0, 0.01] x [0.02, 0.03] works
-ri.sieve = np.array([[0.0, 0.01, 0.02, 0.03]])
+# ri.sieve = np.array([[0.0, 0.01, 0.02, 0.03]])
+ri.sieve = np.array([[-np.inf, 0.015, 0.02, +np.inf]])
 show(ri.figure_sieve(figure=vineyard_fig, fill_alpha=0.15))
 
 # %% Look at the numerical rank at a fixed threshold (that tends to work)
@@ -64,7 +70,7 @@ show(ri.figure_summary(func = num_rank_f))
 show(ri.figure_summary(func = np.sum))
 
 # %% Try multiple summary functions 
-rank_relax_f = np.vectorize(lambda x: x / (x + 1.0))
+rank_relax_f = np.vectorize(lambda x: x / (x + 0.001))
 show(ri.figure_summary(func = rank_relax_f))
 
 

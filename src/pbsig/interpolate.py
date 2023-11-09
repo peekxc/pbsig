@@ -122,6 +122,7 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     #     fig.
     #   fig.scatter(0)
 
+  ## TODO: fix so that this is a true time-parameterized filter function! 
   def __call__(self, p: int, t: Union[float, int], **kwargs):
     assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
     assert hasattr(self, "domain_") and hasattr(self, "splines_"), "Cannot interpolate without calling interpolat fmaily first! "
