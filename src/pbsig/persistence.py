@@ -182,11 +182,8 @@ def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, simplex_p
   if any(rlow == -1):
     creator_mask = rlow == -1
     creator_dim = sdim[creator_mask]
-    birth = np.flatnonzero(creator_mask) ## indices of zero columns 
-    death = np.repeat(essential, len(birth))
-    #b = list(birth)
-    # for z in rlow[~creator_mask]:
-    #   death[]
+    birth = np.flatnonzero(creator_mask)      ## indices of zero columns 
+    death = np.repeat(essential, len(birth))  ## indices of destroyer columns
     death[np.searchsorted(birth, rlow[~creator_mask])] = np.flatnonzero(~creator_mask)
   else:
     creator_dim = np.empty(0)
@@ -203,7 +200,9 @@ def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, simplex_p
 
   ## Assemble the diagram
   if simplex_pairs:
-    assert isinstance(K, Sequence), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
+    ## At this point, birth/death are integer indices!
+    # assert isinstance(K, Sequence), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
+    assert hasattr(K, "__getitem__"), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
     dgm_dtype = [('birth', 'f4'), ('death', 'f4'), ('creators', 'O'), ('destroyers', 'O')]
     creators = (Simplex(K[b]) for b in birth)
     destroyers = (Simplex(K[int(d)]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)

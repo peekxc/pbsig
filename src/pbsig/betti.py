@@ -246,6 +246,7 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
+from pbsig.csgraph import param_laplacian
 def betti_query(
   S: Union[LinearOperator, ComplexLike], 
   f: Callable[SimplexConvertible, float],
@@ -297,7 +298,7 @@ def betti_query(
     # ii = 3.50068702
 
 ## Cone the complex
-def cone_weight(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
+def cone_filter(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
   from scipy.spatial.distance import pdist
   flag_w = flag_filter(x)
   def _cone_weight(s):
@@ -773,26 +774,26 @@ class SpectralRankInvariant:
   Methods: 
     precompute: precomputes the signature
   """
-  def __init__(self, S: ComplexLike, family: Union[Iterable, Callable] = None, p: int = 0, form: str = "lo"):
+  def __init__(self, S: ComplexLike, family: Union[Iterable, Callable] = None, p: int = 0, **kwargs):
     from pbsig.linalg import PsdSolver
     from pbsig.csgraph import WeightedLaplacian
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
-    # if family is not None: 
-    #   self.family = family  # also does input validation
-    # self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
-    # self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
+    self.family = family if family is not None else [sx.generic_filter(lambda x: 1.0)]
+    self.y_faces = np.array([s for s in faces(S,p-1)]).astype(np.uint16)
+    self.p_faces = np.array([s for s in faces(S,p)]).astype(np.uint16)
+    self.q_faces = np.array([s for s in faces(S,p+1)]).astype(np.uint16)
     # self.p = p
     # self.np = card(S, p)
     # self.nq = card(S, p+1)
     # self.form = form
     # self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.p_laplacian = WeightedLaplacian(S, p = p-1)
-    self.q_laplacian = WeightedLaplacian(S, p = p)
+    self.p_laplacian = WeightedLaplacian(S, p = p-1, **kwargs)
+    self.q_laplacian = WeightedLaplacian(S, p = p, **kwargs)
     # self.q_operators = ParameterizedLaplacian(S, family, p, form=form)
     # if p > 0: 
     #   self.p_operators = ParameterizedLaplacian(S, family, p-1, form=form)
     self.solver = PsdSolver(eigenvectors=False)
-    self.delta = np.finfo(float).eps
+    self.delta = np.sqrt(np.finfo(self.q_laplacian.dtype).eps)
     ## Note: breaking away from the corner-point per evaluation might not be good due to irregular shapes
     self._sieve = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int), ('finite', bool)])
     self.bounds_domain = (0, 1) # bounds on the domain of the family, if Callable
@@ -830,6 +831,7 @@ class SpectralRankInvariant:
   @sieve.setter
   def sieve(self, R: ArrayLike = None):
     """ Sets the sieve to the union of rectangles given by _R_. """
+    R = np.sort(np.atleast_2d(R), axis=1)
     if R is None: 
       return self._sieve 
     elif isinstance(R, np.ndarray) and R.shape[1] == 2:
@@ -842,22 +844,21 @@ class SpectralRankInvariant:
       self._sieve = np.fromiter(zip(I,J,SGN,IND), dtype=self._sieve.dtype)
     else:
       assert isinstance(R, np.ndarray) and R.shape[1] == 4, "Invalid rectangle set given"
-      R = np.atleast_2d(R).sort(axis=1)
       I,J,SGN,IND,FINITE = [],[],[],[],[]
       for cc, (i,j,k,l) in enumerate(R): # (x1,x2,y1,y2)
         if np.isinf(i) and np.isinf(l):
-          I.append(i)
-          J.append(j)
+          I.append(j)
+          J.append(k)
           SGN.append(1)
           IND.append(cc)
-          FINITE.append(FALSE)
+          FINITE.append(False)
         else: 
           for pp, s, idx in zip(product([i,j], [k,l]), [-1,1,1,-1], repeat(cc, 4)):
             I.append(pp[0])
             J.append(pp[1])
             SGN.append(s)
             IND.append(idx)
-            FINITE.append(TRUE)
+            FINITE.append(True)
       self._sieve = np.fromiter(zip(I,J,SGN,IND,FINITE), dtype=self._sieve.dtype)
   
   def randomize_sieve(self, n_rect: int = 1, plot: bool = False, **kwargs):
@@ -883,20 +884,20 @@ class SpectralRankInvariant:
     # p.y_range = Range1d(lb, ub)
     return p
 
-  def restrict_family(self, i: float, j: float, w: float, **kwargs) -> ArrayLike:
-    """ Restricts the weights supplied to the Laplacian family of operators to point (i,j) in the upper half plane. 
+  # def restrict_family(self, i: float, j: float, w: float, **kwargs) -> ArrayLike:
+  #   """ Restricts the weights supplied to the Laplacian family of operators to point (i,j) in the upper half plane. 
      
-    Specifically, this function parameterizes the family of Laplacian operators by a post composition of the supplied filter function 'f' 
+  #   Specifically, this function parameterizes the family of Laplacian operators by a post composition of the supplied filter function 'f' 
 
-    """
-    si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-    self.q_operators.post_p = si
-    self.q_operators.post_q = sj  
-    # self.operators = ParameterizedLaplacian(S, family, self.operators.p, form=self.operators.form)
-    # 
-    # fp, fq = f(self.operators.p_faces), f(self.operators.q_faces)
-    # fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
-    # self.operators.param_weights(fq, fp)
+  #   """
+  #   si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+  #   self.q_operators.post_p = si
+  #   self.q_operators.post_q = sj  
+  # self.operators = ParameterizedLaplacian(S, family, self.operators.p, form=self.operators.form)
+  # 
+  # fp, fq = f(self.operators.p_faces), f(self.operators.q_faces)
+  # fp, fq = si(fp), sj(fq) # for benchmarking purposes, these are not combined above
+  # self.operators.param_weights(fq, fp)
   
   def sift(self, w: float = 0.0, progress: bool = True, **kwargs):
     """Sifts through the supplied _family_ of functions, computing the spectra of the stored _laplacian_ operator."""
@@ -904,29 +905,41 @@ class SpectralRankInvariant:
       raise ValueError("No rectilinear sieve has been chosen! Consider using 'randomize_sieve'.")
     
     ## Setup the main iterator
-    n_corner_pts, n_family = len(self.sieve), len(self.q_operators.family)
+    n_corner_pts, n_family = len(self.sieve), len(self.family)
     corner_iter = zip(self.sieve['i'], self.sieve['j'], self.sieve['finite'])
     
     ## Setup the default values in the dict
     self.spectra = { corner_id : copy.deepcopy(self._default_val) for corner_id in range(n_corner_pts) }
-    post_q, post_p = self.q_operators.post_q, self.q_operators.post_p
     
     ## Projects each point (i,j) of the sieve onto a Krylov subspace
-    for cc, (i,j,finite) in progressbar(enumerate(corner_iter), len(self.sieve)):  
-      if finite: 
-        self.restrict_family(i=i, j=j, w=w, **kwargs) # family-wide restriction
-        for laplacian_op in self.q_operators:
-          ew = self.solver(laplacian_op)
-          self.spectra[cc]['eigenvalues'].extend(ew)
-          self.spectra[cc]['lengths'].extend([len(ew)])
-      else:
-        si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
-        self.q_operators.post_p = si
-        self.q_operators.post_q = sj  
-        
-    ## Reset the parameterized family to whatever they were prior
-    self.q_operators.post_q = post_q
-    self.q_operators.post_p = post_p
+    delta = np.finfo(self.q_laplacian.dtype).eps # should should stay quite small
+    for cc, (i,j,finite) in progressbar(enumerate(corner_iter), len(self.sieve)):
+      for f in self.family:
+        yw, pw, qw = f(self.y_faces), f(self.p_faces), f(self.q_faces) # p-1, p, p+1
+        if not finite:
+          inc_all = smooth_upstep(0, w)
+          fi_inc = smooth_dnstep(lb = i-w, ub = i+delta)
+          fi_exc = smooth_upstep(lb = i, ub = i+w)
+          fj_inc = smooth_dnstep(lb = j-w, ub = j+delta)
+          
+          ## Get the four terms 
+          # np.sum(pw <= i) == spectral_rank(fi_inc(pw))
+          ew0 = fi_inc(pw)
+          ew1 = self.solver(self.p_laplacian.reweight(fi_inc(pw), inc_all(yw)).operator())
+          ew2 = self.solver(self.q_laplacian.reweight(fj_inc(qw), inc_all(pw)).operator())
+          ew3 = self.solver(self.q_laplacian.reweight(fj_inc(qw), fi_exc(pw)).operator())
+
+          ## Normally spectra is indexed for each corner point, but for unbounded we just 
+          ## collect everything together for now 
+          for ew in [ew0, ew1, ew2, ew3]:
+            self.spectra[cc]['eigenvalues'].extend(ew)
+            self.spectra[cc]['lengths'].extend([len(ew)])
+        else:
+          si, sj = smooth_upstep(lb=i, ub=i+w), smooth_dnstep(lb=j-w, ub=j+self.delta)
+          self.q_laplacian.reweight(sj(qw), si(pw))
+          q_ew = self.solver(self.q_laplacian.operator())
+          self.spectra[cc]['eigenvalues'].extend(q_ew)
+          self.spectra[cc]['lengths'].extend([len(q_ew)])
 
   ## TODO: add ability to handle not just length-dependent function, but pure elementwise ufunc
   def summarize(self, spectral_func: Callable[Number, ArrayLike] = None, **kwargs) -> ArrayLike:
@@ -934,7 +947,7 @@ class SpectralRankInvariant:
     
     The spectral function can either be vector-valued (in which case the sum is used as a reduction) or scalar-valued. 
     """
-    n_pts, n_family = len(self.sieve), len(self.q_operators.family)
+    n_pts, n_family = len(self.sieve), len(self.family)
     f = np.sum if spectral_func is None else spectral_func
     assert isinstance(f, Callable), "reduce function must be Callable"
     r, vector_valued = f(np.zeros(10)), False
@@ -951,10 +964,20 @@ class SpectralRankInvariant:
     
     ## Apply f to the precomputed eigenvalues
     values = np.zeros(shape=(n_pts, n_family))
-    for ii,d in enumerate(self.spectra.values()):
-      ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
-      for jj, ew in enumerate(ew_split):
-        values[ii,jj] = np.sum(f(ew)) if vector_valued else f(ew)
+    for ii, d in enumerate(self.spectra.values()):
+      if self.sieve['finite'][ii]:
+        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+        for jj, ew in enumerate(ew_split):
+          values[ii,jj] = np.sum(f(ew)) if vector_valued else f(ew)
+      else: 
+        ew_split = np.split(d['eigenvalues'], np.cumsum(d['lengths']))[:-1]
+        for jj, (t0,t1,t2,t3) in enumerate(chunked(ew_split, 4)):
+          t0 = np.sum(f(t0)) if vector_valued else f(t0)
+          t1 = np.sum(f(t1)) if vector_valued else f(t1)
+          t2 = np.sum(f(t2)) if vector_valued else f(t2)
+          t3 = np.sum(f(t3)) if vector_valued else f(t3)
+          values[ii,jj] = t0 - t1 - t2 + t3
+          # print(f"t0, t1, t2, t3")
 
     ## Apply inclusion-exclusion to add the appropriately signed corner points together
     n_summaries = len(np.unique(self._sieve['index']))
@@ -966,7 +989,7 @@ class SpectralRankInvariant:
     from pbsig.vis import valid_parameters, bin_color
     from bokeh.models import Line
     from bokeh.plotting import figure
-    nt, ns = len(self.q_operators.family), len(np.unique(self._sieve['index']))
+    nt, ns = len(self.family), len(np.unique(self._sieve['index']))
     fig_kwargs = valid_parameters(figure, **kwargs)
     p = kwargs.get('figure', figure(width=300, height=300, **fig_kwargs))
     summary = self.summarize(func) if (isinstance(func, Callable) or func is None) else func
@@ -994,7 +1017,7 @@ class SpectralRankInvariant:
       method: persistence algorithm to use. Currently ignored. 
     """
     ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", **kwargs)
-    self.dgms = [ph_dgm(filter_f) for filter_f in self.q_operators.family]
+    self.dgms = [ph_dgm(filter_f) for filter_f in self.family]
     return self.dgms
 
   # def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:

@@ -18,6 +18,23 @@ def test_generate():
   assert isinstance(X, np.ndarray)
   assert isinstance(K, ComplexLike)
 
+def test_weight_laplacian():
+  from pbsig.csgraph import WeightedLaplacian
+  from scipy.sparse.linalg import LinearOperator, eigsh, aslinearoperator
+  X, K = generate_dataset(15)
+  L = WeightedLaplacian(K, p=0)
+  # assert isinstance(L, LinearOperator)
+  # y = L @ np.random.uniform(size=L.shape[1])
+  # assert isinstance(y, np.ndarray) and y.dtype == L.dtype and len(y) == L.shape[0]
+  # y = L @ np.random.uniform(size=(L.shape[1], 1))
+  # assert isinstance(y, np.ndarray) and y.dtype == L.dtype and len(y) == L.shape[0]
+  # Y = L @ np.random.uniform(size=(L.shape[1], 5))
+  # assert isinstance(Y, np.ndarray) and Y.dtype == L.dtype and Y.shape == (L.shape[0], 5)
+
+# %% 
+eigsh(L.operator(), k = 2)
+eigsh(aslinearoperator(L), k=1)
+
 # def test_masking():
 #   X, K = generate_dataset(10)
 #   wv = np.random.uniform(size=card(K,1), low=0, high=150)

@@ -72,7 +72,7 @@ def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = Fals
   p.xaxis.axis_label = "Birth"
   p.yaxis.axis_label = "Death"
   polygon = PolyAnnotation(
-    fill_color="gray", fill_alpha=0.80,
+    fill_color="gray", fill_alpha=1.0,
     xs=[min_val-100, max_val+100, max_val+100],
     ys=[min_val-100, min_val-100, max_val+100],
     line_width=0
@@ -326,6 +326,7 @@ def figure_hist(hist, edges, **kwargs):
   return p
 
 def figure_vineyard(dgms: Sequence[dict], p: int = None, **kwargs):
+  from bokeh.models import Range1d
   from numbers import Integral
   from pbsig.color import rgb_to_hex
   fig = figure_dgm(**kwargs)
@@ -333,6 +334,12 @@ def figure_vineyard(dgms: Sequence[dict], p: int = None, **kwargs):
   vine_colors = (vine_colors*255).astype(np.uint8)
   p = [p] if isinstance(p, Integral) else p
   assert isinstance(p, Iterable), "dimension 'p' must be a iterable or an integer."
+  p_max = max(p)
+  min_birth = np.min([np.min(d[0]['birth']) for d in dgms])
+  max_death = np.max([np.max(np.where(np.isinf(d[p_max]['death']), 0.0, d[p_max]['death'])) for d in dgms if p_max in d])
+  lifetime = (max_death - min_birth)
+  fig.x_range = Range1d(min_birth - lifetime*0.05, max_death + lifetime*0.05)
+  fig.y_range = Range1d(min_birth - lifetime*0.05, max_death + lifetime*0.05)
   for dgm, vc in zip(dgms, vine_colors):
     for p_dim in p: 
       if p_dim in dgm:

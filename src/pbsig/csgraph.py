@@ -344,7 +344,9 @@ def param_laplacian(
         return B @ B.T 
       L = B @ diags(q_weights) @ B.T
       if normed: 
-        deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
+        I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)## retain correct nullspace
+        # deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
+        deg = (diags(I) @ L @ diags(I)).diagonal() # degrees 
         L = (diags(np.sqrt(p_func(deg))) @ L @ diags(np.sqrt(p_func(deg)))).tocoo()
       else:
         L = (diags(np.sqrt(p_func(p_weights))) @ L @ diags(np.sqrt(p_func(p_weights)))).tocoo()
@@ -352,8 +354,7 @@ def param_laplacian(
       raise NotImplementedError("Haven't implemented re-weighted sparse Laplacian matrices yet")
     return L
 
-## TODO: I don't like this. It shouldn't be an iterable, it should just a re-weightable.
-class WeightedLaplacian(LinearOperator):
+class WeightedLaplacian:
   """Represents a combinatorial p-laplacian that can be easily re-weighted."""
   def __init__(self, S: sx.ComplexLike, p: int = 0, dtype: Any = None, **kwargs):
     # self.p_faces = np.array(list(sx.faces(S, p)))
@@ -365,6 +366,7 @@ class WeightedLaplacian(LinearOperator):
     self.shape = (sx.card(S, p), sx.card(S, p))
     self.normed = kwargs.get("normed", False)
     self.isometric = kwargs.get("isometric", True)
+    self.sign_width = kwargs.get("sign_width", 0.0)
     self.form = "array" # do this last 
     
   @property
@@ -380,9 +382,9 @@ class WeightedLaplacian(LinearOperator):
       # self.laplacian = up_laplacian(self.complex, p = self.p, form = "array")
       self.__dict__.pop('op', None)
     elif x == "lo":
-      self.op = up_laplacian(self.complex, p = self.p, form = "lo")
+      self.op = up_laplacian(self.complex, p = self.p, form = "lo", isometric=self.isometric)
       self.__dict__.pop('laplacian', None)
-      self.__dict__.pop('laplacian', None)
+      self.__dict__.pop('bm', None)
     else:
       raise ValueError(f"Invalid given form '{x}'")
 
@@ -404,25 +406,40 @@ class WeightedLaplacian(LinearOperator):
   #     raise ValueError(f"Invalid given form '{form}'")
 
   def _matmat(self, X: np.ndarray) -> np.ndarray:
-    return self.laplacian @ X if self.form == "array" else self.op @ X
+    Y = self.laplacian @ X if self.form == "array" else self.op @ X
+    return Y.astype(self.dtype)
+
+  def operator(self):
+    return self.laplacian if self.form == "array" else self.op
+
+  # Scipy doesn't like this 
+  def _matvec(self, x: np.ndarray) -> np.ndarray:
+    y = self.laplacian @ x if self.form == "array" else self.op @ x
+    return y.astype(self.dtype).copy()
+
+  def sign(self, x: np.ndarray):
+    from pbsig.linalg import smooth_upstep
+    return smooth_upstep(lb=0, ub=self.sign_width)(x)
 
   def reweight(self, q_weights: ArrayLike = None, p_weights: ArrayLike = None):
     """Sets the laplacian attribute appropriately """
     p_weights = np.ones(sx.card(self.complex, self.p)) if p_weights is None else p_weights
     q_weights = np.ones(sx.card(self.complex, self.p+1)) if q_weights is None else q_weights
-    # assert len(p_weights) == len(self.p_faces) and len(q_weights) == len(self.q_faces), "Invalid weights given. Must match length of faces."
+    assert len(p_weights) == sx.card(self.complex, self.p) and len(q_weights) == sx.card(self.complex, self.p+1), "Invalid weights given. Must match length of faces."
+    assert np.all(p_weights >= 0) and np.all(q_weights >= 0), "Invalid weights supplied; must be all non-negative."
     assert self.form in ["array", "lo"]
     scale_ip = (lambda x: np.reciprocal(x, where=~np.isclose(x, 0))) if self.isometric else lambda x: x
     if self.form == "array":
       L = self.bm @ diags(q_weights) @ self.bm.T
       if self.normed: 
-        deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
+        deg = (diags(self.sign(p_weights)) @ L @ diags(self.sign(p_weights))).diagonal() ## retain correct nullspace
         self.laplacian = (diags(np.sqrt(scale_ip(deg))) @ L @ diags(np.sqrt(scale_ip(deg)))).tocoo()
       else:
         self.laplacian = (diags(np.sqrt(scale_ip(p_weights))) @ L @ diags(np.sqrt(scale_ip(p_weights)))).tocoo()
     else:
       assert hasattr(self, "op"), "No operator attribute set"
-      I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
+      # I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
+      I = self.sign(p_weights)
       if self.normed: 
         self.op.set_weights(I,q_weights,I)
         d = np.sqrt(scale_ip(self.op.degrees))
@@ -432,6 +449,7 @@ class WeightedLaplacian(LinearOperator):
       else:
         p_inv_sqrt = np.sqrt(scale_ip(p_weights))
         self.op.set_weights(p_inv_sqrt, q_weights, p_inv_sqrt)
+    return self
 
   # def __call__(self, t: Union[float, int], **kwargs):
   #   assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"

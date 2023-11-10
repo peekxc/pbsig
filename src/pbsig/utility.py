@@ -163,7 +163,7 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
     else:
       def _ss(x: float): return np.where(x <= lb, 0.0, 1.0)
       return _ss 
-  else: 
+  elif order == 1: 
     d = (ub-lb)
     assert d > 0, "Must be positive distance"
     if down: 
@@ -176,6 +176,21 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
         y = np.minimum(np.maximum((x-lb)/d, 0), 1.0)
         return 3*y**2 - 2*y**3
       return _ss 
+  elif order == 2: 
+    d = (ub-lb)
+    assert d > 0, "Must be positive distance"
+    if down: 
+      def _ss(x: np.array):
+        y = np.clip((x-lb)/d, 0.0, 1.0)
+        return (1.0 - (6*y**5 - 15*y**4 + 10*y**3))
+      return _ss 
+    else:       
+      def _ss(x: float):
+        y = np.clip((x-lb)/d, 0.0, 1.0)
+        return 6*y**5 - 15*y**4 + 10*y**3
+      return _ss 
+  else: 
+    raise ValueError("Smooth step only supports order parameters in [0,2]")
 
 ## Convenience wrapper
 def smooth_upstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):

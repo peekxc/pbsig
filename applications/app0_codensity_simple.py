@@ -41,15 +41,15 @@ from splex import lower_star_filter
 from pbsig.interpolate import ParameterizedFilter
 bw_scott = gaussian_kde(X.T, bw_method='scott').factor
 bw_bnds = (bw_scott*0.10, bw_scott*2)
-timepoints = np.linspace(*bw_bnds, 100) # np.geomspace(*bw_bnds, 100)
+timepoints = np.linspace(*bw_bnds, 500) # np.geomspace(*bw_bnds, 100)
 codensity_family = ParameterizedFilter(S, family = [lower_star_filter(codensity(bw)) for bw in timepoints])
 # p_family.interpolate(interval=bw_bnds)
 
 # %% 
 from pbsig.betti import SpectralRankInvariant
-ri = SpectralRankInvariant(S, family = codensity_family, p = 1)
-# spri.randomize_sieve()
-# show(spri.figure_sieve())
+ri = SpectralRankInvariant(S, family = codensity_family, p = 1, normed = True, isometric=False)
+# ri.randomize_sieve()
+# show(ri.figure_sieve())
 
 # %% Compute all the diagrams in the family
 from pbsig.vis import figure_vineyard
@@ -57,19 +57,122 @@ dgms = ri.compute_dgms(S)
 vineyard_fig = figure_vineyard(dgms, p = 1)
 
 # %% Basically anything in [0, 0.01] x [0.02, 0.03] works
-# ri.sieve = np.array([[0.0, 0.01, 0.02, 0.03]])
-ri.sieve = np.array([[-np.inf, 0.015, 0.02, +np.inf]])
+ri.sieve = np.array([[0.01, 0.015, 0.02, 0.025]])
+# ri.sieve = np.array([[-np.inf, 0.015, 0.02, +np.inf]])
 show(ri.figure_sieve(figure=vineyard_fig, fill_alpha=0.15))
 
 # %% Look at the numerical rank at a fixed threshold (that tends to work)
-ri.sift(w=1.0) # w is a smoothing parameter
-num_rank_f = np.vectorize(lambda x: 1.0 if np.abs(x) > 1e-6 else 0.0)
-show(ri.figure_summary(func = num_rank_f))
-show(ri.figure_summary(func = np.sum))
+from pbsig.linalg import spectral_rank
+ri.q_laplacian.sign_width = 0.05
+assert not ri.q_laplacian.isometric
+assert ri.q_laplacian.sign_width > 0
+w = np.max(next(iter(ri.family))(S))/4
+ri.sift(w=0.0005) # w is a smoothing parameter
+
+# %% Try multiple spectral functions
+rank_relax_f = np.vectorize(lambda x: x / (x + 1e-6))
+show(ri.figure_summary(func = rank_relax_f))
+
+# %% Plot 
+from bokeh.layouts import row, column
+vineyard_fig = figure_vineyard(dgms, p = 1)
+
+vineyard_fig.line(x=[-10, 0.015], y=[0.02, 0.02], color='gray', line_dash='dashed', line_width=2) 
+vineyard_fig.line(x=[0.015, 0.015], y=[0.02, 10], color='gray', line_dash='solid', line_width=2) 
+vineyard_fig.rect(x=0.015-5, y=0.02+5, width=10, height=10, fill_color='gray', fill_alpha=0.20, line_width=0.0)
+vineyard_fig.scatter(x=0.015, y=0.02, color='red', size=8)
+show(vineyard_fig)
+
+def tikhonov(eps: float):
+  return lambda x: np.sum(x / (x + eps))
+
+def tikhonov_smoothed(lb: float, ub: float, n: int = 32):
+  eps = np.geomspace(lb, ub, n)
+  def _mean_logspaced(x):
+    return np.sum((np.tile(x[:,np.newaxis], n) * np.reciprocal(x[:,np.newaxis] + eps)).mean(axis=1))
+  return _mean_logspaced
+
+def center(x: np.ndarray, ref: np.ndarray):
+  # return x - np.min(x) 
+  return x + np.mean(ref - x)
+
+def convolve_sg(**kwargs):
+  from scipy.signal import savgol_filter
+  sg_kwargs = dict(window_length=5, polyorder=3) | kwargs
+  def _sg(x: np.ndarray):
+    return savgol_filter(x, **sg_kwargs)
+  return _sg
+
+# x = center(np.ravel(ri.summarize(tikhonov_smoothed(1e-9, 1e-2, 30))))
+sg = convolve_sg(window_length=7, polyorder=5, deriv=0, delta=0.1)
+
+def heat_trace(eps):
+  def _trace(x):
+    return 1.0 - np.exp(-x*(1/eps))
+  return _trace
+
+## Smoothed tikhonov
+ref_betti = np.ravel(ri.summarize(spectral_func=spectral_rank).astype(int))
+p = figure(width=350, height=300)
+p.step(timepoints, ref_betti, color='black')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-9, 1e-2, 30)))), ref_betti), color='blue')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-6, 1e-2, 30)))), ref_betti), color='red')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-4, 1e-1, 30)))), ref_betti), color='orange')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-3, 0.1, 30)))), ref_betti), color='green')
+show(p)
+
+## Heat trace
+ref_betti = np.ravel(ri.summarize(spectral_func=spectral_rank).astype(int))
+p = figure(width=350, height=300)
+p.step(timepoints, ref_betti, color='black')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-2)))), ref_betti), color='blue')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(0.005)))), ref_betti), color='green')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-3)))), ref_betti), color='red')
+p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-4)))), ref_betti), color='orange')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-3, 0.1, 30)))), ref_betti), color='green')
+show(p)
+
+
+## Regular tikhonov
+p = figure(width=350, height=300)
+p.step(timepoints, ref_betti, color='black')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-9))), ref_betti), color='blue')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-4))), ref_betti), color='green')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-2))), ref_betti), color='red')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-1))), ref_betti), color='orange')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(0.05))), ref_betti), color='purple')
+show(p)
+
+
+## Nuclear norm 
+p = figure(width=350, height=300)
+p.line(timepoints, sg(center(np.ravel(ri.summarize(np.sum)), ref_betti)), color='blue')
+show(p)
+
+
+show(figure_complex(S, pos=X, width=300, height=300))
+
+
+# %% Debugging 
+# np.flatnonzero(ri.summarize(spectral_rank) != 0)
+# from pbsig.betti import betti_query
+# f = list(ri.family)[32]
+# b = list(betti_query(S, f, matrix_func=spectral_rank, p=1, i=0.015, j=0.02, terms = True))
+# b = np.ravel(np.array(b))
+# b = [list(betti_query(S, f, matrix_func=spectral_rank, p=1, i=0.015, j=0.02, terms = False)) for f in ri.family]
+# b = np.ravel(np.array(b))
+# c = ri.summarize(spectral_rank).astype(int)
+# wrong_ind = np.argmax(np.abs(ri.summarize(spectral_rank).astype(int) - b))
+# wrong_ind
+# num_rank_f = np.vectorize(lambda x: 1.0 if np.abs(x) > 1e-6 else 0.0)
+# ri.summarize(num_rank_f)
+# show(ri.figure_summary(func = num_rank_f))
+# show(ri.figure_summary(func = np.sum))
+# len(np.ravel(ri.summarize()))
+# np.max(ri.spectra[0]['eigenvalues'])
 
 # %% Try multiple summary functions 
-rank_relax_f = np.vectorize(lambda x: x / (x + 0.001))
-show(ri.figure_summary(func = rank_relax_f))
+
 
 
 # %% See the bottleneck in computing diagrams 

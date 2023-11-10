@@ -863,7 +863,9 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
 %Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
 %To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1},
-As the boundary operators from~\eqref{eq:rank_equiv_param} can be made to vary continuously in a parameterized setting, the only discontinuous component of the expressions from proposition~\ref{prop:mu_betti_1} is the rank function. Consider the spectral characterization of the rank function---given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is given by the composition:
+As the boundary operators from~\eqref{eq:rank_equiv_param} can be made to vary continuously in a parameterized setting, the only discontinuous component of the expressions from proposition~\ref{prop:mu_betti_1} is the rank function. Towards ameliorating this, we consider the spectral characterization of the rank function:
+%given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is
+% given by the composition:
 %of the one-sided sign function with the singular value function:
 \begin{equation}\label{eq:rank_def}
 	\mathrm{rank}(X) = \sum\limits_{i=1}^{n} \mathrm{sgn}_+(\sigma_i(X)), \quad \quad \mathrm{sgn}_{+}(x) = \begin{cases}
@@ -871,7 +873,7 @@ As the boundary operators from~\eqref{eq:rank_equiv_param} can be made to vary c
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
+where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X \in \mathbb{R}^{n \times m}$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
  As the singular values vary continuously under perturbations in $X$~\cite{bhatia2013matrix}, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function---thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
