@@ -191,7 +191,7 @@ def figure_complex(
 
   ## Deduce embedding
   from scipy.sparse import diags
-  from pbsig.linalg import adjacency_matrix
+  from pbsig.csgraph import adjacency_matrix
   pos = "mds" if pos is None else pos
   use_grid_lines = False
   if isinstance(pos, str) and pos == "spring":

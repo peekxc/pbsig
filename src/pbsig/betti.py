@@ -775,6 +775,7 @@ class SpectralRankInvariant:
   """
   def __init__(self, S: ComplexLike, family: Union[Iterable, Callable] = None, p: int = 0, form: str = "lo"):
     from pbsig.linalg import PsdSolver
+    from pbsig.csgraph import WeightedLaplacian
     assert isinstance(S, ComplexLike), "S must be ComplexLike"
     # if family is not None: 
     #   self.family = family  # also does input validation
@@ -785,9 +786,11 @@ class SpectralRankInvariant:
     # self.nq = card(S, p+1)
     # self.form = form
     # self.laplacian = up_laplacian(S, p=self.p, form=self.form, normed=True)
-    self.q_operators = ParameterizedLaplacian(S, family, p, form=form)
-    if p > 0: 
-      self.p_operators = ParameterizedLaplacian(S, family, p-1, form=form)
+    self.p_laplacian = WeightedLaplacian(S, p = p-1)
+    self.q_laplacian = WeightedLaplacian(S, p = p)
+    # self.q_operators = ParameterizedLaplacian(S, family, p, form=form)
+    # if p > 0: 
+    #   self.p_operators = ParameterizedLaplacian(S, family, p-1, form=form)
     self.solver = PsdSolver(eigenvectors=False)
     self.delta = np.finfo(float).eps
     ## Note: breaking away from the corner-point per evaluation might not be good due to irregular shapes

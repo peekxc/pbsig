@@ -23,8 +23,8 @@ X = noisy_circle(150, n_noise=20, perturb=0.15) ## 80, 30, 0.15
 S = delaunay_complex(X)
 
 from pbsig.csgraph import WeightedLaplacian
+L = WeightedLaplacian(S, p = 1)
 L = WeightedLaplacian(S, p = 0)
-L @ np.arange(L.shape[0])
 
 # %% 
 show(figure_complex(S, pos=X, width=300, height=300))
@@ -46,8 +46,6 @@ codensity_family = ParameterizedFilter(S, family = [lower_star_filter(codensity(
 # p_family.interpolate(interval=bw_bnds)
 
 # %% 
-next(iter(ParameterizedLaplacian(S, family = P, p = -1)))
-
 from pbsig.betti import SpectralRankInvariant
 ri = SpectralRankInvariant(S, family = codensity_family, p = 1)
 # spri.randomize_sieve()

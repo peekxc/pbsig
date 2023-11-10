@@ -364,6 +364,7 @@ class WeightedLaplacian(LinearOperator):
     self.dtype = np.dtype('float32') if dtype is None else dtype
     self.shape = (sx.card(S, p), sx.card(S, p))
     self.normed = kwargs.get("normed", False)
+    self.isometric = kwargs.get("isometric", True)
     self.form = "array" # do this last 
     
   @property
@@ -411,24 +412,25 @@ class WeightedLaplacian(LinearOperator):
     q_weights = np.ones(sx.card(self.complex, self.p+1)) if q_weights is None else q_weights
     # assert len(p_weights) == len(self.p_faces) and len(q_weights) == len(self.q_faces), "Invalid weights given. Must match length of faces."
     assert self.form in ["array", "lo"]
+    scale_ip = (lambda x: np.reciprocal(x, where=~np.isclose(x, 0))) if self.isometric else lambda x: x
     if self.form == "array":
       L = self.bm @ diags(q_weights) @ self.bm.T
       if self.normed: 
         deg = (diags(np.sign(p_weights)) @ L @ diags(np.sign(p_weights))).diagonal() ## retain correct nullspace
-        self.laplacian = (diags(np.sqrt(pseudoinverse(deg))) @ L @ diags(np.sqrt(pseudoinverse(deg)))).tocoo()
+        self.laplacian = (diags(np.sqrt(scale_ip(deg))) @ L @ diags(np.sqrt(scale_ip(deg)))).tocoo()
       else:
-        self.laplacian = (diags(np.sqrt(pseudoinverse(p_weights))) @ L @ diags(np.sqrt(pseudoinverse(p_weights)))).tocoo()
+        self.laplacian = (diags(np.sqrt(scale_ip(p_weights))) @ L @ diags(np.sqrt(scale_ip(p_weights)))).tocoo()
     else:
       assert hasattr(self, "op"), "No operator attribute set"
       I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
       if self.normed: 
         self.op.set_weights(I,q_weights,I)
-        d = np.sqrt(pseudoinverse(self.op.degrees))
+        d = np.sqrt(scale_ip(self.op.degrees))
         self.op.face_right_weights = d
         self.op.face_left_weights = d
         self.op.precompute_degree()
       else:
-        p_inv_sqrt = np.sqrt(pseudoinverse(p_weights))
+        p_inv_sqrt = np.sqrt(scale_ip(p_weights))
         self.op.set_weights(p_inv_sqrt, q_weights, p_inv_sqrt)
 
   # def __call__(self, t: Union[float, int], **kwargs):
