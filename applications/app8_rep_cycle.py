@@ -1,5 +1,6 @@
 # %%
 import numpy as np
+import splex as sx
 from typing import * 
 from scipy.sparse import spmatrix
 from numpy.typing import ArrayLike
@@ -19,26 +20,70 @@ output_notebook()
 from pbsig.datasets import noisy_circle
 from splex.geometry import delaunay_complex
 np.random.seed(1234)
-X = noisy_circle(20, n_noise=0, perturb=0.05) ## 80, 30, 0.15 
-S = rips_complex(X, radius=0.75, p=1)
+X = noisy_circle(10, n_noise=0, perturb=0.05) ## 80, 30, 0.15 
+S = sx.rips_complex(X, radius=0.75, p=1)
 
-# %% Peek at the compelx 
+# %% Peek at the complex 
 show(figure_complex(S, X))
 
 #%% Get the rips diagram 
-from pbsig.persistence import ph
+from pbsig.persistence import ph, generate_dgm
 K = sx.rips_filtration(X, radius=0.75, p=2) ## need triangles to collapse 
-dgms = ph(K, simplex_pairs=True)
-assert len(dgms[1]) == 1
-essential_creator = np.take(dgms[1]['creators'], 0)
-
 R, V = ph(K, output="RV")
-np.flatnonzero([sx.Simplex(s) == sx.Simplex((17,18)) for s in K])
+dgms = generate_dgm(K, R, simplex_pairs=True)
 
-ess_idx_filtered = np.take(np.flatnonzero(np.all(np.array(list(sx.faces(K,1))) == np.array([17,18]), axis=1)), 0)
+## Get the essential creator simplex + its index in the filtration
+assert len(dgms[1]) == 1
+ess_creator = np.take(dgms[1]['creators'], 0)
+ess_index = np.take(np.flatnonzero([sx.Simplex(s[1]) == sx.Simplex(ess_creator) for s in K]), 0)
 
-b_true = np.ravel(R[:,ess_idx_filtered].todense())
-v_true = np.ravel(V[:,ess_idx_filtered].todense())
+## Verify it's column is 0
+assert len(R[:,ess_index].data) == 0
+
+## It's generator must be stored in V
+cycle_indices = V[:,ess_index].indices
+cycle_simplices = [sx.Simplex(K[i]) for i in cycle_indices]
+
+# %% Plot the generator in question 
+p = figure_complex(S, X)
+p.multi_line(
+  xs = [X[[i,j],0] for i,j in cycle_simplices], 
+  ys = [X[[i,j],1] for i,j in cycle_simplices], 
+  line_color = 'blue', line_width = 3
+)
+p.line(x=X[ess_creator, 0], y=X[ess_creator, 1], line_color='red', line_width=3)
+show(p)
+
+# %% Obtain a representative cycle with the filtered boundary matrix
+from scipy.sparse.linalg import lsqr
+D = sx.boundary_matrix(K)                 ## Filtered boundary matrix
+A = D[:ess_index, :ess_index]             ## All simplices preceeding creator
+b = D[:ess_index, [ess_index]].todense()  ## Boundary chain of creator simplex
+
+## Since A is singular, it cannot be factored directly, so solve least-squares min ||Ax - b||_2
+x, istop, itn, r1norm = lsqr(A.tocsc(), b)[:4]
+cycle_rep_indices = np.flatnonzero(x != 0)
+rep_cycle_simplices = [sx.Simplex(K[i]) for i in cycle_rep_indices]
+
+## Plot the representative cycle
+p = figure_complex(S, X)
+p.multi_line(
+  xs = [X[[i,j],0] for i,j in rep_cycle_simplices], 
+  ys = [X[[i,j],1] for i,j in rep_cycle_simplices], 
+  line_color = 'blue', line_width = 3
+)
+p.line(x=X[ess_creator, 0], y=X[ess_creator, 1], line_color='red', line_width=3)
+show(p)
+
+# %% Replicate the results but now with the permutation-invariant approach
+
+
+
+# pred_simplices = [sx.Simplex(s[1]) for i, s in enumerate(K) if i < ess_index]
+
+# %% 
+b_true = np.ravel(R[:,ess_index].todense())
+v_true = np.ravel(V[:,ess_index].todense())
 
 # %% Get the boundary matrix 
 from scipy.spatial.distance import pdist
@@ -76,3 +121,8 @@ spsolve(B, v)
 res = lsqr(B, v, atol=0.0)
 B @ np.zeros(B.shape[0])
 lsqr(B, np.ones(len(v)))
+
+
+
+# solve(A.todense(), b) # nope: matrix is singular (obviously)
+# spsolve(A.tocsc(), b) # nan 
