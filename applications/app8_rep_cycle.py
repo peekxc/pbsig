@@ -3,6 +3,7 @@ import numpy as np
 import splex as sx
 from typing import * 
 from scipy.sparse import spmatrix
+from scipy.spatial.distance import pdist
 from numpy.typing import ArrayLike
 from bokeh.io import output_notebook, export_png
 from bokeh.plotting import figure, show
@@ -77,6 +78,35 @@ show(p)
 
 # %% Replicate the results but now with the permutation-invariant approach
 
+## Start with the full boundary matrix in the lex order
+D = sx.boundary_matrix(S).tocoo()
+
+## Get the indices of the creator and its predecessors
+diam_filter = sx.flag_filter(pdist(X))
+ess_index = np.take(np.flatnonzero([sx.Simplex(s) == sx.Simplex(ess_creator) for s in S]), 0)
+pred_ind = np.setdiff1d(np.flatnonzero(diam_filter(sx.faces(S)) <= diam_filter(ess_creator)), ess_index)
+
+## Zero out the creator + its successors columns
+b = D.tocsc()[:,[ess_index]].todense()
+nz_entries = pred_ind[np.searchsorted(pred_ind, D.col)] == D.col
+D.data[~nz_entries] = 0.0
+D.eliminate_zeros()
+
+## Solve the linear system 
+x, istop, itn, r1norm = lsqr(D.tocsc(), b)[:4]
+
+## Get the simplices fo the rep. cycle 
+rep_cycle_simplices = [s for s, a in zip(S, x) if a != 0]
+
+## Plot the representative cycle
+p = figure_complex(S, X)
+p.multi_line(
+  xs = [X[[i,j],0] for i,j in rep_cycle_simplices], 
+  ys = [X[[i,j],1] for i,j in rep_cycle_simplices], 
+  line_color = 'blue', line_width = 3
+)
+p.line(x=X[ess_creator, 0], y=X[ess_creator, 1], line_color='red', line_width=3)
+show(p)
 
 
 # pred_simplices = [sx.Simplex(s[1]) for i, s in enumerate(K) if i < ess_index]
