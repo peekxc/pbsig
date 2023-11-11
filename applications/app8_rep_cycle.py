@@ -108,6 +108,12 @@ p.multi_line(
 p.line(x=X[ess_creator, 0], y=X[ess_creator, 1], line_color='red', line_width=3)
 show(p)
 
+# %% The issue with the above: 
+# * You need the creator simplex to set b *
+# Options: 
+# (1) Apply rank-based approach to obtain creator 
+# (2) 
+
 
 # pred_simplices = [sx.Simplex(s[1]) for i, s in enumerate(K) if i < ess_index]
 

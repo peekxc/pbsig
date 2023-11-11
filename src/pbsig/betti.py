@@ -259,10 +259,10 @@ def betti_query(
   solver: Callable = None, 
   **kwargs
 ) -> Generator:
-  from splex.predicates import is_complex_like
+  # from splex.predicates import is_complex_like
   # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
   # assert isinstance(L, UpLaplacian)
-  assert is_complex_like(S)
+  # assert is_complex_like(S)
   B0, B1 = boundary_matrix(S, p = p), boundary_matrix(S, p = p+1)
   yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
   delta = np.finfo(float).eps 
