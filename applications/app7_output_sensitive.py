@@ -21,7 +21,7 @@ output_notebook()
 from pbsig.datasets import noisy_circle
 from splex.geometry import delaunay_complex
 np.random.seed(1234)
-X = noisy_circle(5, n_noise=0, perturb=0.05) ## 80, 30, 0.15 
+X = noisy_circle(7, n_noise=0, perturb=0.05) ## 80, 30, 0.15 
 S = sx.rips_complex(X, radius=0.75, p=2)
 
 # %% Peek at the complex 
@@ -47,7 +47,8 @@ coned_diam = cone_filter(sx.flag_filter(pdist(X)), vid = vid)       ## generate 
 coned_diam_filter = sx.fixed_filter(S, [coned_diam(s) for s in S])  ## optimize it for fast evaluation
 
 ## Create a new coned filtration
-K = sx.RankFiltration(S, coned_diam_filter)
+# K = sx.RankFiltration(S, coned_diam_filter)
+K = sx.SetFiltration(S, coned_diam_filter)
 index_filter = sx.fixed_filter(list(sx.faces(K)), np.arange(len(K)))
 K.reindex(index_filter)
 R, V = ph(K, output="RV")
@@ -56,39 +57,115 @@ dgms_index = generate_dgm(K, R, simplex_pairs=True)
 ## Plot the persistence diagram in the index-persistence plane
 show(figure_dgm(dgms_index[1]))
 
+## Print the filtration 
+sx.print_complex(list(sx.faces(K)))
 
 # %% Produce an array representing the persistence diagram
 from pbsig.betti import betti_query
 from pbsig.linalg import spectral_rank
 K_simplices = list(map(sx.Simplex, sx.faces(K)))
-
-B = lambda i,j: list(betti_query(K_simplices, index_filter, spectral_rank, i = i, j = j, p = 1))[0]
 M = len(K)
+I = np.array([i for i,j in combinations(np.arange(M), 2)])
+J = np.array([j for i,j in combinations(np.arange(M), 2)])
+B = lambda i,j: list(betti_query(K_simplices, index_filter, spectral_rank, i = i, j = j, p = 1))[0]
+
+from itertools import combinations
+betti_test = np.array(list(betti_query(K_simplices, index_filter, spectral_rank, i = I, j = J, p = 1)))
+betti_truth = np.array([np.sum(np.logical_and(dgms_index[1]['birth'] <= i, j < dgms_index[1]['death'])) for i,j in combinations(np.arange(M), 2)])
+assert np.allclose(betti_truth - betti_test, 0)
+
+_ = np.argmax(betti_truth - betti_test)
+a, b = I[_], J[_]
+betti_test[_], betti_truth[_]
+B(a,b)
+list(betti_query(K_simplices, index_filter, spectral_rank, i = a, j = b, p = 1, terms=True))
+
+# %% Debugging third term
+from pbsig.csgraph import WeightedLaplacian
+from pbsig.linalg import PsdSolver
+from pbsig.betti import smooth_dnstep, smooth_upstep
+Lq = WeightedLaplacian(K, p = 1)
+# fi_inc = smooth_dnstep(lb = a, ub = a+np.finfo(np.float64).eps)
+# fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
+# fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
+
+## This is reporting 11! So it's not right? where is the failure? 
+D2 = sx.boundary_matrix(K, p = 2).tolil()
+np.linalg.matrix_rank(D2[:,K.indices(p=2) <= b].todense())
+
+Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
+t2 = matrix_func(q_solver(Lq.operator()))
+
+
+# %% 
 I0 = B(M // 2, M // 2 + 1)
 I1 = B(0, M // 2)
 I2 = I0 - I1
 
-
-
-## The original formulation
+## The original formulation (seems correct)
+ii = np.sum(K.indices(p=1) <= a)
+jj = np.sum(K.indices(p=2) <= b)
 D1 = sx.boundary_matrix(K, p=1).tolil()
 D2 = sx.boundary_matrix(K, p=2).tolil()
-t0 = np.max(D1[:,K.indices(p=1) <= a].shape)
-t1 = np.linalg.matrix_rank(D1[:,K.indices(p=1) <= a].todense())
+A = D1[:,K.indices(p=1) <= a]
+t0 = np.sum(K.indices(p=1) <= a)
+t1 = np.linalg.matrix_rank(A.todense())
+t23 = np.sum([piv < ii for piv in low_entry(R2[:, K.indices(p=1) <= b]) if piv != -1])
+(t0, t1, t23)
 
-## This says the 3rd + 4rth is 17! 
-t23 = np.sum([0 <= piv < ii for piv in low_entry(R2[:, K.indices(p=1) <= b])])
-
-## Let's try with the full boundary matrix
+## Direct approach using the full reduced R matrix (seems correct, yields t2 and t3)
 D = sx.boundary_matrix(K).tolil()
 R, V = ph(K, output="RV")
-
-## This says 3rd + 4rth is 12! which seems more correct 
 for cc, (i,s) in enumerate(K):
   if sx.dim(s) != 2:
     R[:,cc] = 0
 R.eliminate_zeros()
-np.sum(np.logical_and(np.arange(len(K)) <= b, np.logical_and(0 <= low_entry(R), low_entry(R)  <= a)))
+# np.linalg.matrix_rank(R.todense()) # this reports 9
+t2 = np.linalg.matrix_rank(R[:,K.indices() <= b].todense()) ## this one is wrong in code
+t3 = np.linalg.matrix_rank(R[:,K.indices() <= b][K.indices() > a,:].todense())
+# t23 = np.sum(np.logical_and(np.arange(len(K)) <= b, np.logical_and(0 <= low_entry(R), low_entry(R)  <= a)))
+
+## Extract D2 
+nz_col_ind = np.flatnonzero(np.abs(R).sum(axis=0) != 0)
+nz_row_ind = np.flatnonzero(np.abs(R).sum(axis=1) != 0)
+R.todense()[np.ix_(nz_row_ind, nz_col_ind)]
+
+edge_ind = np.array(list(K.indices(p=1)))
+tri_ind = np.array(list(K.indices(p=2)))
+edge_tri_ind = np.ix_(edge_ind.astype(int), tri_ind.astype(int))
+R2 = R.todense()[edge_tri_ind].astype(int)
+D2 = sx.boundary_matrix(K, p = 2).todense()
+V2 = V.todense()[np.ix_(tri_ind, tri_ind)]
+assert D2.shape == R2.shape
+
+
+## AHH the full boundary matrix ordering doesn't match the p-specialized one
+## Try use set complex in the above 
+## D2 is incorrect! Full boundary matrix is correct!
+## The right one always assigns (+1, -1, +1) to (3,4,5) => (3,4), (3,5), (4,5) in lex order
+sx.boundary_matrix(K)[edge_tri_ind].todense() - D2
+wrong = D2[:,0]
+right = sx.boundary_matrix(K)[edge_tri_ind].todense()[:,0]
+
+
+
+## Cancellations indeed happen
+(D @ V).todense()[edge_tri_ind].astype(int)
+
+R2[:,:8]
+D2_copy = D2[:,:8].copy()
+
+np.linalg.matrix_rank(D2[:,:8][-2:])
+
+gen = V.todense()[np.ix_(K.indices(p=2).astype(int),  K.indices(p=2).astype(int))][:,7]
+gen = np.ravel(gen)
+-D2[:,0] + D2[:,5] - D2[:,6] + D2[:,7]
+
+
+## The non-zero status of the reduced and boundary matrices is different!
+## Update: this seems to be because reduction was done mod2, which can differ from real-value coefficients!
+np.linalg.svd(R2[:,:8].astype(np.float32))[1]
+np.linalg.svd(D2[:,:8].astype(np.float32))[1]
 
 ## This says that the fourth term must be all zero 
 D2[:, K.indices(p=2) <= b][K.indices(p=1) >= a,:].todense()
@@ -102,14 +179,13 @@ np.sum(np.logical_and(dgms_index[1]['birth'] <= a, dgms_index[1]['death'] > b))
 from pbsig.persistence import persistent_betti, reduction_pHcol, low_entry
 
 ## Back to the basics: says 3rd + 4rth is 14! 
-a, b = M // 2, (M // 2) + 1
 D1 = sx.boundary_matrix(K, p=1).tolil()
 D2 = sx.boundary_matrix(K, p=2).tolil()
 # ii = len([s for s in sx.faces(K,1) if s.value <= a]) ## should be 12 
 # jj = len([s for s in sx.faces(K,2) if s.value <= b]) ## should be 14
 ii = np.sum(K.indices(p=1) <= a)
 jj = np.sum(K.indices(p=2) <= b)
-persistent_betti(D1, D2, ii, jj, summands=True)
+persistent_betti(D1, D2, ii, jj, summands=True) ## this reports the same 
 
 sx.faces(K,1)[:ii,:]
 sx.faces(K,2)[:jj,:]

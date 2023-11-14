@@ -294,7 +294,7 @@ def betti_query(
     Lp.reweight(fi_inc(fw), inc_all(yw))
     t1 = matrix_func(p_solver(Lp.operator()))
 
-    Lq.reweight(fj_inc(sw), inc_all(fw))
+    Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
     t2 = matrix_func(q_solver(Lq.operator()))
     
     Lq.reweight(fj_inc(sw), fi_exc(fw))
