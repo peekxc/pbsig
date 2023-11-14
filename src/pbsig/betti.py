@@ -246,7 +246,7 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
-from pbsig.csgraph import param_laplacian
+from pbsig.csgraph import param_laplacian, WeightedLaplacian
 def betti_query(
   S: Union[LinearOperator, ComplexLike], 
   f: Callable[SimplexConvertible, float],
@@ -263,44 +263,50 @@ def betti_query(
   # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
   # assert isinstance(L, UpLaplacian)
   # assert is_complex_like(S)
-  B0, B1 = boundary_matrix(S, p = p), boundary_matrix(S, p = p+1)
+  # B0, B1 = boundary_matrix(S, p = p), boundary_matrix(S, p = p+1)
+  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0, atol=atol)) # scalar pseudo-inverse 
+  
   yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
   delta = np.finfo(float).eps 
   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
-  pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0, atol=atol)) # scalar pseudo-inverse 
   p_solver = PsdSolver(k = int(card(S, p-1)-1)) if solver is None else solver
   q_solver = PsdSolver(k = int(card(S, p)-1)) if solver is None else solver
   I, J = (np.array([i]), np.array([j])) if isinstance(i, Number) and isinstance(j, Number) else (i,j)
-
   inc_all = smooth_upstep(0, w)
+  
+  ## Get the Weighted Laplacians
+  L_kwargs = dict(normed = True, isometric = False, sign_width = w, form="array") | kwargs
+  Lp = WeightedLaplacian(S, p = p-1, **L_kwargs)
+  Lq = WeightedLaplacian(S, p = p, **L_kwargs)
+
   for ii, jj in zip(I, J):
     assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
     fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
     fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
     fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
     
-    ## Get the eigenvalues 
-    # T0 = diags(fi_inc(fw))
-    # T1 = param_laplacian(B0, p_weights=np.ones(len(yw)), q_weights=fi_inc(fw), normed=True, boundary=True)
-    # T2 = param_laplacian(B1, p_weights=np.ones(len(fw)), q_weights=fj_inc(sw), normed=True, boundary=True)
-
-    T1 = param_laplacian(B0, p_weights=inc_all(yw), q_weights=fi_inc(fw), normed=True, boundary=True, **kwargs)
-    T2 = param_laplacian(B1, p_weights=inc_all(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
-    T3 = param_laplacian(B1, p_weights=fi_exc(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
-
+    # T1 = param_laplacian(B0, p_weights=inc_all(yw), q_weights=fi_inc(fw), normed=True, boundary=True, **kwargs)
+    # T2 = param_laplacian(B1, p_weights=inc_all(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
+    # T3 = param_laplacian(B1, p_weights=fi_exc(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
+    
     t0 = matrix_func(fi_inc(fw)) # instead of solver 
-    t1 = matrix_func(p_solver(T1))
-    t2 = matrix_func(q_solver(T2))
-    t3 = matrix_func(q_solver(T3))
+    
+    Lp.reweight(fi_inc(fw), inc_all(yw))
+    t1 = matrix_func(p_solver(Lp.operator()))
+
+    Lq.reweight(fj_inc(sw), inc_all(fw))
+    t2 = matrix_func(q_solver(Lq.operator()))
+    
+    Lq.reweight(fj_inc(sw), fi_exc(fw))
+    t3 = matrix_func(q_solver(Lq.operator()))
+    
     yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
 
     # ii = 3.49905344
     # ii = 3.50068702
 
 ## Cone the complex
-def cone_filter(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
-  from scipy.spatial.distance import pdist
-  flag_w = flag_filter(x)
+def cone_filter(f: Callable, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
   def _cone_weight(s):
     s = Simplex(s)
     if s == Simplex([vid]):
@@ -308,8 +314,15 @@ def cone_filter(x: ArrayLike, vid: int = -1, v_birth: float = -np.inf, collapse_
     elif vid in s:
       return collapse_weight
     else: 
-      return flag_w(s)
+      return f(s)
   return _cone_weight
+
+def cone_complex(S: ComplexLike, vid: int = -1):
+  assert hasattr(S, "add"), f"simplicial complex '{type(S)}' must be mutable"
+  for s in S: 
+    S.add(Simplex([vid]) + Simplex(s))
+  return S
+
 
 ## Changes the eigenvalues! 
 def update_weights(S: ComplexLike, f: Callable[SimplexConvertible, float], p: int, R: ArrayLike, w: float = 0.0, biased: bool = True):

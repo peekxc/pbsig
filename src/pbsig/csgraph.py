@@ -388,23 +388,6 @@ class WeightedLaplacian:
     else:
       raise ValueError(f"Invalid given form '{x}'")
 
-  # def param_laplacian(self, S: sx.ComplexLike, p: int = 0, normed: bool = False, form: str = "array"):
-  #   ## Set the underlying matrix representation
-  #   if form == "array":
-  #     self.p = p
-  #     self.form = form 
-  #     self.normed = normed
-  #     self.bm = sx.boundary_matrix(S, p = p+1)
-  #     self.__dict__.pop('op', None)
-  #   elif form == "lo":
-  #     self.p = p
-  #     self.form = form 
-  #     self.normed = normed
-  #     self.op = up_laplacian(S, p = p, form = "lo")
-  #     self.__dict__.pop('bm', None)
-  #   else:
-  #     raise ValueError(f"Invalid given form '{form}'")
-
   def _matmat(self, X: np.ndarray) -> np.ndarray:
     Y = self.laplacian @ X if self.form == "array" else self.op @ X
     return Y.astype(self.dtype)
@@ -418,6 +401,7 @@ class WeightedLaplacian:
     return y.astype(self.dtype).copy()
 
   def sign(self, x: np.ndarray):
+    """Smoothed version of the non-negative sign function. """
     from pbsig.linalg import smooth_upstep
     return smooth_upstep(lb=0, ub=self.sign_width)(x)
 
