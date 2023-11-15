@@ -367,7 +367,8 @@ class WeightedLaplacian:
     self.normed = kwargs.get("normed", False)
     self.isometric = kwargs.get("isometric", True)
     self.sign_width = kwargs.get("sign_width", 0.0)
-    self.form = "array" # do this last 
+    self.form = kwargs.get("form", "array") # do this last
+    self.reweight() # apply weights as nececsary
     
   @property
   def form(self) -> str:
@@ -416,21 +417,24 @@ class WeightedLaplacian:
     if self.form == "array":
       L = self.bm @ diags(q_weights) @ self.bm.T
       if self.normed: 
-        deg = (diags(self.sign(p_weights)) @ L @ diags(self.sign(p_weights))).diagonal() ## retain correct nullspace
-        self.laplacian = (diags(np.sqrt(scale_ip(deg))) @ L @ diags(np.sqrt(scale_ip(deg)))).tocoo()
+        P_diag = diags(np.squeeze(np.ravel(self.sign(p_weights))))
+        deg = (P_diag @ L @ P_diag).diagonal() ## retain correct nullspace
+        P_diag_scaled = diags(np.squeeze(np.ravel(np.sqrt(scale_ip(deg)))))
+        self.laplacian = (P_diag_scaled @ L @ P_diag_scaled).tocoo()
       else:
-        self.laplacian = (diags(np.sqrt(scale_ip(p_weights))) @ L @ diags(np.sqrt(scale_ip(p_weights)))).tocoo()
+        P_diag = diags(np.squeeze(np.ravel(np.sqrt(scale_ip(p_weights)))))
+        self.laplacian = (P_diag @ L @ P_diag).tocoo()
     else:
       assert hasattr(self, "op"), "No operator attribute set"
       # I = np.where(np.isclose(p_weights, 0.0), 0.0, 1.0)
-      I = self.sign(p_weights)
+      I = np.squeeze(np.ravel(self.sign(p_weights)))
       if self.normed: 
-        self.op.set_weights(I,q_weights,I)
+        print("normed")
+        self.op.set_weights(I, q_weights, I)
         d = np.sqrt(scale_ip(self.op.degrees))
-        self.op.face_right_weights = d
-        self.op.face_left_weights = d
-        self.op.precompute_degree()
+        self.op.set_weights(d, q_weights, d)
       else:
+        print("not normed")
         p_inv_sqrt = np.sqrt(scale_ip(p_weights))
         self.op.set_weights(p_inv_sqrt, q_weights, p_inv_sqrt)
     return self

@@ -60,38 +60,46 @@ leftupper_corner = lambda p: (p[0], p[3])
 np.array([leftupper_corner(envelope(pa).bounds) for pa in poly_areas])
 
 
-# %% Compute the spectral rank
+# %% Compute the spectral rank on a finite grid
 from pbsig.betti import betti_query
-from pbsig.linalg import param_laplacian, up_laplacian, spectral_rank
+from pbsig.linalg import spectral_rank
+from pbsig.csgraph import up_laplacian
+
+## Construct the grid points based on the locations of the point in the diagram
+n_grid_pts = 30
 b, d = dgms[0]['birth'], dgms[0]['death']
 min_diff_birth = np.min(np.diff(np.sort(b)))
 min_diff_death = np.min(np.diff(np.sort(d)))
 min_diff = min(min_diff_birth, min_diff_death)
 birth_start = np.min(b)
 death_end = np.max(np.where(d != np.inf, d, 0))
-
-grid_pts = np.linspace(birth_start, death_end, 30)
+grid_pts = np.linspace(birth_start, death_end, n_grid_pts)
 grid_pts = np.unique(np.append(grid_pts, np.array(list(set(b) | set(d[d != np.inf])))))
 
 from itertools import product
 Grid = np.array([(i,j) for (i,j) in product(grid_pts, grid_pts) if i <= j])
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=spectral_rank, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=np.sum, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
-# betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)
+betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x**2), i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)
 
-# %% 
+# %% Compute the PBN at the grid points
 eps = np.geomspace(1e-4, 1e-2, 32)
 mean_logspaced = lambda x: np.sum((np.tile(x[:,np.newaxis], 32) * np.reciprocal(x[:,np.newaxis] + eps)).mean(axis=1))
-betti_grid = betti_query(S, f=sublevel_filter, matrix_func=mean_logspaced, i=Grid[:,0], j=Grid[:,1], p=0, w=1e-6, terms=False, isometric=True)
+betti_grid = betti_query(S, f=sublevel_filter, matrix_func=mean_logspaced, i=Grid[:,0], j=Grid[:,1], p=0, w=0.05, terms=False, isometric=False, form="lo")
 betti_grid = progressbar(betti_grid, count=len(Grid))
 ri = np.array(list(betti_grid))
-
+assert not(np.any(np.isnan(ri)))
 # bdvrd = lambda x: 0.0 if np.isclose(np.sum(x), 0) else np.sum(np.repeat(1e-6, len(x)))/np.sum(np.sqrt((np.abs(x) * (np.abs(x) + 1e-6))))
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=bdvrd, i=Grid[:,0], j=Grid[:,1], p=0, w=0.10, terms=False)
 
 # np.sum(np.abs(ew1 - (ew1 + 1e-6))/np.sqrt((np.abs(ew1)**2 + np.abs(ew1 + 1e-6)**2)))
 # np.sum(np.abs(ew2 - (ew2 + 1e-6))/np.sqrt((np.abs(ew2)**2 + np.abs(ew2 + 1e-6)**2)))
+
+# %% 
+from pbsig.color import bin_color
+from bokeh.models import ColumnDataSource
+from bokeh.transform import linear_cmap
 
 rects, rect_ind = [], []
 for (i,j), ij_val in zip(Grid, ri):
@@ -105,20 +113,13 @@ for (i,j), ij_val in zip(Grid, ri):
 rects = np.array(rects)
 rec_ind = np.array(rect_ind)
 
-from pbsig.color import bin_color
-from bokeh.models import ColumnDataSource
-from bokeh.transform import linear_cmap
 col_map = linear_cmap('value', palette = "Viridis256", low=np.min(ri), high=np.max(ri))
 rect_src = ColumnDataSource(dict(
   x=rects[:,0], y=rects[:,1], 
   width=rects[:,2], height=rects[:,3], 
   value=rects[:,4]
 ))
-
-tooltips = [
-  ("(x, y)", "($x, $y)"),
-  ("value", "@value")
-]
+tooltips = [ ("(x, y)", "($x, $y)"), ("value", "@value") ]
 p = figure(width=250, height=250, tools="pan,wheel_zoom,reset,hover,save", tooltips=tooltips)
 p.rect(
   x='x', y='y', width='width', height='height',
@@ -129,7 +130,7 @@ p.rect(
 show(p)
 
 
-## %% Exploring what makes the vertical lines constant 
+# %% Exploring what makes the vertical lines constant 
 # ii = np.argmin(np.abs(grid_pts - 6))
 # grid_pts
 # betti_query(S, f=sublevel_filter, matrix_func=mean_logspaced, i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)

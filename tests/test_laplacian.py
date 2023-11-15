@@ -199,6 +199,61 @@ def test_stability():
   # np.sqrt(np.sum((ew1 - ew2)**2))
   print(max(abs(np.linalg.eigvalsh(np.eye(4)-Q.T @ Q))))
 
+def test_boundary_equivalence():
+  import splex as sx
+  from pbsig.csgraph import up_laplacian
+  np.random.seed(1234)
+  X = np.random.uniform(size=(10, 2))
+  K = sx.rips_complex(X, p=2)
+  for p in [0,1]:
+    D = sx.boundary_matrix(K, p+1)
+    L = up_laplacian(K, p = p, form='lo')
+    L = (L @ np.eye(L.shape[0])).astype(int)
+    assert np.allclose((D @ D.T).todense() - L, 0.0)
+  ## These won't be equivalent though? L is not ordered by the filtration order! 
+
+def test_boundary_sign_equivalence():
+  np.set_printoptions(linewidth=1e6)
+  import splex as sx
+  np.random.seed(1234)
+  X = np.random.uniform(size=(15, 2))
+  S = sx.rips_complex(X, p=2)
+  S = sx.RankComplex(S)
+  K = sx.rips_filtration(X, p=2)
+  S_bm = sx.boundary_matrix(S,p=2).todense()
+  K_bm = sx.boundary_matrix(K,p=2).todense()
+  # diam_filter = sx.flag_filter(pdist(X))
+  edges = np.array(list(sx.faces(K,p=1)))
+  triangles = np.array(list(sx.faces(K,p=2)))
+  p_sort = np.argsort(comb_to_rank(edges, n=len(X), order='lex')) #np.lexsort(edges.T) # np.argsort(diam_filter(sx.faces(S,1)))
+  q_sort = np.argsort(comb_to_rank(triangles, n=len(X), order='lex')) #np.argsort(triangles.T)
+  assert np.allclose(S_bm - K_bm[np.ix_(p_sort, q_sort)], 0)
+  L = up_laplacian(K, p = 1, form='lo')
+  L = (L @ np.eye(L.shape[0])).astype(int)
+  assert np.allclose(S_bm @ S_bm.T, L)
+
+  D = sx.boundary_matrix(K)
+  edge_ind = np.flatnonzero(np.array([sx.dim(s) for i,s in K]) == 1)
+  tri_ind = np.flatnonzero(np.array([sx.dim(s) for i,s in K]) == 2)
+  D1 = D[np.ix_(edge_ind, tri_ind)].todense()
+  assert np.allclose(D1, K_bm)
+
+def test_boundary_equiv():
+  from combin import comb_to_rank
+  X = np.random.uniform(size=(16, 2))
+  st = sx.rips_complex(X,p=2)
+  rc = sx.RankComplex(st)
+  sc = sx.SetComplex(st)
+  st_bm = sx.boundary_matrix(st, p=2).todense()
+  rc_bm = sx.boundary_matrix(rc, p=2).todense()
+  sc_bm = sx.boundary_matrix(sc, p=2).todense()
+  E_ranks = comb_to_rank(sx.faces(rc, 1), n = sx.card(st,0), order='lex')
+  T_ranks = comb_to_rank(sx.faces(rc, 2), n = sx.card(st,0), order='lex')
+
+  ## They do have the same sign pattern
+  assert np.allclose(st_bm, rc_bm[np.ix_(np.argsort(E_ranks), np.argsort(T_ranks))])
+
+
 
 
 def benchmark_matvec():

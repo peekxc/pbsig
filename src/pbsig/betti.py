@@ -271,37 +271,45 @@ def betti_query(
   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
   p_solver = PsdSolver(k = int(card(S, p-1)-1)) if solver is None else solver
   q_solver = PsdSolver(k = int(card(S, p)-1)) if solver is None else solver
-  I, J = (np.array([i]), np.array([j])) if isinstance(i, Number) and isinstance(j, Number) else (i,j)
   inc_all = smooth_upstep(0, w)
   
   ## Get the Weighted Laplacians
   L_kwargs = dict(normed = True, isometric = False, sign_width = w, form="array") | kwargs
-  Lp = WeightedLaplacian(S, p = p-1, **L_kwargs)
+  p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
+  Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
   Lq = WeightedLaplacian(S, p = p, **L_kwargs)
 
-  for ii, jj in zip(I, J):
-    assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
-    fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
-    fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
-    fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
-    
-    # T1 = param_laplacian(B0, p_weights=inc_all(yw), q_weights=fi_inc(fw), normed=True, boundary=True, **kwargs)
-    # T2 = param_laplacian(B1, p_weights=inc_all(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
-    # T3 = param_laplacian(B1, p_weights=fi_exc(fw), q_weights=fj_inc(sw), normed=True, boundary=True, **kwargs)
-    
+  if isinstance(i, Number) and isinstance(j, Number):
+    fi_inc = smooth_dnstep(lb = i-w, ub = i+delta)
+    fi_exc = smooth_upstep(lb = i, ub = i+w)         
+    fj_inc = smooth_dnstep(lb = j-w, ub = j+delta)
     t0 = matrix_func(fi_inc(fw)) # instead of solver 
-    
     Lp.reweight(fi_inc(fw), inc_all(yw))
     t1 = matrix_func(p_solver(Lp.operator()))
-
     Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
     t2 = matrix_func(q_solver(Lq.operator()))
-    
     Lq.reweight(fj_inc(sw), fi_exc(fw))
     t3 = matrix_func(q_solver(Lq.operator()))
-    
-    yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
-
+    return (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
+  else: 
+    I, J = (np.array([i]), np.array([j]))
+    output_shape = (len(I), 4) if terms else len(I)
+    output = np.zeros(shape=output_shape)
+    for cc, (ii, jj) in enumerate(zip(I, J)):
+      assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+      fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
+      fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
+      fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
+      t0 = matrix_func(fi_inc(fw)) # instead of solver 
+      Lp.reweight(fi_inc(fw), inc_all(yw))
+      t1 = matrix_func(p_solver(Lp.operator()))
+      Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
+      t2 = matrix_func(q_solver(Lq.operator()))
+      Lq.reweight(fj_inc(sw), fi_exc(fw))
+      t3 = matrix_func(q_solver(Lq.operator()))
+      # yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
+      output[cc] = np.array([t0, t1, t2, t3]) if terms else t0 - t1 - t2 + t3
+    return output
     # ii = 3.49905344
     # ii = 3.50068702
 
@@ -1022,15 +1030,22 @@ class SpectralRankInvariant:
   #   else:
   #     raise NotImplementedError("Array form of projection not implemented")
   
-  def compute_dgms(self, S: ComplexLike, **kwargs):
+  def compute_dgms(self, S: ComplexLike, progress: bool = False, **kwargs):
     """Constructs all the persistence diagrams in the parameterized family.
     
     Parameters: 
       S : the simplicial complex used to construct the parameterized filter
       method: persistence algorithm to use. Currently ignored. 
     """
-    ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", **kwargs)
-    self.dgms = [ph_dgm(filter_f) for filter_f in self.family]
+    # ph_dgm = lambda filter_f: ph(filtration(S, f=filter_f), output="dgm", **kwargs)
+    # self.dgms = [ph_dgm(filter_f) for filter_f in self.family]
+    import splex as sx
+    K = sx.RankFiltration(enumerate(S))
+    self.dgms = [None] * len(self.family)
+    family_it = progressbar(iter(self.family), len(self.family)) if progress else iter(self.family)
+    for i, filter_f in enumerate(family_it): 
+      K.reindex(filter_f)
+      self.dgms[i] = ph(K, output="dgm", **kwargs)
     return self.dgms
 
   # def estimate_step(self, f: Callable, phi: Callable, alpha: List[float]) -> float:

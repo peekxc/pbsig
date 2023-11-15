@@ -172,10 +172,35 @@ def moreau_loss(x: ArrayLike, sf: Callable, t: float = 1.0):
   ew = w.x if w.status == 0 else x_ew
   return sgn_approx_cost(ew, t)
 
-def huber(x: ArrayLike = None, delta: float = 1.0) -> ArrayLike:
+def huber(x: ArrayLike = None, delta: float = 1.0, nonnegative: bool = True) -> ArrayLike:
+  """Huber loss function."""
   def _huber(x: ArrayLike): 
-    return np.where(np.abs(x) <= delta, 0.5 * (x ** 2), delta * (np.abs(x) - 0.5*delta))
+    x = np.maximum(x, 0.0) if nonnegative else np.abs(x)
+    return np.where(x <= delta, 0.5 * (x ** 2), delta * (x - 0.5*delta))
   return _huber if x is None else _huber(x)
+
+def tikhonov(x: ArrayLike = None, eps: float = 1.0, nonnegative: bool = True) -> ArrayLike:
+  """Tikhonov regularization function."""
+  def _tikhonov(x: ArrayLike):
+    num = np.maximum(x, 0.0) if nonnegative else np.abs(x)
+    den = num + eps 
+    return num / den
+  return _tikhonov if x is None else _tikhonov(x)
+
+def heat(x: ArrayLike = None, t: float = 1.0, nonnegative: bool = True) -> ArrayLike:
+  """Huber loss function."""
+  def _heat(x: ArrayLike): 
+    x = np.maximum(x, 0.0) if nonnegative else np.abs(x)
+    return np.exp(-x * t)
+  return _heat if x is None else _heat(x)
+
+def nuclear_interp(x: ArrayLike, eps: float = 1.0, rho: float = 0.5, beta: float = 0.5, nonnegative: bool = True):
+  """Spectral approximation function to the nuclear norm. Satisfies f(x) -> sgn+(x) as eps -> 0 and f(x) -> abs(x) as eps -> +inf"""
+  c: float = (1 + eps**rho)
+  def _interp(x: ArrayLike):
+    x = np.maximum(x, 0.0) if nonnegative else np.abs(x)
+    return (c * np.power(x, 2*beta)) / np.power(np.power(x, 2) + eps, beta)
+  return _interp if x is None else _interp(x)
 
 def timepoint_heuristic(n: int, L: LinearOperator, A: LinearOperator, locality: tuple = (0, 1), **kwargs):
   """Constructs _n_ positive time points equi-distant in log-space for use in the map exp(-t).

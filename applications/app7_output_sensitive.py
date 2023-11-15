@@ -41,14 +41,15 @@ show(figure_dgm(dgms[1]))
 # 1. First, cone the complex + the filter
 # 2. Second, re-index to the index filtration
 from pbsig.betti import cone_filter
+S = sx.rips_complex(X, radius=0.75, p=2)
 vid = sx.card(S,0)
 S.insert([sx.Simplex([vid]) + sx.Simplex(s) for s in S])            ## cone the complex
 coned_diam = cone_filter(sx.flag_filter(pdist(X)), vid = vid)       ## generate the coned filter 
 coned_diam_filter = sx.fixed_filter(S, [coned_diam(s) for s in S])  ## optimize it for fast evaluation
 
 ## Create a new coned filtration
-# K = sx.RankFiltration(S, coned_diam_filter)
-K = sx.SetFiltration(S, coned_diam_filter)
+K = sx.RankFiltration(S, coned_diam_filter)
+# K = sx.SetFiltration(S, coned_diam_filter)
 index_filter = sx.fixed_filter(list(sx.faces(K)), np.arange(len(K)))
 K.reindex(index_filter)
 R, V = ph(K, output="RV")
@@ -70,10 +71,38 @@ J = np.array([j for i,j in combinations(np.arange(M), 2)])
 B = lambda i,j: list(betti_query(K_simplices, index_filter, spectral_rank, i = i, j = j, p = 1))[0]
 
 from itertools import combinations
-betti_test = np.array(list(betti_query(K_simplices, index_filter, spectral_rank, i = I, j = J, p = 1)))
+SR = sx.RankComplex(K_simplices) ## this doesn't work yet for unknown reasons
+ST = sx.simplicial_complex(K_simplices, form='tree')
+
+betti_test = np.array(list(betti_query(ST, index_filter, spectral_rank, i = I, j = J, p = 1, form='lo')))
 betti_truth = np.array([np.sum(np.logical_and(dgms_index[1]['birth'] <= i, j < dgms_index[1]['death'])) for i,j in combinations(np.arange(M), 2)])
 assert np.allclose(betti_truth - betti_test, 0)
 
+# %% Debugging the performance
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(betti_query)
+profile.add_function(WeightedLaplacian.reweight)
+profile.enable_by_count()
+betti_test = np.array(list(betti_query(ST, index_filter, spectral_rank, i = I, j = J, p = 1, form='lo')))
+profile.print_stats(output_unit=1e-3, stripzeros=True)
+
+## For piazza post
+# from scipy.sparse import coo_array
+# ij = np.loadtxt("/Users/mpiekenbrock/Downloads/web-Google_10k.txt").astype(int)
+# N = np.max(ij.max(axis=0))+1
+# A = coo_array((np.repeat(True, len(ij)), (ij[:,0], ij[:,1])), dtype=bool, shape=(N, N))
+# v = np.random.uniform(size = A.shape[1])
+# timeit.timeit(lambda: A_csr @ v, number = 100)
+
+#%%
+np.array(list(betti_query(SR, index_filter, spectral_rank, i = I, j = J, p = 1)))
+
+L = WeightedLaplacian(SR, p = 1)
+L.reweight()
+
+
+## %% 
 _ = np.argmax(betti_truth - betti_test)
 a, b = I[_], J[_]
 betti_test[_], betti_truth[_]

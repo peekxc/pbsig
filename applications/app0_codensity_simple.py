@@ -41,42 +41,63 @@ from splex import lower_star_filter
 from pbsig.interpolate import ParameterizedFilter
 bw_scott = gaussian_kde(X.T, bw_method='scott').factor
 bw_bnds = (bw_scott*0.10, bw_scott*2)
-timepoints = np.linspace(*bw_bnds, 500) # np.geomspace(*bw_bnds, 100)
+timepoints = np.linspace(*bw_bnds, 100) # np.geomspace(*bw_bnds, 100)
 codensity_family = ParameterizedFilter(S, family = [lower_star_filter(codensity(bw)) for bw in timepoints])
 # p_family.interpolate(interval=bw_bnds)
 
 # %% 
 from pbsig.betti import SpectralRankInvariant
 ri = SpectralRankInvariant(S, family = codensity_family, p = 1, normed = True, isometric=False)
-# ri.randomize_sieve()
-# show(ri.figure_sieve())
 
 # %% Compute all the diagrams in the family
 from pbsig.vis import figure_vineyard
-dgms = ri.compute_dgms(S)
+dgms = ri.compute_dgms(S, progress=True)
 vineyard_fig = figure_vineyard(dgms, p = 1)
 
 # %% Basically anything in [0, 0.01] x [0.02, 0.03] works
-ri.sieve = np.array([[0.01, 0.015, 0.02, 0.025]])
-# ri.sieve = np.array([[-np.inf, 0.015, 0.02, +np.inf]])
+# ri.sieve = np.array([[0.01, 0.015, 0.02, 0.025]])
+ri.sieve = np.array([[-np.inf, 0.015, 0.02, +np.inf]])
 show(ri.figure_sieve(figure=vineyard_fig, fill_alpha=0.15))
 
 # %% Look at the numerical rank at a fixed threshold (that tends to work)
 from pbsig.linalg import spectral_rank
-ri.q_laplacian.sign_width = 0.05
-assert not ri.q_laplacian.isometric
-assert ri.q_laplacian.sign_width > 0
-w = np.max(next(iter(ri.family))(S))/4
-ri.sift(w=0.0005) # w is a smoothing parameter
+filter_rngs = np.array([np.max(f(S)) for f in ri.family])
+w = np.max(filter_rngs) / 2
+ri.sift(w=w) # w is a smoothing parameter
 
 # %% Try multiple spectral functions
-rank_relax_f = np.vectorize(lambda x: x / (x + 1e-6))
-show(ri.figure_summary(func = rank_relax_f))
+from pbsig.linalg import spectral_rank
+show(ri.figure_summary(func = spectral_rank))
+show(ri.figure_summary(func = lambda x: x**2))
+
+## How do these two not match? 
+np.array([betti_query(S, f, matrix_func = spectral_rank, p = 1, i = 0.015, j = 0.02) for f in ri.family])
+
+from more_itertools import nth
+from pbsig.betti import betti_query
+f = nth(ri.family, 0)
+
+from pbsig.csgraph import WeightedLaplacian
+L = WeightedLaplacian(S, p = 1, normed=True, form='lo')
+L.reweight()
+np.array(L.op.fpl)
+np.array(L.op.fpr)
+np.array(L.op.fq)
+solver(L.operator())
+np.array(L.simplex_weights)
+
+# %% 
+betti_query(S, f, matrix_func = lambda x: x, i = 0.015, j = 0.02, w=w, terms = True, form='array', normed=True)
+# f1 = nth(ri.family, 46)
+# f2 = nth(ri.family, 47)
+
+# np.max(np.abs(f1(S) - f2(S)))
+
+
 
 # %% Plot 
 from bokeh.layouts import row, column
 vineyard_fig = figure_vineyard(dgms, p = 1)
-
 vineyard_fig.line(x=[-10, 0.015], y=[0.02, 0.02], color='gray', line_dash='dashed', line_width=2) 
 vineyard_fig.line(x=[0.015, 0.015], y=[0.02, 10], color='gray', line_dash='solid', line_width=2) 
 vineyard_fig.rect(x=0.015-5, y=0.02+5, width=10, height=10, fill_color='gray', fill_alpha=0.20, line_width=0.0)
@@ -122,27 +143,36 @@ p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-4, 1e-1,
 show(p)
 
 ## Heat trace
-ref_betti = np.ravel(ri.summarize(spectral_func=spectral_rank).astype(int))
+from pbsig.linalg import heat
+heat_rev = lambda x: 1.0 - heat(x, t=1/100.0)
+ref_betti = np.ravel(ri.summarize(spectral_func=heat_rev).astype(int))
 p = figure(width=350, height=300)
-p.step(timepoints, ref_betti, color='black')
-p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-2)))), ref_betti), color='blue')
-p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(0.005)))), ref_betti), color='green')
-p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-3)))), ref_betti), color='red')
-p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-4)))), ref_betti), color='orange')
+p.line(timepoints, ref_betti, color='black')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-2)))), ref_betti), color='blue')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(0.005)))), ref_betti), color='green')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-3)))), ref_betti), color='red')
+# p.line(timepoints, center(sg(np.ravel(ri.summarize(heat_trace(1e-4)))), ref_betti), color='orange')
 # p.line(timepoints, center(sg(np.ravel(ri.summarize(tikhonov_smoothed(1e-3, 0.1, 30)))), ref_betti), color='green')
 show(p)
 
-
 ## Regular tikhonov
+## TODO: fix the discontinuities!
 p = figure(width=350, height=300)
 p.step(timepoints, ref_betti, color='black')
-p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-9))), ref_betti), color='blue')
-p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-4))), ref_betti), color='green')
-p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-2))), ref_betti), color='red')
-p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(1e-1))), ref_betti), color='orange')
-p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(0.05))), ref_betti), color='purple')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(eps=1e-9))), ref_betti), color='blue')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(eps=1e-4))), ref_betti), color='green')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(eps=1e-2))), ref_betti), color='red')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(eps=1e-1))), ref_betti), color='orange')
+p.line(timepoints, center(np.ravel(ri.summarize(tikhonov(eps=0.05))), ref_betti), color='purple')
 show(p)
 
+p = figure(width=350, height=300)
+p.line(timepoints, np.ravel(ri.summarize(np.mean)))
+show(p)
+
+
+from pbsig.betti import persistent_betti
+persistent_betti(S, )
 
 ## Nuclear norm 
 p = figure(width=350, height=300)
@@ -194,6 +224,13 @@ profile.enable_by_count()
 all_dgms()
 profile.print_stats(output_unit=1e-3, stripzeros=True)
 
+
+import line_profiler
+profile = line_profiler.LineProfiler()
+profile.add_function(ri.sift)
+profile.enable_by_count()
+ri.sift()
+profile.print_stats(output_unit=1e-3, stripzeros=True)
 
 
 # %% Check Parameterized lapalacina works 
