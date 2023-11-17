@@ -250,10 +250,10 @@ from pbsig.csgraph import param_laplacian, WeightedLaplacian
 def betti_query(
   S: Union[LinearOperator, ComplexLike], 
   f: Callable[SimplexConvertible, float],
+  p: int, 
   matrix_func: Callable[np.ndarray, float],
   i: Union[float, np.ndarray], 
   j: Union[float, np.ndarray], 
-  p: int = 0, 
   w: float = 0.0, 
   terms: bool = False, 
   solver: Callable = None, 
@@ -279,6 +279,7 @@ def betti_query(
   Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
   Lq = WeightedLaplacian(S, p = p, **L_kwargs)
 
+  PsdSolver()(Lq.operator())
   if isinstance(i, Number) and isinstance(j, Number):
     fi_inc = smooth_dnstep(lb = i-w, ub = i+delta)
     fi_exc = smooth_upstep(lb = i, ub = i+w)         
@@ -813,7 +814,7 @@ class SpectralRankInvariant:
     # self.q_operators = ParameterizedLaplacian(S, family, p, form=form)
     # if p > 0: 
     #   self.p_operators = ParameterizedLaplacian(S, family, p-1, form=form)
-    self.solver = PsdSolver(eigenvectors=False)
+    self.solver = PsdSolver(eigenvectors=False, tol = np.finfo(np.float64).eps)
     self.delta = np.sqrt(np.finfo(self.q_laplacian.dtype).eps)
     ## Note: breaking away from the corner-point per evaluation might not be good due to irregular shapes
     self._sieve = np.empty(shape=0, dtype=[('i', float), ('j', float), ('sign', int), ('index', int), ('finite', bool)])
@@ -925,6 +926,10 @@ class SpectralRankInvariant:
     if len(self._sieve) == 0:
       raise ValueError("No rectilinear sieve has been chosen! Consider using 'randomize_sieve'.")
     
+    ## Adjust the sign widths of the operators 
+    self.q_laplacian.sign_width = w
+    self.p_laplacian.sign_width = w
+
     ## Setup the main iterator
     n_corner_pts, n_family = len(self.sieve), len(self.family)
     corner_iter = zip(self.sieve['i'], self.sieve['j'], self.sieve['finite'])
@@ -1006,7 +1011,7 @@ class SpectralRankInvariant:
     np.add.at(summary, self._sieve['index'], np.c_[self._sieve['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
   
-  def figure_summary(self, func: Union[np.ndarray, Callable] = None, **kwargs):
+  def figure_summary(self, func: Union[np.ndarray, Callable] = None, post: Callable = None, **kwargs):
     from pbsig.vis import valid_parameters, bin_color
     from bokeh.models import Line
     from bokeh.plotting import figure
@@ -1014,12 +1019,13 @@ class SpectralRankInvariant:
     fig_kwargs = valid_parameters(figure, **kwargs)
     p = kwargs.get('figure', figure(width=300, height=300, **fig_kwargs))
     summary = self.summarize(func) if (isinstance(func, Callable) or func is None) else func
+    post = (lambda x: x) if post is None else post
     assert isinstance(summary, np.ndarray) and summary.shape == (ns, nt)
     sample_index = np.arange(0, nt)
     pt_color = (bin_color(sample_index, 'viridis')*255).astype(np.uint8)
     for f_summary in summary:
-      p.line(sample_index, f_summary, color='red')
-      p.scatter(sample_index, f_summary, color=pt_color)
+      p.line(sample_index, post(f_summary), color='red')
+      p.scatter(sample_index, post(f_summary), color=pt_color)
     return p
 
   # def restrict(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):

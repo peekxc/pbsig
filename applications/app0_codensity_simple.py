@@ -19,12 +19,12 @@ output_notebook()
 from pbsig.datasets import noisy_circle
 from splex.geometry import delaunay_complex
 np.random.seed(1234)
-X = noisy_circle(150, n_noise=20, perturb=0.15) ## 80, 30, 0.15 
+X = noisy_circle(150, n_noise=15, perturb=0.15) ## 80, 30, 0.15 
 S = delaunay_complex(X)
 
-from pbsig.csgraph import WeightedLaplacian
-L = WeightedLaplacian(S, p = 1)
-L = WeightedLaplacian(S, p = 0)
+# from pbsig.csgraph import WeightedLaplacian
+# L = WeightedLaplacian(S, p = 1)
+# L = WeightedLaplacian(S, p = 0)
 
 # %% 
 show(figure_complex(S, pos=X, width=300, height=300))
@@ -47,7 +47,7 @@ codensity_family = ParameterizedFilter(S, family = [lower_star_filter(codensity(
 
 # %% 
 from pbsig.betti import SpectralRankInvariant
-ri = SpectralRankInvariant(S, family = codensity_family, p = 1, normed = True, isometric=False)
+ri = SpectralRankInvariant(S, family = codensity_family, p = 1, normed = False, isometric=False)
 
 # %% Compute all the diagrams in the family
 from pbsig.vis import figure_vineyard
@@ -64,11 +64,41 @@ from pbsig.linalg import spectral_rank
 filter_rngs = np.array([np.max(f(S)) for f in ri.family])
 w = np.max(filter_rngs) / 2
 ri.sift(w=w) # w is a smoothing parameter
+assert ri.q_laplacian.sign_width == w
 
 # %% Try multiple spectral functions
 from pbsig.linalg import spectral_rank
+from pbsig.linalg import tikhonov, heat, nuclear_interp
+PsdSolver
 show(ri.figure_summary(func = spectral_rank))
 show(ri.figure_summary(func = lambda x: x**2))
+show(ri.figure_summary(func = lambda x: np.abs(x)))
+show(ri.figure_summary(func = lambda x: np.mean(x)))
+show(ri.figure_summary(func = lambda x: x / (x + 1e-5)))
+def tikhonov_truncated(x):
+  prec = np.finfo(np.float64).eps
+  tol = x.max() * len(x) * prec
+  # return np.sum(x > tol)
+  x = np.where(x > tol, x, 0.0)
+  return x / (x + 1e-10)
+show(ri.figure_summary(func = tikhonov_truncated))
+
+show(ri.figure_summary(func = nuclear_interp(eps=1e-16)))
+show(ri.figure_summary(func = heat(t=1e2, complement=True)))
+
+f = nth(ri.family, 59)
+betti_query(S, f, matrix_func = spectral_rank, p = 1, i = 0.015, j = 0.02, normed = True, isometric = True, terms = True, w=ri.q_laplacian.sign_width)
+433 - 157 - 297 + 22
+# t0, t1, t2, t3 = betti_query(S, f, matrix_func = spectral_rank, p = 1, i = 0.015, j = 0.02, normed = True, isometric = True, terms = True, w=ri.q_laplacian.sign_width)
+
+f = nth(ri.family, 60)
+betti_query(S, f, matrix_func = spectral_rank, p = 1, i = 0.015, j = 0.02, normed = True, isometric = True, terms = True, w=ri.q_laplacian.sign_width)
+
+t0, t1, t2, t3 = betti_query(S, f, matrix_func = lambda x: x, p = 1, i = 0.015, j = 0.02, normed = True, isometric = True, terms = True, w=ri.q_laplacian.sign_width)
+
+t1
+spectral_rank(t3)
+
 
 ## How do these two not match? 
 np.array([betti_query(S, f, matrix_func = spectral_rank, p = 1, i = 0.015, j = 0.02) for f in ri.family])
@@ -87,22 +117,48 @@ solver(L.operator())
 np.array(L.simplex_weights)
 
 # %% 
-betti_query(S, f, matrix_func = lambda x: x, i = 0.015, j = 0.02, w=w, terms = True, form='array', normed=True)
-# f1 = nth(ri.family, 46)
-# f2 = nth(ri.family, 47)
+# f1 = nth(ri.family, 43)
+# f2 = nth(ri.family, 44)
 
+# # %% 
+# t1_a, t1_b, t1_c, t1_d = betti_query(S, f=f1, p = 1, matrix_func = lambda x: x, i = 0.015, j = 0.02, w=w, terms = True, form='array', normed=False, isometric=False)
+# t2_a, t2_b, t2_c, t2_d = betti_query(S, f=f2, p = 1, matrix_func = lambda x: x, i = 0.015, j = 0.02, w=w, terms = True, form='array', normed=False, isometric=False)
+
+# L = WeightedLaplacian(S, p = 1, w=w, normed=True, form='array')
+# L.reweight()
+# # np.array(L.op.fpl)
+# # np.array(L.op.fpr)
+# # np.array(L.op.fq)
+# PsdSolver()(L.operator())
+# np.sum(t_a > 1e-6)
 # np.max(np.abs(f1(S) - f2(S)))
 
 
 
 # %% Plot 
 from bokeh.layouts import row, column
-vineyard_fig = figure_vineyard(dgms, p = 1)
+vineyard_fig = figure_vineyard(dgms, p = 1, toolbar_location=None, height=250, weidth=250)
 vineyard_fig.line(x=[-10, 0.015], y=[0.02, 0.02], color='gray', line_dash='dashed', line_width=2) 
 vineyard_fig.line(x=[0.015, 0.015], y=[0.02, 10], color='gray', line_dash='solid', line_width=2) 
 vineyard_fig.rect(x=0.015-5, y=0.02+5, width=10, height=10, fill_color='gray', fill_alpha=0.20, line_width=0.0)
 vineyard_fig.scatter(x=0.015, y=0.02, color='red', size=8)
 show(vineyard_fig)
+
+# ri.figure_summary(lambda x: x**2, post = normalize, figure = p)
+from bokeh.models.annotations.labels import Label
+normalize = lambda x: np.squeeze((x - np.min(x))/(np.max(x) - np.min(x)))
+p = figure(width=350, height=250, toolbar_location=None, title="Spectral rank relaxations")
+p.line(timepoints, normalize(ri.summarize(spectral_rank)), color='black')
+p.line(timepoints, normalize(ri.summarize(lambda x: x**2)), color='blue')
+p.line(timepoints, normalize(ri.summarize(np.abs)),  color='red')
+p.line(timepoints, normalize(ri.summarize(tikhonov_truncated)),  color='green')
+p.xaxis.axis_label = "Bandwidth"
+p.yaxis.axis_label = "Spectral rank (normalized)"
+
+
+
+from bokeh.layouts import row
+show(row(vineyard_fig, p))
 
 def tikhonov(eps: float):
   return lambda x: np.sum(x / (x + eps))

@@ -1,4 +1,4 @@
-# %%
+# %% Imports
 import numpy as np
 import splex as sx
 from typing import * 
@@ -108,11 +108,89 @@ p.multi_line(
 p.line(x=X[ess_creator, 0], y=X[ess_creator, 1], line_color='red', line_width=3)
 show(p)
 
-# %% The issue with the above: 
-# * You need the creator simplex to set b *
-# Options: 
-# (1) Apply rank-based approach to obtain creator 
-# (2) 
+
+# %% Circular coordinates using Dreimac
+from dreimac import CircularCoords
+cc = CircularCoords(X, X.shape[0], maxdim = 1)
+cc.get_representative_cocycle(0, 1) # for some reason this returns a set of triangles
+cc.get_coordinates()
+## delta0 is a 45 x 10 sparse matrix
+
+# row: [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 7, 7, ...]
+# col: [0, 1, 0, 2, 1, 2, 0, 3, 1, 3, 2, 3, 1, 4, ...]
+# cocycle: array([ 0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0, 0,  0,  0,  0,  0,  0,  0,  0, -1, -1, -1,  0,  0,  0,  0,  0, -1, -1,  0,  0,  0,  0,  0,  0,  0, -1,  0,  0])
+
+# %% Harmonic smoothing
+from combin import comb_to_rank
+from scipy.spatial.distance import pdist
+from scipy.sparse import coo_array
+from math import comb
+
+## Get the ranks of the edges in S less than some max threshold
+er = sx.enclosing_radius(pdist(X))
+edges = np.array(sx.faces(S,1))[diam_filter(sx.faces(S,1)) <= er]
+edges_ind = comb_to_rank(edges, n = sx.card(S,0), order='lex')
+
+## Construct inner product matrix
+N_edges = comb(sx.card(S,0), 2)
+ip_mat = coo_array((np.repeat(1, len(edges_ind)), (edges_ind, edges_ind)), shape=(N_edges, N_edges))
+
+## Construct the coboundary matrix
+D1 = sx.boundary_matrix(S, p = 1)
+n,m = D1.shape
+D1_co = coo_array((np.flip(D1.data), (m-np.flip(D1.col)-1, n-np.flip(D1.row)-1)), shape=(m,n))
+
+from scipy.sparse.linalg import lsqr
+cocycle = np.array([x[i] for i, s in enumerate(S) if sx.dim(s) == 1])
+integral = lsqr(D1_co, cocycle, damp=0.5)[0]
+harm_rep = cocycle - D1_co @ integral
+
+
+from scipy.optimize import minimize
+def L1_regularize(a: float):
+  def _objective(x):
+    resid = (D1_co @ x) - cocycle
+    return np.linalg.norm(resid) + a * np.sum(np.abs(x))
+  return _objective
+
+cocycle_integral = minimize(L1_regularize(0.35), x0=np.zeros(D1_co.shape[1]), method='L-BFGS-B').x
+cocycle_rep = D1_co @ cocycle_integral
+
+
+from scipy.optimize import lsq_linear
+
+
+from scipy.optimize import least_squares
+least_squares(lambda x: (D1_co @ x) - cocycle, x0=np.zeros(D1_co.shape[1]), loss='soft_l1', gtol=1e-14, f_scale=100000).x
+
+
+
+
+
+## TESTING
+ri = np.array([1,2,1,4,2,4,7,8,4,8,2,7,3,5,6])-1
+ci = np.array([3,3,5,5,6,6,9,9,10,10,11,11,12,12,12])-1
+D1 = coo_array((np.ones(len(ri)), (ri,ci)), shape=(12,12))
+
+D1.shape[1]-np.flip(D1.col)-1, D1.shape[0]-np.flip(D1.row)-1
+
+D1_co = D1.tolil()
+D1_co = D1_co[:,np.flip(np.arange(m))][np.flip(np.arange(n)),:].T
+
+
+## This indeed works to obtain the coboundary matrix
+D1_co = D1.tolil()
+D1_co = (D1_co[:,np.flip(np.arange(12))][np.flip(np.arange(12)),:].T).tocoo()
+
+# print(np.array2string(D1_co.todense().astype(int), formatter={'int' : lambda x: str(x) if x > 0 else ' ' }))
+
+rep_cycle_alpha = x.copy() ## representative cycle
+
+
+
+
+# %% The issue with the above is that you need the creator simplex to set both A and b
+
 
 
 # pred_simplices = [sx.Simplex(s[1]) for i, s in enumerate(K) if i < ess_index]

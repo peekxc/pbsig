@@ -364,6 +364,7 @@ class WeightedLaplacian:
     self.complex = S
     self.dtype = np.dtype('float32') if dtype is None else dtype
     self.shape = (sx.card(S, p), sx.card(S, p))
+    print("normed: " + str(kwargs.get("normed", False)))
     self.normed = kwargs.get("normed", False)
     self.isometric = kwargs.get("isometric", True)
     self.sign_width = kwargs.get("sign_width", 0.0)

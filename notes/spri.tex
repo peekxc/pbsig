@@ -550,7 +550,8 @@ the persistent Betti and multiplicity functions may be written as:
 Two important observations regarding the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) they are comprised strictly of \emph{rank} computations, and (2) all terms involve \emph{unfactored} boundary matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-As we will show, the latter suggests implicit, \emph{matrix-free} approximation schemes using random matrix theory~\cite{chen2011output} may be exploited in the persistence computation, while the former suggests well-known variational perspectives of the rank function could yield useful relaxations. 
+The former suggests variational perspectives of the rank function may yield useful relaxations of~\eqref{eq:mu_four} and~\eqref{eq:betti_four}; the latter suggests their computation may be done via iterative, \emph{matrix-free} approximation schemes. 
+%using random matrix theory~\cite{chen2011output}. 
 %as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
 %The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
@@ -632,8 +633,8 @@ Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ define
 %	\beta_p^{a,b} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \cap \mathrm{Im}(\partial_{p+1}(K_b)) \; \big) 
 %\end{equation}
 Computationally, observe that~\eqref{eq:pbn} reduces to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
-While the the former is easy to re-cast as a spectral computation---which is amenable to approximation---computing the latter directly typically requires obtaining bases via matrix reduction. Indeed, whether obtained by a conventional~\cite{bhatia2013matrix, golub2013matrix} or persistence-specialized~\cite{memoli2022persistent, zomorodian2004computing} algorithm, constructing these bases directly will inevitably approach $\Omega(N^3)$ time and $\Omega(N^2)$ space.
-Since the persistence algorithm completely characterizes $\beta_p^{a,b}$ over \emph{all} values $(a,b) \in I \times I$ and also exhibits $O(N^3)$ time complexity, there is little incentive to compute $\beta_p^{a,b}$ with such direct methods.
+While the former is easy to re-cast as a spectral computation, computing the latter typically requires obtaining bases via matrix decomposition. Constructing these bases using conventional~\cite{bhatia2013matrix, golub2013matrix} or persistence-based~\cite{memoli2022persistent, zomorodian2004computing} algorithms effectively\footnote{Note about matrix multiplication constant} requires $\Omega(N^3)$ time and $\Omega(N^2)$ space.
+As the persistence algorithm also exhibits $O(N^3)$ time complexity and completely characterizes $\beta_p^{a,b}$ over \emph{all} values $(a,b) \in I \times I$, there is little incentive to compute $\beta_p^{a,b}$ with such direct methods. Because of this, we will focus on expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} throughout the rest of the paper.
 %or they involve forming orthogonal projectors
 %re are both general-purpose~\cite{bhatia2013matrix, golub2013matrix} and persistence-specific algorithms to compute.
 % Moreover, all of these methods have been shown to 
@@ -863,7 +864,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
 %Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
 %To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1},
-Under the appropriate assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$---the only remaining discontinuities in~\eqref{eq:pbn_parameterized} or~\eqref{eq:mu_parameterized} are due to the rank function. Towards ameliorating this, we consider the spectral characterization of the rank function:
+Under mild assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$.
+In contrast, as integer-valued invariants, the quantities from Proposition~\ref{prop:mu_betti_1} are discontinuous functions. To understand how these discontinuities arise, we consider the spectral characterization of the rank function:
 %given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is
 % given by the composition:
 %of the one-sided sign function with the singular value function:
@@ -873,8 +875,8 @@ Under the appropriate assumptions on $f_\alpha$, the entries of the boundary ope
 		0 & \text{otherwise}
 	\end{cases}
 \end{equation}
-where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X \in \mathbb{R}^{n \times m}$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
- As the singular values vary continuously under perturbations in $X$~\cite{bhatia2013matrix}, the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function---thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
+In the above, $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{\sigma_i \}_{i=1}^n)$ from the singular value decomposition (SVD) $X = U \Sigma V^T$ of $X \in \mathbb{R}^{n \times m}$, and $\mathrm{sgn}_+: \mathbb{R} \to \{0, 1\}$ is the one-sided sign function. 
+ As the singular values vary continuously under perturbations in $X$~\cite{bhatia2013matrix}, it is clear the discontinuity in~\eqref{eq:rank_def} manifests from the one-sided sign function---thus, a natural approach to relaxing~\eqref{eq:rank_def} is to first relax the $\mathrm{sgn}+$ function.
 % In the general setting, however, the nuclear norm deviates drastically from the rank function and tends to act as good rank substitute in low-rank regimes. We defer further discussion on this topic to section~\ref{}.  
 %One way to counter this discontinuity is to replace the $\mathrm{sgn}_+$ function with an $\epsilon$-parameterized family of continuous $\mathrm{sgn}$ approximation functions $\phi: \mathbb{R}_+ \times \mathbb{R}_{++} \to \mathbb{R}_+$ satisfying:
 %\begin{flalign}\label{eq:rank_sgn}
@@ -885,8 +887,7 @@ where $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{diag}(\{
 %\end{equation}
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
-Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$.
-Mangasarian et al.~\cite{mangasarian1994class} proposed an approximate $\mathrm{sgn}_+$ function may be obtained by integrating $\tau$-smoothed variations $\hat{\delta}$ of the Dirac delta measure $\delta$:  
+Our approach follows the seminal work of Mangasarian et al.~\cite{mangasarian1994class}. Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$. Observe the $\mathrm{sgn}_+$ function may be approximated by integrating $\tau$-smoothed variations $\hat{\delta}$ of the Dirac delta measure $\delta$:  
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \tau > 0  \,)  & &
 \phi(x, \tau) \triangleq \int\limits_{-\infty}^x \hat{\delta}(z, \tau) \, dz, \quad \quad  & 
@@ -927,7 +928,8 @@ Many properties of the sign approximation from~\eqref{eq:phi} extend naturally t
 \noindent 
 %Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
 %Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, 
-Moreover, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ exhibits a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
+At a high level, the operator $\Phi_\tau(X)$ from Definition~\eqref{def:lowner} is akin to the well-studied notion of a \emph{matrix function} often student in the context of square matrices~\cite{bhatia2013matrix}. 
+However, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ exhibits a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
@@ -953,7 +955,7 @@ Moreover, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the correspo
 %	\includegraphics[width=0.45\textwidth]{mult_both}
 	\includegraphics[width=0.90\textwidth]{cont_relax}
 	\caption{From left to right---the $\ell_1$ norm (red) forms a convex envelope over the $\ell_0$ (black) pseudo-norm on the interval $[-1, 1]$; 
-	$\tilde{\phi}(\cdot, \tau)$ at various values of $\tau$, with $p(x) = 2x (x^2 + 1)^{-2}$ and $\nu(\tau) = \sqrt{\tau}$ (red) and at $\tau = 0$ (black); 
+	$\phi(\cdot, \tau)$ from~\eqref{eq:tikhonov_sf} at various values of $\tau > 0$ (red) and at $\tau = 0$ (black); 
 	the step function $S_i(x)$ from~\eqref{eq:rank_equiv_param}; 
 	the smoothstep relaxation $\mathcal{S}_i^{\omega}$ from~\eqref{eq:smoothstep}.
 	}
@@ -981,7 +983,7 @@ Moreover, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the correspo
 %\end{definition}
 \noindent Noting property (4), since the sum Lipshitz functions is also Lipshitz, it is easy to verify that 
 %combining the smoothness of $\mathcal{S}_\ast^\omega$ with the global Lipshitz continuity of~\eqref{def:lowner} that 
-replacing the rank function in all of the constitutive terms of both $\mu_p^\ast$ and $\beta_p^{\ast}$ from proposition~\ref{prop:mu_betti_1} yield a Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz and the step functions from~\eqref{eq:rank_equiv_param} are smoothed with some $\omega > 0$. 
+replacing the rank function in all of the constitutive terms from Proposition~\ref{prop:mu_betti_1} yields Lipshitz continuous functions whenever the filter function $f_\alpha$ is itself Lipshitz and the step functions from~\eqref{eq:rank_equiv_param} are smoothed ($\omega > 0$). 
 \begin{remark} 
 	Though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
@@ -1023,7 +1025,34 @@ The relaxation parameter $\tau$ may be thought of as a bias term that preference
 In this sense, we interpret the quantities obtained by applying~\eqref{def:lowner} to the terms from Proposition~\ref{prop:mu_betti_1} as \emph{Tikhonov regularized rank invariant approximations}.
 \\
 \\
-\noindent \textbf{Interpretation \#2:} Heat kernel trace
+\noindent \textbf{Interpretation \#2:} 
+%In shape analysis applications, diffusion processes are often simulated on meshes or graphs embedded in $\mathbb{R}^d$ to obtain information of about their geometry. 
+In shape analysis applications, matrix functions are often used to simulate diffusion processes on meshes or graphs embedded in $\mathbb{R}^d$ to obtain information of about their geometry. 
+For example, consider a weighted graph $G = (V, E)$ with $n = \lvert V \rvert$ vertices with graph Laplacian $L_G : \mathbb{R}^n \to \mathbb{R}^n$. 
+The \emph{heat} of every vertex $v(t) \in \mathbb{R}^n$ as a function of time $t \geq 0$ is governed by $L_G$ and the \emph{heat equation}~\cite{}: 
+$$ v'(t) = -L_G v(0) \quad \Longleftrightarrow \quad L_G \cdot u(x, t) = - \partial u(x, t) / \partial t$$
+To simulate a heat diffusion process on $G$ from an initial distribution of heat $v(0) \in \mathbb{R}^n$ at time $t = 0$, it is sufficient to construct the \emph{heat kernel} $H_t \triangleq \mathrm{exp}(-t \cdot L_G)$ of $L_G = U \Lambda U^T$: 
+%where $v(t) \in \mathbb{R}^n$ represents the time-varying vector whose value $v_i(t) \in \mathbb{R}$ represents the amount of heat at vertex $v_i$ at time $t \geq 0$.
+%To simulate heat diffusion, given an initial distribution of heat $v(0)$, one begins with a graph $G = (V, E, W)$ with $n = \lvert V\rvert$ vertices and edge weights $W \in \mathbb{R}^m$ representing the conductivity across the $m = \lvert E \rvert$ edges; then, the value of the diffusion process on $G$ at time $t$ is given by \emph{exponential diffusion kernel}:
+$$v(t) = H_t \, v(0), \quad \text{ where } H_t = U \mathrm{exp}(-t \Lambda) U' = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T$$
+The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain rich multiscale geometric information due to its close connection to geodesics~\cite{}. Now, consider the parameterizing $\phi$ from~\eqref{} given by setting $\nu(\tau) = \tau$ and $p(x) = \mathrm{exp}(-x_+)$. Plugging these into~\eqref{}, we have: 
+\begin{equation}\label{eq:tikhonov_sf}
+	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- x / \tau) % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+\end{equation}
+Thus, in this parameterization, the parameter $\tau$ can be interpreted as the reciprocal of the diffusion time, i.e. $t = 1 / \tau$. Moreover, as the graph Laplacian $L_G$ is given by the composition of boundary operators $\partial_1 \partial_1^T$, we have when $A = L_G$: 
+\begin{equation}\label{eq:heat_trace}
+%	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
+	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-t \cdot \sigma_i) = n - \mathrm{Tr}\left[H_t\right]
+\end{equation}
+The quantity in~\eqref{eq:heat_trace} has been studied in a variety of contexts, see e.g.~\cite{}. In this sense, we interpret the quantities obtained by applying ... as \emph{geometrically sensitive rank invariant approximations}.
+
+% Indeed, informative multiscale signatures, such as the Heat Kernel Signature (HKS), are often used in shape analysis applications due to their rich information content. 
+  
+%where the matrix function $\mathrm{exp}(-t \cdot \partial_1 \partial_1^T)$, which is the solution the heat equation~\cite{}, is called the \emph{heat kernel} $H_t$ at time $t$:
+%$$H_t \triangleq \mathrm{exp}\left(-t \cdot \partial_1 \partial_1^T\right) = U \mathrm{exp}(-t \Lambda) U' = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T$$
+%Heat tends to diffuse slower at points with positive curvature and faster at points with negative curvature. 
+ 
+%a function $v(t) \in \mathbb{R}^n$ representing the time-varying vector whose value $v_i(t) \in \mathbb{R}$ represents the value of the diffusion at vertex $v_i \in V$ in a graph $G = (V, E)$ with $n = \lvert V\rvert$ vertices, then the diffusion 
  
 %We now discuss the various properties that these smoothed-counting invariants obey. 
 %\subsubsection*{Properties}
@@ -1510,39 +1539,61 @@ This justifies our claim that combinatorial Laplacian operators, for many real-w
 \subsection*{Filtration optimization}
 It is common in TDA for the filter function $f : K \to \mathbb{R}$ to itself be parameterized by some hyper-parameters.
 %to a means of building a filtration $(K,f)$ where $f : K \to \mathbb{R}$ is a filter function satisfying $f(\tau) \leq f(\sigma)$ for all $\tau \subseteq \sigma \in K$, but the . 
-For example, consider a simplicial complex $(K, f_\alpha)$ over a fixed Delaunay complex $K$ constructed over a point set $X \subset \mathbb{R}^d$, shown in Figure~\ref{}. A often-encountered problem with persistence is the removal of \emph{strong outliers} due to their tendency to prevent the detection of an underlying topological space via persistence.
-Instead of their removal, we ask whether there exists a filter $f$ 
+For example, consider the removal of noisy outliers from a point set $X \subset \mathbb{R}^d$ prior to studying $X$ through the lens of persistence. 
+Though persistence is stable under the Hausdorff noise model~\cite{}, diagrams are notably unstable with respect to \emph{strong outliers}---these outliers can obscure the detection of non-trivial topological space. 
+Even a single point can suppress presence of an otherwise strongly persistent pair. 
+
+To illustrate an exemplary use-case of our spectral relaxation, we re-cast the problem of identifying strong outliers as a \emph{filtration optimization} problem. Consider a fixed Delaunay complex $K$ realized from a set of points $X \subset \mathbb{R}^2$ sampled around $S^1$, shown in figure~\ref{fig:codensity}. 
+Observe the point set contains both points affected by Hausdorff noise and strong outliers. 
+To detect both these strong outliers and the presence of $S^1$, we first filter $K$ by the sublevel sets $\hat{f}_h^{-1}((-\infty, t]) \subseteq X$ of a kernel density estimate $\hat{f}_h : X \to \mathbb{R}_+$~\cite{}, which itself depends on bandwidth parameter $h > 0$ and the choice of a smooth kernel function $\mathcal{K}_h : \mathbb{R} \to \mathbb{R}_+$.
+%\begin{equation}
+%	
+%%	(K, f_h) = \{ \, \sigma \subset X : \max \hat{f}_h(\sigma) \leq t \, \}
+%\end{equation}
+Subsequently, for some fixed $(i,j) \in \Delta_+$, we seek a bandwidth $h^\ast$ maximizing the persistent Betti number $\beta_p^{i,j}$ of $(K, f_h)$:
+\begin{equation}\label{eq:betti_opt}
+	h^\ast = \argmax_{h \in \mathbb{R}} \; \beta_p^{i,j}(K, \hat{f}_h), \quad \text{ where } \hat{f}_h(x) = \frac{1}{nh} \sum_{i} \mathcal{K}_h(x_i - x)
+\end{equation}
+Assuming the pair $(i,j)$ is chosen well enough such that the objective $\beta_p^{i,j}$ is not trivially zero for all $h > 0$, observe the objective function $\beta_p^{i,j}$ is discontinuous, and non-differentiable. 
+%Indeed, $\beta_p^{\ast}$ is an integer-valued invariant and thus is not amenable to first-order optimization. 
+To obviate this difficulty, we substitute the objective $\beta_p^{i,j} \mapsto \hat{\beta}_p^{i,j}$ with a spectral relaxation $\hat{\beta}_p^{i,j}(h; \phi_\tau)$ for some matrix function $\phi_\tau$ that depends on a smoothness parameter $\tau \geq 0$. When $h > 0$, the objective is differentiable, thus first-order optimization techniques may be used. 
+
+% satisfying $\hat{\beta}_p^{i,j} \to \beta_p^{i,j}$ as $\tau \to 0$.  
+
+%The goal is detect whether or not $X$ lies near $S^1$, as shown by 
+%We reframe the problem as follows: rather than filtering $K$ according to its ambient metric $d_X$, we ask whether there \emph{exists} significant topological information at any density scale $\alpha$. Generically, we consider the following optimization problem:   
+%If there exists a density scale $\alpha \in \mathbb{R}_+$ wherein a cycle $c \in H_1(K ; \mathbb{R})$ is highly persistent and $R \subset \Delta_+$ is appropriately chosen, then any maximizer of~\eqref{eq:mult_opt} yields an appropriate density scale $\alpha^\ast$ with which to detect the topology of the data. 
+%From another perspective, we refer to this process of choosing appropriate filtration (hyper-)parameters to yield persistence information as \emph{filtration optimization}. 
+
+
+%Existing ways of handling outliers has largely focused on their removal~\cite{} or on extending persistence to the $n$-parameter setting. 
+%The simplest way of handling outliers is to remove them. We re-frame, this is similar in spirit to the ``distance to measure''~\cite{}, which 
+%exists a filter $f$ 
+%consider a simplicial complex $(K, f_\alpha)$ over a fixed Delaunay complex $K$ constructed over a point set $X \subset \mathbb{R}^d$, shown in Figure~\ref{}. 
+%due to their tendency to prevent the detection of an underlying topological space via persistence.
 
 %a common setting is the one where the data set $(X, d_X)$ comes equipped with some notion of density $f: X \to \mathbb{R}_+$, and one would like to build a persistence diagram on $d_X$ in a way that is robust to local fluctuations in density. 
 %This is a common practical setting often encountered in practice, as it is known that persistence is unstable with respect to \emph{strong outliers}~\cite{}, which prevents persistent homology from detecting a spaces prominent underlying topological structure, when it exists. 
 %Most work seeking to remedy this issue proceeds by either (1) removing such outliers according to some heuristic~\cite{}, (2) transforming the  metric to lessen the importance of such points in the persistence diagram~\cite{}, or (3) creating a 2-parameter persistence module with one dimension filtered by (co)-density. 
 %Of the three, (1) is ultimately a heuristic not useful for complex data sets as it discards important data; (2)  imposes a parameter that must be set to proceed, and (3) is perhaps ideal but currently considered both analytically and computationally intractable in practice. 
 
-To illustrate an alternative approach to the ways mentioned above, consider a fixed Delaunay complex $K$ built on a set of points sampled noisily around $S^1$ in the plane, shown in figure~\ref{fig:codensity}. Ultimately, we would like to detect the presence of the circle in $X$ via its persistence diagram, as that is the original purpose of persistence~\cite{}. 
-We reframe the problem as follows: rather than filtering $K$ according to its ambient metric $d_X$, we ask first whether there \emph{exists} significant topological information at any density scale $\alpha$. Generically, we consider the following optimization problem:   
-\begin{equation}\label{eq:mult_opt}
-	\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; 
-	\restr{\mu_p(K, f_\alpha)}{R}
-\end{equation}
-If there exists a density scale $\alpha \in \mathbb{R}_+$ wherein a cycle $c \in H_1(K ; \mathbb{R})$ is highly persistent and $R \subset \Delta_+$ is appropriately chosen, then any maximizer of~\eqref{eq:mult_opt} yields an appropriate density scale $\alpha^\ast$ with which to detect the topology of the data. 
-From another perspective, we refer to this process of choosing appropriate filtration (hyper-)parameters to yield persistence information as \emph{filtration optimization}. 
 
-\begin{figure}[ht]
-	\centering
-	\includegraphics[width=0.78\textwidth]{presentations/images/codensity_dgm_ex}
-	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
-	}\label{fig:codensity}
-\end{figure}
+%\begin{figure}[ht]
+%	\centering
+%	\includegraphics[width=0.78\textwidth]{presentations/images/codensity_dgm_ex}
+%	\caption{A fixed Delaunay complex filtered by a kernel (co)density estimate for different bandwidth parameters $\alpha$. Observe that either too small (left) or too large (right) a choice of bandwidth can obscure the underlying topological structure, whereas an appropriate choice of bandwidth creates a filtration that detects the underlying circle. 
+%	}\label{fig:codensity}
+%\end{figure}
 
-As an introductory example, we sampled $80$ points noisily around $S^1$ and then sampled an additional $30$ points in $[-1,1] \times [-1,1]$ to act as ``strong outliers.'' After constructing a Delaunay complex $K$ of these points, we parameterized a filter function $f_\alpha : K \times \mathbb{R} \to \mathbb{R}_+$ by assigning the filtration values of each simplex according to the lower stars of a kernel (co)density estimate, upon which we computed its vineyard~\cite{cohen2006vines} along a subset $\mathcal{A} \subset \mathbb{R}$. The vineyard, colored by $\alpha$, is shown on the left side of figure~\ref{fig:vineyard_codensity}. In this example, we choose the rectangle $R = \frac{1}{5}([1, 2] \times [3,4])$ out of simplicity; the corresponding multiplicity function is shown in the black curve on the right of figure~\ref{fig:vineyard_codensity}. 
-\begin{figure}[h]
-	\centering
-	\includegraphics[width=0.90\textwidth]{presentations/images/combined_mult}
-	\caption{(Left) Vineyard of of the codensity $\alpha$-parameterized filtration from figure~\ref{fig:codensity}. (Right) The exact multiplicity $\mu_1(K, f_\alpha)$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm{e}{-3}$.}\label{fig:vineyard_codensity}
-\end{figure}
-By inspection, the optimal density parameter satisfying~\eqref{eq:mult_opt} is any parameter $\alpha$ lying approximately in the interval $[0.40, 0.44]$. 
-Observe that any first-order optimization procedure initialized in the interval $\alpha_0 \in [0.3, 0.5]$ yields a maximizer $\hat{\alpha}$ in the interval $[0.36, 0.46]$, which is quite close to the interval $[0.40, 0.44]$. In this toy example, this is sufficient, however if a better estimate was required (e.g. the multiplicity was required to be positive as a constraint) then observe one could iteratively shrink $\epsilon$ to obtain a better approximation of $\mu_1$, and then repeat the first-order optimization. 
-This is synonymous to the \emph{iterative thresholding} techniques often in high-dimensional statistics and machine learning, see~\cite{} for an overview.
+%As an introductory example, we sampled $80$ points noisily around $S^1$ and then sampled an additional $30$ points in $[-1,1] \times [-1,1]$ to act as ``strong outliers.'' After constructing a Delaunay complex $K$ of these points, we parameterized a filter function $f_\alpha : K \times \mathbb{R} \to \mathbb{R}_+$ by assigning the filtration values of each simplex according to the lower stars of a kernel (co)density estimate, upon which we computed its vineyard~\cite{cohen2006vines} along a subset $\mathcal{A} \subset \mathbb{R}$. The vineyard, colored by $\alpha$, is shown on the left side of figure~\ref{fig:vineyard_codensity}. In this example, we choose the rectangle $R = \frac{1}{5}([1, 2] \times [3,4])$ out of simplicity; the corresponding multiplicity function is shown in the black curve on the right of figure~\ref{fig:vineyard_codensity}. 
+%\begin{figure}[h]
+%	\centering
+%	\includegraphics[width=0.90\textwidth]{presentations/images/combined_mult}
+%	\caption{(Left) Vineyard of of the codensity $\alpha$-parameterized filtration from figure~\ref{fig:codensity}. (Right) The exact multiplicity $\mu_1(K, f_\alpha)$ (black) and the proposed spectral relaxation (smoothed, blue) with relaxation parameter $\epsilon = 1\mathrm{e}{-3}$.}\label{fig:vineyard_codensity}
+%\end{figure}
+%By inspection, the optimal density parameter satisfying~\eqref{eq:mult_opt} is any parameter $\alpha$ lying approximately in the interval $[0.40, 0.44]$. 
+%Observe that any first-order optimization procedure initialized in the interval $\alpha_0 \in [0.3, 0.5]$ yields a maximizer $\hat{\alpha}$ in the interval $[0.36, 0.46]$, which is quite close to the interval $[0.40, 0.44]$. In this toy example, this is sufficient, however if a better estimate was required (e.g. the multiplicity was required to be positive as a constraint) then observe one could iteratively shrink $\epsilon$ to obtain a better approximation of $\mu_1$, and then repeat the first-order optimization. 
+%This is synonymous to the \emph{iterative thresholding} techniques often in high-dimensional statistics and machine learning, see~\cite{} for an overview.
 
 
 % --- APPLICATION 1: Fast spectral computation ---
@@ -1569,7 +1620,7 @@ This is synonymous to the \emph{iterative thresholding} techniques often in high
 %\subfile{spectral_relaxation}
 
 % --- APPLICATION 2: Directional transforms as Shape Signatures ---- 
-\subsection{Shape comparison}
+\subsection*{Shape comparison}
 In general, both combinatorial and topological aspects of a given topological space are encoded in the spectra of Laplacian operators. 
 Through their null-space, combinatorial Laplacians encode a complexes basic topology via its homology groups---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
 In contrast, these operators differ in the nonzero part of the spectrum, which encode specific geometric information in addition to topological properties. 

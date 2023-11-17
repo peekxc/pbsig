@@ -187,14 +187,14 @@ def tikhonov(x: ArrayLike = None, eps: float = 1.0, nonnegative: bool = True) ->
     return num / den
   return _tikhonov if x is None else _tikhonov(x)
 
-def heat(x: ArrayLike = None, t: float = 1.0, nonnegative: bool = True) -> ArrayLike:
+def heat(x: ArrayLike = None, t: float = 1.0, nonnegative: bool = True, complement: bool = False) -> ArrayLike:
   """Huber loss function."""
   def _heat(x: ArrayLike): 
     x = np.maximum(x, 0.0) if nonnegative else np.abs(x)
-    return np.exp(-x * t)
+    return np.exp(-x * t) if not complement else 1.0 - np.exp(-x * t)
   return _heat if x is None else _heat(x)
 
-def nuclear_interp(x: ArrayLike, eps: float = 1.0, rho: float = 0.5, beta: float = 0.5, nonnegative: bool = True):
+def nuclear_interp(x: ArrayLike = None, eps: float = 1.0, rho: float = 0.5, beta: float = 0.5, nonnegative: bool = True):
   """Spectral approximation function to the nuclear norm. Satisfies f(x) -> sgn+(x) as eps -> 0 and f(x) -> abs(x) as eps -> +inf"""
   c: float = (1 + eps**rho)
   def _interp(x: ArrayLike):
@@ -611,7 +611,7 @@ class HeatKernel:
 #   return np.array([np.sum(np.exp(-t*ew)) for t in timepoints])
 
 class PsdSolver:
-  def __init__(self, method: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = 1e-6, **kwargs):
+  def __init__(self, method: str = 'default', k: Union[int, str, float, list] = "auto", laplacian: bool = False, eigenvectors: bool = False, tol: float = 0.0, **kwargs):
     assert method is not None, f"Invalid solver method '{method}'"
     # self._rank_bound = int(rank_ub) if isinstance(rank_ub, Integral) else lambda A: rank_bound(A, upper=True)
     self.method: Union[tuple, str, Callable] = method
