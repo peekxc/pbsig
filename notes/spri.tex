@@ -468,7 +468,7 @@ as a function of time $\alpha \in \mathbb{R}$ (top) and a real-valued spectral r
 %Alternatively, both iterative and explicit projector-based methods~\cite{ben2015projectors} may also for the intersection term in~\eqref{eq:pbn}, though these projectors may still be expensive to compute. 
 % TODO: elaborate more, give von neumann inequality 
 %In what follows, we outline a different approach to computing~\eqref{eq:pbn} that we argue is not only simpler and computationally attractive, but also amenable to acceleration in dynamic settings. 
-The following results summarize some technical observations motivating this effort, which will be used in several proofs. Though these observations may seem as mere background material, they contextualize our non-traditional computation of the rank invariant (see Corollary~\ref{cor:rank_reduction}) and serve as the motivation for this work.  
+The following results summarize some technical observations motivating this effort, which will be used in several proofs. Though these observations are background material, they contextualize our non-traditional computation of the rank invariant (Corollary~\ref{cor:rank_reduction}) and serve as the motivation for this work.  
 %Collectively, these observations suggest the computation of the rank invariant admits several advantages in the vector space setting---the main setting of this effort. 
 
 %There is an alternative approach to computing~\eqref{eq:pbn_simple} that exploits the structure of persistence. 
@@ -550,12 +550,12 @@ the persistent Betti and multiplicity functions may be written as:
 Two important observations regarding the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} are (1) they are comprised strictly of \emph{rank} computations, and (2) all terms involve \emph{unfactored} boundary matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-The former suggests variational perspectives of the rank function may yield useful relaxations of~\eqref{eq:mu_four} and~\eqref{eq:betti_four}; the latter suggests their computation may be done via iterative, \emph{matrix-free} approximation schemes. 
+The former suggests variational perspectives of the rank function may yield useful relaxations of~\eqref{eq:mu_four} and~\eqref{eq:betti_four}; the latter suggests alternate computation strategies beyond reduction, such as e.g. iterative, \emph{matrix-free} approximation schemes. 
 %using random matrix theory~\cite{chen2011output}. 
 %as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
 %The latter fact suggests multiplicity information can be obtained from combination of boundary operators without decomposing or even constructing $\partial$ in memory, enabling the efficient computation of the former using e.g. iterative Krylov or subspace acceleration methods~\cite{golub2013matrix, parlett1994we}. 
 %Moreover, the measure-theoretic counter-parts~\eqref{eq:pbn_cont} and~\eqref{eq:measure} suggests we may re-use  
-Moreover, the invariance of the rank function under zero-characteristic fields coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure} suggest connections to other areas of applied mathematics, such as the tools developed as part of ``The Laplacian Paradigm''~\cite{}.
+Moreover, the invariance of the rank function under adjoint transformations with zero-characteristic fields coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure} suggest connections to other areas of applied mathematics, such as the rich theory of matrix functions~\cite{} or the tools developed as part of ``The Laplacian Paradigm''~\cite{}.
 %may be exploited to accelerate the computation further. 
 %the structure of $\partial \cdot \partial^T$, 
 %---such as invariance under permutations and adjoint multiplication---
@@ -633,8 +633,8 @@ Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ define
 %	\beta_p^{a,b} = \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \; \big) - \mathrm{dim}\big( \; \mathrm{Ker}(\partial_p(K_a)) \cap \mathrm{Im}(\partial_{p+1}(K_b)) \; \big) 
 %\end{equation}
 Computationally, observe that~\eqref{eq:pbn} reduces to one nullity computation and one subspace intersection computation. % via matrix reduction or projector-based techniques 
-While the former is easy to re-cast as a spectral computation, computing the latter typically requires obtaining bases via matrix decomposition. Constructing these bases using conventional~\cite{bhatia2013matrix, golub2013matrix} or persistence-based~\cite{memoli2022persistent, zomorodian2004computing} algorithms effectively\footnote{Note about matrix multiplication constant} requires $\Omega(N^3)$ time and $\Omega(N^2)$ space.
-As the persistence algorithm also exhibits $O(N^3)$ time complexity and completely characterizes $\beta_p^{a,b}$ over \emph{all} values $(a,b) \in I \times I$, there is little incentive to compute $\beta_p^{a,b}$ with such direct methods. Because of this, we will focus on expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} throughout the rest of the paper.
+While the former is easy to re-cast as a spectral computation, computing the latter typically requires obtaining bases via matrix decomposition. Constructing these bases explicitly using conventional~\cite{bhatia2013matrix, golub2013matrix} or persistence-based~\cite{memoli2022persistent, zomorodian2004computing} algorithms effectively\footnote{Note about matrix multiplication constant} requires $\Omega(N^3)$ time and $\Omega(N^2)$ space.
+As the persistence algorithm also exhibits $O(N^3)$ time complexity and completely characterizes $\beta_p^{a,b}$ over \emph{all} values $(a,b) \in I \times I$, there is little incentive to compute $\beta_p^{a,b}$ with such direct methods (and indeed, they are largely unused). Because of this, we will focus on expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} throughout the rest of the paper.
 %or they involve forming orthogonal projectors
 %re are both general-purpose~\cite{bhatia2013matrix, golub2013matrix} and persistence-specific algorithms to compute.
 % Moreover, all of these methods have been shown to 
@@ -743,10 +743,11 @@ These observations motivate our first relaxation. Without loss in generality, as
 \end{proposition}
 \noindent For completeness, a proof of Proposition~\ref{prop:mu_betti_1} is given in the appendix. 
 %\begin{remark}
-Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as opposed to $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq})$ is ordered  according to a fixed linear ordering $(K, \preceq)$. The distinction is necessary as evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the total ordering induced by $f_\alpha$---which varies in $\mathcal{A}$---whereas the expressions obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}, respectively, require no such  filtering explicitly.  
+Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as opposed to $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq})$ is ordered  according to a fixed linear ordering $(K, \preceq)$. The distinction is necessary as evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the total ordering induced by $f_\alpha$---which varies in $\mathcal{A}$---whereas the expressions obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}, respectively, require no such explicit filtering.  
 %permutation invariant in $\mathcal{A}$. 
 %\end{remark}
 
+\input{laplacian.tex}
 
 %% TODO: proof of sign pattern stuff 
 
@@ -887,7 +888,7 @@ In the above, $\{\sigma_i \}_{i=1}^n$ are the singular values $\Sigma = \mathrm{
 %\end{equation}
 
 %Following the seminal work done by Chen et al.~\cite{chen1996class}, 
-Our approach follows the seminal work of Mangasarian et al.~\cite{mangasarian1994class}. Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$. Observe the $\mathrm{sgn}_+$ function may be approximated by integrating $\tau$-smoothed variations $\hat{\delta}$ of the Dirac delta measure $\delta$:  
+Our approach follows the seminal work of Mangasarian et al.~\cite{mangasarian1994class}. Let $p: \mathbb{R}_+ \to \mathbb{R}_+$ denote a continuous density function and $\nu : \mathbb{R}_+ \to \mathbb{R}_+$ is a continuous increasing function satisfying $\nu(0) = 0$. One way to approximate the $\mathrm{sgn}_+$ function is to integrate $\tau$-smoothed variations $\hat{\delta}$ of the Dirac delta measure $\delta$:  
 \begin{flalign}\label{eq:phi}
 (\, \forall \, z \geq 0, \tau > 0  \,)  & &
 \phi(x, \tau) \triangleq \int\limits_{-\infty}^x \hat{\delta}(z, \tau) \, dz, \quad \quad  & 
@@ -901,7 +902,7 @@ Moreover, varying $\tau \in \mathbb{R}_{+}$ in~\eqref{eq:phi} yields an $\tau$-p
 %(\, \forall x \geq 0 \,)  && \lim\limits_{\epsilon \to 0^{+}} \phi(x, \epsilon) = \mathrm{sgn}_+(x) && 
 %\end{flalign}
 
-Many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}. In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$ from~\cite{bhatia2013matrix, bi2013approximation}: 
+Many properties of the sign approximation from~\eqref{eq:phi} extend naturally to the rank function when substituted appropriately via~\eqref{eq:rank_def}. In particular, pairing $X = U\Sigma V^T$ with a scalar-valued $\phi$ that is continuously differentiable at every entry $\sigma$ of $\Sigma$ yields a corresponding \emph{Löwner operator} $\Phi_\tau$~\cite{bi2013approximation}: 
 \begin{definition}[Spectral $\phi$-approximation]
 	Given $X \in \mathbb{R}^{n \times m}$ with SVD $X = U \Sigma V^T$, a fixed $\tau > 0$, and any choice of $\phi: \mathbb{R}_+ \times \mathbb{R}_{++}$ satisfying~\eqref{eq:phi}, define the \emph{spectral $\phi$-approximation} $\Phi_\tau(X)$ of $X$ as:
 %	and its Schatten-1 norm via: 
@@ -928,8 +929,8 @@ Many properties of the sign approximation from~\eqref{eq:phi} extend naturally t
 \noindent 
 %Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
 %Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, 
-At a high level, the operator $\Phi_\tau(X)$ from Definition~\eqref{def:lowner} is akin to the well-studied notion of a \emph{matrix function} often student in the context of square matrices~\cite{bhatia2013matrix}. 
-However, when $\phi$ satisfies the conditions from~\eqref{eq:phi}, the corresponding operator $\Phi_\tau$ exhibits a variety of attractive properties related to monotonicity and differentiability, a few of which are recorded below.
+At a high level, Definition~\eqref{def:lowner} is closely related to that of a \emph{matrix function} $f(A) \triangleq U f(\Lambda) U^T$ defined over square matrices~\cite{bhatia2013matrix}. 
+By imposing additional restrictions via~\eqref{eq:phi} on $\phi$, the operator $\Phi_\tau$ exhibits a variety of attractive properties related to rank-approximation, monotonicity, and differentiability.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
@@ -1028,18 +1029,25 @@ In this sense, we interpret the quantities obtained by applying~\eqref{def:lowne
 \noindent \textbf{Interpretation \#2:} 
 %In shape analysis applications, diffusion processes are often simulated on meshes or graphs embedded in $\mathbb{R}^d$ to obtain information of about their geometry. 
 In shape analysis applications, matrix functions are often used to simulate diffusion processes on meshes or graphs embedded in $\mathbb{R}^d$ to obtain information of about their geometry. 
-For example, consider a weighted graph $G = (V, E)$ with $n = \lvert V \rvert$ vertices with graph Laplacian $L_G : \mathbb{R}^n \to \mathbb{R}^n$. 
+For example, consider a weighted graph $G = (V, E)$ with $n = \lvert V \rvert$ vertices with graph Laplacian $L_G = \partial_1 \partial_1^T$. 
 The \emph{heat} of every vertex $v(t) \in \mathbb{R}^n$ as a function of time $t \geq 0$ is governed by $L_G$ and the \emph{heat equation}~\cite{}: 
-$$ v'(t) = -L_G v(0) \quad \Longleftrightarrow \quad L_G \cdot u(x, t) = - \partial u(x, t) / \partial t$$
-To simulate a heat diffusion process on $G$ from an initial distribution of heat $v(0) \in \mathbb{R}^n$ at time $t = 0$, it is sufficient to construct the \emph{heat kernel} $H_t \triangleq \mathrm{exp}(-t \cdot L_G)$ of $L_G = U \Lambda U^T$: 
+\begin{equation}\label{eq:heat_eq}
+	v'(t) = -L_G v(0) \quad \Longleftrightarrow \quad L_G \cdot u(x, t) = - \partial u(x, t) / \partial t
+\end{equation}
+In order to actually simulate a diffusion process on $G$ from an initial distribution of heat $v(0) \in \mathbb{R}^n$, it is sufficient to construct the \emph{heat kernel} $H_t \triangleq \mathrm{exp}(-t \cdot L_G)$ using the spectral decomposition $L_G = U \Lambda U^T$: 
 %where $v(t) \in \mathbb{R}^n$ represents the time-varying vector whose value $v_i(t) \in \mathbb{R}$ represents the amount of heat at vertex $v_i$ at time $t \geq 0$.
 %To simulate heat diffusion, given an initial distribution of heat $v(0)$, one begins with a graph $G = (V, E, W)$ with $n = \lvert V\rvert$ vertices and edge weights $W \in \mathbb{R}^m$ representing the conductivity across the $m = \lvert E \rvert$ edges; then, the value of the diffusion process on $G$ at time $t$ is given by \emph{exponential diffusion kernel}:
-$$v(t) = H_t \, v(0), \quad \text{ where } H_t = U \mathrm{exp}(-t \Lambda) U' = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T$$
-The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain rich multiscale geometric information due to its close connection to geodesics~\cite{}. Now, consider the parameterizing $\phi$ from~\eqref{} given by setting $\nu(\tau) = \tau$ and $p(x) = \mathrm{exp}(-x_+)$. Plugging these into~\eqref{}, we have: 
-\begin{equation}\label{eq:tikhonov_sf}
-	\phi(x, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- x / \tau) % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+\begin{equation}\label{eq:heat_kernel}
+v(t) = H_t \, v(0), \text{ where } H_t = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T
 \end{equation}
-Thus, in this parameterization, the parameter $\tau$ can be interpreted as the reciprocal of the diffusion time, i.e. $t = 1 / \tau$. Moreover, as the graph Laplacian $L_G$ is given by the composition of boundary operators $\partial_1 \partial_1^T$, we have when $A = L_G$: 
+The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider the parameterizing $\phi$ from~\eqref{} given by setting $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$. Plugging these into~\eqref{}, we obtain: 
+\begin{equation}\label{eq:tikhonov_sf}
+	\phi(\lambda, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- \lambda / \tau) % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+\end{equation}
+The parameter $\tau$ can be interpreted as the reciprocal of the diffusion time, i.e. $t = 1 / \tau$.
+As before, observe that $t \to 0$ (or $\tau \to \infty$), the expression $1 - \mathrm{exp}(-\lambda / \tau)$ approaches the $\mathrm{sgn}_+$ function on the interval $[0, \infty)$. 
+Moreover, as above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} yields a    
+%$L_G$: 
 \begin{equation}\label{eq:heat_trace}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
 	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-t \cdot \sigma_i) = n - \mathrm{Tr}\left[H_t\right]
@@ -1067,98 +1075,6 @@ The quantity in~\eqref{eq:heat_trace} has been studied in a variety of contexts,
 %\begin{equation*}
 %	\lVert \Phi_\epsilon(X) \rVert_\ast = \mathrm{Tr}[(L + \epsilon I_n)^{-1} L] = \sum\limits_{i=1}^n (L_\epsilon^{-1} l_i)_i
 %\end{equation*}
-
-%Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
-\subsection{Parameterized Laplacians}\label{sec:laplacian_theory2}
- For the sake of generality, it is important to make the class of relaxations derived from operators from section~\ref{sec:spectral_relax} as large as possible.
-%elucidate the necessary conditions under which the spectral operators from section~\ref{sec:spectral_relax} are differentiable, so as to make the class of such operators as large as possible. 
-Towards this end, we exploit another identity of the rank function:
-% for zero characteristic fields: 
-%$$\mathrm{rank}(\partial_p) = \mathrm{rank}(\partial_p \circ \partial_p^T) = \mathrm{rank}(\partial_p^T \circ \partial_p)$$ 
-$$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X)$$ 
-As both $\partial_p \partial_p^T$ and $\partial_p^T \partial_p$ are positive semi-definite by definition, the spectra of these operators are equivalent to the singular values of boundary operators~\cite{horak2013spectra}.  
-% study of spectra of \emph{combinatorial Laplacians}
-Moreover, as $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, it is natural to consider its generalization for $p > 1$, the \emph{$p$-th combinatorial Laplacians} $\Delta_p$: 
-\begin{equation}\label{eq:comb_lap}
-	\Delta_p(K) = 
-	\underbrace{\partial_{p\+1} \circ \partial_{p\+1}^\ast}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^\ast  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
-%	\simeq H() 
-\end{equation}
-\noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact---moreover, the inertia of their spectra is equivalent, implying they must have identical ranks~\cite{horak2013spectra}. % TODO: verify
-%moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
-%where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
-%\begin{equation}\label{eq:lap_spectra_conn}
-%	\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \stackrel{\cdot}{\cup} \Lambda(L_p^{\text{dn}}), \quad \quad \Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1}^{\text{dn}})
-%\end{equation}
-Thus, from a rank-based perspective, it suffices to consider any one of these operators.
-
-Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 
-
-Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 
-
-% Maybe not relevent anymore
-% We now describe an $\mathcal{A}$-parameterized variation of $L_p^{\mathrm{up}}$. Following~\cite{}, we write $X^+$ to denote the Moore-Penrose pseudoinverse and for brevity write $X^{+/2} = (X^{+})^{1/2}$. Using the decoupling observation from~\eqref{eq:decouple}, observe we may write the inner operator from~\cite{} as follows:
-%$$ \hat{L}_p^{\text{up}}(\alpha) = D_p^{+/2}(f_\alpha) \circ \partial_p(K_{\preceq^\ast}) \circ D_{p+1}(f_\alpha) \circ \partial_p(K_{\preceq^\ast})^T \circ D_p^{+/2}(f_\alpha) $$ 
-%Like $\partial_p(\alpha)$, the entries of $\hat{L}_p^{\text{up}}(\alpha)$ vary continuously in $\alpha$ and may be thresholded using step (or smoothstep) functions to yield any the constitutive terms from proposition~\ref{prop:mu_betti_1}. 
-%Algebraically, 
-%$\mathcal{L}_{a,b}(\cdot, \alpha) : C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})$
- 
-%Let $K$ denote a simplicial complex and parameters $(p, \epsilon, \omega)$ satisfying $p \geq 0$, $\epsilon > 0$, and $\omega > 0$, respectively, define the $\mathcal{A}$-parameterized  \emph{spectral multiplicity} of $R$ as:
-%	\begin{equation}\label{eq:mu_cont_lap}
-%	\hat{\mu}_{p,\epsilon}^R(\alpha) = 
-%		 \lVert \Phi_{p\+1}^{j \+ \delta, k}) \rVert_\ast - 
-%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, k}) \rVert_\ast -  
-%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{j \+ \delta, l}) \rVert_\ast + 
-%		 \lVert \Phi_\epsilon^\alpha(\hat{\partial}_{p\+1}^{i \+ \delta, l}) \rVert_\ast \numberthis
-%	\end{equation}
-
-
-%Note that, as with the other operators mentioned, the nullity is not affected by this normalization---the rank function is invariant under scalar products with identical sign.   
-
-%Thus, we may retain the inner product interpretation from~\eqref{} while working with PSD operators---
-%One shortcoming of the stability result shown above is that the Lipshitz constant depends explicitly on the magnitude of $f_\alpha$, which in-turn affects the stability of the proposed relaxation if $f_\alpha$ is scaled poorly, i.e. $\lambda \cdot f_\alpha$. 
-%Moreover, the continuous differentiability of $\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ only extends to linear operators defined over the positive semi-definite cone, and the explicit form of the differential $\partial \lVert \Phi_\epsilon(\cdot) \rVert_\ast$ depends on the domain of its corresponding spectral function $\phi(\cdot)$ being bounded to some interval $(a,b)$~\cite{bhatia2013matrix}.  
-%
-%Consider the $\mathcal{H}$-parameterized boundary matrix from Definition~\eqref{def:time_boundary_matrix}. Assume that the filter function $f : K \to \mathbb{R}_+$ is strictly positive. By taking the product $(\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T$ for some choice of $h \in \mathcal{H}$, we have:
-%\begin{align*}\label{eq:param_up_lap}
-%	\hat{L}_p^{\text{up}}(K, f) &= (\hat{\partial}_p^{i,j})(\hat{\partial}_p^{i,j})^T \\
-%	&= (V_p^i)^{+} \circ \partial_p \circ (W_{p+1}^j)^2 \circ \partial_p^T \circ (V_p^i)^{+} \\
-%	&\propto (V_p^i)^{+/2} \circ \partial_p \circ W_{p+1}^j \circ \partial_p^T \circ (V_p^i)^{+/2}  \numberthis
-%\end{align*}
-%where $A^{+/2} = (A^{1/2})^+$. 
-
-%A second difficulty that arises with both the symmetric and asymmetric forms of~\eqref{eq:l_up} is the problem of unbounded spectra. It is not difficult to see that the inverse terms in~\eqref{eq:l_up} drive $\lVert L_p^{\textrm{up}}\rVert_2$ upwards indefinitely as $f(\sigma) \to 0^{+}$. 
-
-%By choosing the weights, one effectively determines the corresponding inner product, which in-turn determines the spectral range of the corresponding operator.
-%We expect the spectra of $\hat{L}_p^{\text{up}}$ to obey many of the properties enjoyed by $L_p^{\text{up}}$ and its variants. 
-%Indeed, though the spectrum of $\hat{L}_p^{\text{up}}$ is unbounded for general choices of $f$, we show that the normalized up-Laplacian given by:
-%\begin{equation}\label{eq:param_normalized_up_lap}
-%	 \hat{\mathcal{L}}_p^{\text{up}}(K, f) = \mathcal{D}_p(\mathcal{S}_i \circ f_\alpha)^{+/2} \circ \partial_p \circ W_{p+1}(\mathcal{S}_j \circ f_\alpha) \circ \partial_p^T \circ (\mathcal{D}_p^i)^{+/2} 
-%\end{equation}
-%has its spectrum bounded in the interval $[0, p+2]$, where $\tilde{D}_p^i$ corresponds to the weighted degree matrix with entries $\{ \mathrm{deg}_w(\sigma) \}$. We defer discussion of the exact forms of these matrices, including the computational details the matrix-vector product $x \mapsto \hat{L}_p^{\text{up}}$, to section~\eqref{sec:comb_lap}. 
-
-
-
-%\begin{remark}
-%~\cite{} studied a persistent version of the~\eqref{}, a \emph{persistent laplacian}, whose nullity yields the persistent Betti number. Additionally, satisfies many attractive qualities one would want out of a laplacian, including multiplicity of its 0th eigenvalue, disjoint spectra of disjoint components, and connections to notions of effective resistance. 
-%Thus, one would hope there to be a $p$-th persistent version of equation~\eqref{eq:laplace_hom} whose form is akin to ~\eqref{}, however as~\cite{} showed, the matrix representation. 
-%\end{remark}
-
-%In this effort, we consider a very general kind of combinatorial Laplacian. GHere, we define the combinatorial $p$-th weighted up-Laplacian of the triple $(w_{p}^l, w_{p+1}, w_{p}^r)$ by: 
-%\begin{equation}\label{eq:weighted_up_laplace}
-%	L_p^{\mathrm{up}}(K) := W_p^l \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p^r
-%\end{equation} 
-%where $W_p^\ast = \mathrm{diag}(\{ w_i \})$ is a diagonal weight matrix whose corresponding weights are given by the appropriate function of $(w_{p}^l, w_{p+1}, w_{p}^r)$, respectively. 
-%Setting all weight functions to the identity yields the combinatorial Laplacian~\cite{}. 
-%When $p = 0$ and $K = (V,E)$ is a graph, setting the diagonal entries of $W_1$ to edge weights and $W_0^l = W_0^r = I$ yields Kirchoff's \emph{weighted graph Laplacian}. 
-%Alternatively, setting $W_0^l[i,i] = 1/\mathrm{deg}(v_i)$ and $W_0^r = I$ yields the \emph{normalized graph Laplacian} studied by Chung~\cite{}.
-%Setting $W_p^l[i,i] = w_{p}^l(\sigma_i)^{-1}$ for all $\sigma \in K^p$ and $W_p^r = I$ yields the \emph{up Laplacian} from~\cite{}.
-%\begin{align*}\label{eq:up_laplace_2}
-%	\tilde{L}_p^{\mathrm{up}} &= \partial_{p+1} W_{p+1} \partial_{p+1}^T W_p^{-1}  \\
-%	&= W_p^{1/2} \left ( W_p^{-1/2}  \partial_{p+1} W_{p+1} \partial_{p+1}^T   W_p^{-\frac{1}{2}} \right ) W_p^{-\frac{1}{2}} \numberthis
-%\end{align*}
-%Note that $\tilde{L}_p^{\mathrm{up}}$ is not be symmetric matrix in general. However, like the vertex-weighted graph laplacian from~\cite{}, the expression from~\eqref{eq:up_laplace_2} is of the form $W^{-1} P W$ where $P$ is symmetric positive semi-definite and $W$ is a positive diagonal matrix. 
 
 
 \subsection{Properties \& Interpretations}\label{sec:spri_properties}
