@@ -169,12 +169,12 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
     if down: 
       def _ss(x: np.array):
         y = np.minimum(np.maximum((x-lb)/d, 0), 1.0)
-        return (1.0 - (3*y**2 - 2*y**3))
+        return np.clip((1.0 - (3*y**2 - 2*y**3)), 0.0, 1.0)
       return _ss 
     else:       
       def _ss(x: float):
         y = np.minimum(np.maximum((x-lb)/d, 0), 1.0)
-        return 3*y**2 - 2*y**3
+        return np.clip(3*y**2 - 2*y**3, 0.0, 1.0)
       return _ss 
   elif order == 2: 
     d = (ub-lb)
@@ -182,12 +182,12 @@ def smoothstep(lb: float = 0.0, ub: float = 1.0, order: int = 1, down: bool = Fa
     if down: 
       def _ss(x: np.array):
         y = np.clip((x-lb)/d, 0.0, 1.0)
-        return (1.0 - (6*y**5 - 15*y**4 + 10*y**3))
+        return np.clip((1.0 - (6*y**5 - 15*y**4 + 10*y**3)), 0.0, 1.0)
       return _ss 
     else:       
       def _ss(x: float):
         y = np.clip((x-lb)/d, 0.0, 1.0)
-        return 6*y**5 - 15*y**4 + 10*y**3
+        return np.clip(6*y**5 - 15*y**4 + 10*y**3, 0.0, 1.0)
       return _ss 
   else: 
     raise ValueError("Smooth step only supports order parameters in [0,2]")
@@ -200,6 +200,47 @@ def smooth_upstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
 def smooth_dnstep(lb: float = 0.0, ub: float = 1.0, order: int = 1):
   return smoothstep(lb=lb, ub=ub, order=order, down=True)
 
+from array import array 
+class BlockReduce():
+  def __init__(self, blocks: np.ndarray = None, lengths: np.ndarray = None, dtype: np.dtype = None):
+    self.dtype = np.float32 if blocks is None else np.array([np.take(blocks,0)]).dtype
+    self.blocks = array(np.sctype2char(self.dtype)) 
+    self.lengths = array('I')
+    if blocks is not None:
+      assert len(blocks) == len(lengths)
+      self.blocks.extend(blocks)
+      self.lengths.extend(lengths)
+
+  def __getitem__(self, key: int):
+    index = int(np.sum(self.lengths[:key]))
+    arr_len = int(self.lengths[key])
+    return self.blocks[index:(index+arr_len)]
+
+  def __iadd__(self, x: np.ndarray):
+    x = np.ravel(x).astype(self.dtype)
+    self.blocks.extend(x)
+    self.lengths.extend([len(x)])
+    return self
+
+  def reduce(self, transform: Callable = None, blockwise: bool = False, reduction: Callable = np.add):
+    """Reduces contiguous ranges of elements 'blocks' via 'reduce' after transforming with 'f'. """
+    assert isinstance(reduction, np.ufunc), "Reduce must be a 'ufunc'"
+    c_lengths = np.concatenate(([0], np.array(self.lengths[:-1]).cumsum()), dtype=np.int64)
+    if transform is not None:
+      f_ufunc = np.frompyfunc(transform, nin=1, nout=1) if not(isinstance(transform, np.ufunc)) else transform
+      is_vector_valued = len(f_ufunc(np.array([0,0,0,0,0]))) == 5
+      assert is_vector_valued, "Transform must be a vector-valued function"
+      if blockwise:
+        t_blocks = np.concatenate([f_ufunc(l).astype(self.dtype) for l in np.split(self.blocks, c_lengths[1:])])
+      else: 
+        t_blocks = transform(np.array(self.blocks))
+    else: 
+      t_blocks = self.blocks
+    return reduction.reduceat(t_blocks, c_lengths, dtype=self.dtype)
+
+  def __repr__(self):
+    return f'BlockReduce with {len(self.lengths)} blocks'
+
 sorting_nets = { 
   1 : [[0]],
   2 : [[0,1]],
@@ -208,6 +249,7 @@ sorting_nets = {
   5 : [[0,1],[2,3],[0,2],[1,4],[0,1],[2,3],[1,2],[3,4],[2,3]],
   6 : [[0,1],[2,3],[4,5],[0,2],[1,4],[3,5],[0,1],[2,3],[4,5],[1,2],[3,4],[2,3]]
 }
+
 def parity(X: Collection):
   """ 
   Finds the number of inversions of any collection of comparable numbers of size <= 6. 

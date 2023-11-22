@@ -246,6 +246,47 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
+
+class BettiQuery(Callable):
+  def __init__(self, S: Union[LinearOperator, ComplexLike], f: Callable[SimplexConvertible, float], p: int, **kwargs):
+    self.yw = f(faces(S, p-1))
+    self.fw = f(faces(S, p))
+    self.sw = f(faces(S, p+1))
+    self.delta = np.finfo(float).eps 
+    self.atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
+    self.p_solver = PsdSolver(k = int(card(S, p-1)-1)) 
+    self.q_solver = PsdSolver(k = int(card(S, p)-1))
+    self.sign_width = kwargs.get('w', 0.0)
+    L_kwargs = dict(normed = False, isometric = False, sign_width = self.sign_width, form="array") | kwargs
+    p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
+    self.Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
+    self.Lq = WeightedLaplacian(S, p = p, **L_kwargs)
+
+  def generate(self, i: Union[int, Sequence], j: Union[int, Sequence], mf: Callable = spectral_rank) -> Generator: 
+    I, J = np.ravel(i), np.ravel(j)
+    inc_all = smooth_upstep(0, self.sign_width)
+    for cc, (ii, jj) in enumerate(zip(I, J)):
+      assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+      fi_inc = smooth_dnstep(lb = ii-self.sign_width, ub = ii+self.delta)
+      fi_exc = smooth_upstep(lb = ii, ub = ii+self.sign_width)         
+      fj_inc = smooth_dnstep(lb = jj-self.sign_width, ub = jj+self.delta)
+      t0 = mf(fi_inc(self.fw)) # instead of solver 
+      self.Lp.reweight(fi_inc(self.fw), inc_all(self.yw))
+      t1 = mf(self.p_solver(self.Lp.operator()))
+      self.Lq.reweight(fj_inc(self.sw), inc_all(self.fw)) 
+      t2 = mf(self.q_solver(self.Lq.operator()))
+      self.Lq.reweight(fj_inc(self.sw), fi_exc(self.fw))
+      t3 = mf(self.q_solver(self.Lq.operator()))
+      yield t0, t1, t2, t3
+
+  def __call__(self, i: Union[int, Sequence], j: Union[int, Sequence], mf: Callable = spectral_rank, terms: bool = False) -> Union[Number, np.ndarray]:
+    I, J = np.ravel(i), np.ravel(j)
+    output_shape = (len(I), 4) if terms else len(I)
+    output = np.zeros(shape=output_shape)
+    for c, vals in enumerate(self.generate(I,J,mf)):
+      output[c] = np.array(vals) if terms else vals[0] - vals[1] - vals[2] + vals[3]
+    return np.take(output, 0) if output.shape[0] == 1 else output
+
 from pbsig.csgraph import param_laplacian, WeightedLaplacian
 def betti_query(
   S: Union[LinearOperator, ComplexLike], 
@@ -259,13 +300,6 @@ def betti_query(
   solver: Callable = None, 
   **kwargs
 ) -> Generator:
-  # from splex.predicates import is_complex_like
-  # L = S if isinstance(S, UpLaplacian) else up_laplacian(S, p=p, form='lo')
-  # assert isinstance(L, UpLaplacian)
-  # assert is_complex_like(S)
-  # B0, B1 = boundary_matrix(S, p = p), boundary_matrix(S, p = p+1)
-  # pseudo = lambda x: np.reciprocal(x, where=~np.isclose(x, 0, atol=atol)) # scalar pseudo-inverse 
-  
   yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
   delta = np.finfo(float).eps 
   atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
@@ -274,16 +308,19 @@ def betti_query(
   inc_all = smooth_upstep(0, w)
   
   ## Get the Weighted Laplacians
-  L_kwargs = dict(normed = True, isometric = False, sign_width = w, form="array") | kwargs
+  L_kwargs = dict(normed = False, isometric = False, sign_width = w, form="array") | kwargs
   p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
   Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
   Lq = WeightedLaplacian(S, p = p, **L_kwargs)
 
-  PsdSolver()(Lq.operator())
-  if isinstance(i, Number) and isinstance(j, Number):
-    fi_inc = smooth_dnstep(lb = i-w, ub = i+delta)
-    fi_exc = smooth_upstep(lb = i, ub = i+w)         
-    fj_inc = smooth_dnstep(lb = j-w, ub = j+delta)
+  I, J = np.ravel(i), np.ravel(j)
+  output_shape = (len(I), 4) if terms else len(I)
+  output = np.zeros(shape=output_shape)
+  for cc, (ii, jj) in enumerate(zip(I, J)):
+    assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+    fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
+    fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
+    fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
     t0 = matrix_func(fi_inc(fw)) # instead of solver 
     Lp.reweight(fi_inc(fw), inc_all(yw))
     t1 = matrix_func(p_solver(Lp.operator()))
@@ -291,28 +328,9 @@ def betti_query(
     t2 = matrix_func(q_solver(Lq.operator()))
     Lq.reweight(fj_inc(sw), fi_exc(fw))
     t3 = matrix_func(q_solver(Lq.operator()))
-    return (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
-  else: 
-    I, J = (np.array([i]), np.array([j]))
-    output_shape = (len(I), 4) if terms else len(I)
-    output = np.zeros(shape=output_shape)
-    for cc, (ii, jj) in enumerate(zip(I, J)):
-      assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
-      fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
-      fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
-      fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
-      t0 = matrix_func(fi_inc(fw)) # instead of solver 
-      Lp.reweight(fi_inc(fw), inc_all(yw))
-      t1 = matrix_func(p_solver(Lp.operator()))
-      Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
-      t2 = matrix_func(q_solver(Lq.operator()))
-      Lq.reweight(fj_inc(sw), fi_exc(fw))
-      t3 = matrix_func(q_solver(Lq.operator()))
-      # yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
-      output[cc] = np.array([t0, t1, t2, t3]) if terms else t0 - t1 - t2 + t3
-    return output
-    # ii = 3.49905344
-    # ii = 3.50068702
+    # yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
+    output[cc] = np.array([t0, t1, t2, t3]) if terms else t0 - t1 - t2 + t3
+  return np.take(output, 0) if output.shape[0] == 1 else output
 
 ## Cone the complex
 def cone_filter(f: Callable, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):

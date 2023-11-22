@@ -87,13 +87,14 @@ profile.enable_by_count()
 betti_test = np.array(list(betti_query(ST, index_filter, spectral_rank, i = I, j = J, p = 1, form='lo')))
 profile.print_stats(output_unit=1e-3, stripzeros=True)
 
-## For piazza post
+# For piazza post
 # from scipy.sparse import coo_array
 # ij = np.loadtxt("/Users/mpiekenbrock/Downloads/web-Google_10k.txt").astype(int)
 # N = np.max(ij.max(axis=0))+1
 # A = coo_array((np.repeat(True, len(ij)), (ij[:,0], ij[:,1])), dtype=bool, shape=(N, N))
 # v = np.random.uniform(size = A.shape[1])
 # timeit.timeit(lambda: A_csr @ v, number = 100)
+
 
 #%%
 np.array(list(betti_query(SR, index_filter, spectral_rank, i = I, j = J, p = 1)))

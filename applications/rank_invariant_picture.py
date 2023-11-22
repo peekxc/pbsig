@@ -1,4 +1,4 @@
-# %% 
+# %% Imports
 from typing import *
 import numpy as np
 import splex as sx
@@ -56,12 +56,27 @@ inner_lines = get_geometry(multi_polygon,1)
 all_lines = union(main_triangle, inner_lines)
 poly_areas = get_parts(polygonize(get_parts(all_lines)))
 
+## Get the polygon indices in descending order of area
+desc_inds = np.argsort(-np.array([po.area for po in poly_areas]))
+
+## Get the coordinates of the upper-left corners
 leftupper_corner = lambda p: (p[0], p[3])
 np.array([leftupper_corner(envelope(pa).bounds) for pa in poly_areas])
 
+poly_colors = bin_color(np.arange(len(poly_areas)), 'Category10')
+
+p = figure_dgm(dgms[0])
+for i, pi in enumerate(desc_inds):
+  px, py = poly_areas[pi].exterior.coords.xy
+  p.patch(px, py, fill_color=rgb_to_hex(poly_colors[i]*255), fill_alpha=0.75, line_alpha=0.0)
+  # cx, cy = poly_areas[pi].centroid.coords.xy
+  # p.scatter(cx,cy)
+
+p = figure_dgm(dgms[0], figure=p)
+show(p)
 
 # %% Compute the spectral rank on a finite grid
-from pbsig.betti import betti_query
+from pbsig.betti import betti_query, BettiQuery
 from pbsig.linalg import spectral_rank
 from pbsig.csgraph import up_laplacian
 
@@ -76,20 +91,27 @@ death_end = np.max(np.where(d != np.inf, d, 0))
 grid_pts = np.linspace(birth_start, death_end, n_grid_pts)
 grid_pts = np.unique(np.append(grid_pts, np.array(list(set(b) | set(d[d != np.inf])))))
 
+# %% 
 from itertools import product
 Grid = np.array([(i,j) for (i,j) in product(grid_pts, grid_pts) if i <= j])
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=spectral_rank, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=np.sum, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
-betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)
-# betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x**2), i=Grid[:,0], j=Grid[:,1], p=0, w=1.0, terms=False)
+# betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
+bq = BettiQuery(S, f=sublevel_filter, p=0)
+bq.sign_width = 10.0
+betti_grid2 = bq(Grid[:,0], Grid[:,1], terms=False, mf = lambda x: np.sum(x**2))
+
+
+betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x**2), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
+ri = betti_grid
 
 # %% Compute the PBN at the grid points
-eps = np.geomspace(1e-4, 1e-2, 32)
-mean_logspaced = lambda x: np.sum((np.tile(x[:,np.newaxis], 32) * np.reciprocal(x[:,np.newaxis] + eps)).mean(axis=1))
-betti_grid = betti_query(S, f=sublevel_filter, matrix_func=mean_logspaced, i=Grid[:,0], j=Grid[:,1], p=0, w=0.05, terms=False, isometric=False, form="lo")
-betti_grid = progressbar(betti_grid, count=len(Grid))
-ri = np.array(list(betti_grid))
-assert not(np.any(np.isnan(ri)))
+# eps = np.geomspace(1e-4, 1e-2, 32)
+# mean_logspaced = lambda x: np.sum((np.tile(x[:,np.newaxis], 32) * np.reciprocal(x[:,np.newaxis] + eps)).mean(axis=1))
+# betti_grid = betti_query(S, f=sublevel_filter, matrix_func=mean_logspaced, i=Grid[:,0], j=Grid[:,1], p=0, w=0.05, terms=False, isometric=False, form="lo")
+# betti_grid = progressbar(betti_grid, count=len(Grid))
+# ri = np.array(list(betti_grid))
+# assert not(np.any(np.isnan(ri)))
 # bdvrd = lambda x: 0.0 if np.isclose(np.sum(x), 0) else np.sum(np.repeat(1e-6, len(x)))/np.sum(np.sqrt((np.abs(x) * (np.abs(x) + 1e-6))))
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=bdvrd, i=Grid[:,0], j=Grid[:,1], p=0, w=0.10, terms=False)
 
