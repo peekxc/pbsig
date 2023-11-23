@@ -98,12 +98,25 @@ Grid = np.array([(i,j) for (i,j) in product(grid_pts, grid_pts) if i <= j])
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=np.sum, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
 bq = BettiQuery(S, f=sublevel_filter, p=0)
-bq.sign_width = 10.0
-betti_grid2 = bq(Grid[:,0], Grid[:,1], terms=False, mf = lambda x: np.sum(x**2))
+bq.sign_width = 0.0
+# betti_grid2 = bq(Grid[:,0], Grid[:,1], terms=False, mf = lambda x: np.sum(x**2))
+# betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x**2), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
+# ri = betti_grid
 
+# %% Compute all the eigenvalues to test different matrix functions 
+from pbsig.utility import BlockReduce
+T1, T2, T3, T4 = BlockReduce(), BlockReduce(), BlockReduce(), BlockReduce()
 
-betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x**2), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
-ri = betti_grid
+for t1, t2, t3, t4 in bq.generate(i=Grid[:,0], j=Grid[:,1], mf = lambda x: x):
+  T1 += t1 
+  T2 += t2 
+  T3 += t3
+  T4 += t4
+# list(bq.generate(i=Grid[0,0], j=Grid[0,1], mf = spectral_rank))
+# bq(*Grid.T, spectral_rank)
+
+sr = spectral_rank(method=0, vector_valued=True)
+ri = T1.reduce(sr) - T2.reduce(transform=sr) - T3.reduce(transform=sr) + T4.reduce(transform=sr)
 
 # %% Compute the PBN at the grid points
 # eps = np.geomspace(1e-4, 1e-2, 32)
@@ -123,34 +136,76 @@ from pbsig.color import bin_color
 from bokeh.models import ColumnDataSource
 from bokeh.transform import linear_cmap
 
-rects, rect_ind = [], []
-for (i,j), ij_val in zip(Grid, ri):
-  i_ind, j_ind = np.searchsorted(grid_pts,[i,j])
-  if j_ind < i_ind: assert False
-  if i_ind != 0 and j_ind != len(grid_pts):
-    br_x, br_y = grid_pts[i_ind], grid_pts[j_ind]
-    ul_x, ul_y = grid_pts[i_ind-1], grid_pts[j_ind+1] if j_ind < (len(grid_pts) - 1) else grid_pts[j_ind] + 5*min_diff
-    rects.append([np.mean([ul_x, br_x]), np.mean([ul_y, br_y]), np.abs(br_x - ul_x), np.abs(br_y - ul_y), ij_val])
-    rect_ind.append([i_ind-1, i_ind, j_ind, j_ind+1])
-rects = np.array(rects)
-rec_ind = np.array(rect_ind)
+def figure_sf(x, y, ri, **kwargs):
+  LR_map = {}
+  rects, rect_ind = [], []
+  for i,j,ij_val in zip(x, y, ri):
+    i_ind, j_ind = np.searchsorted(grid_pts,[i,j])
+    if j_ind < i_ind: assert False
+    if i_ind != 0 and j_ind != len(grid_pts):
+      br_x, br_y = grid_pts[i_ind], grid_pts[j_ind]
+      ul_x, ul_y = grid_pts[i_ind-1], grid_pts[j_ind+1] if j_ind < (len(grid_pts) - 1) else grid_pts[j_ind] + 5*min_diff
+      rects.append([np.mean([ul_x, br_x]), np.mean([ul_y, br_y]), np.abs(br_x - ul_x), np.abs(br_y - ul_y), ij_val])
+      rect_ind.append([i_ind-1, i_ind, j_ind, j_ind+1])
+      LR_map[br_x] = max(ij_val, LR_map.get(br_x, 0.0))
+  rects = np.array(rects)
+  rec_ind = np.array(rect_ind)
 
-col_map = linear_cmap('value', palette = "Viridis256", low=np.min(ri), high=np.max(ri))
-rect_src = ColumnDataSource(dict(
-  x=rects[:,0], y=rects[:,1], 
-  width=rects[:,2], height=rects[:,3], 
-  value=rects[:,4]
-))
-tooltips = [ ("(x, y)", "($x, $y)"), ("value", "@value") ]
-p = figure(width=250, height=250, tools="pan,wheel_zoom,reset,hover,save", tooltips=tooltips)
-p.rect(
-  x='x', y='y', width='width', height='height',
-  source=rect_src,
-  color=col_map,
-  # line_color="white"
-)
-show(p)
+  col_map = linear_cmap('value', palette = "Viridis256", low=np.min(ri), high=np.max(ri))
+  rect_src = ColumnDataSource(dict(
+    x=rects[:,0], y=rects[:,1], 
+    width=rects[:,2], height=rects[:,3], 
+    value=rects[:,4]
+  ))
+  tooltips = [ ("(x, y)", "($x, $y)"), ("value", "@value") ]
+  fig_kwargs = dict(width=250, height=250, tools="pan,wheel_zoom,reset,hover,save", tooltips=tooltips) 
+  fig_kwargs |= kwargs
+  p = figure(**fig_kwargs)
+  p.rect(
+    x='x', y='y', width='width', height='height',
+    source=rect_src,
+    color=col_map,
+    # line_color="white"
+  )
 
+  ## Add interpolated diagonal triangles
+  from pbsig.color import color_mapper
+  cmap = color_mapper(lb=np.min(ri), ub=np.max(ri))
+
+  patches_x, patches_y = [], []
+  patch_colors = []
+  for i, ii in pairwise(grid_pts):
+    if i in LR_map or ii in LR_map:
+      tri_color = cmap(max(LR_map.get(i, 0.0), LR_map.get(ii, 0.0)))
+      patches_x.append([i,i,ii])
+      patches_y.append([i,ii,ii])
+      patch_colors.append(tri_color)
+  p.patches(xs=patches_x, ys=patches_y, fill_color=patch_colors, line_width=0.0)
+  # print(tri_color)
+  
+  return p 
+
+# %% 
+from pbsig.linalg import tikhonov, spectral_rank
+tk = tikhonov(eps=1.0)
+sr = spectral_rank(method=0, vector_valued=True)
+spectral_ri = lambda f: T1.reduce(f) - T2.reduce(f) - T3.reduce(f) + T4.reduce(f)
+ 
+
+show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(sr)))
+show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(tikhonov(eps=0.1)))) ## tikhonov looks okay at w = 0.0!
+
+from pbsig.vis import figure_plain
+from bokeh.layouts import row
+gx, gy = Grid[:,0], Grid[:,1]
+
+figs = [figure_sf(gx, gy, spectral_ri(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
+
+for i in range(len(figs)):
+  figs[i] = figure_dgm(figure=figs[i])
+  figs[i] = figure_plain(figs[i])
+
+show(row(figs))
 
 # %% Exploring what makes the vertical lines constant 
 # ii = np.argmin(np.abs(grid_pts - 6))

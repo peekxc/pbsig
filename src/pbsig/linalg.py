@@ -806,7 +806,6 @@ class PsdSolver:
   
 #   return PsdSolver(A, return_eigenvectors=False, **kwargs)
 
-
 def eigen_dist(x: np.ndarray, y: np.ndarray, p: int = 2, method: str = "relative"):
   """Computes a variety of distances between sets of eigenvalues. """
   if method == "relative":
@@ -819,72 +818,37 @@ def eigen_dist(x: np.ndarray, y: np.ndarray, p: int = 2, method: str = "relative
   else: 
     raise NotImplementedError("Haven't implemented other distances yet.")
 
-def spectral_rank(ew: ArrayLike, method: int = 0, shape: tuple = None, prec: float = None) -> int:
-  if len(ew) == 0: return 0
-  ew = np.array(ew) if not isinstance(ew, np.ndarray) else ew
-  prec = np.finfo(ew.dtype).eps if prec is None else prec
-  m,n = shape if (shape is not None and len(shape) == 2) else (len(ew), len(ew))
-  if method == 0:
-    ## Default: identifies only those as positive cannot have been introduced by numerical errors 
-    tol = ew.max() * max(m,n) * prec
-    return sum(ew > tol)
-  elif method == 1: 
-    ## Minimizes expected roundoff error
-    tol = ew.max() * prec / 2. * np.sqrt(m + n + 1.)
-    return sum(ew > tol)
-  elif method == 2:
-    ## Dynamic method: tests multiple thresholds for detecting rank deficiency up to the prescribed precision, 
-    ## choosing the one that appears the most frequently / seems to be the most stable
-    C = 1.0/np.exp(np.linspace(1,36,100))
-    i = len(C)-np.searchsorted(np.flip(C), prec)
-    C = C[:i]
-    nr = [sum(ew/(ew + c)) for c in C]
-    values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
-    return values[np.argmax(counts)]
-  else:
-    raise ValueError("Invalid method chosen")
-
-def stable_rank(A: Union[ArrayLike, spmatrix, LinearOperator], method: int = 0, prec: float = None, **kwargs):
-  """Computes the rank of an operator _A_ using by counting non-zero eigenvalues.
-  
-  This method attempts to use various means with which to estimate the rank of _A_ in a stable fashion. 
-  """
-  solver = eigvalsh_solver(A)
-  ew = solver(A)
-  return spectral_rank(ew, method=method, prec=prec)
-
-def smooth_rank(A: Union[ArrayLike, spmatrix, LinearOperator], smoothing: tuple = (0.5, 1.0, 0), symmetric: bool = True, sqrt: bool = False, raw: bool = False, solver: Optional[Callable] = None, **kwargs) -> float:
-  """ 
-  Computes a smoothed-version of the rank of a symmetric positive semi-definite 'A'
-
-  The form of 'A' can be a dense or sparse array, or a [matrix-free] linear operator.
-
-  Parameters: 
-    A := array, sparse matrix, or linear operator to compute the rank of
-    pp := proportional part of the spectrum to compute.
-    smoothing := tuple (eps, p, method) of args to pass to 'sgn_approx'
-    symmetric := whether the 'A' is symmetric. Should always be true; non-symmetric matrices are not yet supported. 
-    sqrt := whether to compute sqrt the singular values
-    solver := Optional callable or string. If the latter, one of 'default', 'dac', 'irl', 'lanczos', 'gd', 'jd', or 'lobpcg'. See 'parameterize_solver' for more details. 
-    kwargs := keyword arguments to pass to the parameterize_solver.
-  """
-  if solver is None: 
-    solver = eigvalsh_solver(A, pp=1.0)
-  elif isinstance(solver, str):
-    solver = eigvalsh_solver(A, pp=1.0, solver=solver)
-  else:
-    assert isinstance(solver, Callable), "Solver must callable, if not string or None"
-  ew = solver(A)
-  ew = np.maximum(ew, 0.0)
-  assert all(np.isreal(ew)) and all(ew >= 0.0), "Negative or non-real eigenvalues detected. This method only works with symmetric PSD matrices."
-  ## Note that eigenvalues of PSD 'A' *are* its singular values via Schur theorem. 
-  if smoothing is not None:
-    assert isinstance(smoothing, tuple) and len(smoothing) == 3, "Smoothing must a tuple of the parameters to pass"
-    eps, p, method = smoothing 
-    ew = sgn_approx(np.sqrt(ew), eps, p, method) if sqrt else sgn_approx(ew, eps, p, method)
-  else: 
-    ew = np.sqrt(ew) if sqrt else ew
-  return ew if raw else sum(ew)
+def spectral_rank(ew: ArrayLike = None, method: int = 0, shape: tuple = None, prec: float = None, vector_valued: bool = False) -> int:
+  ## Closure on the parameters
+  prec = np.finfo(np.float64).eps if prec is None else prec
+  reso = np.finfo(np.float64).resolution
+  def _numerical_rank(x: np.ndarray):
+    x = np.atleast_1d(x) if not isinstance(x, np.ndarray) else x
+    if len(x) == 0: return 0
+    m, n = shape if (shape is not None and len(shape) == 2) else (len(x), len(x))
+    if method == 0:
+      ## Default: identifies only those as positive cannot have been introduced by numerical errors 
+      x = np.where(x < reso, 0.0, x) ## NOTE: this differs from numpy
+      tol = x.max() * max(m,n) * prec
+      return sum(x > tol) if not vector_valued else np.array(x > tol, dtype=int)
+    elif method == 1: 
+      ## Minimizes expected roundoff error
+      x = np.where(x < reso, 0.0, x) ## NOTE: this differs from numpy
+      tol = x.max() * prec / 2. * np.sqrt(m + n + 1.)
+      return sum(x > tol) if not vector_valued else np.array(x > tol, dtype=int)
+    elif method == 2:
+      ## Dynamic method: tests multiple thresholds for detecting rank deficiency up to the prescribed precision, 
+      ## choosing the one that appears the most frequently / seems to be the most stable
+      x = np.where(x < reso, 0.0, x) ## NOTE: this differs from numpy
+      C = 1.0/np.exp(np.linspace(1,36,100))
+      i = len(C)-np.searchsorted(np.flip(C), prec)
+      C = C[:i]
+      nr = [sum(x/(x + c)) for c in C]
+      values, counts = np.unique(np.round(nr).astype(int), return_counts=True)
+      return values[np.argmax(counts)] if not vector_valued else (x / (x + C[np.argmax(counts)]))
+    else:
+      raise ValueError("Invalid method chosen")
+  return _numerical_rank(ew) if ew is not None else _numerical_rank
 
 def pseudoinverse(x: ArrayLike, **kwargs) -> np.ndarray:
   x = np.array(x) if not(isinstance(x, np.ndarray)) else x

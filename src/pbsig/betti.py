@@ -299,38 +299,41 @@ def betti_query(
   terms: bool = False, 
   solver: Callable = None, 
   **kwargs
-) -> Generator:
-  yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
-  delta = np.finfo(float).eps 
-  atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
-  p_solver = PsdSolver(k = int(card(S, p-1)-1)) if solver is None else solver
-  q_solver = PsdSolver(k = int(card(S, p)-1)) if solver is None else solver
-  inc_all = smooth_upstep(0, w)
+) -> np.ndarray:
+  bq = BettiQuery(S, f=f, p=p)
+  bq.sign_width = w
+  return bq(i,j,mf=matrix_func,terms=terms)
+  # yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
+  # delta = np.finfo(float).eps 
+  # atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
+  # p_solver = PsdSolver(k = int(card(S, p-1)-1)) if solver is None else solver
+  # q_solver = PsdSolver(k = int(card(S, p)-1)) if solver is None else solver
+  # inc_all = smooth_upstep(0, w)
   
-  ## Get the Weighted Laplacians
-  L_kwargs = dict(normed = False, isometric = False, sign_width = w, form="array") | kwargs
-  p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
-  Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
-  Lq = WeightedLaplacian(S, p = p, **L_kwargs)
+  # ## Get the Weighted Laplacians
+  # L_kwargs = dict(normed = False, isometric = False, sign_width = w, form="array") | kwargs
+  # p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
+  # Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
+  # Lq = WeightedLaplacian(S, p = p, **L_kwargs)
 
-  I, J = np.ravel(i), np.ravel(j)
-  output_shape = (len(I), 4) if terms else len(I)
-  output = np.zeros(shape=output_shape)
-  for cc, (ii, jj) in enumerate(zip(I, J)):
-    assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
-    fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
-    fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
-    fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
-    t0 = matrix_func(fi_inc(fw)) # instead of solver 
-    Lp.reweight(fi_inc(fw), inc_all(yw))
-    t1 = matrix_func(p_solver(Lp.operator()))
-    Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
-    t2 = matrix_func(q_solver(Lq.operator()))
-    Lq.reweight(fj_inc(sw), fi_exc(fw))
-    t3 = matrix_func(q_solver(Lq.operator()))
-    # yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
-    output[cc] = np.array([t0, t1, t2, t3]) if terms else t0 - t1 - t2 + t3
-  return np.take(output, 0) if output.shape[0] == 1 else output
+  # I, J = np.ravel(i), np.ravel(j)
+  # output_shape = (len(I), 4) if terms else len(I)
+  # output = np.zeros(shape=output_shape)
+  # for cc, (ii, jj) in enumerate(zip(I, J)):
+  #   assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+  #   fi_inc = smooth_dnstep(lb = ii-w, ub = ii+delta)
+  #   fi_exc = smooth_upstep(lb = ii, ub = ii+w)         
+  #   fj_inc = smooth_dnstep(lb = jj-w, ub = jj+delta)
+  #   t0 = matrix_func(fi_inc(fw)) # instead of solver 
+  #   Lp.reweight(fi_inc(fw), inc_all(yw))
+  #   t1 = matrix_func(p_solver(Lp.operator()))
+  #   Lq.reweight(fj_inc(sw), inc_all(fw)) # this one
+  #   t2 = matrix_func(q_solver(Lq.operator()))
+  #   Lq.reweight(fj_inc(sw), fi_exc(fw))
+  #   t3 = matrix_func(q_solver(Lq.operator()))
+  #   # yield (t0, t1, t2, t3) if terms else t0 - t1 - t2 + t3
+  #   output[cc] = np.array([t0, t1, t2, t3]) if terms else t0 - t1 - t2 + t3
+  # return np.take(output, 0) if output.shape[0] == 1 else output
 
 ## Cone the complex
 def cone_filter(f: Callable, vid: int = -1, v_birth: float = -np.inf, collapse_weight: float = np.inf):
