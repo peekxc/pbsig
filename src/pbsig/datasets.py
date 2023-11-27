@@ -69,7 +69,7 @@ def noisy_circle(n: int = 32, n_noise: int = 10, perturb: float = 0.05, r: float
   X = np.vstack((circle, noise))
   return X 
 
-def random_function(n_extrema: int = 10, n_pts: int = 50, order_penalty = 0.10, walk_distance = 0.05, plot: bool = False):
+def random_function(n_extrema: int = 10, n_pts: int = 50, order_penalty = 0.10, walk_distance = 0.05, eps: float = None, plot: bool = False):
   from csaps import CubicSmoothingSpline
   from scipy.optimize import golden
   walk_distance = (0.50 + walk_distance)
@@ -81,7 +81,7 @@ def random_function(n_extrema: int = 10, n_pts: int = 50, order_penalty = 0.10, 
     roots = f.spline.derivative(1).roots() # jerk = f.spline.derivative(2)(roots) 
     n_crit = len(roots)
     return abs(n_crit - n_extrema) + order_penalty * f.spline.order
-  eps_opt = golden(objective_f, brack=(0, 1e-3))
+  eps_opt = golden(objective_f, brack=(0, 1e-3)) if eps is None else eps
   f = CubicSmoothingSpline(x, position, smooth=1-eps_opt)
   if plot: 
     from pbsig.vis import figure, show
@@ -92,6 +92,7 @@ def random_function(n_extrema: int = 10, n_pts: int = 50, order_penalty = 0.10, 
     p.line(dom, f(dom), color="black")
     p.scatter(roots, f(roots), size=6, color='red')
     show(p)
+    return f, p
   return f
 
 

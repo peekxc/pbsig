@@ -7,16 +7,15 @@ Towards this, we exploit another identity of the rank function applicable to zer
 %$$\mathrm{rank}(\partial_p) = \mathrm{rank}(\partial_p \circ \partial_p^T) = \mathrm{rank}(\partial_p^T \circ \partial_p)$$ 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X), \quad \text{for all } X \in \mathbb{F}^{n \times m}$$ 
 % study of spectra of \emph{combinatorial Laplacians}
-In the context of boundary operators, note that $\partial_0 = 0$ and $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, thus we may express $\beta_0^\ast(\alpha)$ and $\mu_0^\ast(\alpha)$ using the ranks of Laplacian matrices. 
-More generally, for $p > 1$ and any simplicial complex $K$, the \emph{$p$-th combinatorial Laplacian} $\Delta_p$ of $K$ is given by: 
+In the context of boundary operators, note that $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, indicating we may express $\beta_0^\ast(\alpha)$ and $\mu_0^\ast(\alpha)$ using the ranks of Laplacian\footnote{By convention, we define $\partial_p = 0$ for all $p \leq 0$.} matrices. 
+Indeed, a direct result of the singular value decomposition (SVD) is that the eigenvalues of $XX^T$ (or $X^T X$) are given by the squares of the singular values of $X$; thus, we may study the singular values of boundary operators through the spectra of Laplacians.  
+For any simplicial complex $K$, its \emph{$p$-th combinatorial Laplacian} $\Delta_p(K)$ is given by: 
 \begin{equation}\label{eq:comb_lap}
 	\Delta_p(K) = \underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
 \noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent}---moreover, the inertia of their spectra is equivalent, implying they must have identical ranks~\cite{horak2013spectra}. Thus, from a rank-based perspective, it suffices to consider any one of these operators.
-Indeed, a direct result of the singular value decomposition (SVD) is that we may substitute the study of singular values of boundary operators with the spectra of Laplacians.  
-
+All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). Thus, from a persistent rank-based perspective, it suffices to consider any one of these operators.
 
 %moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
 %where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
@@ -24,15 +23,29 @@ Indeed, a direct result of the singular value decomposition (SVD) is that we may
 %	\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \stackrel{\cdot}{\cup} \Lambda(L_p^{\text{dn}}), \quad \quad \Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1}^{\text{dn}})
 %\end{equation}
 
-For completeness, we formalize the observations above. Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex equipped with a fixed but arbitrary linear extension $(K, \preceq)$ of the face poset of $K$. 
-Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
+Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex $K$ equipped with a fixed but arbitrary linear extension $ \preceq$ of its face poset and fixed orientations $s(\sigma)$ inherited from the total order on the vertex set $(V, \preceq)$.
+Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}_p \triangleq  L_p^{\mathrm{up}}$. 
+%Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
 \begin{align}\label{eq:laplacian_decouple}
-\mathcal{L}_p^{\text{up}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(\alpha) \\ 
-\mathcal{L}_p^{\text{dn}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_p^T(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_p(K_\preceq) \cdot D_p^{1/2}(\alpha) \\
-\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
+%\mathcal{L}_p^{\text{up}}(f) & \triangleq D_p^{1/2}(f) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(f) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(f) 
+\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(\bar{S}_a \circ f_\alpha) 
+%\mathcal{L}_p^{\text{dn}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_p^T(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_p(K_\preceq) \cdot D_p^{1/2}(\alpha) \\
+%\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
 \end{align}
-where $D_p(\alpha)$ denotes a diagonal matrix whose entries represent non-negative weights on the $p$-simplices of $K$ that depend on $f_\alpha$. 
-As before with~\eqref{eq:rank_equiv_param}, we may isolate certain sign patterns to obtain operators whose ranks match the constitutive terms. 	
+where $D_p(f)$ denotes a diagonal matrix whose entries represent non-negative weights on the $p$-simplices of $K$ that depend on $f$ and $S$ ($\bar{S}$).
+As before with~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the matrix decomposition of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$ and $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$, then we have: 
+\begin{align*}	
+	\mathrm{rank}(R_p^{i,j})& = \mathrm{rank}(\partial_p^{i, j})  = \mathrm{rank}(\hat{\partial}_p^{a,b}(\alpha)) \\
+	& = \mathrm{rank}(D_{p-1}(\bar{S}_a \circ f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha)) \\
+	 & = \mathrm{rank}(D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha)) \\
+	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}(\alpha)) \numberthis
+\end{align*}
+where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute the parameterized boundary operators from~\eqref{} with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
+
+\begin{remark}
+In the context of inner products, 
+	One may interpret sending $p$-simplices to $0$ as restricting to a sub-complex $L \subseteq K$, which suggests definitions might better be defined with simplicial pairs $(L, K)$ satisfying $L \hookrightarrow K$ as in~\cite{memoli2022persistent}. However, our definition 
+\end{remark}
 
 %Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 
 %Moreover, Laplacian operators are known to encode rich geometric information in their spectra~\cite{horak2013spectra}, suggesting this geometric structure may now be used in a persistence setting. We give exemplary applications exploiting both facts in section~\ref{sec:applications}. 

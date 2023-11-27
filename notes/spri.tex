@@ -169,7 +169,7 @@ Spectral relaxations of persistent rank invariants
 \begin{abstract}
 Using the fact that the persistent rank invariant determines the persistence diagram and vice versa, we introduce a framework for constructing families of continuous relaxations of the persistent rank invariant for persistence modules indexed over the real line. 
 Like the rank invariant, these families obey inclusion-exclusion, are derived from simplicial boundary operators, and encode all the information needed to construct a persistence diagram. 
-Unlike the rank invariant, these spectrally-derived families enjoy a number of stability and continuity properties typically reserved for persistence diagrams, such as smoothness and differentiability over the positive semi-definite cone. 
+Unlike the rank invariant, these spectrally-derived families enjoy a number of stability and continuity properties typically reserved for persistence diagrams, such as smoothness and differentiability. 
 %Key to achieving a $(1-\epsilon)$-approximation is the use of spectral L{\"o}wner decompositions 
 %Our proposed $(1-\epsilon)$-approximation relies on uses nonconvex spectral functions  composition with the spectral decomposition relax boundary operators with L{\"o}wner operators. 
 %equipping the space of cochains over $\mathbb{R}$ with an inner product. 
@@ -295,10 +295,10 @@ we devise a spectral method
 that performs both steps, simultaneously and approximately. 
 %Our strategy is natural in that it extracts persistence information ~\cite{}.
 % include words: without constructing diagrams 
-Our strategy is motivated both by a technical observation that suggests advantages exist for the rank invariant computation (section~\ref{sec:betti_derivation}) and by measure-theoretic results on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize~\eqref{eq:dgm} to arbitrary rectangles $R$ in the plane:
+Our strategy is motivated both by a technical observation that suggests advantages exist for the rank invariant computation (section~\ref{sec:betti_derivation}) and by measure-theoretic results on $\mathbb{R}$-indexed persistence modules~\cite{cerri2013betti, chazal2016structure}, which generalize~\eqref{eq:dgm} to rectangles $R = [a,b] \times [c,d]$ in the plane:
 %= \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
 \begin{equation}\label{eq:measure}
-\mu_p^R(K, f) \triangleq \mathrm{card}\left(\restr{\mathrm{dgm}_p(K, f)}{R} \right) 
+\mu_p^R(K, f) \triangleq \mathrm{card}\left(\restr{\mathrm{dgm}_p(K, f)}{R} \right) = \beta_{p}^{b,c} - \beta_{p}^{a,c} - \beta_{p}^{b,d} + \beta_{p}^{a,d}
 % 
 %\mu_p^{a, b}(K,f) \triangleq \; \min_{\delta > 0} \left(\beta_p^{a \+ \delta, b  \shortminus \delta} - \beta_p^{a \+ \delta, b  \+ \delta} \right) - \left(\beta_p^{a\shortminus \delta, b \shortminus \delta} - \beta_p^{a \shortminus \delta, b \+ \delta} \right)
 \end{equation}
@@ -1034,25 +1034,26 @@ The \emph{heat} of every vertex $v(t) \in \mathbb{R}^n$ as a function of time $t
 \begin{equation}\label{eq:heat_eq}
 	v'(t) = -L_G v(0) \quad \Longleftrightarrow \quad L_G \cdot u(x, t) = - \partial u(x, t) / \partial t
 \end{equation}
-In order to actually simulate a diffusion process on $G$ from an initial distribution of heat $v(0) \in \mathbb{R}^n$, it is sufficient to construct the \emph{heat kernel} $H_t \triangleq \mathrm{exp}(-t \cdot L_G)$ using the spectral decomposition $L_G = U \Lambda U^T$: 
+To simulate a diffusion process on $G$ from an initial distribution of heat $v(0) \in \mathbb{R}^n$, it suffices to construct the \emph{heat kernel} $H_t \triangleq \mathrm{exp}(-t \cdot L_G)$ via the spectral decomposition $L_G = U \Lambda U^T$ of $L_G$: 
 %where $v(t) \in \mathbb{R}^n$ represents the time-varying vector whose value $v_i(t) \in \mathbb{R}$ represents the amount of heat at vertex $v_i$ at time $t \geq 0$.
 %To simulate heat diffusion, given an initial distribution of heat $v(0)$, one begins with a graph $G = (V, E, W)$ with $n = \lvert V\rvert$ vertices and edge weights $W \in \mathbb{R}^m$ representing the conductivity across the $m = \lvert E \rvert$ edges; then, the value of the diffusion process on $G$ at time $t$ is given by \emph{exponential diffusion kernel}:
 \begin{equation}\label{eq:heat_kernel}
 v(t) = H_t \, v(0), \text{ where } H_t = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T
 \end{equation}
-The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider the parameterizing $\phi$ from~\eqref{} given by setting $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$. Plugging these into~\eqref{}, we obtain: 
+The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider the parameterizing $\phi$ from~\eqref{eq:phi} by setting $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$: 
 \begin{equation}\label{eq:tikhonov_sf}
 	\phi(\lambda, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- \lambda / \tau) % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
 \end{equation}
 The parameter $\tau$ can be interpreted as the reciprocal of the diffusion time, i.e. $t = 1 / \tau$.
 As before, observe that $t \to 0$ (or $\tau \to \infty$), the expression $1 - \mathrm{exp}(-\lambda / \tau)$ approaches the $\mathrm{sgn}_+$ function on the interval $[0, \infty)$. 
-Moreover, as above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} yields a    
+As above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} again yields an equivalent trace expression:
 %$L_G$: 
 \begin{equation}\label{eq:heat_trace}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
-	\lVert \Phi_\tau(A) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-t \cdot \sigma_i) = n - \mathrm{Tr}\left[H_t\right]
+	\lVert \Phi_\tau(L_G) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-t \cdot \sigma_i) = n - \mathrm{Tr}\left[H_t\right]
 \end{equation}
-The quantity in~\eqref{eq:heat_trace} has been studied in a variety of contexts, see e.g.~\cite{}. In this sense, we interpret the quantities obtained by applying ... as \emph{geometrically sensitive rank invariant approximations}.
+The heat kernel trace $\mathrm{Tr}(H_t)$ has been shown to informative at characterizing geometric signatures ~\cite{}. 
+In this sense, we interpret the quantities obtained by applying ... as \emph{geometrically sensitive rank invariant approximations}.
 
 % Indeed, informative multiscale signatures, such as the Heat Kernel Signature (HKS), are often used in shape analysis applications due to their rich information content. 
   
@@ -1119,8 +1120,6 @@ $$\hat{\mu}_{p,}^R(\tau)= \hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\t
 \begin{proof}
 	By the additivity of the multiplicity function, we can vertically or horizontally partition any rectangular into two disjoint rectangles and add their total multiplicity to recover the multiplicity of the whole~\cite{}. Moreover, if $\mathcal{R}$ is simple and hole-free with $h$ corner points, then it is known that it can be decomposed into a minimal set of $h/2-g-1 \sim O(h)$ disjoint rectangles (of which several algorithms are known), where $g$ is the number of axis-parallel line segments connecting concave vertices of $\mathcal{R}$~\cite{}.
 \end{proof}
-Moreover, depending on the form of 
-
 
 \noindent Though the inclusion-exclusion relationship between the relaxations $\hat{\mu}_{p}^\ast(\tau)$ and $\hat{\beta}_{p}^{\ast}(\tau)$ holds for any $\tau \geq 0$, certain monotonicity properties of $\hat{\beta}_{p}^{\ast}(\tau)$ lose their exactness when $\tau > 0$.
 This is exemplified by the next proposition, which clarifies the degree to which $\hat{\beta}_p^\ast$ is ``Betti-like'' in the sense of being cumulative. 
@@ -1139,6 +1138,12 @@ When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monot
 \begin{proof}
 	Use Proposition above part (b) with a specific $\phi$, then use PBN property.
 \end{proof}
+
+%\begin{corollary}
+%	For every $\alpha \in \mathcal{A}$, there exists a value $\tau^\ast > 0$ such that $\lfloor$
+%\end{corollary}
+
+
 
 %TODO: 
 %\noindent

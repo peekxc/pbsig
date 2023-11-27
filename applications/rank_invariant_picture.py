@@ -21,7 +21,7 @@ output_notebook()
 from pbsig.simplicial import path_graph
 from pbsig.datasets import random_function
 np.random.seed(1247)
-f = random_function(n_extrema=12, n_pts=1500, walk_distance=0.005, plot=True)
+f, f_p = random_function(n_extrema=12, n_pts=1500, walk_distance=0.005, plot=True)
 S = path_graph(150)
 sublevel_filter = sx.lower_star_filter(f(np.linspace(0,1,150)))
 
@@ -31,14 +31,14 @@ dgms = ph(sx.filtration(S, sublevel_filter))
 show(figure_dgm(dgms[0]))
 
 # %% Draw the size function 
-p = figure_dgm(dgms[0])
+pp = figure_dgm(dgms[0])
 for a,b in dgms[0]:
   if b != np.inf:
-    p.patch([a,a,b], [a,b,b], color='red', fill_alpha=0.20)
-p = figure_dgm(dgms[0], figure=p)
-show(p)
+    pp.patch([a,a,b], [a,b,b], color='red', fill_alpha=0.20)
+pp = figure_dgm(dgms[0], figure=pp)
+show(pp)
 
-# %% 
+# %% Color the cells
 from shapely import Polygon, GeometryCollection, polygonize, polygonize_full, get_geometry, simplify, get_parts, unary_union, union, union_all
 from shapely import LineString, multipolygons, segmentize, boundary, make_valid, envelope
 from shapely.ops import split
@@ -65,15 +65,28 @@ np.array([leftupper_corner(envelope(pa).bounds) for pa in poly_areas])
 
 poly_colors = bin_color(np.arange(len(poly_areas)), 'Category10')
 
-p = figure_dgm(dgms[0])
+from bokeh.models import Label
+labels = { 3 : 2, 4 : 3, 2 : 3, 5 : 4 }
+pp = figure_dgm(dgms[0])
 for i, pi in enumerate(desc_inds):
   px, py = poly_areas[pi].exterior.coords.xy
-  p.patch(px, py, fill_color=rgb_to_hex(poly_colors[i]*255), fill_alpha=0.75, line_alpha=0.0)
-  # cx, cy = poly_areas[pi].centroid.coords.xy
-  # p.scatter(cx,cy)
+  pp.patch(px, py, fill_color=rgb_to_hex(poly_colors[i]*255), fill_alpha=0.75, line_alpha=0.0)
+  cx, cy = poly_areas[pi].centroid.coords.xy
+  # pp.scatter(cx,cy)
+  if poly_areas[pi].area > 1:
+    x = np.take(cx,0)-0.025
+    x = x - 0.50 if pi == 3 else x 
+    x = x - 0.25 if pi == 5 else x
+    y = np.take(cy,0) if pi != 4 else np.take(cy,0) - 0.25
+    print(f"{pi}, {poly_areas[pi].area}")
+    pp.add_layout(Label(x=x, y=y, text=str(labels[pi])))
+  # pp.text(x=cx, y=cy, text="Hello", text_color='black')
 
-p = figure_dgm(dgms[0], figure=p)
-show(p)
+pp = figure_dgm(dgms[0], figure=pp)
+pp.toolbar_location = None
+pp.title = "Size Function"
+show(pp)
+
 
 # %% Compute the spectral rank on a finite grid
 from pbsig.betti import betti_query, BettiQuery
@@ -90,10 +103,13 @@ birth_start = np.min(b)
 death_end = np.max(np.where(d != np.inf, d, 0))
 grid_pts = np.linspace(birth_start, death_end, n_grid_pts)
 grid_pts = np.unique(np.append(grid_pts, np.array(list(set(b) | set(d[d != np.inf])))))
+offset = np.max(np.diff(grid_pts))
+grid_pts = np.array([np.min(grid_pts) - offset] + list(grid_pts) + [np.max(grid_pts) + offset])
 
 # %% 
 from itertools import product
 Grid = np.array([(i,j) for (i,j) in product(grid_pts, grid_pts) if i <= j])
+
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=spectral_rank, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=np.sum, i=Grid[:,0], j=Grid[:,1], p=0, w=0.0, terms=False)
 # betti_grid = betti_query(S, f=sublevel_filter, matrix_func=lambda x: np.sum(x/(x + 1e-2)), i=Grid[:,0], j=Grid[:,1], p=0, w=10.0, terms=False)
@@ -137,6 +153,11 @@ from bokeh.models import ColumnDataSource
 from bokeh.transform import linear_cmap
 
 def figure_sf(x, y, ri, **kwargs):
+  from pbsig.color import color_mapper
+  from pbsig.vis import valid_parameters
+  cmap = kwargs.pop('cmap', color_mapper(lb=np.min(ri), ub=np.max(ri)))
+  
+  min_ri = np.min(ri)
   LR_map = {}
   rects, rect_ind = [], []
   for i,j,ij_val in zip(x, y, ri):
@@ -147,15 +168,16 @@ def figure_sf(x, y, ri, **kwargs):
       ul_x, ul_y = grid_pts[i_ind-1], grid_pts[j_ind+1] if j_ind < (len(grid_pts) - 1) else grid_pts[j_ind] + 5*min_diff
       rects.append([np.mean([ul_x, br_x]), np.mean([ul_y, br_y]), np.abs(br_x - ul_x), np.abs(br_y - ul_y), ij_val])
       rect_ind.append([i_ind-1, i_ind, j_ind, j_ind+1])
-      LR_map[br_x] = max(ij_val, LR_map.get(br_x, 0.0))
+      LR_map[br_x] = max(ij_val, LR_map.get(br_x, min_ri))
   rects = np.array(rects)
   rec_ind = np.array(rect_ind)
 
-  col_map = linear_cmap('value', palette = "Viridis256", low=np.min(ri), high=np.max(ri))
+  # col_map = linear_cmap('value', palette = "Viridis256", low=np.min(ri), high=np.max(ri))
   rect_src = ColumnDataSource(dict(
     x=rects[:,0], y=rects[:,1], 
     width=rects[:,2], height=rects[:,3], 
-    value=rects[:,4]
+    value=rects[:,4], 
+    color=cmap(rects[:,4])
   ))
   tooltips = [ ("(x, y)", "($x, $y)"), ("value", "@value") ]
   fig_kwargs = dict(width=250, height=250, tools="pan,wheel_zoom,reset,hover,save", tooltips=tooltips) 
@@ -163,15 +185,14 @@ def figure_sf(x, y, ri, **kwargs):
   p = figure(**fig_kwargs)
   p.rect(
     x='x', y='y', width='width', height='height',
-    source=rect_src,
-    color=col_map,
+    fill_color='color', line_alpha=1.0, 
+    line_color="color",
+    source=rect_src
     # line_color="white"
   )
+  p.outline_line_color = None
 
   ## Add interpolated diagonal triangles
-  from pbsig.color import color_mapper
-  cmap = color_mapper(lb=np.min(ri), ub=np.max(ri))
-
   patches_x, patches_y = [], []
   patch_colors = []
   for i, ii in pairwise(grid_pts):
@@ -186,26 +207,69 @@ def figure_sf(x, y, ri, **kwargs):
   return p 
 
 # %% 
-from pbsig.linalg import tikhonov, spectral_rank
+from pbsig.linalg import tikhonov, spectral_rank, heat
 tk = tikhonov(eps=1.0)
 sr = spectral_rank(method=0, vector_valued=True)
 spectral_ri = lambda f: T1.reduce(f) - T2.reduce(f) - T3.reduce(f) + T4.reduce(f)
  
 
 show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(sr)))
-show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(tikhonov(eps=0.1)))) ## tikhonov looks okay at w = 0.0!
+show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(tikhonov(eps=0.01)))) ## tikhonov looks okay at w = 0.0!
 
 from pbsig.vis import figure_plain
 from bokeh.layouts import row
 gx, gy = Grid[:,0], Grid[:,1]
 
-figs = [figure_sf(gx, gy, spectral_ri(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
-
+## Tikhonov row 
+figs_tik = [figure_sf(gx, gy, spectral_ri(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
 for i in range(len(figs)):
-  figs[i] = figure_dgm(figure=figs[i])
-  figs[i] = figure_plain(figs[i])
+  figs_tik[i] = figure_dgm(figure=figs_tik[i])
+  figs_tik[i] = figure_plain(figs_tik[i])
+show(row(figs_tik))
 
-show(row(figs))
+## Heat trace row
+figs_ht = [figure_sf(gx, gy, spectral_ri(heat(t=t, complement=True)), width=120, height=120) for t in np.flip(np.geomspace(5, 10000, 6))]
+for i in range(len(figs_ht)):
+  figs_ht[i] = figure_dgm(figure=figs_ht[i])
+  figs_ht[i] = figure_plain(figs_ht[i])
+show(row(figs_ht))
+
+## Smoothing the function a little
+np.random.seed(1247)
+smooth_eps = (1.0 - f.smooth)*3 # 0.00075
+f2 = random_function(n_extrema=12, n_pts=1500, walk_distance=0.005, plot=True, eps=smooth_eps)
+sublevel_filter2 = sx.lower_star_filter(f2(np.linspace(0,1,150)))
+bq2 = BettiQuery(S, f=sublevel_filter2, p=0)
+bq2.sign_width = 0.0
+T1_2, T2_2, T3_2, T4_2 = BlockReduce(), BlockReduce(), BlockReduce(), BlockReduce()
+for t1, t2, t3, t4 in bq2.generate(i=Grid[:,0], j=Grid[:,1], mf = lambda x: x):
+  T1_2 += t1 
+  T2_2 += t2 
+  T3_2 += t3
+  T4_2 += t4
+spectral_ri2 = lambda f: T1_2.reduce(f) - T2_2.reduce(f) - T3_2.reduce(f) + T4_2.reduce(f)
+
+figs_tik2 = []
+for eps in np.geomspace(1e-5, 0.025, 6):
+  ri = spectral_ri(tikhonov(eps=eps))
+  cmap = color_mapper('viridis', np.min(ri), np.max(ri))
+  figs_tik2.append(figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), cmap=cmap, width=120, height=120))
+# figs_tik2 = [figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
+for i in range(len(figs_tik2)):
+  figs_tik2[i] = figure_dgm(figure=figs_tik2[i])
+  figs_tik2[i] = figure_plain(figs_tik2[i])
+show(row(figs_tik2))
+
+## 
+# show(column(row(figs_tik2), row(figs_tik), row(figs_ht)))
+f_p.title = "Real-valued function"
+f_p.yaxis.axis_label = "f(x)"
+f_p.xaxis.axis_label = "Domain"
+f_p.toolbar_location = None 
+f_p.width = pp.width
+f_p.height = pp.height
+interp_figs = column(row(figs_tik), row(figs_ht))
+show(row(column(f_p), column(pp), column(row(figs_tik), row(figs_ht))))
 
 # %% Exploring what makes the vertical lines constant 
 # ii = np.argmin(np.abs(grid_pts - 6))
