@@ -79,7 +79,7 @@ for i, pi in enumerate(desc_inds):
     x = x - 0.25 if pi == 5 else x
     y = np.take(cy,0) if pi != 4 else np.take(cy,0) - 0.25
     print(f"{pi}, {poly_areas[pi].area}")
-    pp.add_layout(Label(x=x, y=y, text=str(labels[pi])))
+    pp.add_layout(Label(x=x, y=y, text=str(labels[pi]), text_font_size='20px', text_font_style='bold'))
   # pp.text(x=cx, y=cy, text="Hello", text_color='black')
 
 pp = figure_dgm(dgms[0], figure=pp)
@@ -218,58 +218,78 @@ show(figure_sf(Grid[:,0], Grid[:,1], spectral_ri(tikhonov(eps=0.01)))) ## tikhon
 
 from pbsig.vis import figure_plain
 from bokeh.layouts import row
+from bokeh.models import Div
 gx, gy = Grid[:,0], Grid[:,1]
 
 ## Tikhonov row 
-figs_tik = [figure_sf(gx, gy, spectral_ri(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
-for i in range(len(figs)):
+figs_tik = [figure_sf(gx, gy, spectral_ri(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 5)]
+for i in range(len(figs_tik)):
   figs_tik[i] = figure_dgm(figure=figs_tik[i])
   figs_tik[i] = figure_plain(figs_tik[i])
 show(row(figs_tik))
 
 ## Heat trace row
-figs_ht = [figure_sf(gx, gy, spectral_ri(heat(t=t, complement=True)), width=120, height=120) for t in np.flip(np.geomspace(5, 10000, 6))]
+figs_ht = [figure_sf(gx, gy, spectral_ri(heat(t=t, complement=True)), width=120, height=120) for t in np.flip(np.geomspace(5, 10000, 5))]
 for i in range(len(figs_ht)):
   figs_ht[i] = figure_dgm(figure=figs_ht[i])
   figs_ht[i] = figure_plain(figs_ht[i])
 show(row(figs_ht))
 
 ## Smoothing the function a little
-np.random.seed(1247)
-smooth_eps = (1.0 - f.smooth)*3 # 0.00075
-f2 = random_function(n_extrema=12, n_pts=1500, walk_distance=0.005, plot=True, eps=smooth_eps)
-sublevel_filter2 = sx.lower_star_filter(f2(np.linspace(0,1,150)))
-bq2 = BettiQuery(S, f=sublevel_filter2, p=0)
-bq2.sign_width = 0.0
-T1_2, T2_2, T3_2, T4_2 = BlockReduce(), BlockReduce(), BlockReduce(), BlockReduce()
-for t1, t2, t3, t4 in bq2.generate(i=Grid[:,0], j=Grid[:,1], mf = lambda x: x):
-  T1_2 += t1 
-  T2_2 += t2 
-  T3_2 += t3
-  T4_2 += t4
-spectral_ri2 = lambda f: T1_2.reduce(f) - T2_2.reduce(f) - T3_2.reduce(f) + T4_2.reduce(f)
+# np.random.seed(1247)
+# smooth_eps = (1.0 - f.smooth)*3 # 0.00075
+# f2 = random_function(n_extrema=12, n_pts=1500, walk_distance=0.005, plot=True, eps=smooth_eps)
+# sublevel_filter2 = sx.lower_star_filter(f2(np.linspace(0,1,150)))
+# bq2 = BettiQuery(S, f=sublevel_filter2, p=0)
+# bq2.sign_width = 0.0
+# T1_2, T2_2, T3_2, T4_2 = BlockReduce(), BlockReduce(), BlockReduce(), BlockReduce()
+# for t1, t2, t3, t4 in bq2.generate(i=Grid[:,0], j=Grid[:,1], mf = lambda x: x):
+#   T1_2 += t1 
+#   T2_2 += t2 
+#   T3_2 += t3
+#   T4_2 += t4
+# spectral_ri2 = lambda f: T1_2.reduce(f) - T2_2.reduce(f) - T3_2.reduce(f) + T4_2.reduce(f)
 
-figs_tik2 = []
-for eps in np.geomspace(1e-5, 0.025, 6):
-  ri = spectral_ri(tikhonov(eps=eps))
-  cmap = color_mapper('viridis', np.min(ri), np.max(ri))
-  figs_tik2.append(figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), cmap=cmap, width=120, height=120))
-# figs_tik2 = [figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
-for i in range(len(figs_tik2)):
-  figs_tik2[i] = figure_dgm(figure=figs_tik2[i])
-  figs_tik2[i] = figure_plain(figs_tik2[i])
-show(row(figs_tik2))
+# figs_tik2 = []
+# for eps in np.geomspace(1e-5, 0.025, 5):
+#   ri = spectral_ri(tikhonov(eps=eps))
+#   cmap = color_mapper('viridis', np.min(ri), np.max(ri))
+#   figs_tik2.append(figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), cmap=cmap, width=120, height=120))
+# # figs_tik2 = [figure_sf(gx, gy, spectral_ri2(tikhonov(eps=eps)), width=120, height=120) for eps in np.geomspace(1e-5, 0.025, 6)]
+# for i in range(len(figs_tik2)):
+#   figs_tik2[i] = figure_dgm(figure=figs_tik2[i])
+#   figs_tik2[i] = figure_plain(figs_tik2[i])
+# show(row(figs_tik2))
 
-## 
+## Assemble the figures 
+
 # show(column(row(figs_tik2), row(figs_tik), row(figs_ht)))
 f_p.title = "Real-valued function"
-f_p.yaxis.axis_label = "f(x)"
-f_p.xaxis.axis_label = "Domain"
+pp.title = "Rank function"
+f_p.yaxis.axis_label = None # "f(x)"
+# f_p.xaxis.axis_label = "Domain"
+f_p.y_range = pp.y_range
+f_p.xaxis.axis_label. visible = False
 f_p.toolbar_location = None 
-f_p.width = pp.width
+f_p.width = int(pp.width * 0.85)
 f_p.height = pp.height
 interp_figs = column(row(figs_tik), row(figs_ht))
-show(row(column(f_p), column(pp), column(row(figs_tik), row(figs_ht))))
+for f in figs_tik: f.width = f.height = 135
+for f in figs_ht: f.width = f.height = 135
+div_title = Div(text="Spectral rank relaxations", styles={'font-weight':'bold'})
+final_fig = row(column(f_p), column(pp), column(div_title, row(figs_tik), row(figs_ht)))
+pp.xaxis.visible = False
+pp.yaxis.visible = False
+
+show(final_fig)
+
+
+from bokeh.plotting import gridplot
+from bokeh.io import export_svg, export_png
+for f in [f_p, pp, *figs_tik, *figs_ht]:
+  f.output_backend = 'svg'
+export_svg(final_fig, filename="spectral_relax.svg")
+# export_png(final_fig, filename="spectral_relax.png", width=1200*15, height=300*15)
 
 # %% Exploring what makes the vertical lines constant 
 # ii = np.argmin(np.abs(grid_pts - 6))

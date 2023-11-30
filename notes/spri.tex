@@ -368,7 +368,7 @@ The steps to produce this mapping are as follows:
 	\item Select a \emph{sieve} $\mathcal{R} = \, R_1 \, \cup \, \dots \, \cup \, R_h \subset \Delta_+$. %	\begin{equation}\label{eq:rect_sieve}
 %		\mathcal{R} = R_1 \cup R_2 \cup \dots \cup R_h,  \quad \quad \Delta_+ \triangleq \{ \, (i,j) \in \bar{\mathbb{R}}^2  \mid i < j \, \}
 %	\end{equation} 
-	This choice is application-dependent and typically requires a priori knowledge, though in section~\ref{sec:applications} we give evidence that random sampling may be sufficient for vectorization or data exploration purposes when $\mathcal{R}$ is unknown.
+	This choice is application-dependent and typically requires a priori knowledge, though in section~\ref{sec:applications} we give evidence that, when $\mathcal{R}$ is unknown, random sampling may be sufficient for vectorization or data exploration purposes.
 %determines the dimension of the map~\eqref{eq:relaxation_mapping},
 	
 %	\item Choose rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ in the upper-half plane $\Delta_+ = \{\}$
@@ -378,7 +378,7 @@ The steps to produce this mapping are as follows:
 	\mu_p^{\mathcal{R}}(K, f_\alpha) \triangleq 
 	\mathrm{card}\left(\restr{\mathrm{dgm}_p(f_\alpha)}{\mathcal{R}} \right) 
 	\end{equation}
-	\item Choose an $\mathcal{A}$-parameterized Laplacian operator $\mathcal{L}_{a,b} : \mathcal{A} \times C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})$ on the relative $p$-cochains of $(K_b, K_b)$ and a 
+	\item Choose an $\mathcal{A}$-parameterized Laplacian operator $\mathcal{L}_p^{a,b} : \mathcal{A} \times C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})$ on the relative $p$-cochains of $(K_b, K_b)$ and a 
 %	$\tau$-parameterized function $\phi: \mathbb{R} \to \mathbb{R}$ 
 	$\tau$-parameterized continuous function $\phi(\cdot , \tau ) : \mathbb{R} \to \mathbb{R}_+$ which converges to $\mathrm{sgn}_+$ as $\tau \to 0$.
 %	$\mathcal{R}$.
@@ -391,14 +391,17 @@ The steps to produce this mapping are as follows:
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
 The choice of $\mathcal{L}$ (e.g. Kirchoff, random walk) determines the kind of geometric/topological information to extract from $(K, f_\alpha)$, while $\phi$ determines how that information is encoded.
 %and $\Phi$ determines how this information is incorporated into the mapping. 
-	\item Denote by $\Lambda(\mathcal{L}_{a,b}(\alpha))$ the spectrum of $\mathcal{L}_{a,b}$ at any $\alpha \in \mathcal{A}$ ordered in non-increasing order. Our relaxation approximates~\eqref{eq:mu_alpha} by summing the first $n_\epsilon$ eigenvalues at each corner point $(a,b)$ in the boundary of $\mathcal{R}$: 
+	\item Denote by $\Lambda(\mathcal{L}_{a,b}(\alpha))$ the spectrum of $\mathcal{L}_{a,b}$ at any $\alpha \in \mathcal{A}$ ordered in non-increasing order. Our relaxation approximates~\eqref{eq:mu_alpha} by $(1 \pm \epsilon)$-approximating $\mu_p$ at each corner point $(a,b)$ in the boundary of $\mathcal{R}$: 
 %	\item \in \Lambda(\mathcal{L}_p^{a,b})$
 	$$
-	\hat{\mu}^\mathcal{R}_p(\alpha) = \sum\limits_{(a,b)} s_{a,b} \cdot \mathrm{tr}_{\epsilon, \phi}(\mathcal{L}_{a,b}(\alpha)) = \sum\limits_{(a,b)}\sum\limits_{i=1}^{n_\epsilon(\alpha)} s_{a,b} \cdot \phi(\lambda_{a,b}^{i}(\alpha), \tau), \quad \lambda_{a,b}^{i} = \Lambda(\mathcal{L}_{a,b})_i
+	\mu^\mathcal{R}_p(\alpha) \overset{\epsilon}{\approx} \hat{\mu}^\mathcal{R}_p(\alpha) \triangleq 
+	\sum\limits_{(a,b)} s_{a,b} \cdot \lVert \Phi_{\tau}\big(\mathcal{L}_p^{a,b}(\alpha) \big) \rVert_\ast
+%	\sum\limits_{(a,b)} s_{a,b} \cdot \mathrm{tr}_{\epsilon, \phi}(\mathcal{L}_{a,b}(\alpha)) = 
+%	\sum\limits_{(a,b)}\sum\limits_{i=1}^{n_\epsilon(\alpha)} s_{a,b} \cdot \phi(\lambda_{a,b}^{i}(\alpha), \tau), \quad \lambda_{a,b}^{i} = \Lambda(\mathcal{L}_{a,b})_i
 %	\hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\tau) - \hat{\beta}_{p}^{j,l}(\tau) + \hat{\beta}_{p}^{i,l}(\tau)
 	$$
-	where $1 \leq n_\epsilon(\alpha) \leq \mathrm{rank}(\mathcal{L}_{a,b}(\alpha))$ bounds how many values are needed to $(1-\epsilon)$-approximate $\mu_p^\mathcal{R}$. 
-	We will show in section~\ref{sec:spri_properties} that letting both $\tau \to 0$ and $\epsilon \to 0$ yields the multiplicity function $\mu_p^\mathcal{R}$ exactly.
+%	where $1 \leq n_\epsilon(\alpha) \leq \mathrm{rank}(\mathcal{L}_{a,b}(\alpha))$ bounds how many values are needed to $(1-\epsilon)$-approximate $\mu_p^\mathcal{R}$.
+where $\Phi_\tau(\cdot)$ is a $\tau$-parameterized matrix function induced by $\phi$ (see section~\ref{sec:spectral_sec}). In section~\ref{sec:spri_properties}, we show that letting both $\tau \to 0$ and $\epsilon \to 0$ yields the multiplicity function $\mu_p^\mathcal{R}$ exactly.
 %	\item Ideas: choose a type of Laplacian (sym, rw...) $$. Denote by $\Lambda(\mathcal{L}_{a,b}^\alpha)$ denote spectrum of $\mathcal{L}_{a,b}^\alpha$ ordered non-decreasingly. For each corner point $(a,b)$ of a rectangle $R_i$, $i = 1, \dots, h$, compute: 
 %		$$
 %	\sum\limits_{i=1}^n \phi(\lambda_i, \tau)
@@ -445,7 +448,8 @@ The differentiability of our relaxation also suggests it may be used in topologi
 
 \begin{figure}\label{fig:overview}
 \centering
-\includegraphics[width=0.95\textwidth]{spectral_spri_overview}	
+%\includegraphics[width=0.95\textwidth]{spectral_spri_overview}	
+\includegraphics[width=0.95\textwidth]{spectral_rank_relax}	
 \caption{ (left) Vineyards analogy depicting diagrams as `snapshots' over time; (middle) visualization of a rectangular sieve $\mathcal{R} \subset \Delta_+$ (orange) intersecting vines collapsed onto $\Delta_+$; 
 (right) the integer-valued multiplicity function $\mu_p^{\mathcal{R}}(\alpha)$ 
 as a function of time $\alpha \in \mathbb{R}$ (top) and a real-valued spectral relaxation (bottom)
@@ -1040,12 +1044,11 @@ To simulate a diffusion process on $G$ from an initial distribution of heat $v(0
 \begin{equation}\label{eq:heat_kernel}
 v(t) = H_t \, v(0), \text{ where } H_t = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T
 \end{equation}
-The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider the parameterizing $\phi$ from~\eqref{eq:phi} by setting $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$: 
+The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider~\eqref{eq:phi} with $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$ where $x_+ = \max(x, 0)$: 
 \begin{equation}\label{eq:tikhonov_sf}
-	\phi(\lambda, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- \lambda / \tau) % \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
+	\phi(\lambda, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- \lambda / \tau), \quad \text{ for all } \lambda \geq 0% \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
 \end{equation}
-The parameter $\tau$ can be interpreted as the reciprocal of the diffusion time, i.e. $t = 1 / \tau$.
-As before, observe that $t \to 0$ (or $\tau \to \infty$), the expression $1 - \mathrm{exp}(-\lambda / \tau)$ approaches the $\mathrm{sgn}_+$ function on the interval $[0, \infty)$. 
+In the context of diffusion, observe the parameter $\tau$ is inversely related diffusion time (i.e. $t = 1 / \tau$) and that as $t \to 0$ (or $\tau \to \infty$) the expression $1 - \mathrm{exp}(-\lambda / \tau)$ approaches the $\mathrm{sgn}_+$ function on the interval $[0, \infty)$. 
 As above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} again yields an equivalent trace expression:
 %$L_G$: 
 \begin{equation}\label{eq:heat_trace}
@@ -1102,10 +1105,10 @@ In what follows, let $\mathcal{L}_p : C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})$
 %where the sign $s_{ij} \in \{-1, 1\}$ is determined by the inclusion-exclusion relationship given below.
 %Proposition~\ref{prop:include_exclude}
 \begin{proposition}\label{prop:include_exclude}
-Given any pair $(K, f)$, a rectangle $R = [i,j] \times [k,l] \subset \Delta_+$, and any $\tau$-parameterized spectral function $\phi: \mathbb{R} \to \mathbb{R}$ from definition~\ref{def:lowner}, the spectral rank invariants $\hat{\mu}_{p,\tau}^R$ and $\hat{\beta}_{p,\tau}^{i,j}$ satisfy: 
-$$ \lim_{\tau \to 0^+ }\hat{\mu}_{p}^R(\tau) = \mu_p^R(K,f), \quad \quad \lim_{\tau \to 0^+ } \hat{\beta}_{p}^{i,j}(\tau) = \beta_{p}^{i,j}(K,f)$$
-Moreover, for any fixed $\tau \geq 0$, the following inclusion-exclusion relationship always holds:
-$$\hat{\mu}_{p,}^R(\tau)= \hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\tau) - \hat{\beta}_{p}^{j,l}(\tau) + \hat{\beta}_{p}^{i,l}(\tau)$$
+Given any pair $(K, f)$, a rectangle $R = [a,b] \times [c,d] \subset \Delta_+$, and any $\tau$-parameterized spectral function $\phi: \mathbb{R} \to \mathbb{R}$ from definition~\ref{def:lowner}, the spectral rank invariants $\hat{\mu}_{p}^R(\tau)$ and $\hat{\beta}_{p}^{a,b}(\tau)$ satisfy: 
+$$ \lim_{\tau \to 0^+ }\hat{\mu}_{p}^R(\tau) = \mu_p^R(K,f), \quad \quad \lim_{\tau \to 0^+ } \hat{\beta}_{p}^{a,b}(\tau) = \beta_{p}^{a,b}(K,f)$$
+Moreover, for any $\tau \geq 0$, the following inclusion-exclusion relationship always holds:
+$$\hat{\mu}_{p}^R(\tau)= \hat{\beta}_{p}^{b,c}(\tau) - \hat{\beta}_{p}^{a,c}(\tau) - \hat{\beta}_{p}^{b,d}(\tau) + \hat{\beta}_{p}^{a,d}(\tau)$$
 \end{proposition}
 \begin{proof}
 	For limit, use monotonicity + corollary that shows $\phi \to \mathrm{sgn}_+$ in the limit. 
@@ -1113,8 +1116,8 @@ $$\hat{\mu}_{p,}^R(\tau)= \hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\t
 \end{proof}
 \noindent As an immediate corollary of this, we may generalize the multiplicity function $\hat{\mu}_p^\ast$ to any arbitrary rectilinear $\mathcal{R} \subset \Delta_+$. This follows from the general theory developed by Chazal et al.~\cite{chazal2016structure} on \emph{persistence measures}.
 \begin{corollary}
-	The spectral-relaxed \emph{persistence measure} of any simple and connected rectilinear sieve $\mathcal{R} \subset \Delta_+$ with $h$ corner points $\partial \mathcal{R} = \{ \, (i_1, j_1), (i_2, j_2), \dots,  (i_h, j_h) \, \}$ given by: 
-	$$ \hat{\mu}^\mathcal{R}_p = \sum\limits_{(i,j) \in \partial \mathcal{R}} s_{ij} \cdot \lVert \Phi(\hat{\mathcal{L}}^{i,j}_p) \rVert_\ast$$
+	The spectral-relaxed \emph{persistence measure} of any simple and connected rectilinear sieve $\mathcal{R} \subset \Delta_+$ with $h$ corner points $\partial \mathcal{R} = \{ \, (a_1, b_1), (a_2, b_2), \dots,  (a_h, b_h) \, \}$ given by: 
+	$$ \hat{\mu}^\mathcal{R}_p = \sum\limits_{(a,b) \in \partial \mathcal{R}} s_{ab} \cdot \lVert \Phi(\hat{\mathcal{L}}^{a,b}_p) \rVert_\ast$$
 	can be computed using at most $O(h)$ spectral rank computations, where the sign $s_{ij} \in \{-1, 1\}$ is determined by the inclusion-exclusion relationship given by Proposition~\ref{prop:include_exclude}. 
 \end{corollary}
 \begin{proof}
@@ -1122,14 +1125,16 @@ $$\hat{\mu}_{p,}^R(\tau)= \hat{\beta}_{p}^{j,k}(\tau) - \hat{\beta}_{p}^{i,k}(\t
 \end{proof}
 
 \noindent Though the inclusion-exclusion relationship between the relaxations $\hat{\mu}_{p}^\ast(\tau)$ and $\hat{\beta}_{p}^{\ast}(\tau)$ holds for any $\tau \geq 0$, certain monotonicity properties of $\hat{\beta}_{p}^{\ast}(\tau)$ lose their exactness when $\tau > 0$.
-This is exemplified by the next proposition, which clarifies the degree to which $\hat{\beta}_p^\ast$ is ``Betti-like'' in the sense of being cumulative. 
+As the rank invariant is fundamentally a combinatorial invariant, this is in some sense necessary.
+  
+Fortunately, we may bound the degree to $\hat{\beta}_p^\ast$ remains ``Betti-like'' in the sense of being cumulative. 
 \begin{proposition}[$\phi$-monotone]
-For all $i < j$ and all $k < l$, there exists a non-decreasing function $c_\phi : \mathbb{R} \to \mathbb{R}_+$ whose form depends only on $\phi$ such that $\hat{\beta}_p^\ast$ satisfies the following monotonicity properties:
+For all $a < b$ and all $c < d$, there exists a positive constant $c_\phi(\tau) \in \mathbb{R}_+$ such that $\hat{\beta}_p^\ast$ satisfies the following monotonicity properties:
 %\begin{align*}
 %(\tau = 0) & \quad \hat{\beta}_p^{i,k} \leq \hat{\beta}_p^{j,k}, \quad \quad \hat{\beta}_p^{i,k} \geq \hat{\beta}_p^{i,l} \\
 %(\tau > 0) & \quad 
 \begin{equation}
-	\hat{\beta}_p^{i,k} \leq \hat{\beta}_p^{j,k} + c_\phi(\lvert i - j \rvert), \quad \quad \hat{\beta}_p^{i,k} \geq \hat{\beta}_p^{i,l} - c_\phi(\lvert k - l \rvert)
+	\hat{\beta}_p^{a,c} \leq \hat{\beta}_p^{b,c} + c_\phi(\lvert a - b \rvert), \quad \quad \hat{\beta}_p^{a,c} \geq \hat{\beta}_p^{a,d} - c_\phi(\lvert c - d \rvert)
 \end{equation}
 When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monotonicity of the PBN (see section 2.1 of~\cite{cerri2013betti}). 
 %the constant map $c_\phi(x) = 0$
@@ -1138,6 +1143,8 @@ When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monot
 \begin{proof}
 	Use Proposition above part (b) with a specific $\phi$, then use PBN property.
 \end{proof}
+In fact, under mild conditions, its been shown that the Tikhonov relaxation $\phi_\tau$ is actually a \emph{uniform} approximation of the rank function~\cite{}. This is important in rank minimization contexts, wherein it is 
+
 
 %\begin{corollary}
 %	For every $\alpha \in \mathcal{A}$, there exists a value $\tau^\ast > 0$ such that $\lfloor$
@@ -1210,9 +1217,9 @@ When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monot
 %In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
 
 % Benefits of rank(A) = < non-zero eigenvalues >
-%\subsection{Matrix-free eigenvalue computations}\label{sec:lanczos_it}
-Our approach to computing the quantities mentioned so far is inspired from a variation of the Lanczos method~\cite{lanczos1950iteration}. The Lanczos method estimates eigenvalues by projecting a given linear operator $A$ onto successive Krylov subspaces. 
-Given a symmetric $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces (matrices, respectively) spanned by: 
+\subsection*{Matrix-free computation}\label{sec:lanczos_it}
+Our approach to computing the spectral quantities $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ is to employ the \emph{Lanczos method}~\cite{lanczos1950iteration}, which estimates the eigenvalues of any symmetric linear operator $A$ via projection onto successive Krylov subspaces. 
+Given a symmetric $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces (matrices, resp.) spanned by: 
 \begin{equation}
 	\mathcal{K}_j(A, v) \triangleq \mathrm{span}\{ v, Av, A^2 v, \dots, A^{j-1}v \}, \quad K_j(A, v) \triangleq [ v \mid Av \mid A^2 v \mid \dots \mid A^{j-1}v]
 	%= \mathrm{range}(K_j(A, v))
@@ -1251,10 +1258,12 @@ Given a symmetric $A$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \l
 %If $A$ is singular and one encounters $\beta_j = 0$ for some $j < n$, then $\mathrm{range}(Q_j) = \mathcal{K}_j(A, q_1)$ is an $A$-invariant subspace, the iteration stops, and the symmetric eigenvalue problem is solved as $\Lambda(T_j) = \Lambda(A)$ and $j = \mathrm{rank}(A)$. 
 % The spectrum is indeed identical when j = rank(A), see e.g. An Explicit Formula for Lanczos Polynomials
 %This is called a projection because each $q_{j+1} \perp \{q_1, q_2, \dots, q_j \}$, and~\eqref{eq:krylov_proj} can be thought of as successive orthogonalization, 
- The Lanczos iteration and related subspace methods~\cite{} are often called ``matrix free'' spectral methods due to their singular dependence on a matrix-vector product operator $v \mapsto Av$---given such an operator, one need not explicitly represent $A$ in memory. 
+TODO: 
+
+ The Lanczos iteration and related subspace methods~\cite{} are often called ``matrix free'' spectral methods due to their singular dependence on a matrix-vector product operator $v \mapsto Av$---this implies $A$ need not necessarily be explicitly represented in memory. 
 %since $A$ is not modified during the computation,
 %the iteration may be executed without explicitly storing $A$ in memory. 
-Indeed, due to the \emph{three-term recurrence}~\eqref{eq:krylov_proj}, each iteration requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, motivating the following result:
+Indeed, due to the \emph{three-term recurrence}~\eqref{eq:krylov_proj}, the Lanczos method requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations, motivating the following result:
 \begin{lemma}[\cite{parlett1994we, simon1984analysis}]\label{lemma:exact_arith_lanczos}
 	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
 \end{lemma}
@@ -1262,17 +1271,17 @@ Indeed, due to the \emph{three-term recurrence}~\eqref{eq:krylov_proj}, each ite
 %	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
 %\end{corollary}
 %\subsection{The combinatorial Laplacian \texttt{matvec}}\label{sec:comb_lap}
-\noindent For sparse symmetric matrices $A \in \mathbb{R}^{n \times n}$, Lanczos requires $O(n\nu r)$ operations per iteration when $A$ has an average of $\nu$ nonzeros per row~\cite{golub2013matrix}. 
+\noindent For sparse symmetric matrices $A \in \mathbb{R}^{n \times n}$ with an average of $\nu$ nonzeros per row, Lanczos requires $O(n\nu r)$ operations per iteration~\cite{golub2013matrix}. 
 Thus, the efficiency of the Lanczos method depends on the availability of a fast \texttt{matvec} operator, which arises typically in either very sparse or very structured operators.
 %the former of which arises in the decomposition of symmetric matrices while the latter depends on the structure of $A$. 
-For example, when $A$ is a graph Laplacian $L = \partial_1 \partial_1^T$, the complexity of the $x \mapsto L x$ operation is linear in $\lvert E \rvert$ due to the graph structure.
+For example, when $A$ is a graph Laplacian $L = \partial_1 \partial_1^T$, the complexity of the $x \mapsto L x$ operation is linear in $\lvert E \rvert$ due to its graph structure.
 It is not immediately clear whether a similar result generalizes to combinatorial Laplacian operators derived from simplicial complexes---our next result affirms this.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 %Since a $p+1$-simplex has $p$ proper faces in its boundary, and we need to iterate through the $p+1$ simplices $\sigma \in K^{p+1}$ just once in the case of the $\mathrm{up}$-Laplacian,
 %We combine the above observations into a proposition. 
 \begin{lemma}\label{lemma:matvec_lap}
-	For any $p \geq 0$ and simplicial pair $(K, f)$, if there exists a hash function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage, where $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$. 
+	For any $p \geq 0$ and simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$, if there exists a hash function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage. 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{lemma}
@@ -1282,11 +1291,9 @@ It is not immediately clear whether a similar result generalizes to combinatoria
 \noindent The algorithm and proof are given in appendix section~\ref{app:lap_matvec}. From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
 We delegate more practical issues regarding the computation to appendix~\ref{sec:up_laplace_matvec}.
 Combining Lemmas~\ref{lemma:exact_arith_lanczos} and~\ref{lemma:matvec_lap} yields the following result. 
-\begin{theorem}\label{prop:spectral_rank_complexity}
-	For any constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
-	
-	Because the multiplicity function requires 4 terms.... 
-\end{theorem}
+\begin{proposition}\label{prop:spectral_rank_complexity}
+For any constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
+\end{proposition}	
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
 
 %\subsection{Computing diagrams}\label{sec:pers_alg}
@@ -1295,8 +1302,13 @@ Combining Lemmas~\ref{lemma:exact_arith_lanczos} and~\ref{lemma:matvec_lap} yiel
 	Interestingly, Chen and Kerber~\cite{chen2011output} have shown that since the persistence diagram contains at most $N/2 = O(N)$ points, it may be constructed using at most $2N - 1$ ``$\mu$-queries'' (evaluations of $\mu_p^R$) via a divide-and-conquer scheme on the index-persistence plane---thus, by Theorem~\ref{prop:spectral_rank_complexity}, we can match the same $O(N^3)$ complexity in constructing the full diagram using only rank computations.  
 	%In practice, the matrices involved in the computation are much 
 \end{remark}
+\noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which primarily manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the methods convergence rate towards an invariant subspace, but in fact they muddle the termination condition entirely. 
+%For this reason, practitioners have tended to avoid 
 
----- STOP HERE ----- 
+\subsection*{Randomized approximation}
+Recently, it's been discovered that 
+
+
 
 \subsection*{Subspace acceleration}
 \noindent As in~\cite{parlett1994we}, the assumption of exact arithmetic simplifies both the presentation of the theory and the corresponding complexity statements. 
@@ -1463,6 +1475,12 @@ It is common in TDA for the filter function $f : K \to \mathbb{R}$ to itself be 
 For example, consider the removal of noisy outliers from a point set $X \subset \mathbb{R}^d$ prior to studying $X$ through the lens of persistence. 
 Though persistence is stable under the Hausdorff noise model~\cite{}, diagrams are notably unstable with respect to \emph{strong outliers}---these outliers can obscure the detection of non-trivial topological space. 
 Even a single point can suppress presence of an otherwise strongly persistent pair. 
+
+\begin{figure}
+	\centering
+	\includegraphics[width=\textwidth]{codensity_ex}
+\end{figure}
+
 
 To illustrate an exemplary use-case of our spectral relaxation, we re-cast the problem of identifying strong outliers as a \emph{filtration optimization} problem. Consider a fixed Delaunay complex $K$ realized from a set of points $X \subset \mathbb{R}^2$ sampled around $S^1$, shown in figure~\ref{fig:codensity}. 
 Observe the point set contains both points affected by Hausdorff noise and strong outliers. 

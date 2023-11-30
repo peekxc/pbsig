@@ -9,6 +9,7 @@ from .apparent_pairs import *
 from .linalg import *
 from .utility import progressbar, smooth_upstep, smooth_dnstep
 from splex.geometry import flag_filter
+import splex as sx
 from itertools import *
 from more_itertools import spy 
 import copy
@@ -1032,21 +1033,22 @@ class SpectralRankInvariant:
     np.add.at(summary, self._sieve['index'], np.c_[self._sieve['sign']]*values) # should be fixed based on inclusion/exclusion
     return summary
   
-  def figure_summary(self, func: Union[np.ndarray, Callable] = None, post: Callable = None, **kwargs):
+  def figure_summary(self, func: Union[np.ndarray, Callable] = None, post: Callable = None, show_points: bool = True, **kwargs):
     from pbsig.vis import valid_parameters, bin_color
-    from bokeh.models import Line
+    from bokeh.models import Line, Scatter
     from bokeh.plotting import figure
     nt, ns = len(self.family), len(np.unique(self._sieve['index']))
-    fig_kwargs = valid_parameters(figure, **kwargs)
-    p = kwargs.get('figure', figure(width=300, height=300, **fig_kwargs))
+    fig_kwargs = dict(width=300, height=300) | valid_parameters(figure, **kwargs)
+    p = kwargs.pop('figure', figure(**fig_kwargs))
     summary = self.summarize(func) if (isinstance(func, Callable) or func is None) else func
     post = (lambda x: x) if post is None else post
     assert isinstance(summary, np.ndarray) and summary.shape == (ns, nt)
     sample_index = np.arange(0, nt)
     pt_color = (bin_color(sample_index, 'viridis')*255).astype(np.uint8)
     for f_summary in summary:
-      p.line(sample_index, post(f_summary), color='red')
-      p.scatter(sample_index, post(f_summary), color=pt_color)
+      p.line(sample_index, post(f_summary), **valid_parameters(Line, **kwargs))
+      if show_points: 
+        p.scatter(sample_index, post(f_summary), color=pt_color, **valid_parameters(Scatter, **kwargs))
     return p
 
   # def restrict(self, i: float, j: float, w: float, fp: ArrayLike, fq: ArrayLike,  **kwargs):

@@ -179,10 +179,17 @@ def huber(x: ArrayLike = None, delta: float = 1.0, nonnegative: bool = True) -> 
     return np.where(x <= delta, 0.5 * (x ** 2), delta * (x - 0.5*delta))
   return _huber if x is None else _huber(x)
 
-def tikhonov(x: ArrayLike = None, eps: float = 1.0, nonnegative: bool = True) -> ArrayLike:
+def tikhonov(x: ArrayLike = None, eps: float = 1.0, truncate: Union[str, float] = 0.0, nonnegative: bool = True) -> ArrayLike:
   """Tikhonov regularization function."""
+  if isinstance(truncate, str) and truncate == "numrank":
+    prec = np.finfo(np.float64).eps
+    trunc = lambda x: np.where(x < x.max() * len(x) * prec, 0.0, x)
+  elif isinstance(truncate, Number): 
+    trunc = lambda x: np.where(x < truncate, 0.0, x)
+  else: 
+    raise ValueError("Invalid")
   def _tikhonov(x: ArrayLike):
-    num = np.maximum(x, 0.0) if nonnegative else np.abs(x)
+    num = trunc(np.maximum(x, 0.0) if nonnegative else np.abs(x))
     den = num + eps 
     return num / den
   return _tikhonov if x is None else _tikhonov(x)

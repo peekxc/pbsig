@@ -13,6 +13,7 @@ from pbsig.betti import *
 from pbsig.persistence import *
 from pbsig.simplicial import cycle_graph
 from splex import *
+import splex as sx
 from scipy.spatial.distance import pdist, squareform
 from splex.filters import generic_filter
 import bokeh
@@ -24,6 +25,7 @@ output_notebook()
 
 # %% Load dataset
 # NOTE: PHT preprocessing centers and scales each S to *approximately* the box [-1,1] x [-1,1]
+from pbsig.shape import stratify_sphere, normalize_shape
 dataset = mpeg7(simplify=200)
 X_, y_ = mpeg7(simplify=200, return_X_y=True)
 print(dataset.keys())
@@ -32,44 +34,74 @@ as_2d = lambda x: x.reshape(len(x) // 2, 2)
 X_ = np.array([np.ravel(normalize_shape(as_2d(x), dir_vect)) for x in X_])
 shape_keys = list(dataset.keys())
 
+def get_shape(shape_class: str, shape_id: int):
+  return as_2d(X_[shape_keys.index((shape_class, shape_id)),:])
+
 # %% Construct an interpolated operator 
-from pbsig.linalg import ParameterizedLaplacian
 from pbsig.pht import directional_transform
 from pbsig.shape import normalize_shape, stratify_sphere
+from pbsig.interpolate import ParameterizedFilter
+from pbsig.betti import SpectralRankInvariant
 
-## Make a parameterized laplacian over a *fixed* complex
 S = cycle_graph(200-1)
-LP = ParameterizedLaplacian(S, p=0, form="lo", normed=True)
+ri = SpectralRankInvariant(S, p = 0)
+ri.family = directional_transform(get_shape('turtle', 2), dv=32, normalize=False, nonnegative=1.0)
+f_rng = np.array([(np.min(f(S)), np.max(f(S))) for f in ri.family])
 
-## Choose a data set to parameterize a directional transform over
-LP.family = directional_transform(as_2d(X_[shape_keys.index(('bird', 1)),:]), dv=32, normalize=False, nonnegative=1.0)
-LP.interpolate_family(interval=[0, 1])
+
+from pbsig.apparent_pairs import apparent_pairs
+f = next(iter(ri.family))
+# apparent_pairs(S, f, p=0)
+
+
+from pbsig.vis import figure_vineyard
+dgms = ri.compute_dgms(S)
+show(figure_vineyard(dgms, p = 0))
+
+f_rng.min(), f_rng.max()
 
 # %% Show various norms
-solver = PsdSolver()
-# nnorm = np.array([np.sum(np.sqrt(solver(L))[:5]) for L in LP])
-
 from itertools import product 
 
 shape_classes = ['turtle', 'bird', 'bone']
-shape_eigen = {}
-for shape_class, j in product(shape_classes, range(1, 8)):
-  ind = shape_keys.index((shape_class, j))
-  LP.family = directional_transform(as_2d(X_[ind]), dv=132, normalize=False, nonnegative=1.0)
-  shape_ew = np.array([solver(L) for L in LP]) 
-  shape_eigen[ind] = shape_ew
+shape_ri = {}
+for s_cls, s_id in product(shape_classes, range(1,8)):
+  ri = SpectralRankInvariant(S, p = 0)
+  ri.family = directional_transform(get_shape(s_cls, s_id), dv=32, normalize=False, nonnegative=1.0)
+  f_rng = np.array([(np.min(f(S)), np.max(f(S))) for f in ri.family])
+  f_min, f_max = f_rng[:,0].min(), f_rng[:,1].max()
+  # birth, death = np.mean(f_rng[:,0])*1.1, np.mean(f_rng[:,1])*0.9
+  f_pt = f_min + (f_max - f_min) / 2
+  ri.sieve = [[-np.inf, f_pt, f_pt, np.inf]]
+  ri.sift(w=0.0)
+  shape_ri[(s_cls, s_id)] = ri
 
-# %% 
-f = lambda x: np.sqrt(np.abs(x))      ## nuclear norm 
-f = lambda x: np.exp(-0.5*np.abs(x))  ## heat trace 
-f = lambda x: np.exp(-0.5*np.abs(x))  ##
+
+# %% Look at their heat trace signatures
+from pbsig.dsp import phase_align
 
 shape_colors = dict(zip(shape_classes, ['green', 'red', 'blue']))
 p = figure(width=250, height=200)
-for shape_class, j in product(shape_classes, range(1, 6)):
-  ind = shape_keys.index((shape_class, j))
-  p.line(np.arange(132), f(shape_eigen[ind][:,65:]).sum(axis=1), color=shape_colors[shape_class])
+for s_cls, s_id in product(shape_classes, [1,2,3,4,5,7]):
+  s_sig = np.ravel(shape_ri[(s_cls, s_id)].summarize())
+  p.line(np.arange(32), s_sig, color=shape_colors[s_cls])
 show(p)
+
+## Show phase-aligned signatures
+mf = heat(t=50., complement=True)
+p = figure(width=350, height=250)
+for s_cls, s_id in product(shape_classes, [1,2,3,4,5,7]):
+  s_ref = np.ravel(shape_ri[(s_cls, 1)].summarize(mf))
+  s_sig = np.ravel(shape_ri[(s_cls, s_id)].summarize(mf))
+  assert all(~np.isnan(s_sig))
+  s_sig = phase_align(s_sig, s_ref)
+  p.line(np.arange(32), sg(s_sig), color=shape_colors[s_cls])
+show(p)
+
+# %% Build a heat map
+
+
+
 
 # %% 
 from bokeh.models import Span

@@ -23,28 +23,32 @@ All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are sym
 %	\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \stackrel{\cdot}{\cup} \Lambda(L_p^{\text{dn}}), \quad \quad \Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1}^{\text{dn}})
 %\end{equation}
 
-Let $(K, f_\alpha)$ denote parameterized family of filtrations of a simplicial complex $K$ equipped with a fixed but arbitrary linear extension $ \preceq$ of its face poset and fixed orientations $s(\sigma)$ inherited from the total order on the vertex set $(V, \preceq)$.
+Let $(K, f_\alpha)$ denote a parameterized family of filtrations of a simplicial complex $K$ equipped with a fixed but arbitrary linear extension $ \preceq$ of its face poset and fixed orientations $s(\sigma)$ inherited from the total order on the vertex set $(V, \preceq)$.
 Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}_p \triangleq  L_p^{\mathrm{up}}$. 
 %Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
 \begin{align}\label{eq:laplacian_decouple}
 %\mathcal{L}_p^{\text{up}}(f) & \triangleq D_p^{1/2}(f) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(f) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(f) 
-\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(\bar{S}_a \circ f_\alpha) 
+\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}^2(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p(\bar{S}_a \circ f_\alpha) 
 %\mathcal{L}_p^{\text{dn}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_p^T(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_p(K_\preceq) \cdot D_p^{1/2}(\alpha) \\
 %\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
 \end{align}
-where $D_p(f)$ denotes a diagonal matrix whose entries represent non-negative weights on the $p$-simplices of $K$ that depend on $f$ and $S$ ($\bar{S}$).
-As before with~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the matrix decomposition of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$ and $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$, then we have: 
-\begin{align*}	
-	\mathrm{rank}(R_p^{i,j})& = \mathrm{rank}(\partial_p^{i, j})  = \mathrm{rank}(\hat{\partial}_p^{a,b}(\alpha)) \\
-	& = \mathrm{rank}(D_{p-1}(\bar{S}_a \circ f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha)) \\
-	 & = \mathrm{rank}(D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha)) \\
-	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}(\alpha)) \numberthis
-\end{align*}
-where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute the parameterized boundary operators from~\eqref{} with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
+where $D_p(f)$ denotes a diagonal matrix whose entries represent the application of $f$ to the $p$-simplices of $K$.
+As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the matrix decomposition of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$, then for any pair $a,b\in \Delta_+$ there exists indices $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$ such that:
+\begin{equation}
+	\mathrm{rank}(R_{p+1}^{i,j}) = \mathrm{rank}(\partial_{p+1}^{i, j}) = \mathrm{rank}(\hat{\partial}_{p+1}^{a,b}) = \mathrm{rank}\left((\hat{\partial}_{p+1}^{a,b})(\hat{\partial}_p^{a,b})^T \right) = \mathrm{rank}(\mathcal{L}_{p}^{a,b})
+\end{equation}
+%\begin{align*}	
+%	\mathrm{rank}(R_p^{i,j})& = \mathrm{rank}(\partial_p^{i, j})  \\
+%	& = \mathrm{rank}(\hat{\partial}_p^{a,b}) = \mathrm{rank}(D_{p-1}(\bar{S}_a \circ f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha)) \\
+%	& = \mathrm{rank}(\hat{\partial}_p^{a,b} (\hat{\partial}_p^{a,b})^T ) \\
+%%	 & = \mathrm{rank}(D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha)) \\
+%	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}) \numberthis
+%\end{align*}
+where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
 
 \begin{remark}
 In the context of inner products, 
-	One may interpret sending $p$-simplices to $0$ as restricting to a sub-complex $L \subseteq K$, which suggests definitions might better be defined with simplicial pairs $(L, K)$ satisfying $L \hookrightarrow K$ as in~\cite{memoli2022persistent}. However, our definition 
+	One may interpret sending $p$-simplices to $0$ as restricting to a sub-complex $L \subseteq K$, which suggests simplicial pairs $(L, K)$ satisfying $L \hookrightarrow K$ as in~\cite{memoli2022persistent}. However, our definition 
 \end{remark}
 
 %Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 
