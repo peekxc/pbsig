@@ -951,6 +951,7 @@ By imposing additional restrictions via~\eqref{eq:phi} on $\phi$, the operator $
 %		\item For any given $x \in \mathbb{R}_+$, $\phi(x, \epsilon') \leq \phi(x, \epsilon)$ whenever $\epsilon' > \epsilon$
 %		\item If $p$ is bounded above on $\mathbb{R}_+$, then $\phi(\cdot, \epsilon)$ is globally Lipshitz continuous on $\mathbb{R}_+$
 	\end{enumerate}
+	\label{prop:operator_props}
 \end{proposition}
 %\begin{remark}
 %	% TODO: Gauge function remark
@@ -1025,9 +1026,9 @@ By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular va
 	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
 %Thus, composing the singular value of $\partial_p$ (or $\partial_p^T$) with the spectral function $\phi$ from~\ref{eq:tikhonov_sf} may be interpreted as regularizing the spectrum of the inverse of the given Laplacian.
-The relaxation parameter $\tau$ may be thought of as a bias term that preferences smaller singular values: larger values smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values lead to a more faithful\footnote{This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy.} approximations of the rank.
+The relaxation level $\tau$ may be thought of as a regularization parameter that preferences smaller singular values: larger values smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values lead to a more faithful\footnote{This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy.} approximations of the rank.
 %$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
-In this sense, we interpret the quantities obtained by applying~\eqref{def:lowner} to the terms from Proposition~\ref{prop:mu_betti_1} as \emph{Tikhonov regularized rank invariant approximations}.
+In this sense, we interpret the quantities obtained by applying~\eqref{def:lowner} to the terms from Proposition~\ref{prop:mu_betti_1} as \emph{regularized RI approximation}.
 \\
 \\
 \noindent \textbf{Interpretation \#2:} 
@@ -1045,7 +1046,7 @@ To simulate a diffusion process on $G$ from an initial distribution of heat $v(0
 v(t) = H_t \, v(0), \text{ where } H_t = \sum\limits_{i=1}^n e^{-t \lambda_i} \, u_i \, u_i^T
 \end{equation}
 The heat kernel is invariant under isometric deformations, stable under perturbations, and is known to contain multiscale geometric information due to its close connection to geodesics~\cite{}. As is clear from~\eqref{eq:heat_kernel}, it is also a matrix function. Now, consider~\eqref{eq:phi} with $\nu(\tau) = \tau$ and $p(\lambda) = \mathrm{exp}(-\lambda_+)$ where $x_+ = \max(x, 0)$: 
-\begin{equation}\label{eq:tikhonov_sf}
+\begin{equation}\label{eq:heat_sf}
 	\phi(\lambda, \tau) = \int\limits_{0}^z \hat{\delta}(z, \tau) dz = \frac{1}{\tau}\int\limits_{0}^z \mathrm{exp}(-z / \tau) dz = 1 - \mathrm{exp}(- \lambda / \tau), \quad \text{ for all } \lambda \geq 0% \nu(1/\epsilon) \cdot p \big( z \, \nu (1/\epsilon) \big ) 
 \end{equation}
 In the context of diffusion, observe the parameter $\tau$ is inversely related diffusion time (i.e. $t = 1 / \tau$) and that as $t \to 0$ (or $\tau \to \infty$) the expression $1 - \mathrm{exp}(-\lambda / \tau)$ approaches the $\mathrm{sgn}_+$ function on the interval $[0, \infty)$. 
@@ -1053,10 +1054,10 @@ As above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} a
 %$L_G$: 
 \begin{equation}\label{eq:heat_trace}
 %	\Phi_\epsilon(A) = (A^T A + \epsilon \, I_n)^{-1} A^T A, \quad \quad 
-	\lVert \Phi_\tau(L_G) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-t \cdot \sigma_i) = n - \mathrm{Tr}\left[H_t\right]
+	\lVert \Phi_\tau(L_G) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-\lambda_i/\tau) = n - \mathrm{Tr}\left[H_{1/\tau}\right]
 \end{equation}
-The heat kernel trace $\mathrm{Tr}(H_t)$ has been shown to informative at characterizing geometric signatures ~\cite{}. 
-In this sense, we interpret the quantities obtained by applying ... as \emph{geometrically sensitive rank invariant approximations}.
+The heat kernel $H_t$ has been shown to fully characterize shapes up to isometry, motivating the creation of various geometric signatures, such as the Heat Kernel Signature (HKS)~\cite{} and the Heat Kernel Trace~\cite{}. 
+In this sense, we interpret our spectral rank relaxation using~\eqref{eq:heat_sf} as a \emph{geometrically informative RI approximation}.
 
 % Indeed, informative multiscale signatures, such as the Heat Kernel Signature (HKS), are often used in shape analysis applications due to their rich information content. 
   
@@ -1306,7 +1307,7 @@ For any constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinator
 %For this reason, practitioners have tended to avoid 
 
 \subsection*{Randomized approximation}
-Recently, it's been discovered that 
+%Recently, it's been discovered that 
 
 
 
@@ -1470,32 +1471,49 @@ This justifies our claim that combinatorial Laplacian operators, for many real-w
 
 % --- APPLICATION: Circle codensity / filtration optimization ----
 \subsection*{Filtration optimization}
-It is common in TDA for the filter function $f : K \to \mathbb{R}$ to itself be parameterized by some hyper-parameters.
+It is common in TDA for the filter function $f : K \to \mathbb{R}$ to depend on hyper-parameters.
 %to a means of building a filtration $(K,f)$ where $f : K \to \mathbb{R}$ is a filter function satisfying $f(\tau) \leq f(\sigma)$ for all $\tau \subseteq \sigma \in K$, but the . 
-For example, consider the removal of noisy outliers from a point set $X \subset \mathbb{R}^d$ prior to studying $X$ through the lens of persistence. 
-Though persistence is stable under the Hausdorff noise model~\cite{}, diagrams are notably unstable with respect to \emph{strong outliers}---these outliers can obscure the detection of non-trivial topological space. 
-Even a single point can suppress presence of an otherwise strongly persistent pair. 
+For example, prior employing persistence, it is common to remove outliers from point set $X \subset \mathbb{R}^d$ using a density-based pruning heuristic that itself is parameterized. 
+Though stable under Hausdorff noise~\cite{}, diagrams are notably unstable against \emph{strong outliers}---these outliers can obscure the detection of non-trivial topological space. 
+Even one point can ruin the summary. As an exemplary use-case of our spectral-based method, below we re-cast the problem of identifying strong outliers as a problem of \emph{filtration optimization}. 
 
 \begin{figure}
 	\centering
 	\includegraphics[width=\textwidth]{codensity_ex}
+	\caption{From left to right: Delaunay complex $K$ realized from point set $X \subset \mathbb{R}^2$ sampled with multiple types of noise around $S^1$ (colored by $\alpha$-codensity); codensity vineyard  of $(K, f_\alpha)$ across varying bandwidths $\alpha$ and a fixed sieve point $(a,b) \in \Delta_+$; Tikhonov regularizations $\hat{\beta}_p^{a,b}(\alpha)$ at varying regularization ($\tau$) and sign width ($\omega$) values. Observe lower values of $\tau$ lead to approximations closer to the rank (black) at the cost of smoothness, while larger values can yield very smooth yet uninformative relaxations. 
+	}\label{fig:codensity_opt}
+%	Some choices of $(\tau, \omega)$ lead to continuous and differentiable functions with maxima matching $\alpha^\ast$ }
 \end{figure}
 
-
-To illustrate an exemplary use-case of our spectral relaxation, we re-cast the problem of identifying strong outliers as a \emph{filtration optimization} problem. Consider a fixed Delaunay complex $K$ realized from a set of points $X \subset \mathbb{R}^2$ sampled around $S^1$, shown in figure~\ref{fig:codensity}. 
-Observe the point set contains both points affected by Hausdorff noise and strong outliers. 
-To detect both these strong outliers and the presence of $S^1$, we first filter $K$ by the sublevel sets $\hat{f}_h^{-1}((-\infty, t]) \subseteq X$ of a kernel density estimate $\hat{f}_h : X \to \mathbb{R}_+$~\cite{}, which itself depends on bandwidth parameter $h > 0$ and the choice of a smooth kernel function $\mathcal{K}_h : \mathbb{R} \to \mathbb{R}_+$.
+ Consider a Delaunay complex $K$ realized from a point set $X \subset \mathbb{R}^2$ sampled around $S^1$ affected by both Hausdorff noise and strong outliers, shown in Figure~\ref{fig:codensity_opt}. 
+One approach to detect the presence of $S^1$ in the presence of such outliers is maximize $\beta_p^{a,b}(\alpha)$ for some fixed $(a,b)\in \Delta_+$ over the pair $(K, f_\alpha)$, where $f_\alpha : X \to \mathbb{R}_+$ is a bandwidth-parameterized kernel (co)-density estimate:
+%bandwidth $\alpha^\ast$ maximizing the persistent Betti number  of 
+%the sublevel sets $\hat{f}_h^{-1}((-\infty, t]) \subseteq X$ of $K$  and the choice of a smooth kernel function $\mathcal{K}_h : \mathbb{R} \to \mathbb{R}_+$.
 %\begin{equation}
 %	
 %%	(K, f_h) = \{ \, \sigma \subset X : \max \hat{f}_h(\sigma) \leq t \, \}
 %\end{equation}
-Subsequently, for some fixed $(i,j) \in \Delta_+$, we seek a bandwidth $h^\ast$ maximizing the persistent Betti number $\beta_p^{i,j}$ of $(K, f_h)$:
 \begin{equation}\label{eq:betti_opt}
-	h^\ast = \argmax_{h \in \mathbb{R}} \; \beta_p^{i,j}(K, \hat{f}_h), \quad \text{ where } \hat{f}_h(x) = \frac{1}{nh} \sum_{i} \mathcal{K}_h(x_i - x)
+	\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \beta_p^{a,b}(K, f_\alpha), \quad \text{ where } f_\alpha(x) = \frac{1}{n\alpha} \sum_{i} C(\mathcal{K}) - \mathcal{K}_\alpha(x_i - x)
 \end{equation}
-Assuming the pair $(i,j)$ is chosen well enough such that the objective $\beta_p^{i,j}$ is not trivially zero for all $h > 0$, observe the objective function $\beta_p^{i,j}$ is discontinuous, and non-differentiable. 
+where $C(\mathcal{K})$ is a normalizing constant that depends on $\mathcal{K}$. 
+The intuition is that there is likely some choice of bandwidth $\alpha^\ast$ which creates a large gap between the codensities of points affected by Hausdorff noise vs. those that not in the vicinity of $S^1$ at all---in this setting, the impact of the strong outliers on the persistence diagram is minimal. 
+Thus, if $(a,b)$ is appropriately chosen, we expect $\beta_p^{a,b}(\alpha)$ to be $0$ for low and high bandwidths and $1$ at the optimal bandwidth $\alpha^\ast$, matching the first Betti number of $S^1$. 
+
+The behavior is reflected by the vineyard of $\mathrm{dgm}_1(K, f_\alpha)$, which shown on the second plot of Figure~\ref{fig:codensity_opt}; the sieve point $(a,b)$ and the region it corresponds too is also shown. 
+As $\beta_p^{a,b}$ is an integer-valued invariant, it is discontinuous and difficult to optimize; in contrast, we know from Proposition~\eqref{prop:operator_props} that we can obtain a continuous and differentiable relaxation of $\beta_p^{a,b}$ by replacing $\beta_p^{a,b} \mapsto \hat{\beta}_p^{a,b}$ in~\eqref{eq:betti_opt}, enabling the use of first-order optimization techniques.
+Moreover, the connection to the Tikhonov regularization from~\ref{} and Lemma~\ref{} suggests we various iterative optimization methods...
+One simple such optimization technique is the iterative sparse thresholding method, which alternates between linearization and regularization steps to solve ill-posed or poorly behaved optimization problems~\cite{}.
+% between linearioptimizing a given liendecreasing  
+%use iterative optimization methods, such as iterative sparse thresholding... 
+
+\subsection*{Manifold detection from image patches}
+
+
+
+%Assuming the pair $(i,j)$ is chosen well enough such that the objective $\beta_p^{i,j}$ is not trivially zero for all $h > 0$, observe the objective function $\beta_p^{i,j}$ is discontinuous, and non-differentiable. 
 %Indeed, $\beta_p^{\ast}$ is an integer-valued invariant and thus is not amenable to first-order optimization. 
-To obviate this difficulty, we substitute the objective $\beta_p^{i,j} \mapsto \hat{\beta}_p^{i,j}$ with a spectral relaxation $\hat{\beta}_p^{i,j}(h; \phi_\tau)$ for some matrix function $\phi_\tau$ that depends on a smoothness parameter $\tau \geq 0$. When $h > 0$, the objective is differentiable, thus first-order optimization techniques may be used. 
+%To obviate this difficulty, we substitute the objective $\beta_p^{i,j} \mapsto \hat{\beta}_p^{i,j}$ with a spectral relaxation $\hat{\beta}_p^{i,j}(h; \phi_\tau)$ for some matrix function $\phi_\tau$ that depends on a smoothness parameter $\tau \geq 0$. When $h > 0$, the objective is differentiable, thus first-order optimization techniques may be used. 
 
 % satisfying $\hat{\beta}_p^{i,j} \to \beta_p^{i,j}$ as $\tau \to 0$.  
 
@@ -1559,16 +1577,16 @@ To obviate this difficulty, we substitute the objective $\beta_p^{i,j} \mapsto \
 %\subfile{spectral_relaxation}
 
 % --- APPLICATION 2: Directional transforms as Shape Signatures ---- 
-\subsection*{Shape comparison}
-In general, both combinatorial and topological aspects of a given topological space are encoded in the spectra of Laplacian operators. 
-Through their null-space, combinatorial Laplacians encode a complexes basic topology via its homology groups---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
-In contrast, these operators differ in the nonzero part of the spectrum, which encode specific geometric information in addition to topological properties. 
-
- 
-\begin{figure}
-	\centering
-	\includegraphics[width=0.6\textwidth]{shape_signatures}
-\end{figure}
+%\subsection*{Shape comparison}
+%In general, both combinatorial and topological aspects of a given topological space are encoded in the spectra of Laplacian operators. 
+%Through their null-space, combinatorial Laplacians encode a complexes basic topology via its homology groups---this is identical for most of the Laplace operators, whether they are normalized, weighted, signless, and so on~\cite{}.
+%In contrast, these operators differ in the nonzero part of the spectrum, which encode specific geometric information in addition to topological properties. 
+%
+% 
+%\begin{figure}
+%	\centering
+%	\includegraphics[width=0.6\textwidth]{shape_signatures}
+%\end{figure}
 
 \section{Conclusion \& Future Work}
 Interestingly, our results also imply the existence of an efficient output-sensitive algorithm for computing $\Gamma$-persistence pairs with at least ($\Gamma >0$)-persistence (via~\cite{chen2011output}) that requires the operator $x \mapsto \partial x$ as its only input, which we consider to be of independent interest. 

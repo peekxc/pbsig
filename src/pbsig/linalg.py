@@ -18,6 +18,7 @@ from .meta import *
 from .simplicial import * 
 from .combinatorial import * 
 from .distance import dist 
+from .csgraph import * 
 
 # import _lanczos as lanczos
 import _laplacian as laplacian
@@ -386,7 +387,8 @@ class HeatKernel:
       return laplacian_, mass_matrix_
     elif approx == "mesh":
       assert isinstance(X, np.ndarray), "Vertex positions must be supplied ('X') if 'mesh' approximation is used."
-      laplacian_ = up_laplacian(S, p=0, weight=gauss_similarity(S, X), **laplacian_kwargs)
+      fw = sx.lower_star_filter(gauss_similarity(S, X))
+      laplacian_ = up_laplacian(S, p=0, weight=fw, **laplacian_kwargs)
       mass_matrix_ = diags(vertex_masses(S, X, use_triangles))     
       return laplacian_, mass_matrix_
     elif approx == "cotangent":

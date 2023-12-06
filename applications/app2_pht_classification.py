@@ -100,6 +100,12 @@ show(p)
 
 # %% Build a heat map
 
+# %% Maybe try the Heat Kernel Map from a fixed point 
+from pbsig.linalg import HeatKernel
+H = HeatKernel(S)
+
+X = get_shape('turtle',1)
+Lu, A = H.param_laplacian("mesh", X, S)
 
 
 
