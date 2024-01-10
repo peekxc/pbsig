@@ -273,11 +273,11 @@ class BettiQuery(Callable):
       fj_inc = smooth_dnstep(lb = jj-self.sign_width, ub = jj+self.delta)
       t0 = mf(fi_inc(self.fw)) # instead of solver 
       self.Lp.reweight(fi_inc(self.fw), inc_all(self.yw))
-      t1 = mf(self.p_solver(self.Lp.operator()))
+      t1 = mf(self.p_solver(self.Lp.operator(deflate=True)))
       self.Lq.reweight(fj_inc(self.sw), inc_all(self.fw)) 
-      t2 = mf(self.q_solver(self.Lq.operator()))
+      t2 = mf(self.q_solver(self.Lq.operator(deflate=True)))
       self.Lq.reweight(fj_inc(self.sw), fi_exc(self.fw))
-      t3 = mf(self.q_solver(self.Lq.operator()))
+      t3 = mf(self.q_solver(self.Lq.operator(deflate=True)))
       yield t0, t1, t2, t3
 
   def __call__(self, i: Union[int, Sequence], j: Union[int, Sequence], mf: Callable = spectral_rank, terms: bool = False) -> Union[Number, np.ndarray]:

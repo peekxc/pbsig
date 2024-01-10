@@ -7,15 +7,17 @@ Towards this, we exploit another identity of the rank function applicable to zer
 %$$\mathrm{rank}(\partial_p) = \mathrm{rank}(\partial_p \circ \partial_p^T) = \mathrm{rank}(\partial_p^T \circ \partial_p)$$ 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X), \quad \text{for all } X \in \mathbb{F}^{n \times m}$$ 
 % study of spectra of \emph{combinatorial Laplacians}
-In the context of boundary operators, note that $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, indicating we may express $\beta_0^\ast(\alpha)$ and $\mu_0^\ast(\alpha)$ using the ranks of Laplacian\footnote{By convention, we define $\partial_p = 0$ for all $p \leq 0$.} matrices. 
-Indeed, a direct result of the singular value decomposition (SVD) is that the eigenvalues of $XX^T$ (or $X^T X$) are given by the squares of the singular values of $X$; thus, we may study the singular values of boundary operators through the spectra of Laplacians.  
-For any simplicial complex $K$, its \emph{$p$-th combinatorial Laplacian} $\Delta_p(K)$ is given by: 
+In the context of boundary operators, note that $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, indicating we may express $\beta_0^\ast(\alpha)$ and $\mu_0^\ast(\alpha)$ using the ranks of Laplacian\footnote{By convention, we define $\partial_p = 0$ for all $p \leq 0$.} matrices.
+Indeed, as the eigenvalues of $XX^T$ (or $X^T X$) are given by the squares of the singular values of $X$, we may study the singular values of boundary operators through the spectra of Laplacians.  
+
+For any simplicial complex $K$, there are three natural Laplacian operators: the \emph{up}-Laplacian $L_p^{\text{up}}(K)$, the \emph{down}-Laplacian $L_p^{\text{dn}}(K)$, and their sum, which we refer to as the \emph{combinatorial} Laplacian $\Delta_p(K)$: 
 \begin{equation}\label{eq:comb_lap}
-	\Delta_p(K) = \underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
+	\Delta_p = \underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
 \noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). Thus, from a persistent rank-based perspective, it suffices to consider any one of these operators.
+All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). 
+%Thus, from a rank-based perspective, any of these operators may be readily substituted for $\hat{\partial}_p^\ast$ in Proposition~\ref{prop:mu_betti_1}.
 
 %moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
 %where $A \doteq B$ and $A \cupdot B$ denotes equivalence and union between the \emph{non-zero} elements of the multisets $A$ and $B$, respectively.
@@ -45,6 +47,8 @@ As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at
 %	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}) \numberthis
 %\end{align*}
 where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
+
+This will become particularly important in section~\ref{sec:computational_imp}, where we 
 
 \begin{remark}
 In the context of inner products, 

@@ -1,5 +1,13 @@
 .katex { font-size: 1.1em !important; }
 
+/* html {
+  font-family: 'Courier New', Courier, monospace, 'Open Sans', 'Helvetica Neue', sans-serif !important;
+} */
+
+.reveal {
+  font-family: Gill Sans; 
+  /* font-family: Franklin Gothic Medium; */
+}
 
 .no_bullet {
   list-style-type: none !important;

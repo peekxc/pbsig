@@ -8,7 +8,7 @@ from splex import faces, dim
 from splex.predicates import is_repeatable
 from typing import * 
 from scipy.sparse import diags
-from pbsig.linalg import smooth_dnstep, smooth_upstep
+from pbsig.utility import smooth_dnstep, smooth_upstep
 from pbsig.linalg import pseudoinverse
 from numbers import Integral
 
@@ -108,8 +108,13 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     self.splines_ = {}
     domain_points = np.linspace(*interval, num=len(self.family)) # knot vector
     for p in self.dims:
-      filter_values = np.array([f(faces(self.complex, p)) for f in self.family])
-      self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
+      if isinstance(f, Iterable):
+        filter_values = np.array([f(faces(self.complex, p)) for f in self.family])
+        self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
+      else:
+        ## assumes self.family is a callable satisfying f(t, p = None) and f(t, p = int) 
+        filter_values = np.array([f(t, p = p) for t in domain_points])
+        self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
     
   def figure_interp(self, p: int = None):
     import bokeh
@@ -123,7 +128,7 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     #   fig.scatter(0)
 
   ## TODO: fix so that this is a true time-parameterized filter function! 
-  def __call__(self, p: int, t: Union[float, int], **kwargs):
+  def __call__(self, t: Union[float, int], p: int, **kwargs):
     assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
     assert hasattr(self, "domain_") and hasattr(self, "splines_"), "Cannot interpolate without calling interpolat fmaily first! "
     assert p in self.splines_.keys(), f"Invalid dimension {p} given"

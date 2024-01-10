@@ -10,7 +10,7 @@
 <link href="spri_cp23_files/libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="spri_cp23_files/libs/quarto-contrib/roughnotation-0.5.1/rough-notation.iife.js"></script>
 <script src="spri_cp23_files/libs/quarto-contrib/roughnotation-init-1.0.0/rough.js"></script><meta charset="utf-8">
-  <meta name="generator" content="quarto-1.4.358">
+  <meta name="generator" content="quarto-1.4.523">
 
   <meta name="author" content="Matt Piekenbrock\mathrm{}^\dagger &amp; Jose Perea\mathrm{}^\ddagger">
   <title>Spectral relaxations of persistent rank invariants</title>
@@ -35,6 +35,7 @@
     div.csl-bib-body { }
     div.csl-entry {
       clear: both;
+      margin-bottom: 0em;
     }
     .hanging-indent div.csl-entry {
       margin-left:2em;
@@ -392,7 +393,7 @@ Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Pe
 <section id="this-talk" class="slide level2">
 <h2>This Talk</h2>
 <div class="fragment fade-in" style="text-align: center">
-<p>We introduce <span style="color:orange"> <em>spectral-relaxation</em> </span> of the rank invariants <span class="math inline">\beta_p^{\ast}</span> and <span class="math inline">\mu_p^\ast</span> that:</p>
+<p>We introduce a general <em>spectral-relaxation</em> of the <span style="color:orange"> persistent rank invariants </span> <span class="math inline">\beta_p^{\ast}</span> and <span class="math inline">\mu_p^\ast</span> that:</p>
 <div style="margin-left:2.5em;">
 <ol type="1">
 <li>Smoothly interpolates<span class="math inline">^1</span> the <em>persistent rank</em> function</li>
@@ -402,19 +403,19 @@ Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Pe
 </ol>
 </div>
 </div>
-<div class="fragment fade-in quarto-layout-panel" style="text-align: left">
+<div class="fragment fade-in quarto-layout-panel" style="text-align: left" data-layout="[[48,52]]">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 48.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="animations/ph_transform.gif"></p>
+<p><img data-src="animations/ph_transform.gif" class="quarto-figure quarto-figure-left" style="width:18.0%;height:100.0%"></p>
 </figure>
 </div>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 52.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="animations/trace_summary.gif"></p>
+<p><img data-src="animations/trace_summary.gif" class="quarto-figure quarto-figure-left" style="width:18.0%;height:100.0%"></p>
 </figure>
 </div>
 </div>
@@ -430,7 +431,7 @@ Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Pe
 <div class="column">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/dgm_pbn.png" width="400" height="400"></p>
+<p><img data-src="images/dgm_pbn.png" class="quarto-figure quarto-figure-center" width="400" height="400"></p>
 </figure>
 </div>
 <div style="text-align: center;">
@@ -439,7 +440,7 @@ Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Pe
 </div><div class="column">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/dgm_mu.png" width="400" height="400"></p>
+<p><img data-src="images/dgm_mu.png" class="quarto-figure quarto-figure-center" width="400" height="400"></p>
 </figure>
 </div>
 <div style="text-align: center;">
@@ -452,7 +453,7 @@ Matt Piekenbrock<span class="math inline">\mathrm{}^\dagger</span> &amp; Jose Pe
 <h2>Application: optimizing filtrations</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/codensity_dgm_ex.png" style="width:68.0%;height:100.0%"></p>
+<p><img data-src="images/codensity_dgm_ex.png" class="quarto-figure quarto-figure-center" style="width:68.0%;height:100.0%"></p>
 </figure>
 </div>
 <div class="fragment">
@@ -574,9 +575,9 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 <p><span class="math display">
 \Leftrightarrow \mathrm{rank}(R^{i,j}) - \mathrm{rank}(R^{i\texttt{+}1,j}) + \mathrm{rank}(R^{i\texttt{+}1,j\text{-}1}) - \mathrm{rank}(R^{i,j\text{-}1}) \neq 0
 </span></p>
-<div class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;">
+<div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/rank_ll.png" style="height:100.0%" width="575"></p>
+<p><img data-src="images/rank_ll.png" class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;;height:100.0%" width="575"></p>
 </figure>
 </div>
 </div>
@@ -594,9 +595,9 @@ $\quad\quad\quad\quad\beta_p^{i,j} = \mathrm{dim} \big( \;\mathrm{Ker}(\partial_
 </span></p>
 </div>
 <div class="fragment">
-<div class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;">
+<div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/rv_ll.png" style="height:100.0%" width="950"></p>
+<p><img data-src="images/rv_ll.png" class="quarto-figure quarto-figure-center" style="margin: 0; padding: 0;;height:100.0%" width="950"></p>
 </figure>
 </div>
 </div>
@@ -742,19 +743,19 @@ Theory of <span style="color: green;"><em>persistent measures</em><span class="m
 <p><span class="math display">
 f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \quad \forall \tau,\sigma \in K \text{ and } \alpha \in \mathbb{R}
 </span></p>
-<div class="quarto-layout-panel">
+<div class="quarto-layout-panel" data-layout-ncol="2">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="animations/codensity_family.gif"></p>
+<p><img data-src="animations/codensity_family.gif" class="quarto-figure quarto-figure-right" style="width:48.0%;height:100.0%"></p>
 </figure>
 </div>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="animations/complex_plain.gif"></p>
+<p><img data-src="animations/complex_plain.gif" class="quarto-figure quarto-figure-left" style="width:48.0%;height:100.0%"></p>
 </figure>
 </div>
 </div>
@@ -769,7 +770,7 @@ f_\alpha(\tau) \leq f_\alpha(\sigma) \quad \text{ if } \tau \subseteq \sigma \qu
 <div class="fragment" style="text-align: center;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/smoothstep_3.jpeg" style="width:88.0%;height:100.0%"></p>
+<p><img data-src="images/smoothstep_3.jpeg" class="quarto-figure quarto-figure-center" style="width:88.0%;height:100.0%"></p>
 </figure>
 </div>
 </div>
@@ -871,7 +872,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <div class="fragment" data-fragment-index="3">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/lasso.png" style="width:50.0%"></p>
+<p><img data-src="images/lasso.png" class="quarto-figure quarto-figure-center" style="width:50.0%"></p>
 </figure>
 </div>
 </div>
@@ -909,20 +910,20 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 </div></aside></section>
 <section id="application-1-filtration-optimization" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
-<div class="quarto-layout-panel">
+<div class="quarto-layout-panel" data-layout="[[25,50,25]]">
 <div class="quarto-layout-row quarto-layout-valign-bottom">
 <div class="column quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<p><img data-src="animations/dgms_vineyards.gif"></p>
+<p><img data-src="animations/dgms_vineyards.gif" style="width:60.0%"></p>
 </div>
 <div class="column quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/dgm_opt.png"></p>
+<p><img data-src="images/dgm_opt.png" class="quarto-figure quarto-figure-center" style="height:100.0%"></p>
 </figure>
 </div>
 </div>
 <div class="column quarto-layout-cell" style="flex-basis: 25.0%;justify-content: center;">
-<p><img data-src="animations/complex_plain.gif"></p>
+<p><img data-src="animations/complex_plain.gif" style="width:60.0%"></p>
 </div>
 </div>
 </div>
@@ -932,13 +933,13 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 </section>
 <section id="application-1-filtration-optimization-1" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
-<div class="quarto-layout-panel">
+<div class="quarto-layout-panel" data-layout="[[60,30]]">
 <div class="quarto-layout-row quarto-layout-valign-bottom">
 <div class="column quarto-layout-cell" style="flex-basis: 66.7%;justify-content: center;">
 <p><img data-src="images/codensity_mult.png"></p>
 </div>
 <div class="column quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
-<p><img data-src="images/optimal_codensity_complex.png"></p>
+<p><img data-src="images/optimal_codensity_complex.png" style="width:35.0%;height:100.0%"></p>
 </div>
 </div>
 </div>
@@ -949,7 +950,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <section id="application-1-filtration-optimization-2" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
 
-<img data-src="images/codensity_ex1.png" class="r-stretch quarto-figure-center"><p><br></p>
+<img data-src="images/codensity_ex1.png" class="quarto-figure quarto-figure-center r-stretch"><p><br></p>
 <p><span class="math display">
     \mu_p^{R} =
     \mathrm{rank}\begin{bmatrix} \partial_{p+1}^{j + 1, k} &amp; 0 \\
@@ -964,7 +965,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <section id="application-1-filtration-optimization-3" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
 
-<img data-src="images/codensity_ex2.png" class="r-stretch quarto-figure-center"><p><br></p>
+<img data-src="images/codensity_ex2.png" class="quarto-figure quarto-figure-center r-stretch"><p><br></p>
 <p><span class="math display">
 \mu_p^{R} =
 \mathrm{tr}\begin{bmatrix} \lVert \partial_{p+1}^{j + 1, k} \rVert_\ast &amp; 0 \\
@@ -979,7 +980,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <section id="application-1-filtration-optimization-4" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
 
-<img data-src="images/codensity_ex3.png" class="r-stretch quarto-figure-center"><p><br></p>
+<img data-src="images/codensity_ex3.png" class="quarto-figure quarto-figure-center r-stretch"><p><br></p>
 <p><span class="math display">
 \hat{\mu}_p^{R} =
 \mathrm{tr}\begin{bmatrix} \Phi_\tau(\partial_{p+1}^{j + 1, k}) &amp; 0 \\
@@ -998,7 +999,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <section id="application-1-filtration-optimization-6" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
 
-<img data-src="images/codensity_ex4.png" class="r-stretch quarto-figure-center"><p><br></p>
+<img data-src="images/codensity_ex4.png" class="quarto-figure quarto-figure-center r-stretch"><p><br></p>
 <p><span class="math display"> \mu_p^{R} = \mathrm{tr}\begin{bmatrix} \Phi_\tau(\partial_{p+1}^{j + 1, k}) &amp; 0 \\
 0 &amp; \Phi_\tau(\partial_{p+1}^{i + 1, l})
 \end{bmatrix}
@@ -1011,7 +1012,7 @@ x_\tau^\ast = (A^T A + \tau I)^{-1} A^T b
 <section id="application-1-filtration-optimization-7" class="slide level2">
 <h2>Application #1: Filtration optimization</h2>
 
-<img data-src="images/codensity_ex5.png" class="r-stretch quarto-figure-center"><p><br></p>
+<img data-src="images/codensity_ex5.png" class="quarto-figure quarto-figure-center r-stretch"><p><br></p>
 <p><span class="math display"> \mu_p^{R} = \mathrm{tr}\begin{bmatrix} \Phi_\tau(\partial_{p+1}^{j + 1, k}) &amp; 0 \\
 0 &amp; \Phi_\tau(\partial_{p+1}^{i + 1, l})
 \end{bmatrix}
@@ -1050,19 +1051,19 @@ L_p^{\text{up}}(\tau, \tau')= \begin{cases}
 <p>Diffusion processes on graphs often modeled as time-varying <span class="math inline">v^{(t)} \in \mathbb{R}^n</span> via:</p>
 <p><span class="math display"> v'^{(t)} = -L v^{(t)} \quad \Leftrightarrow \quad L \cdot u(x,t) = - \frac{\partial u(x, t)}{\partial t} </span></p>
 </div>
-<div class="fragment quarto-layout-panel" data-fragment-index="2" style="text-align: center">
+<div class="fragment quarto-layout-panel" style="text-align: center" data-fragment-index="2" data-layout-ncol="2" data-layout="[[30, 70]]">
 <div class="quarto-layout-row quarto-layout-valign-center">
-<div class="quarto-layout-cell" style="flex-basis: 31.3%;justify-content: center;">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="images/heat_diffusion.png" width="250"></p>
+<p><img data-src="images/heat_diffusion.png" class="quarto-figure quarto-figure-right" width="250"></p>
 </figure>
 </div>
 </div>
-<div class="quarto-layout-cell" style="flex-basis: 68.8%;justify-content: center;">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="images/heat_diffusion.jpg" width="550"></p>
+<p><img data-src="images/heat_diffusion.jpg" class="quarto-figure quarto-figure-left" width="550"></p>
 </figure>
 </div>
 </div>
@@ -1114,7 +1115,7 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 <div class="fragment" style="text-align: center">
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="animations/dt_single.gif" style="height:100.0%" width="350"></p>
+<p><img data-src="animations/dt_single.gif" class="quarto-figure quarto-figure-center" style="height:100.0%" width="350"></p>
 </figure>
 </div>
 </div>
@@ -1128,7 +1129,7 @@ K_\bullet = K(v)_i = \{\, x \in X \mid \langle x, v \rangle \leq i  \,\}
 </span></p>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="animations/ph_transform.gif" style="height:100.0%" width="550"></p>
+<p><img data-src="animations/ph_transform.gif" class="quarto-figure quarto-figure-center" style="height:100.0%" width="550"></p>
 </figure>
 </div>
 <div class="fragment">
@@ -1176,19 +1177,19 @@ Minimizing <span class="math inline">\mathcal{D}</span> over all <span class="ma
 </div><ol class="aside-footnotes"><li id="fn5"><p><span class="citation" data-cites="turner2014persistent">Turner, Mukherjee, and Boyer (<a href="#/references" role="doc-biblioref" onclick="">2014</a>)</span></p></li></ol></aside></section>
 <section id="application-2-directional-transform-3" class="slide level2">
 <h2>Application #2: Directional Transform</h2>
-<div class="quarto-layout-panel" style="text-align: center;">
+<div class="quarto-layout-panel" style="text-align: center;" data-layout="[[26,62]]">
 <div class="quarto-layout-row quarto-layout-valign-top">
 <div class="quarto-layout-cell" style="flex-basis: 29.6%;justify-content: center;">
 <div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="animations/dt_single.gif"></p>
+<p><img data-src="animations/dt_single.gif" class="quarto-figure quarto-figure-right" style="height:100.0%"></p>
 </figure>
 </div>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 70.5%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="animations/trace_summary.gif"></p>
+<p><img data-src="animations/trace_summary.gif" class="quarto-figure quarto-figure-left" style="height:100.0%"></p>
 </figure>
 </div>
 </div>
@@ -1208,7 +1209,7 @@ Phase-aligning two <em>periodic</em> signals via FFT ( <span class="math inline"
 <h2>Application #2: Directional Transform</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/shape_signatures.png" style="height:100.0%" width="850"></p>
+<p><img data-src="images/shape_signatures.png" class="quarto-figure quarto-figure-center" style="height:100.0%" width="850"></p>
 </figure>
 </div>
 <!-- :::{layout=[[50,50]]}
@@ -1308,7 +1309,7 @@ T_j &amp;= Q_j^T A Q_j &amp;&amp;
 <h2>Lanczos iteration</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="animations/lanczos_krylov.gif" style="width:75.0%;height:100.0%"></p>
+<p><img data-src="animations/lanczos_krylov.gif" class="quarto-figure quarto-figure-center" style="width:75.0%;height:100.0%"></p>
 </figure>
 </div>
 <div style="padding-left: 1em; border: 1px solid black; margin: 0em; ">
@@ -1368,26 +1369,26 @@ $\Phi_\tau(X)$ are _trace-class_, satisfy $\mathtt{tr}(\Phi_\tau(X)) = \sum\limi
 <h2>Scalability: <span class="math inline">\mathrm{matvecs}</span>’s are all you need</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/imate_trace_bench.png" style="height:100.0%" width="750"></p>
+<p><img data-src="images/imate_trace_bench.png" class="quarto-figure quarto-figure-center" style="height:100.0%" width="750"></p>
 </figure>
 </div>
 <p>Figure taken from the new <code>imate</code> package documentation (<a href="https://ameli.github.io/imate/index.html"><code>[gh]/ameli/imate</code></a>)</p>
 </section>
 <section id="application-3-computing-mathrmdgms" class="slide level2">
 <h2>Application #3: Computing <span class="math inline">\mathrm{dgm}</span>’s</h2>
-<div class="quarto-layout-panel">
+<div class="quarto-layout-panel" data-layout="[[50,50]]">
 <div class="quarto-layout-row quarto-layout-valign-bottom">
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-right">
 <figure>
-<p><img data-src="images/divide_conquer_dgm.png" width="400"></p>
+<p><img data-src="images/divide_conquer_dgm.png" class="quarto-figure quarto-figure-right" style="height:100.0%" width="400"></p>
 </figure>
 </div>
 </div>
 <div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
 <div class="quarto-figure quarto-figure-left">
 <figure>
-<p><img data-src="images/bisection_tree.png" width="400"></p>
+<p><img data-src="images/bisection_tree.png" class="quarto-figure quarto-figure-left" style="height:100.0%" width="400"></p>
 </figure>
 </div>
 </div>
@@ -1422,12 +1423,12 @@ Spectral relaxation of rank invariant using _matrix functions_
 <h2>Other applications (time permitting)</h2>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/dw_chi_comp.png" style="width:50.0%;height:90.0%"></p>
+<p><img data-src="images/dw_chi_comp.png" class="quarto-figure quarto-figure-center" style="width:50.0%;height:90.0%"></p>
 </figure>
 </div>
 <div class="quarto-figure quarto-figure-center">
 <figure>
-<p><img data-src="images/elephant_sparsify.png" style="width:80.0%;height:100.0%"></p>
+<p><img data-src="images/elephant_sparsify.png" class="quarto-figure quarto-figure-center" style="width:80.0%;height:100.0%"></p>
 </figure>
 </div>
 </section>
@@ -1451,7 +1452,7 @@ Spectral relaxation of rank invariant using _matrix functions_
 </section>
 <section id="references" class="slide level2 smaller scrollable">
 <h2>References</h2>
-<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="refs" class="references csl-bib-body hanging-indent" data-entry-spacing="0" role="list">
 <div id="ref-adams2017persistence" class="csl-entry" role="listitem">
 Adams, Henry, Tegan Emerson, Michael Kirby, Rachel Neville, Chris Peterson, Patrick Shipman, Sofya Chepushtanova, Eric Hanson, Francis Motta, and Lori Ziegelmeier. 2017. <span>“Persistence Images: A Stable Vector Representation of Persistent Homology.”</span> <em>Journal of Machine Learning Research</em> 18.
 </div>

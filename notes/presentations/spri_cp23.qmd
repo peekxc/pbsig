@@ -249,7 +249,7 @@ Image from: https://epfl-lts2.github.io/gspbox-html/doc/graphs/
 
 :::{.fragment .fade-in style="text-align: center"}
 
-We introduce <span style="color:orange"> _spectral-relaxation_ </span> of the rank invariants $\beta_p^{\ast}$ and $\mu_p^\ast$ that:
+We introduce a general _spectral-relaxation_ of the <span style="color:orange">  persistent rank invariants </span>  $\beta_p^{\ast}$ and $\mu_p^\ast$ that:
 
 <div style="margin-left:2.5em;">
 

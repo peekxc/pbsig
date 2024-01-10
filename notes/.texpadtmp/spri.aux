@@ -43,13 +43,13 @@
 \newlabel{eq:mu_alpha}{{1.5}{2}{Introduction}{equation.1.5}{}}
 \citation{zomorodian2004computing}
 \newlabel{fig:overview}{{1}{3}{Introduction}{Item.5}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces  (left) Vineyards analogy depicting diagrams as `snapshots' over time; (middle) visualization of a rectangular sieve $\mathcal  {R} \subset \Delta _+$ (orange) intersecting vines collapsed onto $\Delta _+$; (right) the integer-valued multiplicity function $\mu _p^{\mathcal  {R}}(\alpha )$ as a function of time $\alpha \in \mathbb  {R}$ (top) and a real-valued spectral relaxation (bottom) }}{3}{figure.1}\protected@file@percent }
+\@writefile{lof}{\contentsline {figure}{\numberline {1}{\ignorespaces (left) A function $f: \mathbb  {R} \to \mathbb  {R}$ and its corresponding persistence diagram obtained by filtering $f$ by its sublevel sets. (right) two spectral interpolations }}{3}{figure.1}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {2}Notation \& Background}{3}{section.2}\protected@file@percent }
 \newlabel{sec:background_notation}{{2}{3}{Notation \& Background}{section.2}{}}
 \newlabel{eq:alt_sum}{{2.1}{3}{Notation \& Background}{equation.2.1}{}}
 \citation{kim2021spatiotemporal}
 \citation{zomorodian2004computing}
-\citation{edelsbrunner2000topological}
+\citation{cohen2006vines}
 \citation{dey2022computational}
 \citation{edelsbrunner2000topological}
 \citation{bauer2022keeping}
@@ -58,6 +58,7 @@
 \citation{dey2022computational}
 \citation{chen2011output}
 \citation{dey2022computational}
+\citation{chazal2016structure}
 \@writefile{toc}{\contentsline {subsection}{\numberline {2.1}Technical background}{4}{subsection.2.1}\protected@file@percent }
 \newlabel{sec:betti_derivation}{{2.1}{4}{Technical background}{subsection.2.1}{}}
 \newlabel{eq:uniq_pivot}{{2.4}{4}{Technical background}{equation.2.4}{}}
@@ -66,7 +67,6 @@
 \newlabel{cor:rank_reduction}{{2}{4}{\cite {chen2011output, dey2022computational}}{corollary.2}{}}
 \newlabel{eq:betti_four}{{{2.6}}{4}{\cite {chen2011output, dey2022computational}}{AMS.3}{}}
 \newlabel{eq:mu_four}{{{2.7}}{4}{\cite {chen2011output, dey2022computational}}{AMS.4}{}}
-\citation{chazal2016structure}
 \citation{bhatia2013matrix}
 \citation{golub2013matrix}
 \citation{memoli2022persistent}
@@ -138,37 +138,29 @@
 \@writefile{lof}{\contentsline {figure}{\numberline {3}{\ignorespaces Random Watts-Strogatz ``Small world'' graph example}}{12}{figure.3}\protected@file@percent }
 \newlabel{fig:watts_strogatz}{{3}{12}{Random Watts-Strogatz ``Small world'' graph example}{figure.3}{}}
 \citation{chen2011output}
-\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces From left to right: Delaunay complex $K$ realized from point set $X \subset \mathbb  {R}^2$ sampled with multiple types of noise around $S^1$ (colored by $\alpha $-codensity); codensity vineyard of $(K, f_\alpha )$ across varying bandwidths $\alpha $ and a fixed sieve point $(a,b) \in \Delta _+$; Tikhonov regularizations $\hat  {\beta }_p^{a,b}(\alpha )$ at varying regularization ($\tau $) and sign width ($\omega $) values. Observe lower values of $\tau $ lead to approximations closer to the rank (black) at the cost of smoothness, while larger values can yield very smooth yet uninformative relaxations. }}{13}{figure.4}\protected@file@percent }
-\newlabel{fig:codensity_opt}{{4}{13}{From left to right: Delaunay complex $K$ realized from point set $X \subset \mathbb {R}^2$ sampled with multiple types of noise around $S^1$ (colored by $\alpha $-codensity); codensity vineyard of $(K, f_\alpha )$ across varying bandwidths $\alpha $ and a fixed sieve point $(a,b) \in \Delta _+$; Tikhonov regularizations $\hat {\beta }_p^{a,b}(\alpha )$ at varying regularization ($\tau $) and sign width ($\omega $) values. Observe lower values of $\tau $ lead to approximations closer to the rank (black) at the cost of smoothness, while larger values can yield very smooth yet uninformative relaxations}{figure.4}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {4}{\ignorespaces From left to right: Delaunay complex $K$ realized from point set $X \subset \mathbb  {R}^2$ sampled with multiple types of noise around $S^1$ (colored by $\alpha $-codensity); codensity vineyard of $(K, f_\alpha )$ across varying bandwidths $\alpha $ and a fixed sieve point $(a,b) \in \Delta _+$; Tikhonov regularizations $\hat  {\beta }_p^{a,b}(\alpha )$ at varying regularization ($\tau $) and sign width ($\omega $) values. Observe lower values of $\tau $ lead to approximations closer to the rank (black) at the cost of smoothness, while larger values can yield very smooth albeit sometimes uninformative relaxations. }}{13}{figure.4}\protected@file@percent }
+\newlabel{fig:codensity_opt}{{4}{13}{From left to right: Delaunay complex $K$ realized from point set $X \subset \mathbb {R}^2$ sampled with multiple types of noise around $S^1$ (colored by $\alpha $-codensity); codensity vineyard of $(K, f_\alpha )$ across varying bandwidths $\alpha $ and a fixed sieve point $(a,b) \in \Delta _+$; Tikhonov regularizations $\hat {\beta }_p^{a,b}(\alpha )$ at varying regularization ($\tau $) and sign width ($\omega $) values. Observe lower values of $\tau $ lead to approximations closer to the rank (black) at the cost of smoothness, while larger values can yield very smooth albeit sometimes uninformative relaxations}{figure.4}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {5}Applications \& Experiments}{13}{section.5}\protected@file@percent }
 \newlabel{sec:applications}{{5}{13}{Applications \& Experiments}{section.5}{}}
 \newlabel{eq:betti_opt}{{5.1}{13}{}{equation.5.1}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {6}Conclusion \& Future Work}{13}{section.6}\protected@file@percent }
 \@writefile{toc}{\contentsline {section}{\numberline {A}Appendix}{14}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Combinatorial Laplacians}{14}{subsection.A.1}\protected@file@percent }
+\newlabel{sec:laplacian_theory}{{A.1}{14}{Combinatorial Laplacians}{subsection.A.1}{}}
+\newlabel{eq:comb_lap}{{A.1}{14}{Combinatorial Laplacians}{equation.A.1}{}}
 \citation{memoli2022persistent}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.1}Combinatorial Laplacians}{16}{subsection.A.1}\protected@file@percent }
-\newlabel{sec:laplacian_theory}{{A.1}{16}{Combinatorial Laplacians}{subsection.A.1}{}}
-\newlabel{eq:comb_lap}{{A.1}{16}{Combinatorial Laplacians}{equation.A.1}{}}
-\newlabel{eq:laplace_hom}{{A.2}{16}{Combinatorial Laplacians}{equation.A.2}{}}
-\newlabel{eq:lap_spectra_conn}{{A.3}{16}{Combinatorial Laplacians}{equation.A.3}{}}
-\newlabel{eq:weight_func}{{A.4}{16}{Combinatorial Laplacians}{equation.A.4}{}}
-\newlabel{eq:weighted_up_laplace}{{A.6}{16}{Combinatorial Laplacians}{equation.A.6}{}}
-\newlabel{eq:l_up}{{A.7}{16}{Combinatorial Laplacians}{equation.A.7}{}}
-\citation{chung1997spectral}
-\newlabel{eq:normalized_up_lap}{{{A.9}}{17}{Combinatorial Laplacians}{AMS.12}{}}
-\newlabel{sec:inner_products}{{A.1}{17}{}{remark.4}{}}
-\newlabel{eq:normal_graph_laplacian}{{A.10}{17}{}{equation.A.10}{}}
+\newlabel{eq:laplace_hom}{{A.2}{15}{Combinatorial Laplacians}{equation.A.2}{}}
+\newlabel{eq:lap_spectra_conn}{{A.3}{15}{Combinatorial Laplacians}{equation.A.3}{}}
+\newlabel{eq:weight_func}{{A.4}{15}{Combinatorial Laplacians}{equation.A.4}{}}
+\newlabel{eq:weighted_up_laplace}{{A.6}{15}{Combinatorial Laplacians}{equation.A.6}{}}
+\newlabel{eq:l_up}{{A.7}{15}{Combinatorial Laplacians}{equation.A.7}{}}
+\newlabel{eq:normalized_up_lap}{{{A.9}}{15}{Combinatorial Laplacians}{AMS.12}{}}
 \citation{chung1997spectral}
 \citation{goldberg2002combinatorial}
-\citation{gu1995divide}
-\citation{lanczos1950iteration}
-\newlabel{app:lap_matvec}{{A.1}{18}{}{equation.A.12}{}}
-\newlabel{eq:lap_quad_from}{{A.14}{18}{}{equation.A.14}{}}
-\newlabel{eq:up_laplace_theory}{{A.15}{18}{}{equation.A.15}{}}
-\newlabel{eq:l_up_matvec}{{A.16}{18}{}{equation.A.16}{}}
-\citation{golub2013matrix}
-\newlabel{eq:krylov_proj}{{A.20}{19}{}{equation.A.20}{}}
-\newlabel{eq:three_term_rec}{{A.21}{19}{}{equation.A.21}{}}
+\newlabel{app:lap_matvec}{{A.1}{16}{}{remark.4}{}}
+\newlabel{eq:lap_quad_from}{{A.11}{16}{}{equation.A.11}{}}
+\newlabel{eq:up_laplace_theory}{{A.12}{16}{}{equation.A.12}{}}
+\newlabel{eq:l_up_matvec}{{A.13}{16}{}{equation.A.13}{}}
 \citation{edelsbrunner2000topological}
 \citation{edelsbrunner2000topological}
 \citation{bauer2020persistence}
@@ -178,20 +170,15 @@
 \citation{dey2022computational}
 \citation{bauer2020persistence}
 \citation{bauer2020persistence}
-\newlabel{eq:pht}{{{A.23}}{20}{}{AMS.14}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Complexity of Persistence \& Related work}{20}{subsection.A.2}\protected@file@percent }
+\newlabel{eq:pht}{{{A.15}}{17}{}{AMS.14}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.2}Complexity of Persistence \& Related work}{17}{subsection.A.2}\protected@file@percent }
 \citation{dey2022computational}
-\citation{parlett1994we}
-\citation{golub2013matrix}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Finite-precision arithmetic}{21}{subsection.A.3}\protected@file@percent }
-\newlabel{subsec:rounding}{{A.3}{21}{Finite-precision arithmetic}{subsection.A.3}{}}
 \citation{newman2001laplacian}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.3}Laplacian Interpretation}{18}{subsection.A.3}\protected@file@percent }
+\newlabel{ex:laplacian}{{A.1}{18}{Adapted from~\cite {newman2001laplacian}}{example.A.1}{}}
 \citation{newman2001laplacian}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Laplacian Interpretation}{22}{subsection.A.4}\protected@file@percent }
-\newlabel{ex:laplacian}{{A.1}{22}{Adapted from~\cite {newman2001laplacian}}{example.A.1}{}}
-\citation{golub2013matrix}
 \citation{dey2022computational}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.5}Proofs}{24}{subsection.A.5}\protected@file@percent }
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.4}Proofs}{19}{subsection.A.4}\protected@file@percent }
 \bibdata{pbsig_bib}
 \bibcite{adams2017persistence}{1}
 \bibcite{bauer2020persistence}{2}
@@ -201,11 +188,11 @@
 \bibcite{bubenik2015statistical}{6}
 \bibcite{cerri2013betti}{7}
 \bibcite{chazal2009gromov}{8}
+\newlabel{eq:s1}{{A.17}{20}{}{equation.A.17}{}}
+\newlabel{eq:s2}{{A.18}{20}{}{equation.A.18}{}}
+\newlabel{eq:s3}{{A.19}{20}{}{equation.A.19}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {A.5}Proofs of basic properties}{20}{subsection.A.5}\protected@file@percent }
 \bibcite{chazal2016structure}{9}
-\newlabel{eq:s1}{{A.30}{25}{}{equation.A.30}{}}
-\newlabel{eq:s2}{{A.31}{25}{}{equation.A.31}{}}
-\newlabel{eq:s3}{{A.32}{25}{}{equation.A.32}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {A.6}Proofs of basic properties}{25}{subsection.A.6}\protected@file@percent }
 \bibcite{chen2011output}{10}
 \bibcite{chung1997spectral}{11}
 \bibcite{cohen2005stability}{12}
@@ -216,33 +203,32 @@
 \bibcite{edelsbrunner2000topological}{17}
 \bibcite{goldberg2002combinatorial}{18}
 \bibcite{golub2013matrix}{19}
-\bibcite{gu1995divide}{20}
-\bibcite{horak2013spectra}{21}
-\bibcite{kim2021spatiotemporal}{22}
-\bibcite{lanczos1950iteration}{23}
-\bibcite{mangasarian1994class}{24}
-\bibcite{memoli2022persistent}{25}
-\bibcite{newman2001laplacian}{26}
-\bibcite{nigmetov2022topological}{27}
-\bibcite{parlett1994we}{28}
-\bibcite{perea2016persistent}{29}
-\bibcite{perea2022approximating}{30}
-\bibcite{piekenbrock2021move}{31}
-\bibcite{pun2018persistent}{32}
-\bibcite{scoccola2023fibered}{33}
-\bibcite{simon1984analysis}{34}
-\bibcite{turner2014persistent}{35}
-\bibcite{zhao2012approximation}{36}
-\bibcite{zomorodian2004computing}{37}
+\bibcite{horak2013spectra}{20}
+\bibcite{kim2021spatiotemporal}{21}
+\bibcite{lanczos1950iteration}{22}
+\bibcite{mangasarian1994class}{23}
+\bibcite{memoli2022persistent}{24}
+\bibcite{newman2001laplacian}{25}
+\bibcite{nigmetov2022topological}{26}
+\bibcite{parlett1994we}{27}
+\bibcite{perea2016persistent}{28}
+\bibcite{perea2022approximating}{29}
+\bibcite{piekenbrock2021move}{30}
+\bibcite{pun2018persistent}{31}
+\bibcite{scoccola2023fibered}{32}
+\bibcite{simon1984analysis}{33}
+\bibcite{turner2014persistent}{34}
+\bibcite{zhao2012approximation}{35}
+\bibcite{zomorodian2004computing}{36}
 \bibstyle{plain}
-\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{27}{appendix.A}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{27}{appendix.B}\protected@file@percent }
-\newlabel{eq:lap_rayleigh}{{B.2}{27}{Laplacian facts}{equation.B.2}{}}
 \citation{chung1997spectral}
+\@writefile{toc}{\contentsline {section}{\numberline {A}Boundary matrix factorization}{23}{appendix.A}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {B}Laplacian facts}{23}{appendix.B}\protected@file@percent }
+\newlabel{eq:lap_rayleigh}{{B.2}{23}{Laplacian facts}{equation.B.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{23}{appendix.C}\protected@file@percent }
+\newlabel{sec:up_laplace_matvec}{{C}{23}{Laplacian \texttt {matvec} products}{appendix.C}{}}
 \citation{goldberg2002combinatorial}
-\@writefile{toc}{\contentsline {section}{\numberline {C}Laplacian \texttt  {matvec} products}{28}{appendix.C}\protected@file@percent }
-\newlabel{sec:up_laplace_matvec}{{C}{28}{Laplacian \texttt {matvec} products}{appendix.C}{}}
-\newlabel{alg:lap_matvec}{{C}{28}{Laplacian \texttt {matvec} products}{appendix.C}{}}
-\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{28}{algorithm.1}\protected@file@percent }
-\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{29}{appendix.D}\protected@file@percent }
-\gdef \@abspage@last{30}
+\newlabel{alg:lap_matvec}{{C}{24}{Laplacian \texttt {matvec} products}{appendix.C}{}}
+\@writefile{loa}{\contentsline {algorithm}{\numberline {1}{\ignorespaces \texttt  {matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}}{24}{algorithm.1}\protected@file@percent }
+\@writefile{toc}{\contentsline {section}{\numberline {D}Parameterized setting \& Perturbation theory}{24}{appendix.D}\protected@file@percent }
+\gdef \@abspage@last{26}

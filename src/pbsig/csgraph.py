@@ -10,6 +10,20 @@ from scipy.sparse import issparse, sparray, coo_array, diags
 from scipy.sparse.linalg import LinearOperator, aslinearoperator
 import _laplacian as laplacian
 
+
+def deflate_sparse(A: sparray):
+  """'Deflates' a given sparse array 'A' by removing it's rows and columns that are all zero. 
+  
+  Returns a new sparse matrix with the same data but potentially diffferent shape. 
+  """
+  from hirola import HashTable
+  A = A if (hasattr(A, "row") and hasattr(A, "col") and hasattr(A, "data")) else A.tocoo()
+  h = HashTable(1.1*len(A.data), np.int32)
+  h.add(A.row)
+  h.add(A.col)
+  return coo_array((A.data, (h[A.row], h[A.col])), shape=(h.length, h.length))
+
+
 def adjacency_matrix(S: sx.ComplexLike, p: int = 0, weights: ArrayLike = None):
   assert len(S) > p, "Empty simplicial complex"
   if sx.dim(S) <= (p+1):
@@ -394,8 +408,12 @@ class WeightedLaplacian:
     Y = self.laplacian @ X if self.form == "array" else self.op @ X
     return Y.astype(self.dtype)
 
-  def operator(self):
-    return self.laplacian if self.form == "array" else self.op
+  def operator(self, deflate: bool = False):
+    if self.form == "array": 
+      return deflate_sparse(self.laplacian) if deflate else self.laplacian
+    else: 
+      return self.op 
+    # return self.laplacian if self.form == "array" else self.op
 
   # Scipy doesn't like this 
   def _matvec(self, x: np.ndarray) -> np.ndarray:

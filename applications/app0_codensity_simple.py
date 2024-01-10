@@ -64,7 +64,7 @@ from pbsig.linalg import spectral_rank
 filter_rngs = np.array([np.max(f(S)) for f in ri.family])
 w = 0.1
 ri.sift(w=w*np.max(filter_rngs)) # w is a smoothing parameter
-assert ri.q_laplacian.sign_width == w
+# assert ri.q_laplacian.sign_width == w
 
 # %% Try multiple spectral functions
 from pbsig.linalg import spectral_rank, tikhonov, heat, nuclear_interp

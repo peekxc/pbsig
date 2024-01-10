@@ -3,7 +3,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 from scipy.special import comb
 from itertools import combinations
-
+from .utility import progressbar
 from combin import rank_to_comb, comb_to_rank
 from splex import * 
 
@@ -46,7 +46,7 @@ def _h0_apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
   
   return true_pairs
 
-def _h1_apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex"):
+def _h1_apparent_pairs(K: ComplexLike, f: Callable, refinement: str = "lex", progess: bool = False):
   n = card(K, 0)
   if card(K,2) == 0: return []
   triangles = np.array(list(faces(K,2))).astype(np.uint16)

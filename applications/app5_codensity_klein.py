@@ -88,7 +88,6 @@ stratified_ind = np.array(list(collapse(strata)))
 # stratified_ind = np.random.choice(np.arange(len(knn_density)), size = 500, replace=False, p=knn_density / np.sum(knn_density))
 # quantiles = np.quantile(knn_density, q=np.linspace(0, 1, 10)[1:])
 # np.bincount(np.searchsorted(quantiles, knn_density))
-
 # %% Show the stratified sampling
 X = Klein.project_2d()
 p = figure(width=300, height=300)
@@ -119,11 +118,52 @@ print(f"Is connected? {not(np.any(np.isinf(patch_geodesic)))}")
 f1 = codensity_filter
 f2 = geodesic_filter
 connected_diam = np.max(minimum_spanning_tree(squareform(n_geodesic)).data)
-S = rips_complex(normalize(patch_geodesic), radius=(connected_diam * 1.35)/2, p = 2)
+S = rips_complex(n_geodesic, radius=(connected_diam * 1.35) / 2, p = 2)
+
+# %% Try to reduce the size of the complex w/ quadric decimation
+# from pbsig.simplicial import simplify_complex
+# from pbsig.linalg import pca, cmds 
+# # cmds(patch_geodesic, 3)
+# landmark_xyz = pca(Klein.patch_data, 3)[stratified_ind,:]
+# # S_new, xyz = simplify_complex(S, landmark_xyz)
+
+# from fast_simplification import simplify
+# triangles = np.array(sx.faces(S, 2))
+# pos = landmark_xyz.astype(np.float32) 
+# pos_new, tri_new = simplify(pos, triangles, target_reduction = 0.50, agg = 1)
+# simplicial_complex(tri_new, form="tree")
+
+# simplify(Klein.patch_data[:,[0,1,2]].astype(np.float32), triangles, target_count = 100, agg = 9)[1].shape
+
+# pc = Klein.patch_data[:,[0,1,2]].astype(np.float32)
+
+# import pyfqmr
+# mesh_simplifier = pyfqmr.Simplify()
+# mesh_simplifier.setMesh(landmark_xyz, triangles)
+# mesh_simplifier.simplify_mesh(target_count = 50000, aggressiveness=7, preserve_border=True, verbose=10)
+
+
+
+# %% Sparsify with GUDHI 
+import gudhi
+sparse_S = gudhi.RipsComplex(distance_matrix=squareform(n_geodesic), max_edge_length=(connected_diam * 1.35), sparse=0.85)
+sparse_st = sparse_S.create_simplex_tree(max_dimension=2)
+# sparse_st.num_vertices()
+print(f"Number simplices: {sparse_st.num_simplices()}")
+S = sx.simplicial_complex([s for s, fs in sparse_st.get_simplices()], form='tree')
+sf_map = { sx.Simplex(s) : fs for s,fs in sparse_st.get_simplices() }
+s_values = np.array([sf_map[s] for s in S])
+geodesic_filter = sx.fixed_filter(S, s_values)
+f2 = geodesic_filter
+
+# K = sx.RankFiltration([(k,s) for s,k in sparse_st.get_filtration()])
+# sparse_st.compute_persistence()
+# sparse_st.persistence_pairs()
+# S_sparse = sx.simplicial_complex([s for s, v in list(sparse_st.get_simplices())], form='rank')
 
 # %% Compute the hilbert function 
 from pbsig.rivet import figure_betti, anchors, push_map
-BI = bigraded_betti(S, f1, f2, p=1, xbin=25, ybin=25)
+BI = bigraded_betti(S, f1, f2, p=1, xbin=30, ybin=30)
 
 # %% Show the hilbert function
 p = figure_betti(BI, width=350, height=350, highlight=5, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
@@ -131,35 +171,125 @@ show(p)
 
 # %% Choose the intercept + angle by hand 
 offset, angle = 0.11, 29
-line_f = lambda x: np.tan(np.deg2rad(angle)) * x + offset
+line_f = lambda x, theta: np.tan(np.deg2rad(theta)) * x + offset
 p = figure_betti(BI, width=350, height=350, show_coords=True, highlight=5, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
-p.line(x=[0.0, 1.0], y=[line_f(0.0), line_f(1.0)], color='red')
+p.line(x=[0.0, 1.0], y=[line_f(0.0, angle), line_f(1.0, angle)], color='red')
+
+angle1, angle2 = 20, 39
+p.line(x=[0.0, 1.0], y=[line_f(0.0, angle1), line_f(1.0, angle1)], color='blue')
+p.line(x=[0.0, 1.0], y=[line_f(0.0, angle2), line_f(1.0, angle2)], color='blue')
 show(p)
 
 # %% Apply the push map to get a single filtration; look at its diagram
 Y = np.c_[f1(S), f2(S)]
 YL = push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset)
 
-# sparse_S = gudhi.RipsComplex(distance_matrix=squareform(normalize(patch_geodesic)), max_edge_length=(connected_diam * 1.3)/2, sparse=0.5)
-# sparse_st = sparse_S.create_simplex_tree(max_dimension=2)
-# K = sx.RankFiltration([(k,s) for s,k in sparse_st.get_filtration()])
+def push_fast(X, a, b):
+  x, y = X[:,0], X[:,1]
+  cond = (x * a + b) < y
+  tmp_0 = np.where(cond, (y - b) / a,  x)
+  tmp_1 = np.where(cond, y, a * x + b)
+  return np.sqrt(tmp_0 ** 2 + (b - tmp_1) ** 2)
+
+# timeit.timeit(lambda: push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset), number = 5) 
+# # 1.5 s
+# timeit.timeit(lambda: push_fast(Y, a=np.tan(np.deg2rad(angle)), b=offset), number = 5)
+# 0.002796350046992302 seconds 
 
 ## This should show 5 points in H1 with high persistence
 from pbsig.persistence import ph 
 from pbsig.vis import figure_dgm
 filter_angle = fixed_filter(S, YL[:,2])
+
+# pairs = apparent_pairs(S_sparse, filter_angle, p=1)
+
+## Raw persistence
 K = sx.RankFiltration(S, filter_angle)
 dgms = ph(K)
 show(figure_dgm(dgms[1]))
 
-a,b = 0.55, 0.70
+a,b = 0.60, 0.70
 
 #%% First, verify we get 5 in the spectral rank invariant
 from pbsig.betti import BettiQuery, betti_query
 # t0,t1,t2,t3 = betti_query(S, filter_angle, p = 1, i=a, j=b, matrix_func=lambda x: x, terms=True)
 bq = BettiQuery(S, f=filter_angle, p=1)
 bq.sign_width = 0.0
-t0,t1,t2,t3 = list(bq.generate(i=a, j=b, mf=lambda x: x))[0] # gave up after 12minutes
+
+## Try to create an objective function 
+from primate.trace import hutch
+
+bq.q_solver = lambda L: numrank(L, atol = 0.50, confidence=0.90)  # hutch(L, maxiter=5)
+bq.p_solver = lambda L: numrank(L, atol = 0.50, confidence=0.90)
+t0, t1, t2, t3 = list(bq.generate(i=a, j=b, mf=lambda x: x))[0]
+
+print(f"{np.sum(t0)}, {t1}, {t2}, {t3}")
+np.sum(t0) - t1 - t2 + t3
+
+tikhonov = lambda x: x / (x + 1e-2)
+mf = lambda L: hutch(L, fun=tikhonov, rtol=0.10, maxiter=300)
+bq.q_solver = mf
+bq.p_solver = mf
+t0, t1, t2, t3 = list(bq.generate(i=a, j=b, mf=np.sum))[0]
+
+print(f"{np.sum(t0)}, {t1}, {t2}, {t3}")
+np.sum(t0) - t1 - t2 + t3
+
+## 
+from pbsig.interpolate import ParameterizedFilter
+
+## What is a parametrized filter? It should 
+# ParameterizedFilter(
+#   S, 
+#   family=[push_fast(Y, a=np.tan(np.deg2rad(theta)), b=offset) for theta ], 
+# )
+
+for theta in np.linspace(angle1, angle2, 20):
+  push_f = push_fast(Y, a=np.tan(np.deg2rad(theta)), b=offset)
+  bq(i=a, j=b, mf=np.sum)
+
+
+numrank(bq.Lq.operator(), atol = 5.0, confidence=0.99)
+
+
+from scipy.sparse.linalg import eigsh
+ew = eigsh(bq.Lp.operator(), k=248)[0]
+np.sum(ew >= 1e-2)
+numrank(bq.Lp.operator(), atol=0.0, plot=True, maxiter=300)
+np.sum(np.abs(bq.Lp.operator().todense()).sum(axis=1) > 0)
+A = bq.Lp.operator()
+v = np.random.choice([-1.0, +1.0], size=A.shape[0]) / np.sqrt(249)
+np.sum(A @ v != 0)
+
+B = A.todense()[:10,:10]
+B[1,1] = 1
+
+np.unique(A.row)
+
+rc = np.unique(np.append(A.row, A.col))
+rc_map = { ii : i for i,ii in enumerate(rc) }
+I = np.array([rc_map[i] for i in A.row])
+J = np.array([rc_map[j] for j in A.col])
+B = coo_array((A.data, (I,J)), shape=(len(rc), len(rc)))
+numrank(B)
+
+A = A.tocsr()
+A.indices
+A.indptr
+
+
+
+
+
+numrank(B, verbose=True)
+
+
+
+
+# 177.0 - 59 - 322 + 209 == 5! 
+
+# t0,t1,t2,t3 = list(bq.generate(i=a, j=b, mf=lambda x: x))[0] # gave up after 12minutes
+
 
 ## Direct method
 A_dense = bq.Lq.operator().todense()
@@ -170,22 +300,40 @@ from scipy.sparse.linalg import eigsh
 eigsh(bq.Lq.operator(), k = bq.Lq.shape[1]-1, tol = 1e-6, maxiter=10e5, return_eigenvectors=False)
 ## didn't finish even after 21 minutes
 
-eigsh(bq.Lq.operator(), k = 10, tol = 1e-6, maxiter=10e5, which='SM', return_eigenvectors=False)
+# numrank(bq.Lq.operator(), atol=5, verbose=True, quad="fttr", plot=True)
+# from primate.trace import hutch
+# hutch(bq.Lq.operator(), fun="numrank", threshold=1e-2, atol = 5, plot=True, verbose=True, num_threads=1)
+
+# eigsh(bq.Lq.operator(), k = 10, tol = 1e-6, maxiter=10e5, which='SM', return_eigenvectors=False)
+
+import timeit
+x = np.random.uniform(size=bq.Lq.shape[0])
+timeit.timeit(lambda: bq.Lq.operator() @ x, number = 1500)
+timeit.timeit(lambda: D @ (D.T @ x), number = 1500)
+
+## This is the fastest, but not by much (~10%)
+# D = bq.Lq.bm.tocsc()
+# timeit.timeit(lambda:  D @ (D.T @ x), number = 1500)
+
+## Memory reduction is only about 57% 
+# (D.indices.nbytes + D.indptr.nbytes + D.data.nbytes) // 1024
+# L = bq.Lq.operator()
+# (L.row.nbytes + L.col.nbytes + L.data.nbytes) // 1024
 
 ## SLQ 
-from primate.trace import sl_trace, sl_gauss
+from primate.functional import numrank
 # bq.Lq.reweight(np.where(bq.sw <= 0.70, 1.0, 0.0), np.where(bq.fw > 0.55, 1.0, 0.0))
 bq.Lq.reweight(np.where(bq.sw <= 0.70, 1.0, 0.0), np.ones(len(bq.fw)))
 A = bq.Lq.bm @ diags(TI) @ bq.Lq.bm.T
 
-from primate.plotting import figure_trace
-wut = sl_trace(bq.Lq.operator(), fun = "numrank", maxiter=2000, orth = 10, deg = 50, num_threads=8)
-show(figure_trace(wut))
-show(figure_trace(wut[wut < 9100]))
-# np.min(wut)
-# np.max(wut)
-np.mean(wut)
-np.mean(wut[wut < 9100])
+# from primate.plotting import figure_trace
+# wut = sl_trace(bq.Lq.operator(), fun = "numrank", maxiter=2000, orth = 10, deg = 50, num_threads=8)
+# show(figure_trace(wut))
+# show(figure_trace(wut[wut < 9100]))
+# # np.min(wut)
+# # np.max(wut)
+# np.mean(wut)
+# np.mean(wut[wut < 9100])
 
 
 nw = sl_gauss(bq.Lq.operator(), n=1500)
