@@ -1,5 +1,6 @@
 import numpy as np 
 from numbers import Number
+from typing import Union, Optional, Callable, Sequence
 from typing import *
 from scipy.sparse import diags
 from scipy.sparse.linalg import eigsh
@@ -247,46 +248,134 @@ def tolerance(m: int, n: int, dtype: type = float):
     return np.max([_machine_eps, spectral_radius * np.max([m,n]) * _min_res])
   return _tol
 
+from .interpolate import ParameterizedFilter
 
 class BettiQuery(Callable):
-  def __init__(self, S: Union[LinearOperator, ComplexLike], f: Callable[SimplexConvertible, float], p: int, **kwargs):
-    self.yw = f(faces(S, p-1))
-    self.fw = f(faces(S, p))
-    self.sw = f(faces(S, p+1))
+  def __init__(self, S: Union[LinearOperator, ComplexLike], p: int, **kwargs):
+    self.p = p
+    self.weights = {} 
+    self.weights[p-1] = np.ones(card(S, p-1)) # f(faces(S, p-1))
+    self.weights[p] = np.ones(card(S, p))   # f(faces(S, p))
+    self.weights[p+1] = np.ones(card(S, p+1)) # f(faces(S, p+1))
     self.delta = np.finfo(float).eps 
-    self.atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     
-    self.p_solver = PsdSolver(k = int(card(S, p-1)-1)) 
+    self.atol = kwargs['tol'] if 'tol' in kwargs else 1e-5 
+    self.p_solver = PsdSolver(k = int(card(S, p-1)-1)) ## can output either a vector or a scalar 
     self.q_solver = PsdSolver(k = int(card(S, p)-1))
     self.sign_width = kwargs.get('w', 0.0)
     L_kwargs = dict(normed = False, isometric = False, sign_width = self.sign_width, form="array") | kwargs
     p_kwargs = (L_kwargs | dict(form='array')) if p == 0 else L_kwargs
     self.Lp = WeightedLaplacian(S, p = p-1, **p_kwargs)
     self.Lq = WeightedLaplacian(S, p = p, **L_kwargs)
+    self.fun = spectral_rank
 
-  def generate(self, i: Union[int, Sequence], j: Union[int, Sequence], mf: Callable = spectral_rank) -> Generator: 
-    I, J = np.ravel(i), np.ravel(j)
-    inc_all = smooth_upstep(0, self.sign_width)
-    for cc, (ii, jj) in enumerate(zip(I, J)):
-      assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+  def aggregate(self, x: ArrayLike) -> float:
+    if isinstance(x, Number):
+      return x
+    else: 
+      return np.sum(self.fun(x))
+
+  def operator(self, term: int, i: float, j: float, k: float = None, l: float = None, deflate: bool = False):
+    yw, fw, sw = self.weights[self.p-1], self.weights[self.p], self.weights[self.p+1]
+    if k is None and l is None: 
+      ii, jj = i, j
+      inc_all = smooth_upstep(0, self.sign_width)
       fi_inc = smooth_dnstep(lb = ii-self.sign_width, ub = ii+self.delta)
       fi_exc = smooth_upstep(lb = ii, ub = ii+self.sign_width)         
       fj_inc = smooth_dnstep(lb = jj-self.sign_width, ub = jj+self.delta)
-      t0 = mf(fi_inc(self.fw)) # instead of solver 
-      self.Lp.reweight(fi_inc(self.fw), inc_all(self.yw))
-      t1 = mf(self.p_solver(self.Lp.operator(deflate=True)))
-      self.Lq.reweight(fj_inc(self.sw), inc_all(self.fw)) 
-      t2 = mf(self.q_solver(self.Lq.operator(deflate=True)))
-      self.Lq.reweight(fj_inc(self.sw), fi_exc(self.fw))
-      t3 = mf(self.q_solver(self.Lq.operator(deflate=True)))
-      yield t0, t1, t2, t3
+      from scipy.sparse import dia_array
+      if term == 0: 
+        return dia_array(fi_inc(fw))
+      elif term == 1: 
+        self.Lp.reweight(fi_inc(fw), inc_all(yw))
+        return self.Lp.operator(deflate=deflate)
+      elif term == 2: 
+        self.Lq.reweight(fj_inc(sw), inc_all(fw)) 
+        return self.Lq.operator(deflate=deflate)
+      elif term == 3: 
+        self.Lq.reweight(fj_inc(sw), fi_exc(fw))
+        return self.Lq.operator(deflate=deflate)
+      else: 
+        raise ValueError("Term must be one of { 0, 1, 2, 3 }.")
+    else: 
+      ii,jj,kk,ll = i,j,k,l 
+      fi_exc = smooth_upstep(lb = ii, ub = ii+self.sign_width)
+      fj_exc = smooth_upstep(lb = jj, ub = jj+self.sign_width) 
+      fk_inc = smooth_dnstep(lb = kk-self.sign_width, ub = kk+self.delta)
+      fl_inc = smooth_dnstep(lb = ll-self.sign_width, ub = ll+self.delta)
+      if term == 0: 
+        self.Lq.reweight(fk_inc(sw), fj_exc(fw)) 
+        return self.Lq.operator(deflate=deflate)
+      elif term == 1: 
+        self.Lq.reweight(fk_inc(sw), fi_exc(fw)) 
+        return self.Lq.operator(deflate=deflate)
+      elif term == 2: 
+        self.Lq.reweight(fl_inc(sw), fj_exc(fw)) 
+        return self.Lq.operator(deflate=deflate)
+      elif term == 3:
+        self.Lq.reweight(fl_inc(sw), fi_exc(fw)) 
+        return self.Lq.operator(deflate=deflate)
+      else: 
+        raise ValueError("Term must be one of { 0, 1, 2, 3 }.")
 
-  def __call__(self, i: Union[int, Sequence], j: Union[int, Sequence], mf: Callable = spectral_rank, terms: bool = False) -> Union[Number, np.ndarray]:
+  def generate(self, i: Union[int, Sequence], j: Union[int, Sequence], k: Union[int, Sequence] = None, l: Union[int, Sequence] = None) -> Generator: 
     I, J = np.ravel(i), np.ravel(j)
+    inc_all = smooth_upstep(0, self.sign_width)
+    yw, fw, sw = self.weights[self.p-1], self.weights[self.p], self.weights[self.p+1]
+
+    ## Generate the four terms 
+    if k is None and l is None: 
+      for cc, (ii, jj) in enumerate(zip(I, J)):
+        assert ii <= jj, f"Invalid point ({ii:.2f}, {jj:.2f}): must be in the upper half-plane"
+        fi_inc = smooth_dnstep(lb = ii-self.sign_width, ub = ii+self.delta)
+        fi_exc = smooth_upstep(lb = ii, ub = ii+self.sign_width)         
+        fj_inc = smooth_dnstep(lb = jj-self.sign_width, ub = jj+self.delta)
+        t0 = self.aggregate(fi_inc(fw)) # instead of solver 
+        self.Lp.reweight(fi_inc(fw), inc_all(yw))
+        t1 = self.aggregate(self.p_solver(self.Lp.operator(deflate=True)))
+        self.Lq.reweight(fj_inc(sw), inc_all(fw)) 
+        t2 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        self.Lq.reweight(fj_inc(sw), fi_exc(fw))
+        t3 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        yield t0, t1, t2, t3
+    else: 
+      K, L = np.ravel(k), np.ravel(l)
+      assert len(np.unique([len(K), len(L), len(I), len(J)])) == 1, "i,j,k,l sequences lengths must all match."
+
+      for cc, (ii,jj,kk,ll) in enumerate(zip(I,J,K,L)):
+        fi_exc = smooth_upstep(lb = ii, ub = ii+self.sign_width)
+        fj_exc = smooth_upstep(lb = jj, ub = jj+self.sign_width) 
+        fk_inc = smooth_dnstep(lb = kk-self.sign_width, ub = kk+self.delta)
+        fl_inc = smooth_dnstep(lb = ll-self.sign_width, ub = ll+self.delta)
+                
+        self.Lq.reweight(fk_inc(sw), fj_exc(fw))
+        t0 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        self.Lq.reweight(fk_inc(sw), fi_exc(fw))
+        t1 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        self.Lq.reweight(fl_inc(sw), fj_exc(fw))
+        t2 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        self.Lq.reweight(fl_inc(sw), fi_exc(fw))
+        t3 = self.aggregate(self.q_solver(self.Lq.operator(deflate=True)))
+        yield t0, t1, t2, t3
+
+  def __call__(self, 
+    i: Union[int, Sequence], 
+    j: Union[int, Sequence], 
+    k: Union[int, Sequence] = None, 
+    l: Union[int, Sequence] = None,
+    terms: bool = False
+  ) -> Union[Number, np.ndarray]:
+    I, J = np.ravel(i), np.ravel(j)
+
     output_shape = (len(I), 4) if terms else len(I)
     output = np.zeros(shape=output_shape)
-    for c, vals in enumerate(self.generate(I,J,mf)):
-      output[c] = np.array(vals) if terms else vals[0] - vals[1] - vals[2] + vals[3]
-    return np.take(output, 0) if output.shape[0] == 1 else output
+    if k is None and l is None:   
+      for c, vals in enumerate(self.generate(I,J)):
+        output[c] = np.array(vals) if terms else vals[0] - vals[1] - vals[2] + vals[3]
+    else: 
+      K, L = np.ravel(k), np.ravel(l)
+      for c, vals in enumerate(self.generate(I,J,K,L)):
+        output[c] = np.array(vals) if terms else vals[0] - vals[1] - vals[2] + vals[3]
+    return np.take(output, 0) if np.prod(output.shape) == 1 else output
 
 from pbsig.csgraph import param_laplacian, WeightedLaplacian
 def betti_query(

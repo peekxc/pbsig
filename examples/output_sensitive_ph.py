@@ -72,9 +72,9 @@ def bisection_tree_top_down(mu_q: Callable, ind: tuple, mu: int, splitrows: bool
 
 ## First find creators, then identify each corresponding destroyer in the unique pair with bisection again
 dgm_res = []
-creators = list(bisection_tree_top_down(mu_rank, ind=ind, mu=mu_rank(*ind), splitrows=True))
+creators = list(bisection_tree_top_down(mu_rank, ind=ind, mu=mu_rank(*ind), splitrows=True, verbose=True))
 for i in creators:
-  d = list(bisection_tree_top_down(mu_rank, ind=(i, i, ind[2], ind[3]), mu=mu_rank(i, i, ind[2], ind[3]), splitrows=False))
+  d = list(bisection_tree_top_down(mu_rank, ind=(i, i, ind[2], ind[3]), mu=mu_rank(i, i, ind[2], ind[3]), splitrows=False, verbose=True))
   assert len(d) == 1
   dgm_res.append([i, d[0]])
 print(dgm_res)
@@ -97,15 +97,17 @@ box_index_rng = lambda a,b: (a, int((a+b)/2), int((a+b)/2), b)
 
 ## Statically generate all boxes spanning the integer grid [a,b] x [a,b]
 ## in a top-down approach
-def generate_boxes(a: int, b: int, res: list = []):
-  res.append((a, (a+b) // 2, (a+b) // 2, b))
+def generate_boxes(a: int, b: int, res: dict = {}, index: int = 0):
+  r = (a, (a+b) // 2, (a+b) // 2, b)
+  res[index] = r
+  # res.append((a, (a+b) // 2, (a+b) // 2, b))
   if abs(a-b) <= 1: 
     return  
   else:
-    generate_boxes(a, (a+b) // 2, res)
-    generate_boxes((a+b) // 2, b, res)
+    generate_boxes(a, (a+b) // 2, res, 2*index + 1)
+    generate_boxes((a+b) // 2, b, res, 2*index + 2)
 
-boxes = []
+boxes = {}
 generate_boxes(0, len(K), boxes)
 
 ## All the persistence pairs! 

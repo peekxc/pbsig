@@ -13,6 +13,7 @@ from scipy.interpolate import CubicSpline
 from scipy.sparse import issparse, sparray
 from math import prod
 
+
 ## Local imports
 from .meta import *
 from .simplicial import * 
@@ -646,7 +647,7 @@ class PsdSolver:
       if method == 'dac': assert isinstance(A, np.ndarray), f"Cannot use divide-and-conquer with operators of type '{type(A)}'"
       method = np.linalg.eigh if self.eigenvectors else np.linalg.eigvalsh
       return method, {}
-    elif isinstance(A, spmatrix) or isinstance(A, LinearOperator):
+    elif issparse(A) or isinstance(A, LinearOperator):
       # if nev == A.shape[0] and (solver == 'irl' or solver == 'default'):
       #   import warnings
       #   warnings.warn("Switching to PRIMME, as ARPACK cannot estimate all eigenvalues without shift-invert")

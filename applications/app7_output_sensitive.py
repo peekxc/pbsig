@@ -75,11 +75,185 @@ from itertools import combinations
 SR = sx.RankComplex(K_simplices) ## this doesn't work yet for unknown reasons
 ST = sx.simplicial_complex(K_simplices, form='tree')
 
-betti_test = np.array(list(betti_query(ST, index_filter, p=1, matrix_func=spectral_rank, i = I, j = J, form='lo')))
-betti_truth = np.array([np.sum(np.logical_and(dgms_index[1]['birth'] <= i, j < dgms_index[1]['death'])) for i,j in combinations(np.arange(M), 2)])
-assert np.allclose(betti_truth - betti_test, 0)
+# betti_test = np.array(list(betti_query(ST, index_filter, p=1, matrix_func=spectral_rank, i = I, j = J, form='lo')))
+# betti_truth = np.array([np.sum(np.logical_and(dgms_index[1]['birth'] <= i, j < dgms_index[1]['death'])) for i,j in combinations(np.arange(M), 2)])
+# assert np.allclose(betti_truth - betti_test, 0)
 
-# %% Assemble the diagram in the index-persistence plane
+# %% Assemble the diagram in the index-persistence plane, using top-down approach 
+from pbsig.betti import BettiQuery
+
+## View the filtration
+K.print()
+p = figure_dgm(dgms_index[1])
+show(p)
+print(dgms_index[1])
+
+## Setup the query model
+m = len(K)
+query = BettiQuery(ST, p = 1)
+
+a,b,c,d = 0, m // 2, m // 2 + 1, m
+
+p.rect(x=a + (b-a) / 2, y=c + (d-c) / 2, width=b-a, height=d-c, fill_color=None)
+show(p)
+
+## Create a simplex to value map 
+s_map = { sx.Simplex(s) : i for i, s in K }
+query.weights[0] = np.array([s_map[s] for s in sx.faces(ST, 0)])
+query.weights[1] = np.array([s_map[s] for s in sx.faces(ST, 1)])
+query.weights[2] = np.array([s_map[s] for s in sx.faces(ST, 2)])
+
+## Replace the solver 
+from primate.functional import numrank
+def my_solver(L):
+  if len(L.data) == 0: 
+    return 0 
+  elif L.shape[0] <= 64:
+    return np.linalg.matrix_rank(L.todense())
+  else: 
+    return numrank(L, atol=0.50, gap="simple")
+
+query.q_solver = my_solver
+query.p_solver = my_solver
+
+def generate_boxes(a: int, b: int, res: dict = {}, index: int = 0):
+  r = (a, (a+b) // 2, (a+b) // 2 + 1, b)
+  res[index] = r
+  if abs(a-b) <= 1: 
+    return  
+  else:
+    generate_boxes(a, (a+b) // 2, res, 2*index + 1)
+    generate_boxes((a+b) // 2, b, res, 2*index + 2)
+
+boxes = {}
+generate_boxes(0, m, boxes)
+
+birth = dgms_index[1]['birth']
+death = dgms_index[1]['death']
+
+def dumb_query(i,j,k,l):
+  valid_births = np.logical_and(i <= birth, birth <= j) 
+  valid_deaths = np.logical_and(k <= death, death <= l) 
+  return np.sum(np.logical_and(valid_births, valid_deaths))
+
+## Find creators in range [a, mid] whose destroyers lie in [mid+1, b]
+midpoint = lambda a,b: (a + b) // 2
+
+a, b = 0, len(K)
+mid = a + b // 2
+# show(p)
+dumb_query(a, midpoint(a,b), midpoint(a,b)+1, b)
+
+def bisection_tree(i1, i2, j1, j2, mu: int, query_fun: Callable):
+  print(f"({i1},{i2},{j1},{j2}) = {mu}")
+  if mu == 0: 
+    return
+  elif i1 == i2 and mu == 1:
+    print(f"Creator found at index {i1} with destroyer in [{j1}, {j2}]") 
+  else:
+    mid = midpoint(i1, i2)
+    mu_L = query_fun(i1, mid, j1, j2)
+    mu_R = mu - mu_L 
+    assert mu_R == query_fun(mid+1, i2, j1, j2)
+    bisection_tree(i1, mid, j1, j2, mu_L, query_fun)
+    bisection_tree(mid+1, i2, j1, j2, mu_R, query_fun)
+
+a, b = 0, len(K)
+mid = a + b // 2
+mu_init = dumb_query(a, midpoint(a,b), midpoint(a,b)+1, b)
+bisection_tree(a, midpoint(a,b), midpoint(a,b)+1, b, mu_init, dumb_query)
+
+assert dumb_query(a, mid, mid+1, b) == (dumb_query(0, 9, mid+1, b) + dumb_query(9, 18, mid+1, b))
+
+## Now, for EACH creator found in bisection, we find unique j by \in [j1,j2] binary search
+def find_destroyer(creator: int, l: int, r: int, query_fun: Callable):
+  ii = creator 
+  mu_j = dumb_query(ii, ii, l, r)
+  if mu_j == 0: 
+    return ii
+  while l != r:
+    # print(f"l, r: ({l}, {r})")
+    mu_L = dumb_query(ii, ii, l, midpoint(l,r))
+    if mu_L != 0:
+      r = (l + r) // 2      ## in the left portion 
+    else: 
+      l = (l + r) // 2 + 1  ## in the right partition
+  return l 
+
+## B0: First creator/destroyer pair
+a, b = 0, len(K)
+mu_init = dumb_query(0, midpoint(a,b), midpoint(a,b)+1, b)
+bisection_tree(a, midpoint(a,b), midpoint(a,b)+1, b, mu_init, dumb_query)
+find_destroyer(14, mid+1, b, dumb_query) # 33 
+
+## B1: Second pair going down
+mid = midpoint(a,b)
+mu_init = dumb_query(a, midpoint(a,mid), midpoint(a,mid)+1, mid)
+bisection_tree(a, midpoint(a,mid), midpoint(a,mid)+1, mid, mu_init, dumb_query)
+
+## B1: Second pair going right
+mid = midpoint(a,b)
+mu_init = dumb_query(mid+1, midpoint(mid+1,b), midpoint(mid+1,b)+1, b)
+bisection_tree(mid+1, midpoint(mid+1,b), midpoint(mid+1,b)+1, b, mu_init, dumb_query)
+find_destroyer(23, midpoint(mid+1,b)+1, b, dumb_query) # 29
+find_destroyer(24, midpoint(mid+1,b)+1, b, dumb_query) # 30
+find_destroyer(25, midpoint(mid+1,b)+1, b, dumb_query) # 32
+
+## TODO: 
+# 1. Write Points-in-box function (bisection tree + destroyer)
+# 2. Write code to enumerate all B* boxes in order of area + left-to-right
+# 3. Compute all pairs 
+# 4. Determine position needed to compute all pairs up to gamma-persistence
+# 5. Biject it all back to the function domain
+# 6. INterface it up 
+# 7. Test test test
+dgms_index[1]
+
+# from pbsig.persistence import bisection_tree_top_down
+
+
+
+# list(bisection_tree_top_down(dumb_query, ind = (a, mid, mid+1, b), mu=1, splitrows=False, verbose=True))
+
+
+mu0 = dumb_query(0, mid, mid + 1, b)
+
+# mu0 = query(a, mid, mid + 1, b)
+
+
+mu_left = dumb_query(l, mid, mid + 1, r)
+
+l, mid, r = mid + 1, mid + b // 2, b
+mu_right = query(l, mid, mid + 1, r)
+mu_right
+
+
+
+## Recurse 
+query(a,b,c,d)
+
+## root 
+a,b,c,d = 0, m // 2, m // 2, m
+
+## left 
+a,b,c,d = a, a + (b - a) // 2, a + (b - a) // 2, b
+
+## right 
+a,b,c,d = a, a + (b - a) // 2, a + (b - a) // 2, b
+
+
+query(a,b,c,d, terms=False)
+numrank(query.Lq.operator(deflate=True), atol = 0.50)
+
+A = query.operator(1, a,b,c,d)
+numrank(A)
+
+query.weights
+
+
+D1 = sx.boundary_matrix(K, p = 1)
+np.array([i for i,s in K if sx.dim(s) == 2])
+
 
 
 

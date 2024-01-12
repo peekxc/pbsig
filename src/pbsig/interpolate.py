@@ -1,4 +1,5 @@
 from .meta import *
+import numpy as np
 # from .utility import is_repeateb
 from scipy.interpolate import CubicSpline, UnivariateSpline
 from more_itertools import pairwise, triplewise, chunked, peekable, spy
@@ -65,9 +66,9 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     # self.faces = { pi : np.array(list(faces(S, pi))) for pi in p }
     if family is not None: 
       self.family = family  # also does input validation
-    else: 
-      from splex.filters import generic_filter
-      self.family = generic_filter(lambda s: 1) # will turn into an iterable
+    else:  
+      self.family = lambda t: np.ones(len(self.complex))
+    self.domain = (0.0, 1.0)
 
   def __len__(self) -> int:
     return len(self.family)
@@ -82,11 +83,16 @@ class ParameterizedFilter(Callable, Iterable, Sized):
 
     (1) an Iterable of Callables, the inner of which are filter function 
     (2) a Callable itself, in which case bounds should be properly set 
+
+    In either case, a *filter* function should either be: 
+      (a) a simplex-wise defined 'unfunc' function f : S -> R with signature f(s, p=[int, None])
+      (b) a 
+
     """
     return self._family
   
   @family.setter
-  def family(self, family: Union[Callable, Iterable], *args):
+  def family(self, family: Union[Callable, Iterable], domain: tuple = (0, 1)):
     """ Sets the parameterized family to the product """
     from more_itertools import spy
     if isinstance(family, Iterable):
@@ -96,24 +102,28 @@ class ParameterizedFilter(Callable, Iterable, Sized):
       assert isinstance(f[0], Callable), "Iterable family must be a callables!"
       self._family = family
     else: 
+      ## If given as a Callable, must be f : < domain > -> < vector of length len(S) >
+      ## of a fixed ordering (following iter(self.complex))
       assert isinstance(family, Callable), "family must be iterable or Callable"
-      self._family = [family]
+      self.domain = domain
+      self._sd = np.array([dim(s) for s in self.complex])
+      self._family = family
 
   def interpolate(self, interval=(0.0, 1.0), **kwargs) -> None: 
     """Interpolates the stored 1-parameter family of filtration values.
     
     Interpolates the filter path of each simplex (simplexwise) with a polynomial curve
     """
-    self.domain_ = interval
+    self.domain = interval
     self.splines_ = {}
     domain_points = np.linspace(*interval, num=len(self.family)) # knot vector
     for p in self.dims:
-      if isinstance(f, Iterable):
+      if isinstance(self.family, Iterable):
         filter_values = np.array([f(faces(self.complex, p)) for f in self.family])
         self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
       else:
         ## assumes self.family is a callable satisfying f(t, p = None) and f(t, p = int) 
-        filter_values = np.array([f(t, p = p) for t in domain_points])
+        filter_values = np.array([self(t, p = p) for t in domain_points])
         self.splines_[p] = [CubicSpline(domain_points, fv, **kwargs) for fv in filter_values.T]
     
   def figure_interp(self, p: int = None):
@@ -128,11 +138,16 @@ class ParameterizedFilter(Callable, Iterable, Sized):
     #   fig.scatter(0)
 
   ## TODO: fix so that this is a true time-parameterized filter function! 
-  def __call__(self, t: Union[float, int], p: int, **kwargs):
-    assert t >= self.domain_[0] and t <= self.domain_[1], f"Invalid time point 't'; must in the domain [{self.domain_[0]},{self.domain_[1]}]"
-    assert hasattr(self, "domain_") and hasattr(self, "splines_"), "Cannot interpolate without calling interpolat fmaily first! "
-    assert p in self.splines_.keys(), f"Invalid dimension {p} given"
-    return np.array([sp(t) for sp in self.splines_[p]])
+  def __call__(self, t: Union[float, int], p: int = None, **kwargs):
+    assert t >= self.domain[0] and t <= self.domain[1], f"Invalid time point 't'; must in the domain [{self.domain[0]},{self.domain[1]}]"
+    if hasattr(self, "splines_"):
+      # assert hasattr(self, "domain_") and hasattr(self, "splines_"), "Cannot interpolate without calling interpolat fmaily first! "
+      assert p in self.splines_.keys(), f"Invalid dimension {p} given"
+      return np.array([sp(t) for sp in self.splines_[p]])
+    else: 
+      assert isinstance(self.family, Callable)
+      result = np.array(self._family(t))
+      return result if p is None else result[self._sd == p]
       
     # def _custom_filter(sigma: tuple):
     #   p = len(sigma) - 1

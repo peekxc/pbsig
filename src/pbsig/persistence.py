@@ -204,6 +204,11 @@ def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, simplex_p
     # assert isinstance(K, Sequence), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
     assert hasattr(K, "__getitem__"), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
     dgm_dtype = [('birth', 'f4'), ('death', 'f4'), ('creators', 'O'), ('destroyers', 'O')]
+    # if is_filtration_like(K):
+    #   print(K[birth[0]])
+    #   creators = (Simplex(K[b][1]) for b in birth) 
+    #   destroyers = (Simplex(K[int(d)][1]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
+    # else:
     creators = (Simplex(K[b]) for b in birth)
     destroyers = (Simplex(K[int(d)]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
     birth = np.array([index2fv[i] for i in birth])
