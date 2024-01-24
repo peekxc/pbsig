@@ -30,7 +30,7 @@ Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}
 %Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
 \begin{align}\label{eq:laplacian_decouple}
 %\mathcal{L}_p^{\text{up}}(f) & \triangleq D_p^{1/2}(f) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(f) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(f) 
-\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}^2(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p(\bar{S}_a \circ f_\alpha) 
+\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p(\bar{S}_a \circ f_\alpha) 
 %\mathcal{L}_p^{\text{dn}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_p^T(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_p(K_\preceq) \cdot D_p^{1/2}(\alpha) \\
 %\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
 \end{align}
@@ -48,11 +48,10 @@ As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at
 %\end{align*}
 where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
 
-This will become particularly important in section~\ref{sec:computational_imp}, where we 
+%This will become particularly important in section~\ref{sec:computational_imp}, where we 
 
 \begin{remark}
-In the context of inner products, 
-	One may interpret sending $p$-simplices to $0$ as restricting to a sub-complex $L \subseteq K$, which suggests simplicial pairs $(L, K)$ satisfying $L \hookrightarrow K$ as in~\cite{memoli2022persistent}. However, our definition 
+One may interpret sending a subset $S \subseteq K$ of $p$-simplices to $0$ as restricting to a sub-complex $L = K \setminus S$, which suggests we may use the inclusion $L \hookrightarrow K$ to re-define e.g.~\eqref{eq:pbn} and its subsequent extensions~\eqref{eq:laplacian_decouple} using \emph{simplicial pairs} $(L, K)$, as in~\cite{memoli2022persistent}. However, our parameterized definition of a boundary operator~\eqref{eq:param_boundary_matrix} may not always correspond to a subcomplex in the sense that if two distinct $p$-simplices $\tau, \tau' \in K^p, \tau \neq \tau'$ sharing a coface $\sigma \in K^{p+1}$, we allow the situation where $f(\tau) > 0$ and $f(\sigma) > 0$ but $f(\tau') = 0$ (due to the arbitrary choice of $a, b \in \mathbb{R}$). 
 \end{remark}
 
 %Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 

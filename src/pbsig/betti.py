@@ -382,17 +382,46 @@ def betti_query(
   S: Union[LinearOperator, ComplexLike], 
   f: Callable[SimplexConvertible, float],
   p: int, 
-  matrix_func: Callable[np.ndarray, float],
   i: Union[float, np.ndarray], 
   j: Union[float, np.ndarray], 
+  matrix_func: Callable[np.ndarray, float] = spectral_rank,
   w: float = 0.0, 
   terms: bool = False, 
-  solver: Callable = None, 
+  solver: Union[Callable, str] = "trace", 
   **kwargs
 ) -> np.ndarray:
-  bq = BettiQuery(S, f=f, p=p)
+  bq = BettiQuery(S, p=p)
   bq.sign_width = w
-  return bq(i,j,mf=matrix_func,terms=terms)
+  
+  ## Set the weights using the filter function 
+  if (p-1) in bq.weights:
+    bq.weights[p-1] = f(sx.faces(S, p-1))
+  bq.weights[p] = f(sx.faces(S, p))
+  bq.weights[p+1] = f(sx.faces(S, p+1))
+
+  ## Setup the solver 
+  if isinstance(solver, Callable):
+    bq.q_solver = solver
+    bq.p_solver = solver
+  elif isinstance(solver, str):
+    if solver == "direct":
+      from .linalg import PsdSolver
+      bq.p_solver = PsdSolver(laplacian=True)
+      bq.q_solver = PsdSolver(laplacian=True)
+    elif solver == "trace":
+      from primate.functional import numrank 
+      bq.p_solver = lambda L: numrank(L, gap="simple")
+      bq.q_solver = lambda L: numrank(L, gap="simple")
+    else: 
+      raise ValueError(f"Invalid solver '{solver}'")
+  else:
+    raise ValueError(f"Invalid solver '{solver}'")
+  # assert isinstance(, Callable)
+
+
+  ## Make the call 
+  res = bq(i,j,terms=terms)
+  return res
   # yw, fw, sw = f(faces(S, p-1)), f(faces(S, p)), f(faces(S, p+1))
   # delta = np.finfo(float).eps 
   # atol = kwargs['tol'] if 'tol' in kwargs else 1e-5     

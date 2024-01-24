@@ -92,10 +92,10 @@ print(dgms_index[1])
 m = len(K)
 query = BettiQuery(ST, p = 1)
 
-a,b,c,d = 0, m // 2, m // 2 + 1, m
-
-p.rect(x=a + (b-a) / 2, y=c + (d-c) / 2, width=b-a, height=d-c, fill_color=None)
-show(p)
+## 
+# a,b,c,d = 0, m // 2, m // 2 + 1, m
+# p.rect(x=a + (b-a) / 2, y=c + (d-c) / 2, width=b-a, height=d-c, fill_color=None)
+# show(p)
 
 ## Create a simplex to value map 
 s_map = { sx.Simplex(s) : i for i, s in K }
@@ -144,19 +144,21 @@ mid = a + b // 2
 # show(p)
 dumb_query(a, midpoint(a,b), midpoint(a,b)+1, b)
 
-def bisection_tree(i1, i2, j1, j2, mu: int, query_fun: Callable):
+def bisection_tree(i1, i2, j1, j2, mu: int, query_fun: Callable, creators: dict = {}):
   print(f"({i1},{i2},{j1},{j2}) = {mu}")
   if mu == 0: 
     return
   elif i1 == i2 and mu == 1:
     print(f"Creator found at index {i1} with destroyer in [{j1}, {j2}]") 
+    creators[i1] = (j1, j2)
   else:
     mid = midpoint(i1, i2)
     mu_L = query_fun(i1, mid, j1, j2)
     mu_R = mu - mu_L 
     assert mu_R == query_fun(mid+1, i2, j1, j2)
-    bisection_tree(i1, mid, j1, j2, mu_L, query_fun)
-    bisection_tree(mid+1, i2, j1, j2, mu_R, query_fun)
+    bisection_tree(i1, mid, j1, j2, mu_L, query_fun, creators)
+    bisection_tree(mid+1, i2, j1, j2, mu_R, query_fun, creators)
+  return creators
 
 a, b = 0, len(K)
 mid = a + b // 2
@@ -166,19 +168,16 @@ bisection_tree(a, midpoint(a,b), midpoint(a,b)+1, b, mu_init, dumb_query)
 assert dumb_query(a, mid, mid+1, b) == (dumb_query(0, 9, mid+1, b) + dumb_query(9, 18, mid+1, b))
 
 ## Now, for EACH creator found in bisection, we find unique j by \in [j1,j2] binary search
-def find_destroyer(creator: int, l: int, r: int, query_fun: Callable):
+def find_destroyer(creator: int, lc: int, rc: int, query_fun: Callable):
   ii = creator 
-  mu_j = dumb_query(ii, ii, l, r)
+  mu_j = query_fun(ii, ii, lc, rc)
   if mu_j == 0: 
     return ii
-  while l != r:
+  while lc != rc:
     # print(f"l, r: ({l}, {r})")
-    mu_L = dumb_query(ii, ii, l, midpoint(l,r))
-    if mu_L != 0:
-      r = (l + r) // 2      ## in the left portion 
-    else: 
-      l = (l + r) // 2 + 1  ## in the right partition
-  return l 
+    mu_L = query_fun(ii, ii, lc, midpoint(lc,rc))
+    lc, rc = lc, (lc + rc) // 2 if mu_L != 0 else (lc + rc) // 2 + 1, rc 
+  return lc 
 
 ## B0: First creator/destroyer pair
 a, b = 0, len(K)
@@ -205,9 +204,48 @@ find_destroyer(25, midpoint(mid+1,b)+1, b, dumb_query) # 32
 # 3. Compute all pairs 
 # 4. Determine position needed to compute all pairs up to gamma-persistence
 # 5. Biject it all back to the function domain
-# 6. INterface it up 
+# 6. Interface it up 
 # 7. Test test test
-dgms_index[1]
+
+## Given a black-box oracle function query: tuple -> int that accepts four integers in [0, N-1]
+## and returns an integer indicating how many points lie in a given box [i,j] x [k,l] of a 
+## index-filtered persistence diagram of a simplicial complex K, this function finds the 
+## persistent pairs of those pairs
+def points_in_box(i: int, j: int, k: int, l: int, query: Callable[tuple, int]) -> np.ndarray:
+  mu_init = query(i, j, k, l)
+  creators = {}
+  bisection_tree(i, j, k, l, mu_init, query, creators)
+  pairs = { c : find_destroyer(c, j1, j2, query) for c, (j1, j2) in creators.items() }
+  return pairs
+    
+a, b = 0, len(K)
+points_in_box(0, midpoint(a,b), midpoint(a,b)+1, b, dumb_query)
+points_in_box(mid+1, midpoint(mid+1,b), midpoint(mid+1,b)+1, b, dumb_query)
+
+boxes = {}
+generate_boxes(0, len(K), boxes)
+box_pairs = {}
+for i in sorted(boxes.keys()):
+  a,b,c,d = boxes[i]
+  box_pairs[i] = points_in_box(a,b,c,d,dumb_query)
+
+## 
+dgm_truth = np.c_[dgms_index[1]['birth'], dgms_index[1]['death']].astype(int)
+dgm_truth = np.unique(dgm_truth, axis=0)
+dgm_truth = dgm_truth[np.lexsort(np.rot90(dgm_truth))]
+
+from more_itertools import flatten
+dgm_test = np.array(list(flatten([[(k,v) for k,v in v.items()] for v in box_pairs.values()])))
+dgm_test = np.unique(dgm_test, axis=0)
+dgm_test = dgm_test[np.lexsort(np.rot90(dgm_test))]
+
+## It works! just need to prune and see if works with non-integer inputs 
+## I assume it does not because you can create a O(|K|) non-binary tree / path graph using average, unless you go median...
+assert np.allclose(dgm_truth, dgm_test)
+
+
+boxes[46]
+boxes[94]
 
 # from pbsig.persistence import bisection_tree_top_down
 

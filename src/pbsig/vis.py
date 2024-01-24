@@ -48,6 +48,7 @@ def valid_parameters(el: Any, prefix: str = "", exclude: list = [], **kwargs):
 #   { d1}
 
 def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = False, **kwargs):
+  from pbsig.persistence import as_dgm
   default_figkwargs = dict(width=300, height=300, match_aspect=True, aspect_scale=1, title="Persistence diagram")
   fig_kwargs = default_figkwargs.copy()
   if dgm is None or len(dgm) == 0:
@@ -56,9 +57,10 @@ def figure_dgm(dgm: ArrayLike = None, pt_size: int = 5, show_filter: bool = Fals
     min_val = 0
     max_val = 1
   else: 
-    max_val = max(dgm["death"], key=lambda v: v if v != np.inf else -v) 
+    dgm = as_dgm(dgm)
+    max_val = max(np.ravel(dgm["death"]), key=lambda v: v if v != np.inf else -v) 
     max_val = (max_val if max_val != np.inf else max(dgm["birth"])*5)
-    min_val = min(dgm["birth"])
+    min_val = min(np.ravel(dgm["birth"]))
     min_val = (min_val if min_val != max_val else 0.0)
     delta = abs(min_val-max_val)
     min_val, max_val = min_val - delta*0.10, max_val + delta*0.10

@@ -5,25 +5,142 @@ from more_itertools import first_true
 from pbsig.persistence import ph, generate_dgm
 from pbsig.apparent_pairs import apparent_pairs
 
-## Random geometric rips complex 
-X = np.random.uniform(size=(14,2))
+#%% Random geometric rips complex 
+np.random.seed(1234)
+X = np.random.uniform(size=(18,2))
+
 f = flag_filter(pdist(X))
 er = enclosing_radius(pdist(X))
 K = rips_complex(X, radius=er, p=2)
 
-## Filter by fla weight and do full ph validation 
-F = filtration(K, f)
+# %% Filter by rips weight and do full ph validation 
+dx = squareform(np.array([[0,3,4,5],[3,0,5,4],[4,5,0,3],[5,4,3,0]]))
+K = rips_complex(dx, p = 3)
+f = flag_filter(dx)
+F = rips_filtration(dx, p=3)
+# F = filtration(K, f)
 R, V = ph(F, output="rv", validate=True)
 D = boundary_matrix(F)
 assert all(((D @ V) == R).data) 
 
-## Check apparent pairs
+# %%  Check apparent pairs are indeed persistent pairs
 dgm = generate_dgm(F, R, collapse=False, simplex_pairs=True)
-ap = apparent_pairs(K, f)
+ap = apparent_pairs(K, f, p = 1)
 all_pairs_dgm = sorted([(tuple(cr),tuple(de)) for (birth,death,cr,de) in dgm[1]])
 ap_dgm = sorted([(tuple(cr),tuple(de)) for (birth,death,cr,de) in dgm[1] if np.isclose(death-birth, 0.0)])
 ap_com = sorted([(tuple(c),tuple(d)) for c,d, in ap])
 assert ap_com == ap_dgm
+
+# %% Show the diagram
+from pbsig.vis import figure_dgm, show
+show(figure_dgm(dgm[1]))
+
+# %% Randomly choose lower-left matrices and compare their ranks
+from itertools import product
+N = R.shape[0]
+
+def exact_rank(A):
+  if np.prod(A.shape) == 0: 
+    return 0
+  elif len(A.data) == 0 or np.all(A.data == 0): 
+    return 0
+  else:
+    return np.linalg.matrix_rank(A.todense())
+  
+from more_itertools import random_product
+def check_lower_left(D, R, k: int):
+  for ii in range(k):
+    i, j = random_product(range(N), range(N))
+    rank_Rij = exact_rank(R[i:,:j])
+    rank_Dij = exact_rank(D[i:,:j])
+    if rank_Rij != rank_Dij:
+      print(f"{i}, {j}")
+      assert rank_Rij == rank_Dij
+
+check_lower_left(D, R, 50)
+
+# %% See if removing apparent pairs has the intended effect on the rank
+D_coo = D.tocoo()
+R_coo = R.tocoo()
+def set_rc_zero(A, i: int, mode: int):
+  if mode == 0:
+    A.data[A.row == i] = 0
+    A.data[A.col == i] = 0
+  elif mode == 1: 
+    A.data[A.col == i] = 0
+  elif mode == 2: 
+    A.data[A.row == i] = 0
+  return A
+
+print(f"Rank D: {np.linalg.matrix_rank(D_coo.todense())}")
+print(f"Rank R: {np.linalg.matrix_rank(R_coo.todense())}")
+
+## Loop through apparent (p, p+1) pairs
+## looks like removing the creator (p)-columns works, but the can't remove their rows
+for ps, qs in ap:
+  # ps, qs = next(iter(ap))
+  drank, rrank = exact_rank(D_coo), exact_rank(R_coo)
+  
+  ## Ensure rank is unchanged / creators in nullspace  
+  D_coo = set_rc_zero(D_coo, F.index(ps), mode=1)
+  R_coo = set_rc_zero(R_coo, F.index(ps), mode=1)
+  assert drank == exact_rank(D_coo) and rrank == exact_rank(R_coo)
+  #assert np.all(D_coo.todense()[F.index(ps),:] == 0)
+  #assert np.all(D_coo.todense()[:,F.index(ps)] == 0)
+
+  ## Ensure pivots decrease the rank 
+  # D_coo = set_rc_zero(D_coo, F.index(qs))
+  # R_coo = set_rc_zero(R_coo, F.index(qs))
+  
+  # No longer true that rank D and rank R are the same
+  ## Removing zero from R does decrease it rank but not so with D
+  check_lower_left(D_coo.tolil(), R_coo.tolil(), 50)
+
+  #check_lower_left(D_coo.tolil(), R_coo.tolil(), 500)
+
+# 
+D_coo.eliminate_zeros()
+
+
+
+from pbsig.persistence import low_entry
+pivots = low_entry(R_coo)
+piv_ind = np.flatnonzero(pivots != -1)
+
+for c, r in zip(piv_ind, pivots[piv_ind]):
+  assert R_coo
+
+import splex as sx
+D1 = sx.boundary_matrix(F, p=1).todense() % 2 
+D2 = sx.boundary_matrix(F, p=2).todense() % 2 
+
+from pbsig.persistence import pHcol
+from scipy.sparse import lil_array
+
+R1 = lil_array(D1.astype(np.float64))
+V1 = lil_array(np.eye(D1.shape[1]).astype(np.float64))
+pHcol(R=R1, V=V1)
+R1.todense()
+V1.todense()
+
+
+# %% Ripser example 
+from scipy.spatial.distance import pdist, squareform
+F = rips_filtration(squareform(np.array([[0,3,4,5],[3,0,5,4],[4,5,0,3],[5,4,3,0]])), p=3)
+D1 = sx.boundary_matrix(F, p=1) 
+D2 = sx.boundary_matrix(F, p=2).todense() % 2
+
+np.linalg.matrix_rank(D2[-3:,:3]) 
+np.linalg.matrix_rank(D2[-3:,:2]) 
+np.linalg.matrix_rank(D2[-2:,:3]) 
+np.linalg.matrix_rank(D2[-2:,:2])
+
+
+
+R2 = lil_array(D2.astype(np.float64))
+V2 = lil_array(np.eye(D2.shape[1]).astype(np.float64))
+pHcol(R=R2, V=V2)
+R2.todense() % 2
 
 ## This is not gaurenteed to be true 
 # for p in range(2):

@@ -1,0 +1,126 @@
+
+%\subsubsection*{Basic Properties}
+% Laplacian Energy
+%We start with some basic properties of the function constitutive terms used in both $\beta_p$ and $\mu_p$, which mirror the well-studied Laplacian ``energy'' family of invariants~\cite{}. 
+%For some fixed simplicial complex $K$, weight function $w: K \to \mathbb{R}_+$, and index $(i,j) \in \Delta_+$, consider the function:
+%$$ \lVert \Phi(\hat{\partial}_p^{i,j} \circ \hat{\partial}_p^{i,j}) \rVert_\ast : \Delta_+ \to \mathbb{R}$$
+%where we use the notation $\mathcal{L}_p^{i,j}$ to indicate...
+%We have, as its very basic properties: 
+%\begin{enumerate}
+%	\item $\lVert \Phi(\mathcal{L}_p^{\ast})(K) \rVert_\ast \geq 0$, with equality when $i = j$.
+%	%$K^p_i \cap K^{(p+1)}_j = \emptyset$
+%	\item If $K$ is the union of disjoint subcomplexes $K_1, K_2, \dots, K_c$, then $\lVert L_p^\ast(K)\rVert_{\Phi} = \sum\limits_{i=1}^c \lVert L_p^\ast(K_i)\rVert_{\Phi}$ 
+%	\item If $\tau \in K^p$ does not have a proper coface $\sigma \in K^{p+1}$, then $\lVert L_p^{\text{up}}(K \setminus \tau)\rVert_{\Phi} =\lVert L_p^{\text{up}}(K)\rVert_{\Phi}$. %Similarly, 
+%\end{enumerate}
+%Many of these properties inherit from the fact that $\lVert \cdot \rVert_\Phi$ is a norm. 
+To better understand the implications of the relaxations discussed so far, we establish some of its properties. 
+%Let $\mathcal{R} \subset \Delta_+$ denote an arbitrary rectilinear shape with corner points $\partial \mathcal{R} = \{ \, (i_1, j_1), (i_2, j_2), \dots,  (i_h, j_h) \, \}$, 
+In what follows, let $\mathcal{L}_p : C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})$ denote some choice of Laplacian operator and $(\Phi, \phi)$ a $\tau$-parameterized spectral pair satisfying the conditions in definition~\ref{def:lowner}. 
+%In full generality, any spectral relaxation generalizing~\eqref{eq:mu_four} will have the form:
+%and $R = [i,j] \times [k,l] \subset \Delta_+$. 
+%$$ \hat{\mu}^\mathcal{R}_p(\alpha) = \sum\limits_{(i,j) \in \partial \mathcal{R}} s_{ij} \cdot \lVert \Phi(\hat{\mathcal{L}}^{i,j}_p)(\alpha) \rVert_\ast$$
+%where the sign $s_{ij} \in \{-1, 1\}$ is determined by the inclusion-exclusion relationship given below.
+%Proposition~\ref{prop:include_exclude}
+\begin{proposition}\label{prop:include_exclude}
+Given any pair $(K, f)$, a rectangle $R = [a,b] \times [c,d] \subset \Delta_+$, and any $\tau$-parameterized spectral function $\phi: \mathbb{R} \to \mathbb{R}$ from definition~\ref{def:lowner}, the spectral rank invariants $\hat{\mu}_{p}^R(\tau)$ and $\hat{\beta}_{p}^{a,b}(\tau)$ satisfy: 
+$$ \lim_{\tau \to 0^+ }\hat{\mu}_{p}^R(\tau) = \mu_p^R(K,f), \quad \quad \lim_{\tau \to 0^+ } \hat{\beta}_{p}^{a,b}(\tau) = \beta_{p}^{a,b}(K,f)$$
+Moreover, for any $\tau \geq 0$, the following inclusion-exclusion relationship always holds:
+$$\hat{\mu}_{p}^R(\tau)= \hat{\beta}_{p}^{b,c}(\tau) - \hat{\beta}_{p}^{a,c}(\tau) - \hat{\beta}_{p}^{b,d}(\tau) + \hat{\beta}_{p}^{a,d}(\tau)$$
+\end{proposition}
+\begin{proof}
+	For limit, use monotonicity + corollary that shows $\phi \to \mathrm{sgn}_+$ in the limit. 
+	For the inclusion exclusion, use additivity/ cancellation property / maybe norm properties of $\Phi$ from Chazal. 
+\end{proof}
+\noindent As an immediate corollary of this, we may generalize the multiplicity function $\hat{\mu}_p^\ast$ to any arbitrary rectilinear $\mathcal{R} \subset \Delta_+$. This follows from the general theory developed by Chazal et al.~\cite{chazal2016structure} on \emph{persistence measures}.
+\begin{corollary}
+	The spectral-relaxed \emph{persistence measure} of any simple and connected rectilinear sieve $\mathcal{R} \subset \Delta_+$ with $h$ corner points $\partial \mathcal{R} = \{ \, (a_1, b_1), (a_2, b_2), \dots,  (a_h, b_h) \, \}$ given by: 
+	$$ \hat{\mu}^\mathcal{R}_p = \sum\limits_{(a,b) \in \partial \mathcal{R}} s_{ab} \cdot \lVert \Phi(\hat{\mathcal{L}}^{a,b}_p) \rVert_\ast$$
+	can be computed using at most $O(h)$ spectral rank computations, where the sign $s_{ij} \in \{-1, 1\}$ is determined by the inclusion-exclusion relationship given by Proposition~\ref{prop:include_exclude}. 
+\end{corollary}
+\begin{proof}
+	By the additivity of the multiplicity function, we can vertically or horizontally partition any rectangular into two disjoint rectangles and add their total multiplicity to recover the multiplicity of the whole~\cite{}. Moreover, if $\mathcal{R}$ is simple and hole-free with $h$ corner points, then it is known that it can be decomposed into a minimal set of $h/2-g-1 \sim O(h)$ disjoint rectangles (of which several algorithms are known), where $g$ is the number of axis-parallel line segments connecting concave vertices of $\mathcal{R}$~\cite{}.
+\end{proof}
+
+\noindent Though the inclusion-exclusion relationship between the relaxations $\hat{\mu}_{p}^\ast(\tau)$ and $\hat{\beta}_{p}^{\ast}(\tau)$ holds for any $\tau \geq 0$, certain monotonicity properties of $\hat{\beta}_{p}^{\ast}(\tau)$ lose their exactness when $\tau > 0$.
+As the rank invariant is fundamentally a combinatorial invariant, this is in some sense necessary.
+  
+Fortunately, we may bound the degree to $\hat{\beta}_p^\ast$ remains ``Betti-like'' in the sense of being cumulative. 
+\begin{proposition}[$\phi$-monotone]
+For all $a < b$ and all $c < d$, there exists a positive constant $c_\phi(\tau) \in \mathbb{R}_+$ such that $\hat{\beta}_p^\ast$ satisfies the following monotonicity properties:
+%\begin{align*}
+%(\tau = 0) & \quad \hat{\beta}_p^{i,k} \leq \hat{\beta}_p^{j,k}, \quad \quad \hat{\beta}_p^{i,k} \geq \hat{\beta}_p^{i,l} \\
+%(\tau > 0) & \quad 
+\begin{equation}
+	\hat{\beta}_p^{a,c} \leq \hat{\beta}_p^{b,c} + c_\phi(\lvert a - b \rvert), \quad \quad \hat{\beta}_p^{a,c} \geq \hat{\beta}_p^{a,d} - c_\phi(\lvert c - d \rvert)
+\end{equation}
+When $\phi = \mathrm{sgn}_+$, $c_\phi$ is identically zero, recovering the monotonicity of the PBN (see section 2.1 of~\cite{cerri2013betti}). 
+%the constant map $c_\phi(x) = 0$
+%\end{align*}
+\end{proposition}
+\begin{proof}
+	Use Proposition above part (b) with a specific $\phi$, then use PBN property.
+\end{proof}
+In fact, under mild conditions, its been shown that the Tikhonov relaxation $\phi_\tau$ is actually a \emph{uniform} approximation of the rank function~\cite{}. 
+%This is important in rank minimization contexts, wherein it is 
+
+
+%\begin{corollary}
+%	For every $\alpha \in \mathcal{A}$, there exists a value $\tau^\ast > 0$ such that $\lfloor$
+%\end{corollary}
+
+
+
+%TODO: 
+%\noindent
+%As signaled in the outline of the paper, one tradeoff in relaxing the exact monotonicity of the $\beta_p$ is \emph{relative} stability in the associated invariants as function of $\alpha \in \mathcal{A}$. 
+%\begin{proposition}[Relative stability]
+%Let $\alpha, \alpha' \in \mathbb{R}$ denote parameters satisfying $\lvert \alpha - \alpha' \rvert \leq \delta$, $\mathcal{R} \subset \Delta_+$ a fixed sieve, and let $\hat{\mu}_p(\alpha')$ represent a \emph{relative perturbation} of $\hat{\mu}_p(\alpha')$
+%%each of the constitutive terms of ~\eqref{} satisfy $\hat{\mathcal{L}}^\ast_p(\alpha') = Q^T \hat{\mathcal{L}}^\ast_p(\alpha) Q$ 
+%$$ 
+%\hat{\mu}_p^\mathcal{R}(\tilde{\alpha}) = \sum\limits_{(i,j) \in \partial \mathcal{R}} s_{ij} \cdot \lVert Q_{i,j}^T \left ( \Phi(\hat{\mathcal{L}}^{i,j}_p)(\alpha) \right ) Q_{i,j} \rVert_\ast
+%$$
+%where $Q \in \mathbb{R}^{n \times n}$ is symmetric and non-singular. Then the spectral multiplicities $\hat{\mu}_p^R(\alpha)$ and $\hat{\mu}_p^R(\alpha')$ satisfy: 
+%$$\lvert \, \hat{\mu}_p^\mathcal{R}(\alpha') - \hat{\mu}_p^\mathcal{R}(\alpha) \, \rvert \leq \sum\limits_{(i,j) \in \partial\mathcal{R}} \lVert I - Q_{i,j}^T Q_{i,j}\rVert_2 $$
+%\end{proposition}
+
+%the  we have: $Q^T A Q $where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. 
+%%If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, as summarized by Li~\cite{}. 
+
+%\begin{proof}
+%	Li et al established $\lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $
+%\end{proof}
+
+%\begin{proposition}\label{prop:include_exclude}
+%For any $\tau > 0$ and spectral function $\phi : \mathbb{R} \to \mathbb{R}$ satisfying~\eqref{eq:phi}, the spectral multiplicity invariant $\hat{\mu}_{p,\tau}^R$ of any rectangle $R = [i,j] \times [k,l] \subset \Delta_+$ obeys the following inclusion exclusion: 
+%$$ \hat{\mu}_{p,\tau}^R(K, f)= \hat{\beta}_{p,\tau}^{j,k} - \hat{\beta}_{p,\tau}^{i,k} - \hat{\beta}_{p,\tau}^{j,l} + \hat{\beta}_{p,\tau}^{i,l}
+%$$
+%\end{proposition}
+%\begin{proof}
+%	Use additivity / inclusion exclusion / cancellation property / maybe norm properties of $\Phi$
+%\end{proof}
+%$$ \hat{\mu}_p^{\mathcal{R}}(K,f) = \mathrm{card}\left(\restr{\mathrm{dgm}_p(K,f)}{\mathcal{R}} \right) $$ 
+
+
+
+%any simple and connected rectilinear sieve $\mathcal{R} \subset \Delta_+$ with $h$ corner points 
+%Another property is 
+
+
+
+%\subsubsection*{Stability}
+%One disadvantage of rank functions restricted to subsets of the real-plane is that they are integer-valued and unstable. Indeed, one may easily construct examples of $\mathcal{A}$-parameterized filtrations 
+%$(K, f_\alpha)$ where $\lVert \mu_p^R(\alpha) - \mu_{p}^R(\alpha + \delta) \rVert \sim O(\lvert K_p \rvert )$ for some arbitrarily small $\delta > 0$, as there may be up to $O( \lvert K_p \rvert)$ points in $\mathrm{dgm}_p(K)$.
+%On the other hand, our spectral rank invariants derive from symmetric Laplacian operators, and the spectra of these are known to stable under certain kinds of perturbations~\cite{bhatia2013matrix}. 
+%% is a well-studied topic in numerical analysis~\cite{bhatia2013matrix}, which should inherit  
+%%Intuitively, since both counting invariants are $0$ outside of the portions of $\Delta_+$ they restrict  too, it's always possible to encounter situations where small changes in the input affect the corresponding invariant in a non-Lipshitz way. 
+%%Relaxing $\mu_p^R \mapsto \hat{\mu}_p^R$ fixes this instability when $\epsilon > 0$, though the Lipshitz constant may be arbitrarily high.
+%In what follows, we investigate how to exploit the structure of $L_p^\ast$ and the smoothness of $f_\alpha$ to stabilize the constitutive terms in $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^{\ast}$. 
+%We will exclusively consider the spectra of normalized combinatorial Laplacian operators:
+%$$ \lVert \Phi( \partial_p 	) \rVert_\ast = \sum\limits_{i = 1}^n \phi_{\epsilon}(\lambda_i(\mathcal{L}))
+%$$
+%under some choice of regularization $(\Phi, \phi)$ and $\epsilon > 0$. Our focus is on the \emph{relative} perturbation model, which seeks to describe perturbations of the form: 
+%$$ \tilde{A} = Q^T A Q $$
+%where $Q \in \mathbb{R}^{n \times n}$ is non-singular and $A, \tilde{A} \in \mathbb{R}^{n \times n}$ are the original and perturbed matrices, respectively. If the perturbation is small, the intuition is that $Q^T Q$ will be close to identity. This is captured by an extension of Ostrowski's Theorem, as summarized by Li~\cite{}. 
+% $$ \lvert \tilde{\lambda}_j - \lambda_j \rvert \leq \lambda_j  \cdot  \lVert I - Q^T Q\rVert_2 \quad \Leftrightarrow \quad\tilde{\lambda_j} = \lambda_j(1 + \delta_j), \quad \lvert \delta_j \rvert \leq \lVert I - Q^T Q\rVert_2 $$ 
+% Connections to Laplacian Energy
+

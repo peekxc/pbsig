@@ -160,6 +160,15 @@ def is_reduced(R: lil_array) -> bool:
   low_ind = low_ind[low_ind != -1]
   return(len(np.unique(low_ind)) == len(low_ind))
 
+def as_dgm(dgm) -> np.ndarray:
+  # dgm = dgms[1]
+  if dgm.dtype.names is not None and 'birth' in dgm.dtype.names and 'death' in dgm.dtype.names:
+    return dgm
+  dgm = np.atleast_2d(dgm)
+  dgm_dtype = [('birth', 'f4'), ('death', 'f4')]
+  # return np.array(*dgm, dtype=dgm_dtype)
+  return np.array([tuple(pair) for pair in dgm], dtype=dgm_dtype)
+
 def validate_decomp(D: sparray, R: sparray, V: sparray, epsilon: float = 10*np.finfo(float).eps, warn: bool = True):
   tol = 10*np.finfo(R.dtype).eps if not np.issubdtype(R.dtype, np.integer) else 0
   _is_reduced = is_reduced(R)

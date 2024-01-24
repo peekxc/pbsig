@@ -18,7 +18,7 @@ def deflate_sparse(A: sparray):
   """
   from hirola import HashTable
   A = A if (hasattr(A, "row") and hasattr(A, "col") and hasattr(A, "data")) else A.tocoo()
-  h = HashTable(1.1*len(A.data), np.int32)
+  h = HashTable(1.35*len(A.data) + 10, np.int32)
   h.add(A.row)
   h.add(A.col)
   return coo_array((A.data, (h[A.row], h[A.col])), shape=(h.length, h.length))

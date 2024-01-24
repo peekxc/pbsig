@@ -145,16 +145,16 @@ S = rips_complex(n_geodesic, radius=(connected_diam * 1.40) / 2, p = 2)
 
 
 # %% Sparsify with GUDHI 
-import gudhi
-sparse_S = gudhi.RipsComplex(distance_matrix=squareform(n_geodesic), max_edge_length=(connected_diam * 1.45), sparse=0.85)
-sparse_st = sparse_S.create_simplex_tree(max_dimension=2)
-# sparse_st.num_vertices()
-print(f"Number simplices: {sparse_st.num_simplices()}")
-S = sx.simplicial_complex([s for s, fs in sparse_st.get_simplices()], form='tree')
-sf_map = { sx.Simplex(s) : fs for s,fs in sparse_st.get_simplices() }
-s_values = np.array([sf_map[s] for s in S])
-geodesic_filter = sx.fixed_filter(S, s_values)
-f2 = geodesic_filter
+# import gudhi
+# sparse_S = gudhi.RipsComplex(distance_matrix=squareform(n_geodesic), max_edge_length=(connected_diam * 1.45), sparse=0.85)
+# sparse_st = sparse_S.create_simplex_tree(max_dimension=2)
+# # sparse_st.num_vertices()
+# print(f"Number simplices: {sparse_st.num_simplices()}")
+# S = sx.simplicial_complex([s for s, fs in sparse_st.get_simplices()], form='tree')
+# sf_map = { sx.Simplex(s) : fs for s,fs in sparse_st.get_simplices() }
+# s_values = np.array([sf_map[s] for s in S])
+# geodesic_filter = sx.fixed_filter(S, s_values)
+# f2 = geodesic_filter
 
 # K = sx.RankFiltration([(k,s) for s,k in sparse_st.get_filtration()])
 # sparse_st.compute_persistence()
@@ -210,23 +210,6 @@ p_filter.domain = (angle1, angle2)
 # timeit.timeit(lambda: push_fast(Y, a=np.tan(np.deg2rad(angle)), b=offset), number = 5)
 # 0.002796350046992302 seconds 
 
-# from scipy.optimize import minimize, minimize_scalar
-# # def invert_push(x):
-# #   return np.abs(a - push_fast(np.atleast_2d(x), a=np.tan(np.deg2rad(angle)), b=offset))**2
-# def push_value(threshold: float): 
-#   def _obj(x):
-#     y = x * np.tan(np.deg2rad(angle)) + offset
-#     d = np.linalg.norm(np.array([x,y]) - np.array([0, offset]))
-#     return (threshold - d)**2
-#   return _obj
-
-# res_a = minimize_scalar(push_value(a), bounds=(0, 5))
-# res_b = minimize_scalar(push_value(b), bounds=(0, 5))
-
-# p.scatter(res_a.x, res_a.x * np.tan(np.deg2rad(angle)) + offset, color='green')
-# p.scatter(res_b.x, res_b.x * np.tan(np.deg2rad(angle)) + offset, color='orange')
-# show(p)
-
 # %% This should show 5 points in H1 with high persistence
 from pbsig.persistence import ph 
 from pbsig.vis import figure_dgm
@@ -235,12 +218,7 @@ YL = push_map(Y, a=np.tan(np.deg2rad(angle)), b=offset)
 filter_angle = fixed_filter(S, YL[:,2])
 K = sx.RankFiltration(S, filter_angle)
 dgms = ph(K)
-show(figure_dgm(dgms[1]))
 
-## Fix the box 
-a,b = 0.65, 0.82
-print(S)
-print(f"Point in box ({a}, {b}): { np.sum(np.logical_and(dgms[1]['birth'] <= a, dgms[1]['death'] > b)) }")
 
 #%% First, verify we get 5 in the spectral rank invariant
 from primate.trace import hutch
@@ -249,16 +227,25 @@ from pbsig.betti import BettiQuery, betti_query
 
 bq = BettiQuery(S, p=1)
 bq.sign_width = 0.0
-bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90)  # hutch(L, maxiter=5)
-bq.p_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90)
+bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="simple")  # hutch(L, maxiter=5)
+bq.p_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="simple")
 # t0, t1, t2, t3 = list(bq.generate(i=a, j=b, mf=lambda x: x))[0]
+bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap=1e-2) 
+bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="auto") 
+bq.p_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="auto") 
 
 bq.weights[0] = p_filter(angle, 0)
 bq.weights[1] = p_filter(angle, 1)
 bq.weights[2] = p_filter(angle, 2)
 
+bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="simple")
+
 ## test it out with angle 
-bq(i=a, j=b, mf=lambda x: x, terms=False)
+bq(i=0.60, j=0.65, terms=False)
+bq(i=0.40, j=0.60, k=0.65, l=0.80, terms=False)
+
+# numrank(bq.Lq.operator(deflate=True), atol=0.50, confidence=0.90, gap="auto")
+# 207 - 477 - 1973 + 2248
 
 ## Try to compute rank across a prameter range
 bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else numrank(L, atol = 0.50, confidence=0.90, gap="simple")  # hutch(L, maxiter=5)
@@ -267,7 +254,7 @@ for theta in np.linspace(angle1, angle2, 20):
   bq.weights[0] = p_filter(theta, 0)
   bq.weights[1] = p_filter(theta, 1)
   bq.weights[2] = p_filter(theta, 2)
-  num_points = bq(i=a, j=b, mf=lambda x: x, terms=False)
+  num_points = bq(i=a, j=b, terms=False)
   if num_points > 10: 
     assert False 
   print(num_points)
@@ -276,24 +263,37 @@ for theta in np.linspace(angle1, angle2, 20):
 tikhonov = lambda x: x / (x + 1e-2)
 bq.q_solver = lambda L: 0 if np.prod(L.shape) == 0 else hutch(L, fun=tikhonov, atol=1.5, maxiter=3000)  # hutch(L, maxiter=5)
 bq.p_solver = lambda L: 0 if np.prod(L.shape) == 0 else hutch(L, fun=tikhonov, atol=1.5, maxiter=3000)
-tik_results = np.zeros(shape=(20, 300))
+tik_results = np.zeros(shape=(10, 100))
 for ii in range(tik_results.shape[0]):
-  for jj, theta in enumerate(np.linspace(angle1, angle2, 300)):
+  for jj, theta in enumerate(np.linspace(angle1, angle2, tik_results.shape[1])):
     bq.weights[0] = p_filter(theta, 0)
     bq.weights[1] = p_filter(theta, 1)
     bq.weights[2] = p_filter(theta, 2)
-    tik_results[ii,jj] = bq(i=a, j=b, mf=lambda x: x, terms=False)
-    print(jj)
+    tik_results[ii,jj] = bq(i=a, j=b, terms=False)
+  print(ii)
 
 ## Plot the results alongside the angular wedge 
 R = np.abs(5 - tik_results)
 q = figure(width=450, height = 250)
-angles = np.linspace(angle1, angle2, 300)
-# for ii in range(R.shape[0]):
-q.line(angles, R[0,:], line_width=0.50, line_color="#0096FF6a")
+angles = np.linspace(angle1, angle2, tik_results.shape[1])
+for ii in range(R.shape[0]):
+  q.line(angles, R[ii,:], line_width=0.50, line_color="#0096FF6a")
 
 q.line(angles, R.mean(axis=0), line_width=1.0, line_color="#FF0000a8")
 show(q)
+
+# %% Make row plot of hilbert wedge + diagram + objective 
+from bokeh.layouts import row
+p.width = 400
+p.height = q.height = 250
+q.width = 250
+show(row(p, q))
+
+
+
+
+
+
 
 ## What do we get out of it? If we optimize, we get an angle, a 1-D filtration, with 5 persistent point in the box we wanted 
 ## What do we get at the manifold level? 
@@ -308,7 +308,61 @@ show(q)
 # test1 = f_ls(S)
 # np.max(np.abs(p_filter(23) - test1))
 
+# %% Look at the generators
+from pbsig.persistence import generate_dgm
+R,V = ph(K, output="RV")
+dgms = generate_dgm(K, R, simplex_pairs=True)
+show(figure_dgm(dgms[1]))
 
+top_5 = np.argpartition(dgms[1]['death'] - dgms[1]['birth'], kth=5)[-5:]
+dgms[1]['creators'][top_5]
+dgms[1]['destroyers'][top_5]
+
+
+import combin 
+creators = [sx.Simplex([s[1], s[2]]) for s in dgms[1]['creators'][top_5]]
+destroyers = [sx.Simplex([s[1], s[2], s[3]]) for s in dgms[1]['destroyers'][top_5]]
+creator_indices = []
+for ii, (fv, s) in enumerate(K):
+  if s in creators:
+    creator_indices.append(ii)
+
+def generator_vertices(K, V, c: int):
+  from more_itertools import first_true, unique_everseen
+  cycle_edges = np.array([K[i][1] for i in V[:,c].indices])
+  edges = set([tuple(sorted(e)) for e in cycle_edges])
+  cycle = [edges.pop()]
+  while len(cycle) != len(cycle_edges):
+    i, j = cycle[-1]
+    k, l = first_true(edges, pred=lambda e: (e[0] in (i,j)) or (e[1] in (i,j)))
+    assert k == j or i == l or i == k or j == l
+    cycle.extend([(k, l)])
+    edges -= set([(k,l)])
+  vertices = np.array(list(unique_everseen(np.ravel(cycle))))
+  return vertices
+
+
+Klein.basis = "natural"
+
+# 94, 132, 135, 262, 334
+vertices = generator_vertices(K, V, 334)
+generator_patches = Klein.patch_data[stratified_ind[vertices],:]
+
+p = figure(width=len(vertices) * 100, height=100)
+for i, patch in enumerate(generator_patches):
+  patch = Klein.patch_rgba(patch)
+  p.image_rgba([patch], x=i*12, y=0, dw=10, dh=10)
+p.xaxis.visible = False
+p.yaxis.visible = False
+show(p)
+
+## Fix the box 
+a,b = 0.65, 0.82
+print(S)
+print(f"Point in box ({a}, {b}): { np.sum(np.logical_and(dgms[1]['birth'] <= a, dgms[1]['death'] > b)) }")
+
+
+# %% 
 
 from pbsig.csgraph import deflate_sparse
 A = deflate_sparse(bq.Lq.operator()).tocsr()
