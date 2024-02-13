@@ -878,8 +878,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
 %Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
 %To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1},
-Under mild assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$.
-In contrast, as integer-valued invariants, the quantities from Proposition~\ref{prop:mu_betti_1} are discontinuous functions. To understand how these discontinuities arise, we consider the spectral characterization of the rank function:
+Under mild assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$ when $S$ is substituted appropriately with a smoothstep relaxation.
+In contrast, due to the rank function, the quantities from Proposition~\ref{prop:mu_betti_1} are integer-valued and thus discontinuous functions. To understand how these discontinuities arise, we consider the spectral characterization of the rank function:
 %given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is
 % given by the composition:
 %of the one-sided sign function with the singular value function:
@@ -1110,7 +1110,7 @@ In this sense, we interpret our spectral rank relaxation using~\eqref{eq:heat_sf
 
 % Benefits of rank(A) = < non-zero eigenvalues >
 \subsection*{Exact computation}\label{sec:lanczos_it}
-Computing the spectral quantities $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ reduces to computing eigenvalues of xLaplacian matrices. To do this, we employ the \emph{Lanczos method}~\cite{lanczos1950iteration}, which estimates the eigenvalues of any symmetric linear operator $A$ via projection onto successive Krylov subspaces. 
+Computing the spectral quantities $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ reduces to computing eigenvalues of Laplacian operators. To do this, we employ the \emph{Lanczos method}~\cite{lanczos1950iteration}, which estimates the eigenvalues of any symmetric linear operator $A$ via projection onto successive Krylov subspaces. 
 Formally, given a symmetric $A \in \mathbb{R}^{n \times n}$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the Lanczos method generates the following triplet of matrices:
 %the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces spanned by: 
 %\begin{equation}
@@ -1122,7 +1122,7 @@ Q &= [\, q_1, q_2, \dots, q_r \,] \gets \mathrm{qr}(K)   \\
 T &= Q^T A Q 
 \end{align*}
 where $K \in \mathbb{R}^{n \times r}$ is the \emph{Krylov matrix} with respect to $(A, v)$, $Q \in \mathbb{R}^{n \times r}$ is an orthogonal change-of-basis, and $T \in \mathbb{R}^{r \times r}$ is symmetric tridiagonal \emph{Jacobi matrix}. 
-Since $Q$ is a similarity transform, $\Lambda(T) = \Lambda(A)$, i.e. $T$ preserves the spectrum of $A$ and the problem of finding eigenvalues reduces to diagonalizing $T$.
+It is well known that $Q$ is a similarity transform, i.e. $T$ preserves the spectrum of $A$ and the problem of finding eigenvalues reduces to diagonalizing $T$.
 
 The Lanczos method is often called a ``matrix free'' method due to the fact its only requirement to execute is a matrix-vector product operator $v \mapsto Av$, implying $A$ need not necessarily be  stored in memory explicitly.  
 Indeed, due to the \emph{three-term recurrence}~\cite{simon1984analysis}, execution of the Lanczos method requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations---neither $K$ nor $Q$ need be formed explicitly. 
@@ -1170,7 +1170,8 @@ In particular, for a given box , $\mu_p^R(K)$ has complexity $O(c^2 )$ where $y_
 %\subsection{Computing diagrams}\label{sec:pers_alg}
 \begin{remark}
 	The standard reduction-family of algorithms computes the $p$-th persistent homology of a filtration $K$ of size $N = \lvert K \rvert$ in $O(N^3)$ time and $O(N^2)$ space, respectively (these bounds are actually tight $\Theta(N^3)$, see~\cite{}). 
-	Interestingly, Chen and Kerber~\cite{chen2011output} have shown that since the persistence diagram contains at most $N/2 = O(N)$ points, it may be constructed using at most $2N - 1$ ``$\mu$-queries'' (evaluations of $\mu_p^R$) via a divide-and-conquer scheme on the index-persistence plane---thus, by Theorem~\ref{prop:spectral_rank_complexity}, we can match the same $O(N^3)$ complexity in constructing the full diagram using only rank computations.  
+	Interestingly, Chen and Kerber~\cite{chen2011output} have shown that since the persistence diagram contains at most $N/2 = O(N)$ points, it may be constructed using at most $2N - 1$ ``$\mu$-queries'' (evaluations of $\mu_p^R$) via a divide-and-conquer scheme on the index-persistence plane---thus, by Theorem~\ref{prop:spectral_rank_complexity}, we recover the  $O(N^3)$ complexity of the reduction algorithm using only rank computations.  
+%	In contrast to the reduction algorithm Chen and Kerber's algorithm can detect  
 	%In practice, the matrices involved in the computation are much 
 \end{remark}
 
@@ -1178,13 +1179,14 @@ In particular, for a given box , $\mu_p^R(K)$ has complexity $O(c^2 )$ where $y_
 %For this reason, practitioners have tended to avoid 
 
 \subsection*{Randomized $(\eta, \epsilon)\,$-approximation via trace estimation}
-As in~\cite{parlett1994we}, Proposition~\ref{prop:spectral_rank_complexity} assumes an exact arithmetic computation model to simplify both the presentation of the theory and the corresponding complexity statements. In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the eigenvalue computation, which primarily manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the convergence rate and termination of Lanczos, but they in fact cause a host of other issues, such as the generation of spurious ``ghost'' eigenvalues~\cite{}.
-Though many improvements to basic Lanczos algorithm have been proposed (i.e. selective re-orthogonalization, implicit restarts, subspace deflation, etc.), such enhancements are quite expensive in practice for purpose of rank estimation. 
+As in~\cite{parlett1994we}, Proposition~\ref{prop:spectral_rank_complexity} assumes an exact arithmetic computation model to simplify both the presentation of the theory and the corresponding complexity statements. In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which primarily manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the convergence rate and termination of Lanczos, but often cause a host of other issues~\cite{parlett1994we}, prohibiting any practical use of the original Lanczos algorithm.
+%such as the generation of spurious ``ghost'' eigenvalues
+Though many improvements have been proposed (i.e. selective re-orthogonalization or implicit restarts), it is well-known that obtaining accurate eigenvalue approximations on the interior of the spectrum is quite expensive with the Lanczos method. 
 
+Fortunately, it turns out estimating eigenvalues accurately is not necessary for accurate rank estimation. 
 It has long been known that empirically the Lanczos method can be used to approximate the action $x \mapsto f(A)x$, where $f(A) = U f(\Lambda) U^T$ represents a matrix function\footnote{Recall a matrix function...} defined for the pair $(A, f)$:
 $$Q^T A Q = T \quad \Leftrightarrow \quad f(A)v \approx \lVert x \rVert \cdot Q f(T) e_1$$
-Unlike eigenvalue estimation, it has been shown that using Lanczos in finite precision arithmetic is actually stable for matrix function approximation in the sense that Paige's A27 Lanczos variant~\cite{} up to degree $k$ is no worse than the best degree-$p$ polynomial approximation to $f$, for any $p < k$. For general matrix functions, this implies that finite-precision Lanczos essentially matches strongest known exact arithmetic bounds.
-
+Unlike eigenvalue estimation, it has been shown that using Lanczos in finite precision arithmetic is actually stable for matrix function approximation; in particular, Paige's A27 Lanczos variant~\cite{} executed up to degree $k$ is no worse than the best degree-$p$ polynomial approximation to $f$, for any $p < k$. For general matrix functions, this implies that finite-precision Lanczos essentially matches the strongest known exact arithmetic bounds.
 
 The significance of the above finite-precision results is best illustrated by the \emph{stochastic Lanczos quadrature} method employed by Ubaru et. al~\cite{} for numerical rank estimation, which estimates the trace of an arbitrary matrix function by means of a Girard-Hutchinson (GH) estimator of the trace: 
 $$ \mathrm{tr}(f(A)) \approx \frac{n}{n_v} \sum\limits_{i=1}^{n_v} v_i^T f(A) v_i  $$ 
@@ -1245,10 +1247,24 @@ We leave the tuning of such optimizers to future work.
 
 \subsection*{Manifold detection from image patches}
 
+
+
 % --- APPLICATION: Topology-guided simplification ----
 \subsection*{Topology-guided simplification}
-In certain computational topology settings, one knows about the underyling toplogy of interest but. 
+In many 3D computer graphics applications, one typically has access to a simplicial or polygonal mesh embedded in $\mathbb{R}^3$ that would like to simplify to decrease its level of detail (LOD).  
+Such simplifications are often necessary to improve the efficiency of compute-intensive tasks that depend on the size of the mesh (e.g. rendering).
+Methods for simplifying meshes based on the preservation of various geometrical properties, such as curvature, co-planarity, or distance-based functions of the shape are well-known, see e.g. facet merging, face decimation and energy minimization in~\cite{} for an overview. 
 
+In many applications, simplifications defined solely using geometric properties is not enough---often, such simplifications are preferred to be \emph{topology-preserving} in some sense, e.g. edge collapses must preserve neighboring connectivity or the number of holes.
+Though such operations are often critical to..., they are inherently \emph{local} conditions. With the exception of very simple properties (e.g. connectedness, the Euler characteristic, etc.) it is often far too expensive to ensure \emph{global} topological properties of shapes are preserved under incremental simplification procedures, either because the properties themselves are expensive to check (per simplifying operation) or because the existing simplification procedure cannot ensure such guarantees. 
+
+To illustrate another use-case of our methodology, we look to address the problem of mesh simplification under the preservations of persistence-based measures of topology. 
+Consider a 3D mesh library of animals pose data... As these are high quality meshes, one may be interested in geometric simplifications, such as quadric decimation procedure, which takes as input the number of triangles $n_2$ desired in the output. 
+A priori, it is unclear how to set $k$---however, since the taxonomical classification of these meshes are known, one simple criterion for look to preserve the is appearance of the major extremities, such as limbs and tails. 
+
+%In these contexts, the topology-related measure being preserved a
+%such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
+% In the former case, topologically critical changes are permitted unhindered, while in latter is restricted to preserving are purely local notions of topology, such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
 
 \begin{figure}[t]
 	\includegraphics[width=\textwidth]{elephant_sparsify}

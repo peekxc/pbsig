@@ -38,6 +38,17 @@ for a,b in dgms[0]:
 pp = figure_dgm(dgms[0], figure=pp)
 show(pp)
 
+# %% 
+from bokeh.layouts import row, column 
+p1 = f_p 
+p2 = figure_dgm(dgms[0])
+p1.toolbar_location = None
+p2.toolbar_location = None 
+p1.title = "Real-valued function"
+p2.height = p1.height = 300 
+show(row(p1, p2))
+
+
 # %% Color the cells
 from shapely import Polygon, GeometryCollection, polygonize, polygonize_full, get_geometry, simplify, get_parts, unary_union, union, union_all
 from shapely import LineString, multipolygons, segmentize, boundary, make_valid, envelope
@@ -87,6 +98,8 @@ pp.toolbar_location = None
 pp.title = "Size Function"
 show(pp)
 
+# %% 
+show(row(p1, pp))
 
 # %% Compute the spectral rank on a finite grid
 from pbsig.betti import betti_query, BettiQuery

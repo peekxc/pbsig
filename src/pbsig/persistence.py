@@ -59,11 +59,11 @@ def persistent_betti(D1, D2, i: int, j: int, summands: bool = False):
   if (i == 0): 
     return((0, 0, 0, 0) if summands else 0)
   t1 = D1[:,:i].shape[1] # i, D1.shape[1]
-  t2 = 0 if np.prod(D1[:,:i].shape) == 0 else np.linalg.matrix_rank(D1[:,:i].A)
+  t2 = 0 if np.prod(D1[:,:i].shape) == 0 else np.linalg.matrix_rank(D1[:,:i].todense())
   D2_tmp = D2[:,:j]
-  t3_1 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
+  t3_1 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.todense())
   D2_tmp = D2_tmp[i:,:] # note i is 1-based, so this is like (i+1)
-  t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.A)
+  t3_2 = 0 if np.prod(D2_tmp.shape) == 0 else np.linalg.matrix_rank(D2_tmp.todense())
   return((t1, t2, t3_1, t3_2) if summands else t1 - t2 - t3_1 + t3_2)
 
 def low_entry(D: lil_array, j: Optional[int] = None):

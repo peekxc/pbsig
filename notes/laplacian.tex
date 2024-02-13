@@ -16,7 +16,8 @@ For any simplicial complex $K$, there are three natural Laplacian operators: the
 %	\simeq H() 
 \end{equation}
 \noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). 
+All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have real, non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). 
+Thus, for rank computations, it suffices to consider only one of them.
 %Thus, from a rank-based perspective, any of these operators may be readily substituted for $\hat{\partial}_p^\ast$ in Proposition~\ref{prop:mu_betti_1}.
 
 %moreover, as shown by~\cite{horak2013spectra}, their spectra are related by the identities $\Lambda(\Delta_p(K)) \doteq \Lambda(L_p^{\text{up}}) \, \cupdot \, \Lambda(L_p^{\text{dn}})$ and $\Lambda(L_p^{\text{up}}) \doteq \Lambda(L_{p+1})$,
@@ -26,7 +27,7 @@ All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are sym
 %\end{equation}
 
 Let $(K, f_\alpha)$ denote a parameterized family of filtrations of a simplicial complex $K$ equipped with a fixed but arbitrary linear extension $ \preceq$ of its face poset and fixed orientations $s(\sigma)$ inherited from the total order on the vertex set $(V, \preceq)$.
-Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}_p \triangleq  L_p^{\mathrm{up}}$. 
+Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}_p \triangleq  L_p^{\mathrm{up}}$ at index $(a, b)$ as follows: 
 %Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
 \begin{align}\label{eq:laplacian_decouple}
 %\mathcal{L}_p^{\text{up}}(f) & \triangleq D_p^{1/2}(f) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(f) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(f) 
@@ -35,9 +36,9 @@ Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}
 %\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
 \end{align}
 where $D_p(f)$ denotes a diagonal matrix whose entries represent the application of $f$ to the $p$-simplices of $K$.
-As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the matrix decomposition of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$, then for any pair $a,b\in \Delta_+$ there exists indices $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$ such that:
+As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the corresponding full boundary matrix $\partial$ of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$, then for any pair $a,b\in \Delta_+$ there exists indices $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$ such that:
 \begin{equation}
-	\mathrm{rank}(R_{p+1}^{i,j}) = \mathrm{rank}(\partial_{p+1}^{i, j}) = \mathrm{rank}(\hat{\partial}_{p+1}^{a,b}) = \mathrm{rank}\left((\hat{\partial}_{p+1}^{a,b})(\hat{\partial}_p^{a,b})^T \right) = \mathrm{rank}(\mathcal{L}_{p}^{a,b})
+	\mathrm{rank}(R_{p+1}^{i,j}) = \mathrm{rank}(\partial_{p+1}^{i, j}) = \mathrm{rank}(\hat{\partial}_{p+1}^{a,b}) = \mathrm{rank}\left((\hat{\partial}_{p+1}^{a,b})(\hat{\partial}_{p+1}^{a,b})^T \right) = \mathrm{rank}(\mathcal{L}_{p}^{a,b})
 \end{equation}
 %\begin{align*}	
 %	\mathrm{rank}(R_p^{i,j})& = \mathrm{rank}(\partial_p^{i, j})  \\
@@ -46,7 +47,7 @@ As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at
 %%	 & = \mathrm{rank}(D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha)) \\
 %	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}) \numberthis
 %\end{align*}
-where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. Thus, we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
+where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. This confirms that we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
 
 %This will become particularly important in section~\ref{sec:computational_imp}, where we 
 

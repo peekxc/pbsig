@@ -166,8 +166,32 @@ from pbsig.rivet import figure_betti, anchors, push_map
 BI = bigraded_betti(S, f1, f2, p=1, xbin=30, ybin=30)
 
 # %% Show the hilbert function
-p = figure_betti(BI, width=350, height=350, highlight=5, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
+p = figure_betti(BI, width=350, height=350, size=5) #y_range = (0.95*connected_diam, connected_diam*1.60)))
 p.aspect_ratio = 1
+p.toolbar_location = None
+p.title = "Hilbert function of bigraded Betti numbers"
+p.yaxis.axis_label = "diameter (rips)"
+p.xaxis.axis_label = "codensity (kde)"
+show(p)
+
+from bokeh.models import Span, Legend, LegendItem
+conn_span = Span(location=connected_diam, dimension='width', name="Connection diam")
+
+ed = enclosing_radius(patch_geodesic) * 2
+
+li_cr = LegendItem(label="connected radius")
+li_er = LegendItem(label="enclosing radius")
+li_sl = LegendItem(label="silverman lb")
+li_sb = LegendItem(label="silverman ub")
+legend = Legend(items=[li_conn], title="")
+legend.title_text_font_size = '10px'
+legend.padding = 2
+legend.margin = 2
+legend.label_width = 10
+legend.label_text_line_height = 0.8
+# p.add_layout(legend)
+show(p)
+p.line(x=[0.0, 1.0], y=[line_f(0.0, angle), line_f(1.0, angle)], color='blue')
 show(p)
 
 # %% Choose the intercept + angle by hand 
