@@ -8,6 +8,12 @@ Henry Adams, Tegan Emerson, Michael Kirby, Rachel Neville, Chris Peterson,
   homology.
 \newblock {\em Journal of Machine Learning Research}, 18, 2017.
 
+\bibitem{bauer2021ripser}
+Ulrich Bauer.
+\newblock Ripser: efficient computation of vietoris--rips persistence barcodes.
+\newblock {\em Journal of Applied and Computational Topology}, 5(3):391--423,
+  2021.
+
 \bibitem{bauer2020persistence}
 Ulrich Bauer and Michael Lesnick.
 \newblock Persistence diagrams as diagrams: A categorification of the stability
@@ -35,6 +41,11 @@ Shujun Bi, Le~Han, and Shaohua Pan.
 Peter Bubenik et~al.
 \newblock Statistical topological data analysis using persistence landscapes.
 \newblock {\em J. Mach. Learn. Res.}, 16(1):77--102, 2015.
+
+\bibitem{carlsson2008local}
+Gunnar Carlsson, Tigran Ishkhanov, Vin De~Silva, and Afra Zomorodian.
+\newblock On the local behavior of spaces of natural images.
+\newblock {\em International journal of computer vision}, 76:1--12, 2008.
 
 \bibitem{cerri2013betti}
 Andrea Cerri, Barbara~Di Fabio, Massimo Ferri, Patrizio Frosini, and Claudia
@@ -100,6 +111,12 @@ Herbert Edelsbrunner, David Letscher, and Afra Zomorodian.
 \newblock In {\em Proceedings 41st annual symposium on foundations of computer
   science}, pages 454--463. IEEE, 2000.
 
+\bibitem{fugacci2020topology}
+Ulderico Fugacci, Michael Kerber, and Hugo Manet.
+\newblock Topology-preserving terrain simplification.
+\newblock In {\em Proceedings of the 28th International Conference on Advances
+  in Geographic Information Systems}, pages 36--47, 2020.
+
 \bibitem{goldberg2002combinatorial}
 Timothy~E Goldberg.
 \newblock Combinatorial laplacians of simplicial complexes.
@@ -109,6 +126,11 @@ Timothy~E Goldberg.
 Gene~H Golub and Charles~F Van~Loan.
 \newblock {\em Matrix computations}.
 \newblock JHU press, 2013.
+
+\bibitem{heckbert1997survey}
+Paul~S Heckbert and Michael Garland.
+\newblock Survey of polygonal surface simplification algorithms.
+\newblock Siggraph, 1997.
 
 \bibitem{horak2013spectra}
 Danijela Horak and J{\"u}rgen Jost.
@@ -125,6 +147,11 @@ Cornelius Lanczos.
 \newblock An iteration method for the solution of the eigenvalue problem of
   linear differential and integral operators.
 \newblock 1950.
+
+\bibitem{lee2003nonlinear}
+Ann~B Lee, Kim~S Pedersen, and David Mumford.
+\newblock The nonlinear statistics of high-contrast patches in natural images.
+\newblock {\em International Journal of Computer Vision}, 54:83--103, 2003.
 
 \bibitem{mangasarian1994class}
 Olvi Mangasarian and Chunhui Chen.
@@ -190,11 +217,24 @@ Horst~D Simon.
   methods.
 \newblock {\em Linear algebra and its applications}, 61:101--131, 1984.
 
+\bibitem{teng2010laplacian}
+Shang-Hua Teng.
+\newblock The laplacian paradigm: Emerging algorithms for massive graphs.
+\newblock In {\em Theory and Applications of Models of Computation: 7th Annual
+  Conference, TAMC 2010, Prague, Czech Republic, June 7-11, 2010. Proceedings
+  7}, pages 2--14. Springer, 2010.
+
 \bibitem{turner2014persistent}
 Katharine Turner, Sayan Mukherjee, and Doug~M Boyer.
 \newblock Persistent homology transform for modeling shapes and surfaces.
 \newblock {\em Information and Inference: A Journal of the IMA}, 3(4):310--344,
   2014.
+
+\bibitem{ubaru2016fast}
+Shashanka Ubaru and Yousef Saad.
+\newblock Fast methods for estimating the numerical rank of large matrices.
+\newblock In {\em International Conference on Machine Learning}, pages
+  468--477. PMLR, 2016.
 
 \bibitem{zhao2012approximation}
 Yun-Bin Zhao.

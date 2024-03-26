@@ -172,10 +172,10 @@ def as_dgm(dgm) -> np.ndarray:
 def validate_decomp(D: sparray, R: sparray, V: sparray, epsilon: float = 10*np.finfo(float).eps, warn: bool = True):
   tol = 10*np.finfo(R.dtype).eps if not np.issubdtype(R.dtype, np.integer) else 0
   _is_reduced = is_reduced(R)
-  dv_r_diff = abs(((D @ V) - R).data)
-  v_upper_diff = abs((V - triu(V)).data)
-  _is_rv_decomp = len(dv_r_diff) == 0 or np.isclose(sum(dv_r_diff.flatten()), tol)
-  _is_upper_tri = len(v_upper_diff) == 0 or np.isclose(np.sum(v_upper_diff), tol)
+  dv_r_diff = np.abs(((D @ V) - R).data)
+  v_upper_diff = np.abs((V - triu(V)).data)
+  _is_rv_decomp = len(dv_r_diff) == 0 or np.isclose(np.max(dv_r_diff.flatten()), tol)
+  _is_upper_tri = len(v_upper_diff) == 0 or np.isclose(np.max(v_upper_diff), tol)
   valid = _is_reduced and _is_rv_decomp and _is_upper_tri
   if not(valid) and warn:
     import warnings 
@@ -213,16 +213,19 @@ def generate_dgm(K: FiltrationLike, R: sparray, collapse: bool = True, simplex_p
     # assert isinstance(K, Sequence), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
     assert hasattr(K, "__getitem__"), "Filtration-like object must support be Sequence semantics to attach simplex pairs"
     dgm_dtype = [('birth', 'f4'), ('death', 'f4'), ('creators', 'O'), ('destroyers', 'O')]
-    # if is_filtration_like(K):
-    #   print(K[birth[0]])
-    #   creators = (Simplex(K[b][1]) for b in birth) 
-    #   destroyers = (Simplex(K[int(d)][1]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
-    # else:
-    creators = (Simplex(K[b]) for b in birth)
-    destroyers = (Simplex(K[int(d)]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
-    birth = np.array([index2fv[i] for i in birth])
-    death = np.array([index2fv[i] for i in death])
-    dgm = np.fromiter(zip(birth, death, creators, destroyers), dtype=dgm_dtype)
+    if is_filtration_like(K):
+      # print(K[birth[0]])
+      creators = (Simplex(K[b][1]) for b in birth) 
+      destroyers = (Simplex(K[int(d)][1]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
+      birth = np.array([index2fv[i] for i in birth])
+      death = np.array([index2fv[i] for i in death])
+      dgm = np.fromiter(zip(birth, death, creators, destroyers), dtype=dgm_dtype)
+    else:
+      creators = (Simplex(K[b]) for b in birth)
+      destroyers = (Simplex(K[int(d)]) if not(np.isinf(d)) else Simplex([np.nan]) for d in death)
+      birth = np.array([index2fv[i] for i in birth])
+      death = np.array([index2fv[i] for i in death])
+      dgm = np.fromiter(zip(birth, death, creators, destroyers), dtype=dgm_dtype)
   else:
     dgm_dtype = [('birth', 'f4'), ('death', 'f4')]
     birth = np.array([index2fv[i] for i in birth])
@@ -468,11 +471,11 @@ def sliding_window(f: Union[ArrayLike, Callable], bounds: Tuple = (0, 1)):
   Returns a function which generates a n-point slidding window point cloud of a fixed time-series/function _f_. 
 
   The returned function has the parameters
-    - n := number of point to generate the embedding
-    - d := dimension-1 of the resulting embedding 
-    - w := (optional) window size each (d+1)-dimensional delay coordinate is derived from
-    - tau := (optional) step size 
-    - L := (optional) expected number of periods, if known
+    - n: int = number of point to generate the embedding
+    - d: int = dimension-1 of the resulting embedding 
+    - w: float = (optional) window size each (d+1)-dimensional delay coordinate is derived from
+    - tau: float = (optional) step size 
+    - L: int = (optional) expected number of periods, if known
   The parameter n and d must be supplied, along with exactly one of 'w', 'tau' or 'L'.  
   '''
   assert isinstance(f, Callable) or isinstance(f, np.ndarray), "Time series must be function or array like"

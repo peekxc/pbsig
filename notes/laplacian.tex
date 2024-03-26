@@ -1,22 +1,23 @@
 %Thus we may solve this problem by solving $n$ sparse linear systems of that take the form $Ax = b$, where here $A$ is a Laplacian matrix with an $\epsilon \cdot I_n$ addition to it's diagonal. 
 \subsection{Parameterized Laplacians}\label{sec:laplacian_theory2}
- For the sake of generality, it is important to make the class of expressions for $\beta_p^\ast$ and $\mu_p^\ast$ as large as possible.
+ For generality's sake, it is important to make the class of expressions for $\beta_p^\ast$ and $\mu_p^\ast$ as large as possible.
 %elucidate the necessary conditions under which the spectral operators from section~\ref{sec:spectral_relax} are differentiable, so as to make the class of such operators as large as possible. 
-Towards this, we exploit another identity of the rank function applicable to zero-characteristic fields $\mathbb{F}$:
-% for zero characteristic fields: 
+%Towards this, we exploit another identity of the rank function applicable to zero-characteristic fields $\mathbb{F}$:
+Since we are only concerned with homology over $\mathbb{R}$, we may exploit another identity of the rank function which is only applicable to zero characteristic fields: 
 %$$\mathrm{rank}(\partial_p) = \mathrm{rank}(\partial_p \circ \partial_p^T) = \mathrm{rank}(\partial_p^T \circ \partial_p)$$ 
 $$\mathrm{rank}(X) = \mathrm{rank}(X X^T) = \mathrm{rank}(X^T X), \quad \text{for all } X \in \mathbb{F}^{n \times m}$$ 
 % study of spectra of \emph{combinatorial Laplacians}
 In the context of boundary operators, note that $\partial_1 \partial_1^T$ is the well known \emph{graph Laplacian}~\cite{chung1997spectral}, indicating we may express $\beta_0^\ast(\alpha)$ and $\mu_0^\ast(\alpha)$ using the ranks of Laplacian\footnote{By convention, we define $\partial_p = 0$ for all $p \leq 0$.} matrices.
-Indeed, as the eigenvalues of $XX^T$ (or $X^T X$) are given by the squares of the singular values of $X$, we may study the singular values of boundary operators through the spectra of Laplacians.  
+%Indeed, as the eigenvalues of $XX^T$ (or $X^T X$) are given by the squares of the singular values of $X$, we may study the singular values of boundary operators through the spectra of Laplacians.  
 
-For any simplicial complex $K$, there are three natural Laplacian operators: the \emph{up}-Laplacian $L_p^{\text{up}}(K)$, the \emph{down}-Laplacian $L_p^{\text{dn}}(K)$, and their sum, which we refer to as the \emph{combinatorial} Laplacian $\Delta_p(K)$: 
+Following the seminal results from Horuk and Jost~\cite{horak2013spectra}, there are three natural ways to define ($p$-) Laplacian operators over a fixed simplicial complex $K$: the \emph{up}-Laplacian $L_p^{\text{up}}(K)$, the \emph{down}-Laplacian $L_p^{\text{dn}}(K)$, and their sum, which we refer to as the \emph{combinatorial} Laplacian $\Delta_p(K)$: 
 \begin{equation}\label{eq:comb_lap}
 	\Delta_p = \underbrace{\partial_{p\+1} \circ \partial_{p\+1}^T}_{L_p^{\text{up}}} + \underbrace{\partial_{p}^T  \circ  \partial_{p}}_{L_p^{\text{dn}}} 
 %	\simeq H() 
 \end{equation}
 \noindent 
-All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent} and thus have real, non-negative eigenvalues---moreover, the multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ differ only in the multiplicities of zero, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). 
+All three operators $\Delta_p$, $L_p^{\text{up}}$, and $L_p^{\text{dn}}$ are symmetric, positive semi-definite, and compact~\cite{memoli2022persistent}---moreover, the \emph{non-zero} multisets $\Lambda(L_p^{\text{up}})$ and $\Lambda(L_{p+1}^{\text{dn}})$ are equivalent, implying they must have identical ranks (see Theorem 2.2 and 3.1 of~\cite{horak2013spectra}). 
+%and thus have real, non-negative eigenvalues
 Thus, for rank computations, it suffices to consider only one of them.
 %Thus, from a rank-based perspective, any of these operators may be readily substituted for $\hat{\partial}_p^\ast$ in Proposition~\ref{prop:mu_betti_1}.
 
@@ -31,14 +32,15 @@ Without loss of generality, we define the weighted $p$ up-Laplacian $\mathcal{L}
 %Let $\mathcal{L}_p^\ast$ denote any choice of $p$-Laplacian, which may generically of the forms given below: 
 \begin{align}\label{eq:laplacian_decouple}
 %\mathcal{L}_p^{\text{up}}(f) & \triangleq D_p^{1/2}(f) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(f) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p^{1/2}(f) 
-\mathcal{L}_p^{a,b}(\alpha) & \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p(\bar{S}_a \circ f_\alpha) 
+\mathcal{L}_{p, \preceq}^{a,b}(\alpha) & \triangleq D_p(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p+1}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_p(\bar{S}_a \circ f_\alpha) 
 %\mathcal{L}_p^{\text{dn}}(\alpha) & \triangleq D_p^{1/2}(\alpha) \cdot \partial_p^T(K_\preceq) \cdot D_{p+1}(\alpha) \cdot \partial_p(K_\preceq) \cdot D_p^{1/2}(\alpha) \\
 %\Delta_p(\alpha) & \triangleq \mathcal{L}_p^{\text{up}}(\alpha) + \mathcal{L}_p^{\text{dn}}(\alpha) 
 \end{align}
 where $D_p(f)$ denotes a diagonal matrix whose entries represent the application of $f$ to the $p$-simplices of $K$.
-As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the corresponding full boundary matrix $\partial$ of $(K, f)$. In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$, then for any pair $a,b\in \Delta_+$ there exists indices $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$ such that:
+As in~\eqref{eq:rank_equiv_param}, fixing step function $S_a$ and $\bar{S}_b$ at values $a, b \in \mathbb{R}$ yields operators whose ranks correspond to the ranks of certain ``lower-left'' submatrices of the corresponding full boundary matrix $\partial$ of $(K, f)$. 
+In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for some fixed choice of $\alpha \in \mathcal{A}$, then for any pair $(a,b)\in \Delta_+$ there exists indices $i = \sum_{\sigma \in K} (S_a \circ f_\alpha)(\sigma)$ and $j = \sum_{\sigma \in K} (S_b \circ f_\alpha)(\sigma)$ such that:
 \begin{equation}
-	\mathrm{rank}(R_{p+1}^{i,j}) = \mathrm{rank}(\partial_{p+1}^{i, j}) = \mathrm{rank}(\hat{\partial}_{p+1}^{a,b}) = \mathrm{rank}\left((\hat{\partial}_{p+1}^{a,b})(\hat{\partial}_{p+1}^{a,b})^T \right) = \mathrm{rank}(\mathcal{L}_{p}^{a,b})
+	\mathrm{rank}(R_{p+1}^{i,j}) = \mathrm{rank}(\partial_{p+1}^{i, j}) = \mathrm{rank}(\hat{\partial}_{p+1}^{a,b}) = \mathrm{rank}\left((\hat{\partial}_{p+1}^{a,b})(\hat{\partial}_{p+1}^{a,b})^T \right) = \mathrm{rank}(\mathcal{L}_{p, \preceq}^{a,b})
 \end{equation}
 %\begin{align*}	
 %	\mathrm{rank}(R_p^{i,j})& = \mathrm{rank}(\partial_p^{i, j})  \\
@@ -52,7 +54,12 @@ where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{ran
 %This will become particularly important in section~\ref{sec:computational_imp}, where we 
 
 \begin{remark}
-One may interpret sending a subset $S \subseteq K$ of $p$-simplices to $0$ as restricting to a sub-complex $L = K \setminus S$, which suggests we may use the inclusion $L \hookrightarrow K$ to re-define e.g.~\eqref{eq:pbn} and its subsequent extensions~\eqref{eq:laplacian_decouple} using \emph{simplicial pairs} $(L, K)$, as in~\cite{memoli2022persistent}. However, our parameterized definition of a boundary operator~\eqref{eq:param_boundary_matrix} may not always correspond to a subcomplex in the sense that if two distinct $p$-simplices $\tau, \tau' \in K^p, \tau \neq \tau'$ sharing a coface $\sigma \in K^{p+1}$, we allow the situation where $f(\tau) > 0$ and $f(\sigma) > 0$ but $f(\tau') = 0$ (due to the arbitrary choice of $a, b \in \mathbb{R}$). 
+One may interpret the action of sending a subset $S \subseteq K$ of $p$-simplices to $0$ as a restriction of $K$ to a sub-complex $L = K \setminus S$, which suggests e.g.~\eqref{eq:pbn} and~\eqref{eq:laplacian_decouple} could be alternatively defined using the inclusion maps $L \hookrightarrow K$ between \emph{simplicial pairs} $(L, K)$, as in~\cite{memoli2022persistent}. 
+We prefer the use of index notation $(a,b)$ here as it is simpler notationally to generalize to arbitrary rectilinear subsets $\mathcal{R} \subset \Delta_+$.
+%, cumbersome to do notationally, . 
+%While this is viable, we prefer to use the inde
+%However, doing so would as the multiplicity function $\mu_p$ can be generalized to any rectilinear subset of the upper-left half plane $\Delta_+$, we prefer the notation that 
+%However, our parameterized definition of a boundary operator~\eqref{eq:param_boundary_matrix} may not always correspond to a subcomplex in the sense that if two distinct $p$-simplices $\tau, \tau' \in K^p, \tau \neq \tau'$ sharing a coface $\sigma \in K^{p+1}$, we allow the situation where $f(\tau) > 0$ and $f(\sigma) > 0$ but $f(\tau') = 0$ (due to the arbitrary choice of $a, b \in \mathbb{R}$). 
 \end{remark}
 
 %Unlike $\partial_p(\alpha)$, the set $\{ \, \hat{L}_p^{\mathrm{up}}(\alpha) : \alpha \in \mathcal{A} \, \}$ lies strictly within $\mathbb{S}^n_+$, implying $\lVert \Phi(\hat{L}_p^{\mathrm{up}})(\alpha) \rVert_\ast$ is continuously differentiable. 

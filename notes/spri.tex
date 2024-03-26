@@ -236,7 +236,9 @@ sparking both an inverse theory for persistence and a mathematical foundation fo
 Despite the potential these extensions have in learning applications,
 %~\cite{pun2018persistent},
 %however, their scalability is limited as diagrams are prerequisite to their computation.
-diagrams can still be expensive to obtain. The severity of this issue is compounded in the parameterized setting, where adaptations of the persistence computation has proven non-trivial~\cite{piekenbrock2021move}.
+%diagrams can still be expensive to obtain. 
+scalability issues due to high algorithmic complexity remain. 
+Indeed, this issue is compounded in the parameterized setting, where adaptations of the persistence computation has proven non-trivial~\cite{piekenbrock2021move}.
 %not only is the standard PH computation expensive statistically, 
 %not only are diagrams difficult to compute individually, but extending the persistence computation to parameterized settings has proven non-trivial~\cite{piekenbrock2021move}. 
 %moves
@@ -305,19 +307,19 @@ Our strategy is motivated both by a technical observation that suggests advantag
 %where $\beta_p^{a, b}$ is the rank of the linear map in $f^{\shortminus1}(-\infty, a) \hookrightarrow f^{\shortminus1}(-\infty, b)$.
 %Note that in this setting, $(a,b)$ are arbitrarynot necessarily homological critical values in the range of $f$, but rather are arbitrary. 
 % \mathrm{rank}(H_p(K_{\hat\imath})\to)
-Notably, our approach not only avoids explicitly constructing diagrams, but is in fact \emph{matrix-free}, circumventing the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
+Notably, our approach not only avoids explicitly constructing diagrams, but is also \emph{matrix-free}, circumventing the reduction algorithm from~\cite{edelsbrunner2022computational} entirely.  
 %?between the persistent Betti numbers and combinatorial Laplacian operators
 %As a way to continuously interpolates between the rank function and the spectrum of certain linear operator, we elucidate connections between persistence and other areas of applied mathematics, such as Tikhonov regularization, compressive sensing, iterative subspace methods.
 %Moreover, inspired by a relationship established between the persistent Betti numbers and combinatorial Laplacian operators~\cite{}, we show our vectorization able to harvest the rich geometric information such operators encode for tasks like shape classification and filtration optimization.  
 %requiring only as much memory as is needed to enumerate simplices in the underlying complex $K$, 
-Additionally, the relaxation is computable in linear space and quadratic time, can be iteratively approximated, and requires no complicated data structures or maintenance procedures to implement. 
+Additionally, the relaxation is computable exactly in linear space and quadratic time, requires no complicated data structures or maintenance procedures to implement, and can be iteratively $(1 \pm \epsilon)$ approximated in effectively linear time in practice for large enough $\epsilon > 0$. 
 %Moreover, it is particularly efficient to compute over parameterized families of inputs. 
 %due to its spectral formulation. 
 \\
 \\
 \noindent 
-\textbf{Contributions:} Our primary contribution is the introduction of several families of spectral approximations to the rank invariants---$\mu_p$ and $\beta_p$\ref{}---all of which are Lipshitz continuous\ref{}, stable under relative perturbations\ref{}, and differentiable on the positive semi-definite cone\ref{}. By a reduction to spectral methods for Laplacian operators\ref{}, we also show these approximations are computable in $\approx O(m)$ memory and $\approx O(mn)$ time, where $n,m$ are the number of $p, p+1$ simplices in $K$, respectively (see section~\ref{sec:computational_imp}). 
-Moreover, both relaxations admit iterative $(1-\epsilon)$-approximation schemes\ref{}, and in both cases are recovered exactly when the parameters $\epsilon$ and $\tau$ made small enough\ref{}. 
+\textbf{Contributions:} Our primary contribution is the introduction of several families of spectral approximations to the rank invariants---$\mu_p$ and $\beta_p$\ref{}---all of which are Lipshitz continuous\ref{}, stable under relative perturbations\ref{}, and differentiable on the positive semi-definite cone\ref{}. By a reduction to spectral methods for Laplacian operators\ref{}, we also show these approximations are computable in $\approx O(m)$ memory and $\approx O(mn)$ time, where $n,m$ are the number of $p, p+1$ simplices in $K$, respectively (section~\ref{sec:computational_imp}). 
+Moreover, both relaxations admit iterative $(1\pm\epsilon)$-approximation schemes\ref{}, recovering both invariants $\epsilon$ is made small enough\ref{}. 
 %Our primary contribution is an iterative ($\epsilon$, $\tau$)-approximation method for computing the \emph{persistent rank invariants}---$\mu_p$ and $\beta_p$---in $\approx O(m)$ memory and $\approx O(mn)$ time, where $m, n$ are the number of $p+1, p$ simplices in the complex, respectively (section~\ref{sec:computational_imp}). 
 % TODO: explicitly mention multiplicity and betti in hyphened-text
 % exact arithmetic + empirical 
@@ -378,9 +380,10 @@ The steps to produce this mapping are as follows:
 	\mu_p^{\mathcal{R}}(K, f_\alpha) \triangleq 
 	\mathrm{card}\left(\restr{\mathrm{dgm}_p(f_\alpha)}{\mathcal{R}} \right) 
 	\end{equation}
-	\item Choose an $\mathcal{A}$-parameterized Laplacian operator $\mathcal{L}_p^{a,b} : \mathcal{A} \times C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})$ on the relative $p$-cochains of $(K_b, K_b)$ and a 
+	\item Choose a Laplacian operator $\mathcal{L}_p^{a,b}$ to act on the relative $p$-cochains of $(K_b, K_b)$ and a 
 %	$\tau$-parameterized function $\phi: \mathbb{R} \to \mathbb{R}$ 
-	$\tau$-parameterized continuous function $\phi(\cdot , \tau ) : \mathbb{R} \to \mathbb{R}_+$ which converges to $\mathrm{sgn}_+$ as $\tau \to 0$.
+spectral function $\phi(\cdot , \tau ) : \mathbb{R} \to \mathbb{R}_+$ which converges to $\mathrm{sgn}_+$ as $\tau \to 0$.
+	%  : C^p(K_b, K_a; \mathbb{R}) \to C^p(K_b, K_a; \mathbb{R})
 %	$\mathcal{R}$.
 %	\item such as the \emph{up}-, \emph{down}-, or \emph{combinatorial} Laplacian (optionally normalized~\cite{horak2013spectra}). 
 	% TODO: change Phi to phi, reflect the functional nature
@@ -389,7 +392,7 @@ The steps to produce this mapping are as follows:
 %\mathcal{L} : C^p(K, \mathbb{R}) \to C^p(K, \mathbb{R})
 %\end{equation}
 %	$$ L_{ij}^{\mathrm{up}}(K, f_\alpha) = \mathcal{D}_{i}^{1/2}( \alpha) \circ \partial \circ W_{j}( \alpha ) \circ \partial^T \circ \mathcal{D}_{i}^{1/2}( \alpha) $$
-The choice of $\mathcal{L}$ (e.g. Kirchoff, random walk) determines the kind of geometric/topological information to extract from $(K, f_\alpha)$, while $\phi$ determines how that information is encoded.
+The choice of $\mathcal{L}_p^\ast$ (e.g. Kirchoff, random walk) determines the geometric/topological information to extract from $(K, f_\alpha)$ and $\phi$ determines how that information is encoded.
 %and $\Phi$ determines how this information is incorporated into the mapping. 
 	\item Denote by $\Lambda(\mathcal{L}_{a,b}(\alpha))$ the spectrum of $\mathcal{L}_{a,b}$ at any $\alpha \in \mathcal{A}$ ordered in non-increasing order. Our relaxation approximates~\eqref{eq:mu_alpha} by $(1 \pm \epsilon)$-approximating $\mu_p$ at each corner point $(a,b)$ in the boundary of $\mathcal{R}$: 
 %	\item \in \Lambda(\mathcal{L}_p^{a,b})$
@@ -423,7 +426,7 @@ where $\Phi_\tau(\cdot)$ is a $\tau$-parameterized matrix function induced by $\
 %	\item Differentiate an $\alpha$-parameterized filter $f_\alpha$ for a fixed sieve $\mathcal{R}$ over a family $\mathcal{A}$ % $\nabla f_\alpha (\mathcal{R}) \in \mathbb{R}^{\lvert \mathcal{A}\rvert}$
 %\end{enumerate}
 %\noindent
-Applications looking to vectorize persistence information over random and highly structured complexes may benefit from the concentration of mass phenomenon known to occur their spectra; examples include topology-guided image denoising~\cite{pun2018persistent}, shape classification under metric invariants~\cite{chazal2009gromov}, bifurcation detection in dynamical systems~\cite{perea2022approximating}, and so on. 
+Applications looking to vectorize persistence information over random and highly structured complexes may benefit from the concentration of mass phenomenon known to occur with their Laplacian spectra; examples include topology-guided image denoising~\cite{pun2018persistent}, shape classification under metric invariants~\cite{chazal2009gromov}, bifurcation detection in dynamical systems~\cite{perea2022approximating}, and so on. 
 The differentiability of our relaxation also suggests it may be used in topological optimization applications, i.e. optimization problems whose loss functions incorporate persistence information~\cite{nigmetov2022topological}. 
 %\begin{tcolorbox}[title=Generic application \#1: Vectorizing persistence information]
 %\begin{empheq}[box=\boxAppOne]{equation*}
@@ -513,7 +516,7 @@ Equivalently, all lower-left submatrices of $\partial$ have the same rank as the
 An explicit proof of both of these facts can be found in~\cite{dey2022computational}, though the latter was also noted in passing by Edelsbrunner~\cite{edelsbrunner2000topological}. 
 Though typically viewed as minor facts needed to prove the correctness of the reduction algorithm, the implications of these two observations are are quite general, as recently noted by~\cite{bauer2022keeping}:
 \begin{corollary}[Bauer et al.~\cite{bauer2022keeping}]\label{cor:valid_pers}
-	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K, f)$ for all $i,j \in [N]$ is a valid persistence algorithm. 
+	Any persistence algorithm which preserves the ranks of the submatrices $\partial^{i,j}(K, f)$ for all $i,j \in [N]$ satisfying $1 \leq i < j \leq N$ is a valid persistence algorithm. 
 \end{corollary}
 
 \noindent Indeed, though $R$ is not unique, its non-zero pivots are, and these pivots \emph{define} the persistence diagram. Moreover, due to~\eqref{eq:lower_left_rank}, both $\beta_p^{\ast}$ and $\mu_p^{\ast}$ may be written as a sum of ranks of submatrices of $\partial_p$ and $\partial_{p+1}$:
@@ -557,13 +560,13 @@ In practice, neither expressions seem used or even implemented in any commonly u
 %For a given $(K, f)$, if $f$ is injective, then every $a_i$ from Corollary~\ref{cor:rank_reduction} will be a homological critical value, as adding a simplex creates or removes a class.  
 %it is natural to consider their generalizations under the \emph{persistent measures} setting~\cite{chazal2016structure}.
 
-There are two very important properties of the expressions from Corollary~\ref{cor:rank_reduction}: (1) they are comprised strictly of \emph{rank} computations, and (2) all terms involve \emph{unfactored} boundary matrices.
+Two important properties of the expressions from Corollary~\ref{cor:rank_reduction} are: (1) they are comprised strictly of \emph{rank} computations, and (2) all terms involve \emph{unfactored} boundary matrices.
 % is that they imply the complexity of obtaining either $\beta_p^{i,j}(K_\bullet)$ or $\mu_p^{R}(K_\bullet)$ may be reduced to the complexity of computing the rank of a set of submatrices of $\partial$---a fact that actually motivated the rank-based persistence algorithm from Chen et al~\cite{chen2011output}.
 %Our contributions in this effort stem from the observation that the constitutive terms in these expressions are \emph{unfactored} boundary (sub)matrices---thus, 
-Coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure}, the former property suggests variational perspectives of the rank function might yield interesting spectral relaxations of~\eqref{eq:mu_four} and~\eqref{eq:betti_four} useful for e.g. optimization purposes. 
-Moreover, the latter property combined with Corollary~\ref{cor:valid_pers} suggests alternative computation strategies may be employed to extract persistence information \emph{without} using reduction.
+Coupled with measure-theoretic perspectives on persistence~\cite{chazal2016structure}, the former suggests variational perspectives of the rank function might yield interesting spectral relaxations of~\eqref{eq:betti_four} and~\eqref{eq:mu_four} useful for e.g. optimization purposes. 
+Combined with Corollary~\ref{cor:valid_pers}, the latter property suggests a path to compute persistence information \emph{without} matrix reduction.
 %by using e.g. iterative, \emph{matrix-free} approximation schemes 
-Indeed, combining these observations suggest several connections to other areas of applied mathematics, such as the rich theory of matrix functions~\cite{}, the tools developed as part of ``The Laplacian Paradigm''~\cite{}, or the very recent connections between rank estimation and trace estimation~\cite{}.
+Moreover, combining these observations suggest advances made in other areas of applied mathematics may be readily exploited, such as the rich theory of matrix functions~\cite{bhatia2013matrix}, the tools developed as part of ``The Laplacian Paradigm''~\cite{teng2010laplacian}, or the recent connections between rank and trace estimation~\cite{ubaru2016fast}.
 %with the fact that the rank function is invariant under adjoint transformations with zero-characteristic fields 
 %using random matrix theory~\cite{chen2011output}. 
 %as opposed to  direct methods that decompose $\partial$ (i.e.~\cite{edelsbrunner2022computational, zomorodian2004computing}).
@@ -633,7 +636,8 @@ The rest of the paper is dedicated to exploring these connections and their impl
 % --- Generic Rank approximation via eigenvalues --- 
 \section{Spectral relaxation and its implications}\label{sec:spectral_sec}
 %The following derivations of the persistent Betti number will be used in proofs and serve as the primary technical motivations for this effort.
-In this section, we will introduce our proposed relaxation by successively relaxing and generalizing different aspects of~\eqref{eq:betti_four}. To motivate these relaxations, it is instructive to examine the how traditional expressions of the persistent rank invariants compare to  those from Corollary~\ref{cor:rank_reduction}. 
+%To begin introducing our proposed relaxation, we successively  relaxing and generalizing different aspects of~\eqref{eq:betti_four}. 
+Prior to introducing our proposed relaxation, it is instructive to examine the how traditional expressions of the persistent rank invariants compare to  those from Corollary~\ref{cor:rank_reduction}. 
 Given a filtration $(K,f)$ of size $N = \lvert K\rvert$ with $f: K \to I$ defined over some index set $I$, its $p$-th persistent Betti number $\beta_p^{a,b}$ at index $(a,b) \in I \times I$, is defined as follows: 
 \begin{align*} \label{eq:pbn}
 	\centering
@@ -676,13 +680,14 @@ As the persistence algorithm also exhibits $O(N^3)$ time complexity and complete
 % mention DMSs 
 %In many applications it is of interest to study such filter function in parameterized settings, e.g. given some set of parameters $\mathcal{H}$, the goal is to understand a given topological invariant at many  parameters $h \in \mathcal{H}$, i.e. treat $f : \mathcal{P}(X) \times \mathcal{H} \to \mathbb{R}_+$. We include several example in section~\ref{}.
 %To see the utility of this fact, consider a filtration $(K_\bullet, f)$ equipped with a \emph{parameterized} filter function $f : \mathcal{A} \times K \to \mathbb{R}$ with respect to some set $\mathcal{A}$.
-In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), a decomposition $R = \partial V$ of the boundary matrix $\partial$ must be permuted and modified frequently to maintain a total order with respect to $f_\alpha$.  %$P R P^T = (P \partial P^T)(P V P^T)$
-In contrast, the rank function is permutation invariant, i.e. for any $X \in \mathbb{R}^{n \times n}$ and permutation $P$ we have: 
+In typical dynamic persistence settings (e.g.~\cite{cohen2006vines}), a decomposition $R = \partial V$ of the boundary matrix $\partial$ must be permuted and modified frequently to maintain a simplexwise order respecting $f_\alpha$.  %$P R P^T = (P \partial P^T)(P V P^T)$
+In contrast, one benefit of the rank function is its permutation invariance: for any $X \in \mathbb{R}^{n \times n}$ and permutation $P$ we have: 
 $$ \mathrm{rank}(X) = \mathrm{rank}(P^T X  P) $$
 %There are computational advantages to the lesser known rank invariant expressions~\eqref{eq:betti_four} and~\eqref{eq:mu_four} due to the many invariances of the rank function. One such property is permutation invariance: given any $A \in \mathbb{R}^{n \times n}$, it is easy to see that $\mathrm{rank}(A) = \mathrm{rank}(P^T A P)$ for any permutation matrix $P$.  
 % In contrast, the permutation invariance of the rank function suggests $\partial$
-This suggests rank computations on boundary matrices need not maintain this ordering---as long as they have the same non-zero pattern as their filtered counterparts, their ranks will be identical.
-In this section, we exploit this fact by showing how the expressions from~\eqref{eq:betti_four} and~\eqref{eq:mu_four} may be made \emph{permutation invariant}.
+This suggests persistent rank computations like those from Corollary~\ref{cor:rank_reduction} need not maintain this ordering---as long as the constitutive boundary matrices the same non-zero pattern as their filtered counterparts, their ranks will be identical.
+%In this section, we exploit this fact by showing how~\eqref{eq:betti_four} and~\eqref{eq:mu_four} may be made \emph{continuously parameterized}.
+In what follows, we demonstrate how exploiting this permutation invariance significantly simplifies the practical use of~\eqref{eq:betti_four} and~\eqref{eq:mu_four} in \emph{parameterized} settings. 
 
 %Permutation invariance is a useful property for computation in parameterized setting. 
 %\begin{definition}[Parameterized $\partial_p$]\label{def:time_boundary_matrix}
@@ -702,7 +707,7 @@ where $s_{kl} = \mathrm{sgn}([\sigma_k], \partial [\sigma_l])$ is the sign of th
 % and the quantity $x^{+} = x^{-1}$ if $x > 0$ and $0$ otherwise.
 %\end{definition}
 \noindent
-Observe that (1) the non-zero entries from~\eqref{eq:param_boundary_matrix} vary continuously in $f_\alpha$ and (2) $\partial_p(\alpha)$ decouples into a product of diagonal matrices $D_\ast(f_\alpha)$: 
+Observe that $\partial_p(\alpha)$ may be decoupled~\eqref{eq:param_boundary_matrix} into a product of diagonal matrices $D_\ast(f_\alpha)$: 
 	\begin{equation}\label{eq:decouple}
 		\partial_p(\alpha) \triangleq D_p(f_\alpha) \cdot \partial_p(K_\preceq) \cdot D_{p+1}(f_\alpha) 
 	\end{equation}
@@ -735,7 +740,7 @@ Though these step functions are discontinuous at their chosen thresholds $a$ and
 %\\
 %\noindent To adapt these relaxations to the rank expressions given in Proposition~\ref{prop:mu_betti_1}, we need to modify the boundary chains in~\eqref{eq:alt_sum} to vary continuously in $\mathcal{A}$, which remain discontinuous due to the use of step functions~\eqref{eq:step_functions}.
 
-These observations motivate our first relaxation. Without loss in generality, assume the orientation of the simplices induced by $(K, \preceq)$ is inherited from the order on the vertex set $V$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$. 
+The observations above collectively motivate our first relaxation. Without loss in generality, assume the orientation of the simplices $(K, \preceq)$ is induced by the order on the vertex set $V$. To simplify the notation, we write $A^{x} = A^{\ast,x}$ to denote the submatrix including all rows of $A$ and all columns of $A$ up to $x$. 
 %We also write $r(A) = \mathrm{rank}(A)$.
 % TODO: ask Jose about this
 %We also use $\mathcal{K}_f$ to denote the space of all filtration pairs $(K, f)$.
@@ -759,6 +764,15 @@ These observations motivate our first relaxation. Without loss in generality, as
 Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as opposed to $\partial_p(K, f)$) to emphasize $\partial_p(K_{\preceq})$ is ordered  according to a fixed linear ordering $(K, \preceq)$. The distinction is necessary as evaluating the boundary terms from corollary~\ref{cor:rank_reduction} would require $\partial$ to be explicitly filtered in the total ordering induced by $f_\alpha$---which varies in $\mathcal{A}$---whereas the expressions obtained by replacing the constitutive terms in~\eqref{eq:betti_four} and~\eqref{eq:mu_four} with~\eqref{eq:pbn_parameterized} and~\eqref{eq:mu_parameterized}, respectively, require no such explicit filtering.  
 %permutation invariant in $\mathcal{A}$. 
 %\end{remark}
+
+
+\begin{corollary}
+	Given a boundary operator $\hat{\partial}_p(\alpha) \in \mathbb{R}^{n \times n}$ constructed at time $\alpha \in \mathbb{R}$ from a parameterized family of filtrations $(K, f_\alpha)$ and a fixed linear extension $\preceq$, 
+	the time complexity of constructing $\hat{\partial}_p(\alpha')$ for any other $\alpha' \neq \alpha$ is $O(\mathrm{max}(\lvert K^p \rvert, \lvert K^{p+1} \rvert))$, assuming the evaluation of $f_\alpha(\tau)$ is $O(1)$ for every simplex $\tau \in K$.  
+	
+%	 Let $\hat{\partial}_p = \hat{\partial}_p^{-\infty, \infty}$ denote the full boundary matrix constructed from a fixed simplexwise filtered simplicial complex $(K, \preceq)$. add linear-time complexity result related to considering sub-complexes at varying $\alpha \neq \alpha'$. 
+	% TODO: add a remark about how constructing boundary matrices / complexes in general is often the bottleneck  
+\end{corollary}
 
 \input{laplacian.tex}
 
@@ -878,8 +892,8 @@ Note that in~\eqref{eq:rank_equiv_param}, we write $\partial_p(K_{\preceq})$ (as
 %Extending from the previous section, we now outline a continuous approximation for the discontinuous rank function. 
 %Proposition~\ref{prop:mu_betti_1} lays the groundwork for continuous relaxations for both $\mu_p^\ast$ and $\beta_p^\ast$, as the only remaining noncontinuous aspect of their expressions is the rank function. 
 %To further relax the rank-based expressions from Proposition~\ref{prop:mu_betti_1},
-Under mild assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$ when $S$ is substituted appropriately with a smoothstep relaxation.
-In contrast, due to the rank function, the quantities from Proposition~\ref{prop:mu_betti_1} are integer-valued and thus discontinuous functions. To understand how these discontinuities arise, we consider the spectral characterization of the rank function:
+Under mild assumptions on $f_\alpha$, the entries of the boundary operators from~\eqref{eq:rank_equiv_param} are continuous functions of $\alpha$ when $S$ is substituted appropriately with a smoothstep function.
+In contrast, due to the rank function, the quantities from Proposition~\ref{prop:mu_betti_1} are  discontinuous functions by definition, as they are integer-valued. To understand how these discontinuities arise, we consider the spectral characterization of the rank function:
 %given a matrix $X \in \mathbb{R}^{n \times m}$, the \emph{rank} of $X$ is
 % given by the composition:
 %of the one-sided sign function with the singular value function:
@@ -942,12 +956,12 @@ Many properties of the sign approximation from~\eqref{eq:phi} extend naturally t
 \noindent 
 %Just as the rank can be interpreted as the $\ell_0$ (pseudo)-norm on the singular values of $X$.  
 %Apart from serving as a smooth approximation of the $\mathrm{rank}$ function, 
-At a high level, Definition~\eqref{def:lowner} is closely related to that of a \emph{matrix function} $f(A) \triangleq U f(\Lambda) U^T$ defined over square matrices~\cite{bhatia2013matrix}. 
-By imposing additional restrictions via~\eqref{eq:phi} on $\phi$, the operator $\Phi_\tau$ exhibits a variety of attractive properties related to rank-approximation, monotonicity, and differentiability.
+Observe Definition~\eqref{def:lowner} is closely related to that of a \emph{matrix function} $f(A) \triangleq U f(\Lambda) U^T$ defined over square matrices~\cite{bhatia2013matrix}. 
+Due to the restrictions on $\phi$~\eqref{eq:phi}, the operator $\Phi_\tau$ exhibits a variety of attractive properties related to rank-approximation, monotonicity, and differentiability.
 \noindent
 %The set of functions whose nuclear norms arecompatible 
 \begin{proposition}[Bi et al.~\cite{bi2013approximation}] The operator $\Phi_\tau: \mathbb{R}^{n \times m} \to \mathbb{R}^{n \times m}$ defined by~\eqref{def:lowner} satisfies: 
-	\begin{enumerate}
+	\begin{enumerate}[topsep=0pt,itemsep=-0.50ex,partopsep=1ex,parsep=1ex]
 		\item For any $\tau \geq 0$, the Schatten-1 norm $\lVert \Phi_\tau(X) \rVert_\ast$ of  $\Phi_\tau(X)$ is given by $\sum\limits_{i=1}^n \phi(\sigma_i, \tau)$
 		\item For any $\tau' \geq \tau$, $\lVert \Phi_{\tau'}(X) \rVert_\ast \leq \lVert \Phi_{\tau}(X) \rVert_\ast$ for all $X \in \mathbb{R}^{n \times m}$.
 		\item For any given $X \in \mathbb{R}^{n \times m}$ with rank $r = \mathrm{rank}(X)$ and positive singular values $\Lambda(X) = \{\sigma_1, \sigma_2, \dots, \sigma_r\}$:
@@ -1003,11 +1017,11 @@ replacing the rank function in all of the constitutive terms from Proposition~\r
 	Though $\Phi_\tau$ is a continuously differentiable operator\footnote{In fact, it may be shown to be twice continuously differentiable at $X$ if $\phi$ is twice-differentiable at each $\sigma_i(X)$, see~\cite{ding2018spectral})} in $\mathbb{R}^{n \times m}$ for any $\tau > 0$, % for all $i = 1, \dots, n$, 
 	%% TODO: mention that directional differentiability is not enough
 	%% see: https://math.stackexchange.com/questions/1410308/is-the-total-differential-the-same-as-the-directional-derivative
-its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. However, $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
+its Schatten-1 norm $\lVert\Phi_\tau(X)\rVert_\ast$ is only directionally differentiable everywhere on $\mathbb{R}^{n \times m}$ in the Hadamard sense, due to Proposition 2.2(d-e)  of~\cite{bi2013approximation}. $\lVert\Phi_\tau(X)\rVert_\ast$ is differentiable on the positive semi-definite cone $\mathbb{S}^n_+$.
 %We defer the formal definition this persistence-based relaxation and its properties to section~\ref{sec:spri_properties}.
 \end{remark}
 \noindent
-\textbf{Interpretation \#1:} In sparse inverse applications, it is commonplace to regularize an objective function to prevent the problem from being ill-posed. 
+\textbf{Interpretation \#1:} In many applications, it is common to regularize an ill-posed objective function to encourage simpler solutions or to prevent overfitting. 
 For example, the classical least-squares approach to solving the linear system $A x = b$ is often augmented with the \emph{Tikhonov regularization} (TR) for some $\tau > 0$:
  \begin{equation}\label{eq:tikhonov}
 	x_\tau^\ast = \argmin\limits_{x \in \mathbb{R}^n} \lVert Ax - b\rVert^2 + \tau \lVert x \rVert^2 = (A^T A + \tau I)^{-1} A^T b
@@ -1035,7 +1049,7 @@ By substituting $\mathrm{sgn}_+ \mapsto \phi$ and composing with the singular va
 	%\mathrm{Tr}\left[(X^T X + \epsilon \, I_n)^{-1} X^T X \right] 
 \end{equation}
 %Thus, composing the singular value of $\partial_p$ (or $\partial_p^T$) with the spectral function $\phi$ from~\ref{eq:tikhonov_sf} may be interpreted as regularizing the spectrum of the inverse of the given Laplacian.
-The relaxation level $\tau$ may be thought of as a regularization parameter that preferences smaller singular values: larger values smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values lead to a more faithful\footnote{This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy.} approximations of the rank.
+The relaxation level $\tau$ may be thought of as a regularization term that preferences smaller singular values: larger values smooth out $\lVert \Phi_\tau(\cdot) \rVert_\ast$ by making the pseudo-inverse less sensitive to perturbations, whereas smaller values lead to a more faithful\footnote{This can be seen directly by~\eqref{eq:tikhonov} as well, wherein increasing $\tau$ lowers the condition number of $A^T A + \tau I$ monotonically, signaling a tradeoff in stability at the expense of accuracy.} approximations of the rank.
 %$\lVert \Phi_\epsilon(\cdot) \rVert_\ast$ is equivalent to $n$ TR-regularized least-squares problems of the form~\eqref{eq:tikhonov} where $A$ is substituted with $\partial_p$ (or $\partial_p^T$) and $b$ is substituted with an $\alpha$-parameterized $p$-(co)chain.
 In this sense, we interpret the quantities obtained by applying~\eqref{def:lowner} to the terms from Proposition~\ref{prop:mu_betti_1} as \emph{regularized RI approximation}.
 \\
@@ -1066,7 +1080,7 @@ As above, substituting $\phi$ appropriately into Definition~\eqref{def:lowner} a
 	\lVert \Phi_\tau(L_G) \rVert_\ast = \sum\limits_{i = 1}^n 1 - \mathrm{exp}(-\lambda_i/\tau) = n - \mathrm{Tr}\left[H_{1/\tau}\right]
 \end{equation}
 The heat kernel $H_t$ has been shown to fully characterize shapes up to isometry, motivating the creation of various geometric signatures, such as the Heat Kernel Signature (HKS)~\cite{} and the Heat Kernel Trace~\cite{}. 
-In this sense, we interpret our spectral rank relaxation using~\eqref{eq:heat_sf} as a \emph{geometrically informative RI approximation}.
+In this sense, we interpret a spectral rank relaxation using~\eqref{eq:heat_sf} as a \emph{geometrically informative RI approximation}.
 
 % Indeed, informative multiscale signatures, such as the Heat Kernel Signature (HKS), are often used in shape analysis applications due to their rich information content. 
   
@@ -1106,12 +1120,12 @@ In this sense, we interpret our spectral rank relaxation using~\eqref{eq:heat_sf
 %In particular, combinatorial Laplacians form a subset of the very important class of diagonally dominant (DD) matrices. % combinatorial number system
 
 
-
-
 % Benefits of rank(A) = < non-zero eigenvalues >
-\subsection*{Exact computation}\label{sec:lanczos_it}
-Computing the spectral quantities $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ reduces to computing eigenvalues of Laplacian operators. To do this, we employ the \emph{Lanczos method}~\cite{lanczos1950iteration}, which estimates the eigenvalues of any symmetric linear operator $A$ via projection onto successive Krylov subspaces. 
-Formally, given a symmetric $A \in \mathbb{R}^{n \times n}$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the Lanczos method generates the following triplet of matrices:
+\subsection{Exact computation}\label{sec:lanczos_it}
+As evidenced by Section~\ref{sec:spectral_sec},
+%sections~\ref{sec:laplacian_theory2} and~\ref{sec:spectral_relax}, 
+computing $\hat{\mu}_p^\ast$ and $\hat{\beta}_p^\ast$ may be reduced to computing eigenvalues of $p$-Laplacians. To do this efficiently, we employ the \emph{Lanczos method}~\cite{lanczos1950iteration}, which estimates the eigenvalues of any symmetric linear operator $A$ via projection onto successive Krylov subspaces. 
+Formally, given a symmetric $A \in \mathbb{R}^{n \times n}$ with eigenvalues $\lambda_1 \geq \lambda_2 > \dots \geq \lambda_r > 0$ and a vector $v \neq 0$, the Lanczos method generates the triplet:
 %the order-$j$ Krylov subspaces of the pair $(A, v)$ are the spaces spanned by: 
 %\begin{equation}
 %	\mathcal{K}_j(A, v) \triangleq \mathrm{span}\{ A^0 v, A^1 v, A^2 v, \dots, A^{j-1}v \}	
@@ -1124,10 +1138,13 @@ T &= Q^T A Q
 where $K \in \mathbb{R}^{n \times r}$ is the \emph{Krylov matrix} with respect to $(A, v)$, $Q \in \mathbb{R}^{n \times r}$ is an orthogonal change-of-basis, and $T \in \mathbb{R}^{r \times r}$ is symmetric tridiagonal \emph{Jacobi matrix}. 
 It is well known that $Q$ is a similarity transform, i.e. $T$ preserves the spectrum of $A$ and the problem of finding eigenvalues reduces to diagonalizing $T$.
 
-The Lanczos method is often called a ``matrix free'' method due to the fact its only requirement to execute is a matrix-vector product operator $v \mapsto Av$, implying $A$ need not necessarily be  stored in memory explicitly.  
-Indeed, due to the \emph{three-term recurrence}~\cite{simon1984analysis}, execution of the Lanczos method requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations---neither $K$ nor $Q$ need be formed explicitly. 
+The Lanczos method is often called a ``matrix free'' method due to the fact that only a matrix-vector product operator $v \mapsto Av$ is required for execution---$A$ need not necessarily be stored in memory explicitly.  
+This aspect alone suggests Lanczos may be a viable low-memory option for computing eigenvalues. 
+%keeps its memory footprint small, as the storage complexity of effectively reduces to that of $A$.
+%For this reason, the Lanczos method is often preferred for sparse or heavily structured operators
+Indeed, due to its \emph{three-term recurrence}~\cite{simon1984analysis}, the Lanczos method requires just three $O(n)$-sized vectors and a few $O(n)$ vector operations to obtain $T$---neither $K$ nor $Q$ need be formed explicitly. 
 \begin{lemma}[\cite{parlett1994we}]\label{lemma:exact_arith_lanczos}
-	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $A \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
+	Given a symmetric rank-$r$ matrix $A \in \mathbb{R}^{n \times n}$ whose matrix-vector operator $x \mapsto A x$ requires $O(\eta)$ time and $O(\nu)$ space, the Lanczos iteration computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ in $O(\max\{\eta, n\}\cdot r)$ time and $O(\max\{\nu, n\})$ space, when computation is done in exact arithmetic. 
 \end{lemma}
 %\begin{corollary}\label{cor:finite_arith_lanczos}
 %	Given the same inputs as Lemma~\ref{lemma:exact_arith_lanczos}, any implementation that computes $\Lambda(A) = \{ \lambda_1, \lambda_2, \dots, \lambda_r \}$ using the Lanczos iteration in finite-precision arithmetic requires $\Omega(\max\{\eta, n\} \cdot r)$ time and $\Omega(\max\{\nu, n\})$ space complexity. 
@@ -1137,70 +1154,190 @@ Indeed, due to the \emph{three-term recurrence}~\cite{simon1984analysis}, execut
 %the former of which arises in the decomposition of symmetric matrices while the latter depends on the structure of $A$. 
 An exemplary structured operator is the graph Laplacian $L = \partial_1 \partial_1^T$, whose $x \mapsto L x$ operation has complexity linear in the number of edges $\lvert E \rvert$ due to its graph structure.
 %In particular, sign cancellations in $\partial_1 \partial_1$ ensures the operation $x \mapsto (D - A)x$ reduces to a two phase computation: one to accumulate the degrees of the vertices and one to subtract off components from neighboring vertices, both of which can be computed in $O(\lvert E \rvert)$ by enumerating edges in e.g. an edgelist data structure.
-Though this is well established result for the graph Laplacian (i.e. the case $p = 1$), it is not immediately clear whether a similar result generalizes to combinatorial Laplacian operators derived from simplicial complexes---our next result affirms this.
+Though this is result is well established for the graph Laplacian, it is not immediately clear whether a similar guarantee generalizes to combinatorial Laplacian operators derived from simplicial complexes---our next result affirms this.
 % and as previously mentioned, the Lanczos iteration is only efficient if one as has access to a fast matrix-vector product.  By our definition of rank in~\eqref{eq:rank_def}, this implies $\mathrm{rank}(\partial) = \mathrm{rank}(\partial \partial^T) = \mathrm{rank}(\partial^T \partial)$ and thus the Lanczos method may be readily applied to $\partial \partial^T$ or $\partial^T \partial$. % up to a change in the multiplicity of the zero 
 %since the latter are by definition the nonnegative square roots of former and thus . 
 %Since a $p+1$-simplex has $p$ proper faces in its boundary, and we need to iterate through the $p+1$ simplices $\sigma \in K^{p+1}$ just once in the case of the $\mathrm{up}$-Laplacian,
 %We combine the above observations into a proposition. 
 \begin{lemma}\label{lemma:matvec_lap}
-	For any $p \geq 0$ and simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$, if there exists a hash function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto \langle \; L_p, x	\; \rangle$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ storage. 
+	For any $p \geq 0$ and simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$, if there exists a hash function $h: K^p \to [n]$ with $O(1)$ access time and $O(c)$ storage, then there exists a two-phase algorithm for computing the inner product $x \mapsto L_p x$ in $O(m(p+1))$ time and $O(\mathrm{max}(c,m))$ space. 
 	%Moreover, the matrix-vector product may be implemented \emph{efficiently} in the sense that the memory access pattern to $K^{p+1}$ can easily be made cache-optimal. 
 	%If $K$ is sufficiently dense such that $m \sim O(\lvert V \rvert^{p+1})$, we may accelerate the computation via~\cite{}. 
 \end{lemma}
 %\begin{proof}
 %	See appendix section~\ref{app:lap_matvec}
 %\end{proof}
-\noindent The algorithm and proof are given in appendix section~\ref{app:lap_matvec}. From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---typically no greater than two---the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
+\noindent The algorithm and proof are given in appendix section~\ref{app:lap_matvec}. From a practical perspective, many hash table implementations achieve expected $O(1)$ access time using only a linear amount of storage, and as $p \geq 0$ is typically quite small---the operation $x \mapsto L x$ in practice exhibits $\approx O(m)$ time and space complexities. 
+%This matrix-free approach has the same time complexity as is only a slight improvement over $\partial_p$ 
 We delegate more practical issues regarding the computation to appendix~\ref{alg:lap_matvec}.
 Combining Lemmas~\ref{lemma:exact_arith_lanczos} and~\ref{lemma:matvec_lap} yields our main result. 
 \begin{proposition}\label{prop:spectral_rank_complexity}
-For any constant $p \geq 0$ and box $R = [a,b] \times [c,d] \subset \Delta_+$, the persistent rank-based quantities $\mu_p^R(K)$ and $\beta_p^{a,b}(K)$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ simplices can be computed in: 
-$$ \mu_p^R(K) \sim O(m \cdot ) $$
-
-In particular, for a given box , $\mu_p^R(K)$ has complexity $O(c^2 )$ where $y_{ad} = \lvert K_d^{p+1} \rvert - \lvert K_a^{p+1} \rvert $
+For any constant $p \geq 0$ and box $R = [a,b] \times [c,d] \subset \Delta_+$, the persistent multiplicity function $\mu_p^R(K)$ derived from a simplicial complex $K$ with 
+$n_{ad} = \lvert K_d^{p} \rvert - \lvert K_a^{p} \rvert$ and $m_{ad} = \lvert K_d^{p+1} \rvert - \lvert K_a^{p+1} \rvert$, can be computed in exact arithmetic in the following time and space complexities:
+%$n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ simplices can be computed in: 
+$$ \mu_p^R(K) \overset{\mathrm{time}}{=} O(n_{ad}\cdot m_{ad}), \quad \mu_p^{R}(K) \overset{\mathrm{space}}{=} O(\mathrm{max}(n_{ad}, m_{ad}))$$
+In particular, when $R = [-\infty, \ast] \times [\ast, +\infty]$, $\mu_p^R(K)$ has time and space complexities of $O(nm)$ and $O(\mathrm{max}(n, m))$, respectively, where $n = \lvert K^{p} \rvert$ and $m = \lvert K^{p+1} \rvert$.
 \end{proposition}	
+%\subsection{Computing diagrams}\label{sec:pers_alg}
+%\begin{remark}
+\noindent
+It's worth noting that the standard reduction-family of algorithms computes the $p$-th persistent homology of a filtration $K$ of dimension $p + 1$ and of size $N = \lvert K \rvert \sim O(\lvert K^{p+1}\rvert)$ in $O(N^3)$ time and $O(N^2)$ space, respectively---these bounds are actually tight $\Theta(N^3)$.
+%\footnote{
+%A counter-example is given in the online note by Dmitriy Morozov. "Persistence algorithm takes cubic time in worst case." \url{https://citeseerx.ist.psu.edu/document?repid=rep1&type=pdf&doi=9f5b7f8d6616f6c1713178be0664b2c254960455}).
+%}. 
+Interestingly, Chen and Kerber~\cite{chen2011output} have shown that since the persistence diagram contains at most $N/2 = O(N)$ points, it may be constructed using at most $2N - 1$ ``$\mu$-queries'' (evaluations of $\mu_p^R$) via a divide-and-conquer scheme on the index-persistence plane. 
+Since both $\lvert K^{p}\rvert$ and $\lvert K^{p+1}\rvert$ are trivially bounded above by $O(N)$, by Proposition~\ref{prop:spectral_rank_complexity}, we may recover the same $O(N^3)$ time complexity of the reduction algorithm using only rank computations, and we improve the space complexity by a factor of $N$, though at the cost of not having immediate access to cycle representatives.  
+%	In contrast to the reduction algorithm Chen and Kerber's algorithm can detect  
+	%In practice, the matrices involved in the computation are much 
+%\end{remark}
+\begin{remark}
+	A similar result for computing \emph{non-persistent} Betti numbers of simplicial complexes over finite fields was given by Edelsbrunner and Parsa in~\cite{}, who showed that the complexity of computing the Betti numbers of a 2-dimensional simplicial complex $K$ with $n$ vertices reduces is $\Omega(r(n,m))$, where $r(n,m)$ is the complexity of computing the rank of an $n$-by-$n$ binary matrix with $m$ non-zero entries. 
+%	Though we also reduce a Betti number computation to constant number of rank computations, our result is distinct in that (1) we focus on the exact computation model in $\mathbb{R}$, and (2) we relegate the rank computation to the Lanczos procedure, as opposed to reduction, and finally (3) we address the space complexity. 
+\end{remark}
+
 %\begin{proposition}\label{prop:spectral_rank_complexity}
 %For any constant $p \geq 0$, the spectra $\Lambda(L_p)$ of a rank-$r$ combinatorial Laplacian operator $L_p: \mathbb{R}^n \to \mathbb{R}^n$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
 %\end{proposition}	
 %There are multiple optimizations we may make in the evaluation of~\eqref{eq:l_up_matvec} over the traditional sparse matrix multiplication---some due to the simplicial structure of the underlying operator, and some due to the permutation invariance mentioned in the previous section. 
-\begin{corollary}
-	For any constant $p \geq 0$, the persistent rank-based quantities $\mu_p^\ast(K)$ and $\beta_p^\ast(K)$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ simplices can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
-\end{corollary}
+%\begin{corollary}
+%	For any constant $p \geq 0$, the persistent rank-based quantities $\mu_p^\ast(K)$ and $\beta_p^\ast(K)$ derived from a simplicial complex $K$ with $n = \lvert K^p \rvert$ and $m = \lvert K^{p+1} \rvert$ simplices can be computed in $O(mr)$ time and $O(m)$ storage via the Lanczos iteration, when carried out in exact arithmetic. 
+%\end{corollary}
 
-%\subsection{Computing diagrams}\label{sec:pers_alg}
-\begin{remark}
-	The standard reduction-family of algorithms computes the $p$-th persistent homology of a filtration $K$ of size $N = \lvert K \rvert$ in $O(N^3)$ time and $O(N^2)$ space, respectively (these bounds are actually tight $\Theta(N^3)$, see~\cite{}). 
-	Interestingly, Chen and Kerber~\cite{chen2011output} have shown that since the persistence diagram contains at most $N/2 = O(N)$ points, it may be constructed using at most $2N - 1$ ``$\mu$-queries'' (evaluations of $\mu_p^R$) via a divide-and-conquer scheme on the index-persistence plane---thus, by Theorem~\ref{prop:spectral_rank_complexity}, we recover the  $O(N^3)$ complexity of the reduction algorithm using only rank computations.  
-%	In contrast to the reduction algorithm Chen and Kerber's algorithm can detect  
-	%In practice, the matrices involved in the computation are much 
-\end{remark}
+
 
 
 %For this reason, practitioners have tended to avoid 
 
-\subsection*{Randomized $(\eta, \epsilon)\,$-approximation via trace estimation}
-As in~\cite{parlett1994we}, Proposition~\ref{prop:spectral_rank_complexity} assumes an exact arithmetic computation model to simplify both the presentation of the theory and the corresponding complexity statements. In practice, finite-precision arithmetic introduces both rounding and cancellation errors into the computation, which primarily manifests as loss of orthogonality between the Lanczos vectors. These errors not only affect the convergence rate and termination of Lanczos, but often cause a host of other issues~\cite{parlett1994we}, prohibiting any practical use of the original Lanczos algorithm.
+\subsection{Randomized $(\eta, \epsilon)\,$-approximation via trace estimation}
+As in~\cite{parlett1994we}, Proposition~\ref{prop:spectral_rank_complexity} assumes an exact arithmetic computation model to simplify both the presentation of the theory and the corresponding complexity statements. In practice, finite-precision arithmetic introduces \emph{both} rounding and cancellation errors into the computation, which primarily manifests as loss of orthogonality between the Lanczos vectors---among other difficulties, these errors affect both the convergence rate and termination conditions of the algorithm~\cite{parlett1994we}, prohibiting its use practically.
 %such as the generation of spurious ``ghost'' eigenvalues
-Though many improvements have been proposed (i.e. selective re-orthogonalization or implicit restarts), it is well-known that obtaining accurate eigenvalue approximations on the interior of the spectrum is quite expensive with the Lanczos method. 
+Though many improvements have been proposed (e.g. selective re-orthogonalization, implicit restarting), it is well-known that the Lanczos method is not efficient at obtaining accurate eigenvalue approximations on the interior of the spectrum. 
 
-Fortunately, it turns out estimating eigenvalues accurately is not necessary for accurate rank estimation. 
-It has long been known that empirically the Lanczos method can be used to approximate the action $x \mapsto f(A)x$, where $f(A) = U f(\Lambda) U^T$ represents a matrix function\footnote{Recall a matrix function...} defined for the pair $(A, f)$:
+Fortunately, accurately estimating eigenvalues is not necessary for accurately estimating the rank. Unlike eigenvalue estimation, it has been shown that using Lanczos in finite precision arithmetic is stable for matrix function\footnote{Recall that if $A \in \mathbb{R}^{n \times n}$ has eigenvalue decomposition $A = U \Lambda U^T$, the matrix function $f(A) \in \mathbb{R}^{n \times n}$ is $U f(\Lambda) U^T$, where $f(\Lambda)$ applies $f$ to each diagonal entry of $\Lambda$.} approximation $x \mapsto f(A)x$:
+%A common application of the Lanczos method is to approximate the action $x \mapsto f(A)x$, where $f(A) = U f(\Lambda) U^T$ represents a matrix function\footnote{Recall a matrix function...} defined for the pair $(A, f)$:
 $$Q^T A Q = T \quad \Leftrightarrow \quad f(A)v \approx \lVert x \rVert \cdot Q f(T) e_1$$
-Unlike eigenvalue estimation, it has been shown that using Lanczos in finite precision arithmetic is actually stable for matrix function approximation; in particular, Paige's A27 Lanczos variant~\cite{} executed up to degree $k$ is no worse than the best degree-$p$ polynomial approximation to $f$, for any $p < k$. For general matrix functions, this implies that finite-precision Lanczos essentially matches the strongest known exact arithmetic bounds.
-
-The significance of the above finite-precision results is best illustrated by the \emph{stochastic Lanczos quadrature} method employed by Ubaru et. al~\cite{} for numerical rank estimation, which estimates the trace of an arbitrary matrix function by means of a Girard-Hutchinson (GH) estimator of the trace: 
-$$ \mathrm{tr}(f(A)) \approx \frac{n}{n_v} \sum\limits_{i=1}^{n_v} v_i^T f(A) v_i  $$ 
-Using Lanczos quadrature estimates, the theory above enables the GH estimator to extend to be used as an estimator for the trace of a matrix function:
-$$
-\mathrm{tr}(f(A)) \approx \frac{n}{n_v} \sum\limits_{i=1}^{n_v} e_1^T f(T_m) e_1  = \frac{n}{n_v} \sum\limits_{j=1}^{n_v} \left ( \sum\limits_{i=1}^m \tau_i^{(j)} f(\theta_i)^{(j)} \right )
-$$
+%Substituting $f(\lambda) = \sign_+$, 
+%As our spectral RI approximation $\Phi$ derives from matrix functions, 
+In particular, Paige's A27 Lanczos variant~\cite{} executed up to degree $k$ is no worse than the best degree-$p$ polynomial approximation to $f$, for any $p < k$.
+For general matrix functions, this implies that finite-precision Lanczos essentially matches the strongest known exact arithmetic bounds.  
+%In particular, to estimate the rank
+The above results underpin the \emph{stochastic Lanczos quadrature} (SLQ) method employed by Ubaru et. al~\cite{ubaru2016fast}, who propose the use of SLQ method for estimating the trace of a matrix function by means of a Girard-Hutchinson (GH) estimator: 
+$$ \mathrm{tr}(f(A)) = \sum\limits_{i=1}^{n} e_i^T f(A) e_i  \approx \frac{n}{n_v} \sum\limits_{j=1}^{n_v} e_1^T f(T_m^{(j)}) e_1  = \frac{n}{n_v} \sum\limits_{j=1}^{n_v} \left ( \sum\limits_{i=1}^m \tau_i^{(j)} f(\theta_i^{(j)}) \right ), \quad \tau_{i} = [e_1^T y_i]^2$$ 
+where $T_m^{(j)}$ represents the result of a degree-$(m+1)$ Krylov expansion of the pair $(A, v^{(j)})$ for any isotropically distributed $v^{(j)} \sim \mathcal{D}$ whose outer product $\otimes$ satisfies $\mathbb{E}[v^{(j)} \otimes v^{(j)}] = I$, and $(\theta_i, y_i)$ represent the Rayleigh-Ritz pairs associated with the tridiagonal eigendecomposition $T_m = Y \Theta Y^T$.
+%and $\tau_i = [e_1^T y_i]$ represents the square of the first component of the $i$th Ritz vector $y_i$. 
+Note that setting $f(\lambda) = \mathrm{sgn}_+(\lambda)$ yields $\mathrm{tr}(f(A)) = \sum_{i=1}^n\mathrm{sgn}_+(\lambda_i) = \mathrm{rank(A)}$, motivating the use of trace estimation methods  for both rank and spectral sum approximation. 
+%Using Lanczos quadrature estimates, the theory above enables the GH estimator to extend to be used as an estimator for the trace of a matrix function:
 Under relatively mild assumptions, if the function of interest $f: [a,b] \to \mathbb{R}$ is analytic on $[\lambda_{\text{min}}, \lambda_{\text{max}}]$, then for constants $\epsilon, \eta \in (0, 1)$ the output $\Gamma$ of the GH estimator satisfies: 
 $$\mathrm{Pr}\Bigg[ \lvert \mathrm{tr}(f(A)) - \Gamma \rvert \leq \epsilon \lvert \mathrm{tr}(f(A)) \rvert \Bigg] \geq 1 - \eta $$
-In other words, we can achieve a relative $\epsilon$-approximation of $\mathrm{tr}(f(A))$ with success probability $\eta$ using on the order of $\sim O(\epsilon^{-2} \log(\eta^{-1}))$ evaluations of $e_1^T f(T_m) e_1$. This probablistic guarantee is most useful when $\epsilon$ is not too small, i.e. only a relatively coarse approximation of $\mathrm{tr}(f(A))$ is needed.
-More recent results by Musco et al.~\cite{} improve upon this by showing how to extend the GH algorithm to obtain a $(1 \pm \epsilon)$ approximation using only  $\sim O(\epsilon^{-1} \log(\eta^{-1}))$ samples, though at a small additional re-orthogonalization and storage costs. 
+In other words, we can achieve a relative $\epsilon$-approximation of $\mathrm{tr}(f(A))$ with success probability $\eta$ using on the order of $O(\epsilon^{-2} \log(\eta^{-1}))$ evaluations of $e_1^T f(T_m) e_1$, where each $T_m$ is generated by applying degree-$(m+1)$ Lanczos to pairs $(A, v)$ generated over random $v \sim \mathcal{D}$. This probabilistic guarantee is most useful when $\epsilon$ is not too small, i.e. only a relatively coarse approximation of $\mathrm{tr}(f(A))$ is needed.
+More recent results by Musco et al.~\cite{} improve upon this by showing how to extend the GH algorithm to obtain a $(1 \pm \epsilon)$ approximation using only  $\sim O(\epsilon^{-1} \log(\eta^{-1}))$ samples at a small additional re-orthogonalization and storage costs.
+
+
+%Note that to estimate the rank  
 
 %\subsection{Empirical experiments}
 %\include{empirical.tex}
+
+\subsection{Apparent pairs optimization}
+%One of the unique features of the reduction algorithm is how many improvements have been made to it compared to the generic PLU decomposition. Nowadays, many adances to the direct method of computing persistence have been made including e.g. the implicit matrix reduction, cohomology, the clearing optimization, the chunking algorithm, and so on. 
+%As our approach to computing persistent related quantities does not involve reduction, it is not immediately clear if these optimizations are applicable. 
+One of the defining aspects of the computation is that, unlike the reduction algorithm, execution does not require matrix decomposition. 
+% it does not decompose the filtered boundary matrix $\partial$. 
+While this distinction is important, it does not necessarily bar the transfer of persistence-specific optimizations to our matvec-based approach.
+%Though this distinction is important, it does eliminate the possibility of transferring optimizations known to persistence computation. 
+One such optimization applicable to clique filtrations---the identification of \emph{apparent pairs}---enables us to discard upwards of 90-99\% of the columns of $\partial_p$ prior to any rank computations. 
+%while simultaneously not changing any other aspects of the computation.  
+%employed in several efficient persistence software, such as Ripser~\cite{bauer2021ripser}---is .
+%applicable to clique filtrations. 
+
+Apparent pairs (APs) are a class of persistence pairs that are already reduced in the filtration boundary matrix $\partial(K)$. For simplexwise clique filtrations, the main advantage of APs is that they can be readily identified based on a purely local condition, which is evident from their very definition:
+\begin{definition}
+	Given a simplexwise filtration $K_\preceq$ of a simplicial complex $K$, a pair of simplices $(\tau, \sigma)$ of $K$ is called an \emph{apparent pair} of $K_\preceq$ if (1) $\tau$ is youngest facet of $\sigma$, and (2) $\sigma$ is the oldest cofacet of $\tau$.
+%	\begin{enumerate}
+%		\item $\tau$ is youngest facet of $\sigma$, and
+%		\item 
+%	\end{enumerate}
+\end{definition}
+\noindent Equivalently, a pair $(\tau, \sigma)$ of $K$ is \emph{apparent} if all entries below or to the left of $(\tau, \sigma)$ in the filtered boundary matrix $\partial$ are zero.
+%We denote the set of apparent pairs as follows: $\mathcal{AP}_p(K) \subset \mathrm{dgm}_p(K)$
+%---thus, APs are a class of persistent pairs that already reduced in the filtration boundary matrix.
+%---this follows from the definition of a persistent pair, as $\partial(\sigma)$ is a pivot column in the corresponding $R = \partial V$ decomposition. 
+Note that any persistent pair $(\tau, \sigma) \in \mathrm{dgm}_p(K)$ corresponds to a pair of columns in $R$, one of which is entirely zero and one recording a non-zero pivot entry satisfying~\eqref{eq:uniq_pivot}.
+From a rank-based perspective, this suggests we may safely discard $p+1$ simplices whose boundary chains lie in the kernel of $R$. 
+%In other words, from a rank-based perspective, the positive simpl
+%this implies that the boundary chain of only one of the simplices in pair contributes to the rank---using the definition of homology, the chain of the other simplex must lie in the kernel of the corresponding reduced operator one dimension lower. 
+%simplex must lie in the of the of the operator one dimension lower. 
+We formalize this with a lemma.
+\begin{lemma}\label{lemma:ap_kernel}
+	Let $\partial_{p+1}(K)$ denote the dimension $p+1$ filtered boundary matrix obtained from the $R = \partial V$ decomposition of a simplexwise filtration $(K, f)$. 
+	Then, the $p$-th persistence diagram $\mathrm{dgm}_p(K)$ determines a partitioning of $\partial_{p+1}(K) = [\; \partial_{p+1}^{-} \; | \; \partial_{p+1}^{+} \;]$ satisfying: 
+%	If $(\tau, \sigma) \in \mathrm{dgm}_p(K)$, then the following equality holds: 
+	$$\mathrm{rank}\big(\partial_{p+1}(K)\big) = \mathrm{rank}\big(\partial_{p+1}^{-}(K)\big)$$
+%	\partial_{p+1}(K) = [\; \partial_{p+1}^{-} \; | \; \partial_{p+1}^{+} \;]$$ 
+	where the partitioning of $\partial_{p+1}$ is determined by the location of the pivot entries in $R$:
+	$$ \partial_{p+1}^{-} = \{ \, \partial[\sigma_j] : \mathrm{col}_R(j) \neq 0, \sigma_j \in K^{p+1} \, \}, \quad \partial_{p+1}^{+} = \{ \, \partial[\sigma_j] : \mathrm{col}_R(j) = 0, \sigma_j \in K^{p+1} \, \} $$
+%	Equivalently, the persistence diagram $\mathrm{dgm}_p(K)$ induces 
+	%$$\mathrm{rank}(\partial_{p+1}(K)) = \mathrm{rank}([\, \partial_{p+1}[\sigma_j] : (\tau, \sigma_j) \notin \mathcal{AP}_p(K) \,])$$
+%	where $J = \{\sigma_j] : (\tau, \sigma_j) \notin \mathcal{AP}_p(K) \,])$.
+%	$$\mathrm{rank}(\partial_{p+1}(K)) = \mathrm{rank}(\partial_{p+1}(K))$$
+%	$$\mathrm{rank}(\partial_p(K)) = \mathrm{rank}(\partial_p(K\setminus \{\tau\})) + 1$$
+%	then $\partial(\tau) \in \mathrm{Ker}(\partial_p))$ and $\partial(\sigma) \in \mathrm{Ker}^\perp(\partial_{p+1})$. 
+%in other words, the elementary boundary chain $\partial(\sigma)$ lies in the span 
+% TODO: add index set J giving the indices of the zero coluksn 
+\end{lemma}
+%\begin{proof}
+%	
+%\end{proof}
+\noindent The practical significance of Lemma~\ref{lemma:ap_kernel} is that, prior to any rank computations, we may detect and remove simplices whose elementary boundary chains do not affect the overall rank of the operator. 
+In particular, though determining $\partial_{p+1}^{-}$ exactly requires constructing the full decomposition $R = \partial K$, an approximation $\hat{\partial}_{p+1}^{-} \supset \partial_{p+1}$ can be determined by identifying apparent pairs in $(\sigma, \eta) \in \mathrm{dgm}_{p+1}(K)$---the corresponding boundary chains $\partial[\sigma]$ by definition must lie in $\partial_{p+1}^{+}$, and therefore can be removed. 
+Note that the set of APs does not depend on the coefficient field the homology of the complex is defined over, though they do depend on the simplexwise ordering.
+
+%do not contribute the to the positive eigenspace of the corresponding boundary operator. 
+%In particular, 
+
+Identifying an AP $(\tau, \sigma) \in \mathrm{dgm}_p(K)$ can be reduced to enumerating cofacets of $\tau \in K^p$.
+To do this efficiently, we follow the low-memory approach used in the popular software Ripser~\cite{bauer2021ripser}, which restricts its computation to simplexwise filtrations induced by the \emph{reverse colexicographical} vertex order.
+In this setting, $p$-simplices $(\,v_{i_{p+1}}, \dots, v_{i_0}\,)$ satisfying $v_{i_{p+1}} > \dots > v_{i_0}$ are mapped to integers $r \in [0, {n \choose p+1})$ via a correspondence in the \emph{combinatorial number system}; when the colexicographical order is used, the bijection is given by the sum $(\,v_{i_{p+1}}, \dots, v_{i_0}\,) \mapsto \sum_{j=1}^{p+1} {i_j \choose j}$, and cofacets are given by the following relation:
+%---a process  sometimes referred to as \emph{ranking}~\cite{}. 
+%\begin{equation}\label{eq:colex_order_tau}
+%	(\,v_{i_{p+1}}, \dots, v_{i_0}\,) \mapsto \sum\limits_{j=1}^{p+1} {v_{i_j} \choose j}
+%\end{equation}
+%Similarly, the index of $\tau$'s $k$-th cofacet is given by the following relation: 
+\begin{equation}\label{eq:colex_order}
+	(v_{i_{p+1}}, \dots, v_{i_{k+1}}, v_{j}, v_{i_{k}}, \dots, v_{i_0}) \mapsto \sum\limits_{l=k+1}^{p+1}{i_l \choose l+2} + {j \choose k+1} + \sum\limits_{l=0}^k {i_l \choose l+1}
+\end{equation}
+By enumerating $j = n -1, \dots, 0$ for $j \notin [n] \setminus \{i_p, \dots, i_0\}$, one recovers  all of $n - (p + 1)$ cofacets of $(\,v_{i_{p+1}}, \dots, v_{i_0}\,)$ in reverse colexicographic vertex order. 
+Cofacet enumeration in the colexicographical order is particularly efficient due to the fact that the left and right partial sums in~\eqref{eq:colex_order} can be maintained throughout the enumeration: assuming all $O(n\cdot (p+1))$ binomial coefficients are precomputed, finding all the cofacets of any $p$-simplex $\tau$ requires just $O(n - p)$ additions in integer arithmetic. 
+%Note that this efficiency is only applicable to colexicographically refined simplexwise filtrations.
+
+The most prevalent subset of APs relevant to the clique-filtrations are those with zero persistence.
+In practice, zero persistence APs may be identified without enumerating all cofacets by using a ``shortcut'' involving a correspondence between zero-persistence APs and lexicographically minimal (maximal, respectively) facet (cofacet, respectively) pairs (see Proposition~3.12 in~\cite{bauer2021ripser}). 
+%a zero-persistence pair $(\tau, \sigma)$ is an AP if and only if $\sigma$ is the lexicographically maximal cofacet of $\tau$ and $\tau$ is the lexicographically minimal facet of $\sigma$ correspond, each satisfying $f(\tau) = f(\sigma)$.
+%Thus, one can simply enumerate the cofacets of $\tau$
+This ``shortcut'' is particularly useful due to the fact that zero persistence pairs comprise a large proportion of the apparent pairs---indeed, Theorem 3.10 in~\cite{bauer2021ripser} shows that in dimension 1, the zero persistence pairs of a simplexwise refinement of the Vietoris-Rips filtration are \emph{precisely} the apparent pairs of the same filtration.
+%As a result, one may effectively identify and remove all pairs on the diagonal of $\mathrm{dgm}_1(K)$ prior to reduction. 
+%For $p > 1$,
+ 
+To demonstrate this, we computed the number of apparent pairs in a variety of common data sets, including their apparent positive and negative
+\begin{center}
+\begin{tabular}{||c c c c c c||} 
+ \hline
+ Dataset & $n$ & $p$ & $\lvert K^p\rvert$ & \# apparent (+/-) & \# non-apparent \\ [0.5ex] 
+ \hline\hline
+SW1Pers & 50 & 1 & 1,068 &  1,004 (49/954) & 64 \\ 
+& 50 & 2 & 13,300 & 13,051 (12,048/1,003) & 249 \\ 
+ \hline 
+\end{tabular}
+\end{center}
+Note that positive apparent cofacets in dimension $p+1$ may be removed entirely from the computation of $\mu_p^\ast$ and $\beta_p^\ast$, prior to performing any matvecs. 
+On the contrary, we cannot remove negative apparent cofacets from the dimension $p+1$ boundary operators, as they may (or may not) have linear dependents---their effect on the rank of the constitutive boundary terms can only determined through reduction. 
+On the positive side, the vast majority of apparent pairs in dimension $p+1$ must be positive, for the number of negative such pairs is bounded by $O(\lvert K^p \rvert)$. Moreover, 
+
+%This turns out to be very convenient computationally, as 
+%In practice, most of the persistent pairs that arise from simplexwise clique filtrations fall into this class. In particular, it's been shown in ~\cite{bauer2021ripser} that Vietoris-Rips 
+%Note that APs depend the choice of simplexwise refinement. 
+%In practice, most of the persistent pairs 
+%The persistence computation is 
 
 \section{Applications \& Experiments}\label{sec:applications}
 
@@ -1209,10 +1346,9 @@ More recent results by Musco et al.~\cite{} improve upon this by showing how to 
 \subsection*{Filtration optimization}
 It is common in TDA for the filter function $f : K \to \mathbb{R}$ to depend on hyper-parameters.
 %to a means of building a filtration $(K,f)$ where $f : K \to \mathbb{R}$ is a filter function satisfying $f(\tau) \leq f(\sigma)$ for all $\tau \subseteq \sigma \in K$, but the . 
-For example, prior employing persistence, it is common to remove outliers from point set $X \subset \mathbb{R}^d$ using a density-based pruning heuristic that itself is parameterized. 
-Though stable under Hausdorff noise~\cite{}, diagrams are notably unstable against \emph{strong outliers}---these outliers can obscure the detection of non-trivial topological space. 
-Even one point can ruin the summary. As an exemplary use-case of our spectral-based method, below we re-cast the problem of identifying strong outliers as a problem of \emph{filtration optimization}. 
-
+For example, prior to employing persistence, one often removes outliers from point set $X \subset \mathbb{R}^d$ via some density-based pruning heuristic that itself is parameterized. 
+This is typically necessary due to the fact that, though stable under Hausdorff noise~\cite{cohen2005stability}, diagrams are notably unstable against \emph{strong outliers}---even one point can ruin the summary. As an exemplary use-case of our spectral-based method, we re-cast the problem of identifying strong outliers below as a problem of \emph{filtration optimization}. 
+%such outliers can obscure the detection of non-trivial topological space. 
 \begin{figure}
 	\centering
 	\includegraphics[width=\textwidth]{codensity_ex}
@@ -1221,8 +1357,8 @@ Even one point can ruin the summary. As an exemplary use-case of our spectral-ba
 %	Some choices of $(\tau, \omega)$ lead to continuous and differentiable functions with maxima matching $\alpha^\ast$ }
 \end{figure}
 
- Consider a Delaunay complex $K$ realized from a point set $X \subset \mathbb{R}^2$ sampled around $S^1$ affected by both Hausdorff noise and strong outliers, shown in Figure~\ref{fig:codensity_opt}. 
-One approach to detect the presence of $S^1$ in the presence of such outliers is maximize $\beta_p^{a,b}(\alpha)$ for some fixed $(a,b)\in \Delta_+$ over the pair $(K, f_\alpha)$, where $f_\alpha : X \to \mathbb{R}_+$ is a bandwidth-parameterized kernel (co)-density estimate:
+ Consider a Delaunay complex $K$ realized from a point set $X \subset \mathbb{R}^2$ sampled around $S^1$ affected by both Hausdorff noise and strong outliers, shown in Figure~\ref{fig:codensity_opt}.
+One approach to detect the presence of $S^1$ in the presence of such outliers is maximize $\beta_p^{a,b}(\alpha)$ for some appropriately chosen $(a,b)\in \Delta_+$ over the pair $(K, f_\alpha)$, where $f_\alpha : X \to \mathbb{R}_+$ is a kernel (co)-density estimate:
 %bandwidth $\alpha^\ast$ maximizing the persistent Betti number  of 
 %the sublevel sets $\hat{f}_h^{-1}((-\infty, t]) \subseteq X$ of $K$  and the choice of a smooth kernel function $\mathcal{K}_h : \mathbb{R} \to \mathbb{R}_+$.
 %\begin{equation}
@@ -1232,44 +1368,96 @@ One approach to detect the presence of $S^1$ in the presence of such outliers is
 \begin{equation}\label{eq:betti_opt}
 	\alpha^\ast = \argmax_{\alpha \in \mathbb{R}} \; \beta_p^{a,b}(K, f_\alpha), \quad \text{ where } f_\alpha(x) = \frac{1}{n\alpha} \sum_{i} C(\mathcal{K}) - \mathcal{K}_\alpha(x_i - x)
 \end{equation}
-where $C(\mathcal{K})$ is a normalizing constant that depends on $\mathcal{K}$. 
-The intuition is that there is likely some choice of bandwidth $\alpha^\ast$ which separates the strong outliers from the densely packed points clustered around $S^1$. 
+where $C(\mathcal{K}_\alpha)$ is a normalizing constant that depends on the bandwidth-parameterized kernel, $\mathcal{K}_\alpha$. 
+Intuitively, if there exists a choice of bandwidth $\alpha^\ast$ which distinguishes strong outliers from Hausdorff noise clustered around $S^1$, then that choice of bandwidth should exhibit a highly persistent pair $(a^\ast, b^\ast) \in \mathrm{dgm}_1(K, f_{\alpha^\ast})$. 
 %In contrast, the limiting cases $\alpha \to 0$ and $\alpha \to 1$ fails to distinguish large differences in such outliers. 
-Thus, if $(a,b)$ is appropriately chosen, we expect $\beta_p^{a,b}(\alpha) = 1$ at the optimal bandwidth $\alpha^\ast$ (matching the first Betti number of $S^1$) and $0$ otherwise for bandwidth choices that cannot distinguish the points packed densely around $S^1$ against the strong outliers. 
+If the corner point $(a,b)$ captures this occurrence and $\lvert a-b \rvert$ is large enough, we expect $\beta_p^{a,b}(\alpha) = 1$ near the optimal bandwidth $\alpha^\ast$---matching the first Betti number of $S^1$---and $0$ otherwise.
+%for bandwidth choices that cannot distinguish the points packed densely around $S^1$ against the strong outliers. 
 
-The behavior is reflected by the vineyard of $\mathrm{dgm}_1(K, f_\alpha)$, which shown on the second plot of Figure~\ref{fig:codensity_opt}; the sieve point $(a,b)$ and the region it corresponds too is also shown. 
+In Figure~\ref{fig:codensity_opt}, we depict the vineyard of $\mathrm{dgm}_1$ of a simple Delaunay complex and codensity pair $(K, f_\alpha)$, along with the sieve point $(a,b)$ and the region wherein $S^1$ is accurately captured by persistence. 
 As $\beta_p^{a,b}$ is an integer-valued invariant, it is discontinuous and difficult to optimize; in contrast, we know from Proposition~\eqref{prop:operator_props} that we can obtain a continuous and differentiable relaxation of $\beta_p^{a,b}$ by replacing $\beta_p^{a,b} \mapsto \hat{\beta}_p^{a,b}$ in~\eqref{eq:betti_opt}, enabling the use of first-order optimization techniques.
-Moreover, the connection to the Tikhonov regularization from~\ref{} and Lemma~\ref{} suggests we various iterative optimization methods...
-One such optimization technique is the iterative sparse thresholding method, which alternates between linearization and regularization steps to solve ill-posed or poorly behaved optimization problems~\cite{}.
+By using the Tikhonov regularization from~\eqref{eq:tikhonov_1}, we obtain continuously varying objective curves from $\hat{\beta}_p^{a,b}(\alpha; \tau)$ which are guaranteed to have the same maxima as $\beta_p^{a,b}(\alpha)$ as $\tau \to 0$, as shown in Figure~\ref{fig:codensity_opt}. 
+Practical optimization of these types of objective surfaces can be handled via \emph{iterative thresholding}, a technique which alternates between gradient steps to reduce the objective and thresholding steps to enforce the rank constraints~\cite{}.
 We leave the tuning of such optimizers to future work. 
 % between linearioptimizing a given liendecreasing  
 %use iterative optimization methods, such as iterative sparse thresholding... 
 
-\subsection*{Manifold detection from image patches}
-
-
-
 % --- APPLICATION: Topology-guided simplification ----
 \subsection*{Topology-guided simplification}
-In many 3D computer graphics applications, one typically has access to a simplicial or polygonal mesh embedded in $\mathbb{R}^3$ that would like to simplify to decrease its level of detail (LOD).  
+In many 3D computer graphics applications, one would like to simplify a given simplicial or polygonal mesh embedded in $\mathbb{R}^3$ so as to decrease its level of detail (LOD) while retaining its principal geometric structure(s).   
 Such simplifications are often necessary to improve the efficiency of compute-intensive tasks that depend on the size of the mesh (e.g. rendering).
-Methods for simplifying meshes based on the preservation of various geometrical properties, such as curvature, co-planarity, or distance-based functions of the shape are well-known, see e.g. facet merging, face decimation and energy minimization in~\cite{} for an overview. 
-
-In many applications, simplifications defined solely using geometric properties is not enough---often, such simplifications are preferred to be \emph{topology-preserving} in some sense, e.g. edge collapses must preserve neighboring connectivity or the number of holes.
-Though such operations are often critical to..., they are inherently \emph{local} conditions. With the exception of very simple properties (e.g. connectedness, the Euler characteristic, etc.) it is often far too expensive to ensure \emph{global} topological properties of shapes are preserved under incremental simplification procedures, either because the properties themselves are expensive to check (per simplifying operation) or because the existing simplification procedure cannot ensure such guarantees. 
-
-To illustrate another use-case of our methodology, we look to address the problem of mesh simplification under the preservations of persistence-based measures of topology. 
-Consider a 3D mesh library of animals pose data... As these are high quality meshes, one may be interested in geometric simplifications, such as quadric decimation procedure, which takes as input the number of triangles $n_2$ desired in the output. 
-A priori, it is unclear how to set $k$---however, since the taxonomical classification of these meshes are known, one simple criterion for look to preserve the is appearance of the major extremities, such as limbs and tails. 
-
-%In these contexts, the topology-related measure being preserved a
-%such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
-% In the former case, topologically critical changes are permitted unhindered, while in latter is restricted to preserving are purely local notions of topology, such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
+Though many simplification methods developed to preserve geometric criteria---such as curvature, co-planarity, or distance---are now well known (see~\cite{heckbert1997survey} for an overview),
+by comparison \emph{topology-preserving} simplification procedures are relatively sparse, especially for higher embedding dimensions. Moreover, many topology-preserving procedures are developed by restricting to operations that preserve \emph{local} notions of topology, such as the genus of a feature's immediate neighborhood; such procedures are known to greatly limit the amount of detail decimation algorithms can remove. 
+%there many applications where one is concerned with preserving notions of ``topology,'' such as neighboring connectivity or the number of `holes' in the mesh, or ~\cite{} 
+%facet merging, face decimation and energy minimization in
 
 \begin{figure}[t]
 	\includegraphics[width=\textwidth]{elephant_sparsify}
 	\caption{(Top) Meshes filtered and colored by eccentricity at varying levels of simplification; (middle) their diagrams and topological constraints; (bottom) simplification thresholds tested by an exponential search, on a logarithmic scale. The color/shape of the markers indicate whether the corresponding meshes meet (green triangle) or do not meet (red x) the topological constraints of the sieve---the gray marker identifies the original mesh (not used in the search). Black dashed circles correspond with the meshes in the top row. }
 \end{figure}
+
+As a prototypical application of our proposed relaxation, we re-visit the mesh simplification problem under \emph{persistence-based} constraints, as is done in e.g.~\cite{fugacci2020topology}.
+%One motivation for the practical persistence-based constraints 
+In contrast to~\cite{fugacci2020topology}, however, we forgo the use of local persistence-preserving operations and instead opt for a simpler strategy: we assume the set of topological constraints are given as sieve, and we 
+%and we compare the quadric decimation on a mesh using local topology-preserving vs a simple exponential search on the set $[0, {n \choose 3})$, the input parameter to the simplification.
+ 
+%$$\mathcal{R}_{\mathrm{constr}} \subset \Delta_+$$
+%We then consider the optimation problem: 
+%$$\argmin_{} $$
+%which relies on persistence-preserving operations (such as vertex removals and edge flips) that have bounded changes in persistence as measured by the bottleneck distance, we expect the topological constraints to be encoded by the sieve. 
+
+%The issue with persistence-based based constraints is, of course, computation. Computing the bottleneck distance is difficult, and maintaining a persistence diagram under 
+%
+%Here, we consider a 3D mesh library of animals pose data~\cite{chazal2009gromov}. As these are high quality meshes, one may be interested in geometric simplifications, such as quadric decimation procedure, which takes as input the number of triangles $n_2$ desired in the output. 
+%
+%A priori, it is unclear how to set $k$---however, since the taxonomical classification of these meshes are known, one simple criterion one might want to preserve the existence of major extremities, such as limbs, tails, and/or horns. 
+
+%In many applications, simplifications defined solely using geometric properties is not enough---often, such simplifications are preferred to be \emph{topology-preserving} in some sense, e.g. edge collapses must preserve neighboring connectivity or the number of holes.
+%Though such operations are often critical to..., they are inherently \emph{local} conditions. With the exception of very simple properties (e.g. connectedness, the Euler characteristic, etc.) it is often far too expensive to ensure \emph{global} topological properties of shapes are preserved under incremental simplification procedures, either because the properties themselves are expensive to check (per simplifying operation) or because the existing simplification procedure cannot ensure such guarantees. 
+
+
+% --- APPLICATION: Topology-guided simplification ----
+\subsection*{Manifold detection from image patches}
+A common hypothesis is that high dimensional data tend to lie in the vicinity of an embedded, low dimensional manifold or topological space. An exemplary demonstration of this is given in the analysis by Lee et al.~\cite{lee2003nonlinear}, who explored the space of high-contrast patches extracted from Hans van Hateren's still image collection\footnote{See \url{http://bethgelab.org/datasets/vanhateren/} for details on the image collection.}, which consists of $\approx 4,000$ monochrome images depicting various areas outside Groningen (Holland). 
+Originally motivated by discerning whether there existed clear qualitative differences in the distributions of patches extracted from images of different modalities, such as optical and range images, Lee et al.~\cite{lee2003nonlinear} were interested in exploring how high-contrast $3 \times 3$ image patches were distributed in pixel-space with respect to predicted spaces and manifolds.
+Formally, they measured contrast using a discrete version of the scale-invariant Dirichlet semi-norm:
+$$ \lVert x \rVert_D = \sqrt{\sum_{i \sim j}(x_i - x_j)^2} = \sqrt{x^T D x}$$
+where $D$ is a fixed matrix whose quadratic form $x^T D x$ applied to an image $x \in \mathbb{R}^9$ is proportional to the sum of the differences between each pixels 4 connected neighbors (given above by the relation $i \sim j$).
+Their research was .
+By mean-centering, contrast normalizing, and``whitening'' the data via the Discrete Cosine Transform (DCT), they show a convenient basis for $D$ may be obtained via an expansion of 8 certain non-constant eigenvectors: 
+\begin{center}
+	\includegraphics[width=0.80\textwidth]{dct_basis} 
+\end{center}
+Since these images are scale-invariant, the expansion of these basis vectors span the 7-sphere, $S^7 \subset \mathbb{R}^8$. Using a Voronoi cell decomposition of the data, their distribution analysis suggested that the majority of data points concentrated in a few high-density regions. 
+
+In follow-up work, Carlsson et al.~\cite{carlsson2008local} used persistent homology to find the distribution of high-contrast $3 \times 3$ patches is actually well-approximated by a Klein bottle $\mathcal{M}$---around 60\% of the high-contrast patches from the still image data set lie within a small neighborhood around $\mathcal{M}$ accounting for only 21\% of the 7-sphere's volume. 
+Though a certainly remarkable result, if one was not aware of the analysis done by~\cite{lee2003nonlinear, carlsson2008local}, it would not be immediately clear a priori  how to reproduce the discovery in the more general setting; e.g. how does one determine whether the Klein bottle model is a good candidate space for characterizing the space of these image patches? 
+Indeed, armed with a refined topological intuition, Carlsson still needed to perform extensive sampling, preprocessing, and model fitting techniques in order to reveal the underlying topological space with persistent homology~\cite{carlsson2008local}.
+Unfortunately, such preprocessing is necessary is due to persistent homology's aforementioned instability with respect to strong outliers. 
+% This can be further verified empirically by e.g. using the iterative, meanshift-like procedure described in~\cite{carlsson2008local} to fit a parameterization of the model in question to the data. 
+
+In contrast to the 1-parameter setting, a multi-parameter persistence approach that accounts for the local density of points to be able to identify the presence of the Klein bottle, even in the midst of outliers. 
+%To demonstrate this, we consider 
+
+\begin{center}
+	\includegraphics[width=0.40\textwidth]{hilbert_unmarked} 
+	\includegraphics[width=0.40\textwidth]{pers5} 
+\end{center}
+
+
+
+%Unfortunately, compute barriers tend to bar the use of multi-parameter persistence in practice: the size of a general $n$-D filtrations can be enormous~\cite{}. Though much work has been done on approximating certain multi-parameters invariants (such as the fibered barcode), exact computation of many of the invariants associated with general multi-parameter persistence modules is widely considered intractable, see~\cite{} for a survey. 
+
+
+%The degree to which multi-parameter persistence simplifies this exploratory phase cannot be understated: we believe multi-parameter persistence has a larger role to play in manifold learning. 
+
+
+
+
+
+%In these contexts, the topology-related measure being preserved a
+%such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
+% In the former case, topologically critical changes are permitted unhindered, while in latter is restricted to preserving are purely local notions of topology, such as connectedness or the preservation of certain holes across face collapses~\cite{}. 
 
 % --- APPLICATION 1: Fast spectral computation ---
 
@@ -1308,45 +1496,7 @@ Interestingly, our results also imply the existence of an efficient output-sensi
 \appendix
 \section{Appendix}
 
-\subsection*{Expanded Intro}
-% Gromov-Hausdorff Stable Signatures for Shapes using Persistence
-Though homology is primarily studied as a topological invariant, the fact that persistent homology encodes both topological and geometric information in its diagram has motivated its use not only as a shape descriptor but also as a metric invariant. 
-Metric invariants, or ``signatures,'' are commonly used in metric learning to ascertain whether two comparable data sets $X, Y$ represent the same object---typically up to a some notion of invariance.
-%the similarity of thdistances $d(X,Y) = 0$.
-One mathematically attractive model for measuring the dissimilarity between shapes/datasets is the Gromov-Hausdorff (GH) distance $d_{\text{GH}}((X, d_X), (Y,d_Y)$ between compact metric spaces $(\mathcal{X}, d_X), (\mathcal{Y}, d_Y)$: by altering the choice of metric $(d_X, d_Y)$, the corresponding metric-distance $d_{\text{GH}}$ can be adapted to a chosen notion of invariance~\cite{} or to increase its discriminating power~\cite{}. 
-Though it is NP-hard to compute~\cite{}, the GH distance defines a metric on the set of isomorphism classes of compact metric spaces endowed with continuous real-valued functions, justifying its study as a mathematical model for shape matching and metric learning. 
-Moreover, it is known that the GH distance is tightly lower-bounded by the bottleneck distance between persistence diagrams constructed over Rips filtrations $R(X, d_X), R(Y, d_Y)$~\cite{}, which can be computed in polynomial time. 
-Indeed, Solomon et al~\cite{} showed distributed persistence invariants characterize the quasi-isometry type of the underlying space, allowing one to provably interpolate between geometric and topological structure.
-% curvature sets?
-
-%For example, it is often the case one wishes to construct a (pseudo-)mettric on a given space of objects for comparison or classification purposes. Though the information contained in some topological invariants is immense, strictly topological information is often not enough to distinguish things---geometry is needed. 
-%In many ways, persistence is an important tool in the widely studied \emph{manifold hypothesis} problem, wherein $\mathcal{X}$ is a compact Riemannian submanifold of Euclidean space, and $X \subset \mathcal{X}$ is sampled according to the intrinsic uniform distribution.
-% since $\beta_p^{i,j}(K; \mathbb{F}) = \mathrm{dim}(H_p^i \to H_p^j)$.
-%Despite being information rich, persistence diagram reflect persistent homology group, and homology groups as a topological invariant are quite weak. 
-%An exemplary case of this, consider the Euler characteristic $\chi(X) = V - E + F$: by itself is rich enough to distinguish connectedness of space, though obviously as a single number its discriminatory power is quite limited. 
-%To increase discriminatory power, a given set of complexes $K$ are typically filtered with respect to a direction $f : K \to \mathbb{R}$, and then $\chi$ is calculated on each sub level set, producing a Euler characteristic curve (ECC).
-% By choosing $f$ more carefully, such as by filtering with respect to curvature, one can imbue the corresponding featurization to depend more on the geometry of the underlying embedding~\cite{}.
-% Recent work suggests that families of ECCs contain sufficient enough information to reconstruct the input perfectly, or to construct distance metrics on shape space.  
-% More generally, the directional transform... PHT.. 
-%This is very much so an exciting and active area of research, more recent work has extended this, yielding a foundation for shape analysis on shape space. 
-
-Though theoretically well-founded and information dense, persistence diagrams come with their own host of practical issues: they are sensitive to strong outliers, far from injective, and their de-facto standard computation exhibits high algorithmic complexity. 
-Moreover, the space of persistence diagrams $\mathcal{D}$ is a Banach space, preventing one from doing even basic statistical operations, such as averaging~\cite{}. 
-As a result, many researchers have focused on extending, enhancing, or otherwise supplementing persistence diagrams with additional information. 
-% template functions...
-Turner et al~\cite{} proposed associating a collection a shape descriptors with a PL embedded $X \subset \mathbb{R}^d$---one descriptor for each point on $S^{d-1}$---which they called a \emph{transform}. 
-More exactly, suppose both the data $X$ and its geometric realization $K$ are PL embedded in $\mathbb{R}^d$ and has centered and scaled appropriately.
-The main theorem in~\cite{} is that associating a persistence diagram, or even a simpler descriptor such as the Euler characteristic, for every point on $S^{d-1}$ is actually sufficient information to theoretically reconstruct $K$. 
-
- Missing from the above work is the are two important directions: how do you configure such transforms to retain the important topological/geometric information and discard irrelevant information, and (2) how may we efficiently compute them? 
-The former question is synonymous with choosing the invariance model in the GH framework, which seems to be highly domain specific. 
-% TODO: template functions
- In the latter case, though we know the number of directions is bounded~\cite{}, the bound is simply too high to be of any practical use. While there are efficient algorithms for both the ECC and persistence computations in static settings, the state of the art in parameterized settings is non-trivial and ongoing research area.
-
-\subsection*{Expanded Background}
-\textbf{Laplacian Energy:} Ever since Kirchoff's matrix tree theorem, which relates any cofactor of the graph Laplacian to the number of spanning trees of a graph.... functions summarizing the spectra of Laplacian operators with a scalar value have found many applications, from quantifying hierarchical image complexities, to summarizing electrical resistance between vertices in a circuit network, to indicating the melting or boiling point of certain polycyclic aromatic hydrocarbons in chemical applications~\cite{}.
-More generally, the sum of the largest $k$ eigenvalues of $L$ is related to the clique number of the graph,  as a measure of complexity.
-is often termed the \emph{Laplacian energy}, has used  % Fiedler  
+%\include{gh_signatures.tex}
 
 
 \subsection{Combinatorial Laplacians}\label{sec:laplacian_theory}
@@ -1358,9 +1508,6 @@ The natural extension of the graph Laplacian $L$ to simplicial complexes is the 
 %	\simeq H() 
 \end{equation}
 \noindent Indeed, when $p = 0$, $\Delta_0(K) = \partial_1 \partial_1^T = L$ recovers the graph Laplacian. 
-%Collecting $f$ into diagonal matrices , the 
- %whether they are weighted, symmetric, or normalized
-% suggesting several classical results (e.g. the matrix tree theorem) may be adapted to simplicial complexes.
 As with boundary operators, $\Delta_p(K)$ encodes simplicial homology groups in its nullspace, a result known as the discrete Hodge Theorem~\cite{}: 
 \begin{equation}\label{eq:laplace_hom}
 	\tilde{H}_p(K; \mathbb{R}) \cong \mathrm{ker}(\Delta_p(K)), \quad \beta_p = \mathrm{nullity}(\Delta_p(K))
@@ -1489,16 +1636,17 @@ Note the degree computation occurs only once.
 %\algrenewcommand\algorithmicoptional{\textbf{Output:}}
 \caption{\texttt{matvec} for weighted $p$ up-Laplacians in $O(m(p+1)) \approx O(m)$ time ($p \geq 0$)}
 \begin{algorithmic}[1]
-\Require Fixed oriented complex $K$ of size $N=\lvert K \rvert$ 
-\Ensure Weight functions $w_{p+1}: K^{p+1} \to \mathbb{R}_{+}$ and  $w_{p}^l, w_{p}^r: K^p \to \mathbb{R}_{+}$
+\Require Fixed oriented complex $K$ of size(s) $N=\lvert K \rvert$, $n = \lvert K^{p}\rvert$, $m = \lvert K^{p+1}\rvert$ 
+%\Ensure Weight functions $w_{p+1}: K^{p+1} \to \mathbb{R}_{+}$ and  $w_{p}: K^p \to \mathbb{R}_{+}$
+\Ensure Weight arrays $w_{p+1} \in \mathbb{R}_{+}^{m}$ and $w_{p} \in \mathbb{R}_{+}^{n}$
 \renewcommand{\algorithmicensure}{\textbf{Output:}}
 \Ensure $y = \langle \, L_p^{\mathrm{up}}, x \, \rangle =  (W_p \circ \partial_{p+1} \circ W_{p+1} \circ \partial_{p+1}^T \circ W_p)x$
 \State // Precompute weighted degrees $\mathrm{deg}_w$ 
 \State Define $h : K^p \to [ \, n \, ]$ 
 \State $\mathrm{deg}_w \gets \mathbf{0}$
-\For{$\sigma \in K^{p+1}$}: 
+\For{$\sigma \in K^{p+1}, k \in [m]$}: 
 	\For{$\tau \in \partial[\sigma]$}:
-   	 	\State $\mathrm{deg}_w[h(\tau)] \gets \mathrm{deg}_w[h(\tau)] + w_p^l(\tau) \cdot w_{p+1}(\sigma) \cdot  w_{p}^r(\tau)$
+   	 	\State $\mathrm{deg}_w[h(\tau)] \gets \mathrm{deg}_w[h(\tau)] + w_p[h(\tau)] \cdot w_{p+1}[k] \cdot  w_{p}[h(\tau)]$
    	\EndFor
 \EndFor
 \State 
@@ -1506,12 +1654,12 @@ Note the degree computation occurs only once.
 \Function{UpLaplacianMatvec}{$x \in \mathbb{R}^n$}
 \State $y \gets \mathrm{deg}_w \odot x$ \; \text{(element-wise product)}
 %\State $z_{h_p(\tau)} \gets z_{h_p(\tau)} \cdot f(\tau)^2 \quad \forall \tau \in K^p$
-\For{$\sigma \in K^{p+1}$}:
+\For{$\sigma \in K^{p+1}, k \in [m]$}:
 %    $\mathrm{sgn}(\partial[\sigma])$
     \For{$\tau, \ \tau' \in \partial[\sigma] \times \partial[\sigma]$ \textbf{where} $\tau \neq \tau'$}: 
     		\State $s_{\tau, \tau'} \gets \mathrm{sgn}([\tau], \partial[\sigma]) \cdot \mathrm{sgn}([\tau'], \partial[\sigma])$
     		\State $i, \; j \gets \; h(\tau), \; h(\tau')$
-    		\State $y_i \gets y_i + s_{\tau, \tau'} \cdot x_{j} \cdot w_p^l(\tau) \cdot w_{p+1}(\sigma) \cdot w_p^r(\tau')$
+    		\State $y_i \gets y_i + s_{\tau, \tau'} \cdot x_{j} \cdot w_p[i] \cdot w_{p+1}[k] \cdot w_p[j]$
     \EndFor 
 \EndFor
 \State \Return $y$
@@ -1519,7 +1667,7 @@ Note the degree computation occurs only once.
 \end{algorithmic}
 \end{algorithm}
 
-In general, the signs of the coefficients $\mathrm{sgn}([\tau], \partial[\sigma])$ and $\mathrm{sgn}([\tau'], \partial[\sigma])$ depend on the position of $\tau, \tau'$ as summands in $\partial[\sigma]$~\eqref{eq:alt_sum}, which itself depends on the orientation of $[\sigma]$~\eqref{eq:oriented_simplex}. Thus, evaluation of these sign terms takes $O(p)$ time to determine for a given $\tau \in \partial[\sigma]$ with $\mathrm{dim}(\sigma) = p$, which if done naively via line (12) in the pseudocode~\ref{alg:lap_matvec} increases the complexity of the algorithm. 
+In general, the signs of the coefficients $\mathrm{sgn}([\tau], \partial[\sigma])$ and $\mathrm{sgn}([\tau'], \partial[\sigma])$ depend on the position of $\tau, \tau'$ as summands in $\partial[\sigma]$, which itself depends on the orientation of $[\sigma]$. Thus, evaluation of these sign terms takes $O(p)$ time to determine for a given $\tau \in \partial[\sigma]$ with $\mathrm{dim}(\sigma) = p$, which if done naively via line (12) in the pseudocode~\ref{alg:lap_matvec} increases the complexity of the algorithm. 
 However, observe that the sign of their product is in fact invariant in the orientation of $[\sigma]$ (see Remark 3.2.1 of~\cite{goldberg2002combinatorial})---thus, if we fix the orientation of the simplices of $K^p$, the sign pattern $s_{\tau, \tau'}$ for every $\tau \overset{\sigma}{\sim} \tau'$ can be precomputed and stored ahead of time, reducing the evaluation $s_{\tau, \tau'}$ to $O(1)$ time and $O(m)$ storage. 
 Alternatively, if the labels of the $p+1$ simplices $\sigma \in K^{p+1}$ are given an orientation induced from the total order on $V$, then we can remove the storage requirement entirely and simply fix the sign pattern during the computation. 
 
@@ -1535,43 +1683,8 @@ It is known how to build PMHF's over fixed input sets of size $n$ in $O(n)$ time
 % ----- Laplacian's encoding geometry: https://arxiv.org/pdf/1105.2712.pdf ----
 % "In terms of the spectrum, they are given by the dimensions of the eigensets for the eigenvalue 0. This is the same for all the Laplace operators investigated here. These operators, however, differ in the nonzero part of the spectrum, and thereby encode specific combinatorial or geometric features of a (perhaps weighted) simplicial complex in addition to its topological aspects...many combinatorial operations that one can perform on a simplicial complex do not affect its homology; nevertheless, they typically leave characteristic traces in the spectrum of a suitable Laplace operator, and that is what we are trying to explore... in the weighted case, there is additional geometric information that likewise influences the spectrum"
 
-
-\subsection*{Directional Transform}
-The canonical interpretation of the information displayed by a persistence diagram is that is summarizes the persistence of the sublevel sets of filtered space. Given a filtration pair $(\, K, f \, )$ where $K$ is a finite simplicial complex and $f : K \to \mathbb{R}$ is a real-valued function, the sublevel sets $\lvert K \rvert_i=f^{-1}(-\infty, i]$ deformation retract to... % say more about stars, homotopy equivalence
-% simplexwise-linear function
-% http://www.csun.edu/~ctoth/Handbook/chap24.pdf
-If $K$ is embedded in $\mathbb{R}^d$, then geometrically $f$ takes on the interpretation of a `height' function whose range yields the `height' of every simplex in $K$. 
-%Obviously, this notion of height depends on the embedding of $K$: viewing $K$ (and thus, $X$) from different `directions' induces potentially distinct sublevel sets, 
-
-%Given a simplicial complex $K$ embedded in $\mathbb{R}^d$, 
-Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite simplicial complex $K$ whose simplices are PL-embedded in $\mathbb{R}^d$. Given this setting,  define the \emph{directional transform} (DT) of $K$ as follows:
-\begin{align*}\label{eq:pht}
-	\mathrm{DT}(K): S^{d-1} &\to  K \times C(K, \mathbb{R}) \\
-	v &\mapsto (K_\bullet, f_v)
-\end{align*}
-where we write $(K_\bullet, f)$ to indicate the filtration on $K$ induced by $f_v$ for all $\alpha \in \mathbb{R}$, i.e.: 
-\begin{equation}
-	K_\bullet = K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\} %_{\alpha = -\infty}^{\infty}
-\end{equation}
-Conceptually, we think of DT as an $S^{d-1}$-parameterized family of filtrations. 
-
-% Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. Similarly, the PHT summarizes how the topology of $K$ changes in \emph{all} directions
-
-The Persistent Homology Transform (PHT) is a shape statistic that establishes a fundamental connection between the topological information summarized by $K$'s PH groups and the geometry of its associated embedding. Given a complex $K$ built from $X$, it is defined as: 
-\begin{align*}\label{eq:pht}
-	\mathrm{PHT}(K): S^{d-1} &\to \mathcal{D}^d \\
-	v &\mapsto \left( \, \mathrm{dgm}_0(K, v), \mathrm{dgm}_1(K, v), \dots, \mathrm{dgm}_{d-1}(K, v) \, \right)\numberthis
-\end{align*}
-where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$ and $S^{d-1}$ the unit $d-1$ sphere. The stability of persistence diagrams ensures that the map $v \mapsto \mathrm{dgm}_p(K, v)$ is Lipschitz with respect to the bottleneck distance metric $d_B(\cdot, \cdot)$ whenever $K$ is a finite simplicial complex. 
-Thus, the PHT may be thought of as an element in $C(S^{d-1}, \mathcal{D}^d)$: . 
-
-%thus the PHT may be thought of naturally as a parameterized family of diagrams.
-
-The primary result of~\cite{} is that the PHT is injective on the space of subsets of $R^d$ that can be written as finite simplicial complexes\footnote{Implicit in the injectivity statement of the PHT is that, given a subset $X \subset \mathbb{R}^d$ which may be written as finite simplicial complex $K$, the restriction $f: X \to \mathbb{R}$ to any simplex in $K$ must is linear.}, which we denote as $\mathcal{K}_d$. 
-Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the equivalence $(K, f) \sim (K,f')$ when $f(K) = f'(K)$.
-
-%Like the directional transform, the PHT is essentially the ompositon of the DT with PH: PHT= PH \circ DT. 
-% One of the constructing metrics capable of differentiating non-diffeomorphic shapes.
+%\subsection*{Directional Transform}
+%\include{directional_transform.tex}
 
 
 \subsection{Complexity of Persistence \& Related work}
@@ -1635,7 +1748,7 @@ where $c_v(X) = \{ (v,w) \in E \mid v \in X \text{ and } w \in V \setminus X \}$
 \end{example}
 \noindent In other words, example~\ref{ex:laplacian} demonstrates that $L$ captures exactly how $X$ is connected to the rest of $G$. Notice that if $X  = V$, then $Lx = 0$ and thus $0$ must be an eigenvalue of $L$ with an eigenvector pair $\mathbf{1}$. Like the adjacency matrix, the interpretation of the matrix-vector product has a natural extension to powers of $L$, wherein just as entries in $A^k$ model paths, entries in $L^k$ are seen to model boundaries~\cite{newman2001laplacian}.
 
-\subsection*{Parameterizing Settings}
+\subsection{Examples of Parameterized Settings}
 We include a few examples of potential application areas of work. Namely, we show a few promising examples of ``parameterized settings'' that may naturally benefit from our efforts here.
 \\
 \\ 
@@ -1660,10 +1773,13 @@ Such space have been studied more in-depth~\cite{} and have been shown...
 %\end{equation}
 
 \subsection{Proofs}
-\subsubsection*{Proof of rank equivalence}
-In general, it is not true that $\mathrm{rank}(A) = \mathrm{rank}(\mathrm{sgn}(A))$. 
-% sign pattern classes
-However, it is true that $\mathrm{rank}(\partial_p) = \mathrm{rank}(\mathrm{sgn}(\partial_p))$.
+%\subsubsection*{Proof of rank equivalence}
+%In general, it is not true that $\mathrm{rank}(A) = \mathrm{rank}(\mathrm{sgn}(A))$,  
+%% sign pattern classes
+%However, it is true that $\mathrm{rank}(\hat{\partial}_p) = \mathrm{rank}(\mathrm{sgn}(\partial_p))$ for all expressions involving $\hat{\partial}_p$ with strictly positive filter functions. To see this, note that we express $\hat{\partial}_p$ always as a product: 
+%$$\partial_p = D_{p-1} \mathrm{sgn}(\partial_p) D_p$$
+%where the matrices $D_{p}$ and $D_{p-1}$ have as their non-zero entries values in $[0, \infty)$.  
+
 \subsubsection*{Proof of Lemma 1}
 \begin{proof}
 	The Pairing Uniqueness Lemma~\cite{dey2022computational} asserts that if $R = \partial V$ is a decomposition of the total $m \times m$ boundary matrix $\partial$, then for any $1 \leq i < j \leq m$ we have $\mathrm{low}_R[j] = i$ if and only if $r_\partial(i,j) = 1$. 
@@ -1717,71 +1833,15 @@ Property (3) follows from the construction of $\partial_p$ and from the inequali
 \end{proof}
 
 
-\section{Boundary matrix factorization}
-\begin{definition}[Boundary matrix decomposition]
-Given a filtration $K_\bullet$ with $m$ simplices, let $\partial$ denote its $m \times m$ filtered boundary matrix. We call the factorization $R = \partial V$ the \emph{boundary matrix decomposition} of $\partial$ if:
- \begin{enumerate}[labelsep=3pt, topsep=3pt, itemsep=-0.10ex,parsep=1.2ex]
- 	\item[I1.] $V$ is full-rank upper-triangular
- 	\item[I2.] $R$ satisfies $\mathrm{low}_R[i] \neq \mathrm{low}_R[j]$ iff its $i$-th and $j$-th columns are nonzero
- 	\end{enumerate} 
- 	where $\mathrm{low}_R(i)$ denotes the row index of lowest non-zero entry of column $i$ in $R$ or $\mathrm{null}$ if it doesn't exist. Any matrix $R$ satisfying property (I2) is said to be  \emph{reduced}; that is, no two columns share the same low-row indices.
-\end{definition}
-
-
-
-\section{Laplacian facts}
-In general, the spectrum of the graph Laplacian $L$ is unbounded,~\cite{} and instead many prefer to work within the ``normalized'' setting where eigenvalues are bounded. The \emph{normalized Laplacian} $\mathcal{L}$ of a graph $G$ is typically given as: 
-\begin{equation}
-	\mathcal{L}(G) = D^{-1/2} L D^{-1/2}
-\end{equation} 
-with the convention that $D^{-1}(v_i,v_i) = 0$ for $\mathrm{deg}(v_i) = 0$. 
-% Note that $\mathcal{L}(G)$ can also be written in a form $\partial_1 \partial_1^T$ by replacing entries column entries $(1,-1)$ corresponding to edges $e = (u,v)$ with $(1 /\sqrt{\mathrm{deg(u)}}, -1 /\sqrt{\mathrm{deg(v)}})$~\cite{ChungSGT}.
-The variational characterization of eigenvalues in terms of the Rayleigh quotient of $\mathcal{L}$ convey a particular form. Specifically, for any real-valued function $f : V \to \mathbb{R}$ on $G$, when viewed as a column vector, $\mathcal{L}$ satisfies:
-\begin{equation}\label{eq:lap_rayleigh}
-	\frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} = \frac{\sum\limits_{i \sim j} (g(v_i) - g(v_j))^2}{\sum\limits_{i} g(v_i)^2  \cdot \mathrm{deg}(v_i) }
-\end{equation}
-where $f = D^{1/2} g$ and $\langle f, g\rangle$ denotes the standard inner product in $\mathbb{R}^n$.
-Equation~\eqref{eq:lap_rayleigh} may be used to show that the spectrum $\Lambda(\mathcal{L})$ is bounded in the interval $[0, 2]$. In particular, it is known that:
-\begin{equation}
-	\lambda_i \leq \sup_{f} \frac{\langle f, \mathcal{L} f \rangle}{\langle f, f \rangle} \leq 2
-\end{equation}
-Recall that, when $G$ is connected, $0$ is an eigenvalue of both $L$ and $\mathcal{L}(G)$, with multiplicity $\mathrm{cc}(G)$. Moreover, if $G$ is the union of disjoint graphs $G_1, G_2, \dots, G_k$, then it has as its spectrum the union of the spectra $ \Lambda(G_1), \Lambda(G_2), \dots, \Lambda(G_k)$. 
-Certain parts of the spectrum of $\mathcal{L}$ can be deduced explicitly for very structured types of $G$, such as complete graphs, complete bipartite graphs, star graphs, path graphs, and cycle graphs, and $n$-cubes. 
-For a list of additional properties the graph and normalized Laplacians satisfy, including bounds on eigenvalues, relation to random walks and rapidly-mixing Markov chains,  identities tied to isoperimetric properties of graphs, and explicit connections to spectral Riemannian geometry, see~\cite{chung1997spectral} and references within.
-
-
-\section{Parameterized setting \& Perturbation theory}
-If $f$ is a real-valued filter function that various smoothly in $\mathcal{H}$, one would expect the spectra of the constitutive terms in $\beta_p^\ast$ and $\mu_p^\ast$ to also vary smoothly as functions of $\mathcal{H}$.
-Indeed, since Laplacian matrices are normal matrices, we expect their spectra to be quite stable under perturbations~\cite{}. 
-%Moreover,
-
-% The spectrum of Normal matrices are stable: if A is normal and is perturbed by a perturbation w/ norm at most \epsilon, then the spectrum moves by at most \epsilon. And Laplacian matrices are normal matrices
-% https://terrytao.wordpress.com/2008/10/28/when-are-eigenvalues-stable/
-%In what follows, we fix $p \geq 0$ and use $L_{(h)}^{i,j}$ to denote the $p$-th up Laplacian at time $h \in \mathcal{H}$.
-%Let $\hat{\partial}_h$
-
-Small condition numbers often improve the convergence of iterative solvers and improve stability of spectrum with respect to perturbations in the entries of the matrix. 
-$\kappa(M^{-1} A)$
-
-% the desired effect in applying a preconditioner is to make the quadratic form of the preconditioned operator {\displaystyle P^{-1}A}P^{{-1}}A with respect to the {\displaystyle P}P-based scalar product to be nearly spherical.
-$$
-M^{-1} A x = M^{-1}b 
-$$
-where $M$ is symmetric positive definite. 
-\begin{equation}
-	\min_{x \perp \mathbf{1} } \frac{1}{2} x^T (L + \epsilon I_n) x - b^T x
-\end{equation}
-Since this nonsingular, positive definite, strictly diagonally dominant matrix, thus we may apply the famous Conjugate Gradient (CG) algorithm to solve such a system. It's well known that CG converges to the solution of $A x = b$ in exactly $O(n)$ iterations (and often much earlier), of which each iteration requires one $O(m)$ matrix-vector product, implying a runtime of $O(mn^2)$ (compare with...).  
-%http://www.cs.yale.edu/homes/spielman/561/2009/lect16-09.pdf
-Moreover, and since this is a Laplacian matrix, the wealth of tools developed for said matrices may also be used.
-In particular, ~\cite{} showed that \emph{low-stretch spanning trees} act as good preconditioners to accelerate Laplacian solvers, wherein it's been shown that the preconditioned Conjugate Gradient (PCG) requires as most $O(\sqrt{m} \log n)$ iterations, each of which requires one matrix-vector product using $L_G$ and in $O(m^{1/3} \log n \, \mathrm{ln} 1/\epsilon)$ iterations. 
-This was later improved by, who showed that one can solve Laplacian systems effectively in $O(m \log^{O(1)} n)$ time, giving a bound of $O(r m \log^{O(1)} n)$ time to obtain.... 
-
-Of course, if one wants to compute either of the counting invariants in... exactly for $p = 0$, of course, the fastest algorithm is to reduce the problem to the well-known elder-rule problem, which takes $O(m \log m + m \alpha(n))$ time for a general filtration. It is unlikely that we may beat this bound, either in theory or in practice, for $p = 0$.
-However, the fastest known algorithm for computing the full persistence diagram for $p \geq 1$ is $O()$, which is quite a jump in complexity; there is no generalization of disjoint-set algorithm for the case where $p \geq 1$. 
-Moreover, these direct methods tend to be memory bound operations, pushing researchers who want to compute these diagrams in practice to focus on ways of reducing the memory usage, such as using $\mathbb{Z}_2$ field coefficients. 
-In contrast, the means by which we compute these invariants scales quite well with larger $p$, it produces a stronger invariant, and is far more reaching to other areas of mathematics. 
-
+%\section{Boundary matrix factorization}
+%\begin{definition}[Boundary matrix decomposition]
+%Given a filtration $K_\bullet$ with $m$ simplices, let $\partial$ denote its $m \times m$ filtered boundary matrix. We call the factorization $R = \partial V$ the \emph{boundary matrix decomposition} of $\partial$ if:
+% \begin{enumerate}[labelsep=3pt, topsep=3pt, itemsep=-0.10ex,parsep=1.2ex]
+% 	\item[I1.] $V$ is full-rank upper-triangular
+% 	\item[I2.] $R$ satisfies $\mathrm{low}_R[i] \neq \mathrm{low}_R[j]$ iff its $i$-th and $j$-th columns are nonzero
+% 	\end{enumerate} 
+% 	where $\mathrm{low}_R(i)$ denotes the row index of lowest non-zero entry of column $i$ in $R$ or $\mathrm{null}$ if it doesn't exist. Any matrix $R$ satisfying property (I2) is said to be  \emph{reduced}; that is, no two columns share the same low-row indices.
+%\end{definition}
 
 
 

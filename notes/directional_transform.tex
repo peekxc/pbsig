@@ -1,0 +1,35 @@
+The canonical interpretation of the information displayed by a persistence diagram is that is summarizes the persistence of the sublevel sets of filtered space. Given a filtration pair $(\, K, f \, )$ where $K$ is a finite simplicial complex and $f : K \to \mathbb{R}$ is a real-valued function, the sublevel sets $\lvert K \rvert_i=f^{-1}(-\infty, i]$ deformation retract to... % say more about stars, homotopy equivalence
+% simplexwise-linear function
+% http://www.csun.edu/~ctoth/Handbook/chap24.pdf
+If $K$ is embedded in $\mathbb{R}^d$, then geometrically $f$ takes on the interpretation of a `height' function whose range yields the `height' of every simplex in $K$. 
+%Obviously, this notion of height depends on the embedding of $K$: viewing $K$ (and thus, $X$) from different `directions' induces potentially distinct sublevel sets, 
+
+%Given a simplicial complex $K$ embedded in $\mathbb{R}^d$, 
+Let $X \subset \mathbb{R}^d$ denote a data set which can be written as a finite simplicial complex $K$ whose simplices are PL-embedded in $\mathbb{R}^d$. Given this setting,  define the \emph{directional transform} (DT) of $K$ as follows:
+\begin{align*}\label{eq:pht}
+	\mathrm{DT}(K): S^{d-1} &\to  K \times C(K, \mathbb{R}) \\
+	v &\mapsto (K_\bullet, f_v)
+\end{align*}
+where we write $(K_\bullet, f)$ to indicate the filtration on $K$ induced by $f_v$ for all $\alpha \in \mathbb{R}$, i.e.: 
+\begin{equation}
+	K_\bullet = K(v)_\alpha = \{\, x \in X \mid \langle x, v \rangle \leq \alpha  \,\} %_{\alpha = -\infty}^{\infty}
+\end{equation}
+Conceptually, we think of DT as an $S^{d-1}$-parameterized family of filtrations. 
+
+% Conceptually, the $p$-th dimensional persistence diagram $\mathrm{dgm}_p(K, v)$ summaries how the topology of the filtration $K(v)$ changes in the direction of  $v$. Similarly, the PHT summarizes how the topology of $K$ changes in \emph{all} directions
+
+The Persistent Homology Transform (PHT) is a shape statistic that establishes a fundamental connection between the topological information summarized by $K$'s PH groups and the geometry of its associated embedding. Given a complex $K$ built from $X$, it is defined as: 
+\begin{align*}\label{eq:pht}
+	\mathrm{PHT}(K): S^{d-1} &\to \mathcal{D}^d \\
+	v &\mapsto \left( \, \mathrm{dgm}_0(K, v), \mathrm{dgm}_1(K, v), \dots, \mathrm{dgm}_{d-1}(K, v) \, \right)\numberthis
+\end{align*}
+where $\mathcal{D}$ denotes the space of $p$-dimensional persistence diagrams, for all $p = 0, \dots, d-1$ and $S^{d-1}$ the unit $d-1$ sphere. The stability of persistence diagrams ensures that the map $v \mapsto \mathrm{dgm}_p(K, v)$ is Lipschitz with respect to the bottleneck distance metric $d_B(\cdot, \cdot)$ whenever $K$ is a finite simplicial complex. 
+Thus, the PHT may be thought of as an element in $C(S^{d-1}, \mathcal{D}^d)$: . 
+
+%thus the PHT may be thought of naturally as a parameterized family of diagrams.
+
+The primary result of~\cite{} is that the PHT is injective on the space of subsets of $R^d$ that can be written as finite simplicial complexes\footnote{Implicit in the injectivity statement of the PHT is that, given a subset $X \subset \mathbb{R}^d$ which may be written as finite simplicial complex $K$, the restriction $f: X \to \mathbb{R}$ to any simplex in $K$ must is linear.}, which we denote as $\mathcal{K}_d$. 
+Equivalently, $\mathcal{K}_d$ decomposes space of all pairs $(K, f)$ under the equivalence $(K, f) \sim (K,f')$ when $f(K) = f'(K)$.
+
+%Like the directional transform, the PHT is essentially the ompositon of the DT with PH: PHT= PH \circ DT. 
+% One of the constructing metrics capable of differentiating non-diffeomorphic shapes.

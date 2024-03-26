@@ -120,6 +120,8 @@ f2 = geodesic_filter
 connected_diam = np.max(minimum_spanning_tree(squareform(n_geodesic)).data)
 S = rips_complex(n_geodesic, radius=(connected_diam * 1.40) / 2, p = 2)
 
+# S_dict = { p : np.array(sx.faces(S, 2)) for p in range(3) }
+
 # %% Try to reduce the size of the complex w/ quadric decimation
 # from pbsig.simplicial import simplify_complex
 # from pbsig.linalg import pca, cmds 
@@ -179,11 +181,11 @@ conn_span = Span(location=connected_diam, dimension='width', name="Connection di
 
 ed = enclosing_radius(patch_geodesic) * 2
 
-li_cr = LegendItem(label="connected radius")
-li_er = LegendItem(label="enclosing radius")
-li_sl = LegendItem(label="silverman lb")
-li_sb = LegendItem(label="silverman ub")
-legend = Legend(items=[li_conn], title="")
+# li_cr = LegendItem(label="connected radius")
+# li_er = LegendItem(label="enclosing radius")
+# li_sl = LegendItem(label="silverman lb")
+# li_sb = LegendItem(label="silverman ub")
+# legend = Legend(items=[li_conn], title="")
 legend.title_text_font_size = '10px'
 legend.padding = 2
 legend.margin = 2
@@ -191,8 +193,10 @@ legend.label_width = 10
 legend.label_text_line_height = 0.8
 # p.add_layout(legend)
 show(p)
-p.line(x=[0.0, 1.0], y=[line_f(0.0, angle), line_f(1.0, angle)], color='blue')
-show(p)
+
+
+# p.line(x=[0.0, 1.0], y=[line_f(0.0, angle), line_f(1.0, angle)], color='blue')
+# show(p)
 
 # %% Choose the intercept + angle by hand 
 offset, angle = 0.11, 29
@@ -212,6 +216,25 @@ from bokeh.models import AnnularWedge
 a, b = 0.60, 0.72
 p.annular_wedge(x=0, y=offset, inner_radius=a, outer_radius=b, start_angle=np.deg2rad(angle1), end_angle=np.deg2rad(angle2), fill_color="#8888ee40")
 show(p)
+
+p.x_range = Range1d(0.15, 0.90)
+p.y_range = Range1d(0.15, 0.90)
+p.toolbar_location = None 
+p.xaxis.visible = False
+p.yaxis.visible = False
+# p.aspect_ratio = (2,1)
+show(p)
+
+# %% See how many 2-cells lie inside the cell-decomposition of  
+from pbsig.rivet import anchors
+np.logical_and(BI['x-grades'] >= 0.40, BI['x-grades'] <= 0.70)
+
+alpha = anchors(BI)
+C,D = alpha[:,0], alpha[:,1]
+
+## TODO: try to see if the number of diagrams is quite large compared to just using annealing 
+## on fibered barcode space optimization 
+
 
 # %% Construct a parameterized flter over convex-combination of a bilftration
 def push_fast(X, a, b):

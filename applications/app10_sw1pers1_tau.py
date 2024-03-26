@@ -15,7 +15,7 @@ f = lambda t: np.cos(t) + np.cos(3*t)
 
 # %% Plot periodic function
 dom = np.linspace(0, 12*np.pi, 1200)
-p = figure(width=350, height=175)
+p = figure(width=450, height=225)
 p.line(dom, f(dom))
 show(p)
 
@@ -23,8 +23,10 @@ show(p)
 from pbsig.linalg import pca
 from pbsig.color import bin_color
 N, M = 120, 24
-F = sliding_window(f, bounds=(0, 12*np.pi))
-X_delay = F(n=N, d=M, L=6)
+SW = sliding_window(f, bounds=(0, 12*np.pi))
+X_delay = SW(n=N, d=M, L=6)
+
+p.rect()
 
 pt_color = (bin_color(np.arange(len(X_delay)), "turbo")*255).astype(np.uint8)
 p = figure(width=250, height=250, match_aspect=True)

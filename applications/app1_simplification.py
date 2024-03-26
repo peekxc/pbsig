@@ -5,7 +5,7 @@ import networkx as nx
 import numpy as np
 import open3d as o3
 from more_itertools import chunked, pairwise
-from pbsig.betti import Sieve
+# from pbsig.betti import Sieve
 from scipy.sparse.csgraph import floyd_warshall
 from splex import *
 
@@ -51,14 +51,32 @@ def mesh_loader(index: int):
   return S, ecc_weight, elephant_mesh
 
 # %% Sngle test
+from pbsig.persistence import *
 import splex as sx
 S, ecc, mesh = mesh_loader(1000)
 A = geodesics(mesh)
 mesh_ecc = A.max(axis=1)
 ecc_weight = lower_star_filter(mesh_ecc)
-K_ecc = filtration(simplicial_complex(np.asarray(elephant_mesh.triangles)), ecc_weight, form="rank")
+K_ecc = filtration(simplicial_complex(np.asarray(mesh.triangles)), ecc_weight, form="rank")
 dgm = ph(K_ecc)
 
+
+# from pbsig.vis import 
+
+# %% New approach 
+from spirit.apparent_pairs import SpectralRI
+
+RI = SpectralRI(S)
+RI._weights[0] = ecc_weight(sx.faces(S, 0))
+RI._weights[0] = ecc_weight(sx.faces(S, 1))
+RI._weights[0] = ecc_weight(sx.faces(S, 2))
+
+RI.query(p=1, a=1.48, b=1.68, method="cholesky")
+
+## Cholesky takes n^3 / 3 + 2/3 n flops 
+## 
+
+# %% 
 from pbsig.betti import BettiQuery, betti_query
 # betti_query(S, f=ecc_weight, p=1, i=1.48, j=1.68, solver="trace")
 query = BettiQuery(S, p = 1)

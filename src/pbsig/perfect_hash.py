@@ -20,7 +20,8 @@ def gen_primes_above(m: int, n: int):
   m,n = int(m),int(n)
   primes = []
   while len(primes) < n:
-    prime_candidates = np.fromiter(islice(filter(is_prime, range(m, 2*m - 2)), 100), dtype=int) ## Bertrand's postulate
+    ## Use Bertrand's postulate to generate candidate primes
+    prime_candidates = np.fromiter(islice(filter(is_prime, range(m, 2*m - 2)), 100), dtype=int) 
     primes.extend(np.unique(prime_candidates))
     m = primes[-1]+1
   return np.array(primes)

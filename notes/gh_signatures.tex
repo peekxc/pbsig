@@ -1,0 +1,35 @@
+
+\subsection*{Expanded Intro}
+% Gromov-Hausdorff Stable Signatures for Shapes using Persistence
+Though homology is primarily studied as a topological invariant, the fact that persistent homology encodes both topological and geometric information in its diagram has motivated its use not only as a shape descriptor but also as a metric invariant. 
+Metric invariants, or ``signatures,'' are commonly used in metric learning to ascertain whether two comparable data sets $X, Y$ represent the same object---typically up to a some notion of invariance.
+%the similarity of thdistances $d(X,Y) = 0$.
+One mathematically attractive model for measuring the dissimilarity between shapes/datasets is the Gromov-Hausdorff (GH) distance $d_{\text{GH}}((X, d_X), (Y,d_Y)$ between compact metric spaces $(\mathcal{X}, d_X), (\mathcal{Y}, d_Y)$: by altering the choice of metric $(d_X, d_Y)$, the corresponding metric-distance $d_{\text{GH}}$ can be adapted to a chosen notion of invariance~\cite{} or to increase its discriminating power~\cite{}. 
+Though it is NP-hard to compute~\cite{}, the GH distance defines a metric on the set of isomorphism classes of compact metric spaces endowed with continuous real-valued functions, justifying its study as a mathematical model for shape matching and metric learning. 
+Moreover, it is known that the bottleneck distance between persistence diagrams over Rips filtrations $R(X, d_X), R(Y, d_Y)$ is a tight, stable lower bound on the GH distance~\cite{}. 
+Indeed, Solomon et al~\cite{} showed distributed persistence invariants characterize the quasi-isometry type of the underlying space, allowing one to provably interpolate between geometric and topological structure.
+% curvature sets?
+
+%For example, it is often the case one wishes to construct a (pseudo-)mettric on a given space of objects for comparison or classification purposes. Though the information contained in some topological invariants is immense, strictly topological information is often not enough to distinguish things---geometry is needed. 
+%In many ways, persistence is an important tool in the widely studied \emph{manifold hypothesis} problem, wherein $\mathcal{X}$ is a compact Riemannian submanifold of Euclidean space, and $X \subset \mathcal{X}$ is sampled according to the intrinsic uniform distribution.
+% since $\beta_p^{i,j}(K; \mathbb{F}) = \mathrm{dim}(H_p^i \to H_p^j)$.
+%Despite being information rich, persistence diagram reflect persistent homology group, and homology groups as a topological invariant are quite weak. 
+%An exemplary case of this, consider the Euler characteristic $\chi(X) = V - E + F$: by itself is rich enough to distinguish connectedness of space, though obviously as a single number its discriminatory power is quite limited. 
+%To increase discriminatory power, a given set of complexes $K$ are typically filtered with respect to a direction $f : K \to \mathbb{R}$, and then $\chi$ is calculated on each sub level set, producing a Euler characteristic curve (ECC).
+% By choosing $f$ more carefully, such as by filtering with respect to curvature, one can imbue the corresponding featurization to depend more on the geometry of the underlying embedding~\cite{}.
+% Recent work suggests that families of ECCs contain sufficient enough information to reconstruct the input perfectly, or to construct distance metrics on shape space.  
+% More generally, the directional transform... PHT.. 
+%This is very much so an exciting and active area of research, more recent work has extended this, yielding a foundation for shape analysis on shape space. 
+
+Though theoretically well-founded and information dense, persistence diagrams come with their own host of practical issues: they are sensitive to strong outliers, far from injective, and their de-facto standard computation exhibits high algorithmic complexity. 
+Moreover, the space of persistence diagrams $\mathcal{D}$ is a Banach space, preventing one from doing even basic statistical operations, such as averaging~\cite{}. 
+As a result, many researchers have focused on extending, enhancing, or otherwise supplementing persistence diagrams with additional information. 
+% template functions...
+Turner et al~\cite{} proposed associating a collection a shape descriptors with a PL embedded $X \subset \mathbb{R}^d$---one descriptor for each point on $S^{d-1}$---which they called a \emph{transform}. 
+More exactly, suppose both the data $X$ and its geometric realization $K$ are PL embedded in $\mathbb{R}^d$ and has centered and scaled appropriately.
+The main theorem in~\cite{} is that associating a persistence diagram, or even a simpler descriptor such as the Euler characteristic, for every point on $S^{d-1}$ is actually sufficient information to theoretically reconstruct $K$. 
+
+ Missing from the above work is the are two important directions: how do you configure such transforms to retain the important topological/geometric information and discard irrelevant information, and (2) how may we efficiently compute them? 
+The former question is synonymous with choosing the invariance model in the GH framework, which seems to be highly domain specific. 
+% TODO: template functions
+ In the latter case, though we know the number of directions is bounded~\cite{}, the bound is simply too high to be of any practical use. While there are efficient algorithms for both the ECC and persistence computations in static settings, the state of the art in parameterized settings is non-trivial and ongoing research area.
