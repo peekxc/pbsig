@@ -49,8 +49,30 @@ In particular, if $R = \partial V$ is the decomposition of $(K, f_\alpha)$ for s
 %%	 & = \mathrm{rank}(D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha) \cdot \partial_{p+1}(K_\preceq) \cdot D_{p}(S_b \circ f_\alpha) \cdot \partial_{p+1}^T(K_\preceq) \cdot D_{p-1}^{1/2}(\bar{S}_a \circ f_\alpha)) \\
 %	 & = \mathrm{rank}(\mathcal{L}_{p-1}^{a,b}) \numberthis
 %\end{align*}
-where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$. This confirms that we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
+where the second last equality uses the identity $\mathrm{rank}(X) = \mathrm{rank}(X^T X)$, which is true when $X \in \mathbb{F}^{n \times m}$ has coefficients in a zero-characteristic field $\mathbb{F}$. This confirms that we may substitute any of the parameterized boundary operators used in Proposition~\ref{prop:mu_betti_1}  with weighted Laplacian operators $\partial_{p+1}^\ast \mapsto \mathcal{L}_p^\ast$ equipped with the appropriate down- and up-step functions $S_\ast$ and $\bar{S}_\ast$, respectively.   
 
+It is worth noting that composing step functions $\bar{S}_a, S_b : \mathbb{R} \to [0, 1]$ with $f_\alpha$ is equivalent to endowing a \emph{weight function} $w: K \to (0, +\infty)$ on a subset $K_{a,b} \subseteq K$, in the sense described by~\cite{memoli2022persistent}.
+In particular, if $w_p$ denotes the restriction of $w$ to $K^p$, 
+%$w_p \triangleq \{ w(\sigma) \cdot \mathbb{1}(\mathrm{dim}(\sigma) = p) : \mathrm{}\}$, 
+then $w_p$ defines an inner product $\langle \, \cdot, \cdot \,\rangle_{w_p}$ on space of $p$-chains $C_p(K, \mathbb{R})$ given by:
+$$\langle [\sigma], [\sigma'] \rangle_{w_p} \triangleq \delta_{\sigma \sigma'} \cdot \big(w_p(\sigma)\big)^{-1}, \quad \forall \, \sigma, \sigma' \in K^p$$
+where $\delta_{\sigma \sigma'} = \mathcal{1}(\sigma = \sigma')$ is the indicator function on $\sigma$. 
+Moroever, this inner product $\langle [\sigma], [\sigma'] \rangle_{w_p}$ on $C_p(K, \mathbb{R})$ induces an inner product $\llangle \cdot, \cdot \rrangle$ on the cochain space $C^p(K, \mathbb{R}) \triangleq \mathrm{Hom}(C_p(K), \mathbb{R})$ given by:
+$$ \llangle f, g \rrangle_{w_p} = \sum\limits_{\sigma \in K^p} w_p(\sigma) f([\sigma]) g([\sigma]), \quad \text{ for all } f,g \in C^p(K) $$ 
+In these sense above,~\eqref{eq:laplacian_decouple} is simply choosing a particular inner product on the space of $p$-cochains. 
+
+The insight provided by the inner product perspective is crucial for the validity of our method, as it is impart what allows use to generalize from simplicial boundary operators to $p$-th combinatorial Laplacians. 
+%the understanding of the graph Laplacian to a broader framework
+Indeed, the \emph{combinatorial Hodge Theorem} establishes the equivalence between~\eqref{eq:pers_homology} and  \eqref{eq:betti_four} in the case $a = b$, and is often attributed as the connection by which one extends the graph Laplacian to more general operators (i.e. for $p \geq 1$).
+While these connections are invaluable to Exploration of these connections further falls beyond the scope of this work; we refer the interested reader to~\cite{memoli2022persistent} and references within for an overview. 
+
+
+
+%These ideas 
+%the topology of the input simplicial complex via the so called combinatorial Hodge Theorem,
+%which states that the nullity of the q-th combinatorial Laplacian is equal to the rank of the q-th
+%cohomology group of K with real coefficients, i.e. the q-th Betti number of
+%simplices of $K$ with a one may re-interpret the application of if $K$
 %This will become particularly important in section~\ref{sec:computational_imp}, where we 
 
 \begin{remark}

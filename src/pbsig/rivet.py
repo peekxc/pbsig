@@ -117,6 +117,7 @@ def anchors(S: Union[np.ndarray, dict]):
 			lub = np.array([p, q]).max(axis=0)  # lowest upper bound
 			anchors.add(tuple(lub))
 	anchors = np.array(list(anchors), dtype=float)
+	anchors = np.unique(np.vstack([anchors, S]), axis=0)
 	return anchors
 
 

@@ -81,7 +81,7 @@ For every pair $(a,b) \in I \times I$ satisfying $a \leq b$, the sequence of inc
 %\end{equation}
 When $\mathbb{F}$ is a field, this sequence of homology groups uniquely decompose $(K,f)$ into a pairing $(\sigma_a, \sigma_b)$ demarcating the evolution of homology classes~\cite{zomorodian2004computing}: $\sigma_a$ marks the creation of a homology class, $\sigma_b$ marks its destruction, and the difference $\lvert a - b \rvert$ records the lifetime of the class, called its \emph{persistence}.
 The persistent homology groups are the images of these maps and the persistent Betti numbers are their dimensions:
-\begin{equation}
+\begin{equation}\label{eq:pers_homology}
 	H_{p}^{a,b} = \begin{cases}
 	H_p(K_a) & a = b \\ 
  	\mathrm{Im}\,h_p^{a,b} & a < b

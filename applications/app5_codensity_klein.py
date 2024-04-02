@@ -227,14 +227,79 @@ show(p)
 
 # %% See how many 2-cells lie inside the cell-decomposition of  
 from pbsig.rivet import anchors
-np.logical_and(BI['x-grades'] >= 0.40, BI['x-grades'] <= 0.70)
+xg, yg = BI['x-grades'], BI['y-grades']
 
 alpha = anchors(BI)
+# len(np.unique(np.vstack([alpha, S]), axis=0))
+assert all(alpha[:,0] > 0), "Not all lines have positive slope"
+# np.unique(alpha, axis=0) # 
 C,D = alpha[:,0], alpha[:,1]
 
 ## TODO: try to see if the number of diagrams is quite large compared to just using annealing 
 ## on fibered barcode space optimization 
 
+def arrangement(anchors: np.ndarray, xg, yg):
+  from shapely import LineString, MultiLineString, polygonize, get_parts, polygonize_full, Polygon, segmentize
+  from shapely import LineString, multipolygons, segmentize, boundary, make_valid, envelope, union_all
+  assert all(anchors[:,0] > 0), "Not all lines have positive slope"
+  C,D = anchors[:,0], anchors[:,1]
+  bbox = [[np.min(xg), np.max(xg)], [np.min(yg), np.max(yg)]]
+  ys, ye = np.array(bbox[1])
+  xs, xe = np.array(bbox[0])
+  YS = C * xs - D
+  YE = C * xe - D
+  bx_s, bx_e = xs, xe
+  by_s, by_e = np.min(YS), np.max(YE) 
+  BB = LineString([(bx_s, by_s), (bx_e, by_s), (bx_e, by_e), (bx_s, by_e), (bx_s, by_s)])      ## bounding box
+  LL = [LineString([[xs, ys], [xe, ye]]) for ys, ye in zip(YS, YE)]     ## lines intersecting the box 
+  A = union_all([*LL, BB])
+  subdivision = polygonize(get_parts(A))
+  template_points = np.array([np.ravel(two_cell.centroid.xy) for two_cell in get_parts(subdivision) if two_cell.area > 1e-10])
+  return subdivision, template_points
+
+subdivision, TP = arrangement(alpha, xg, yg)
+
+## Restricting to only points in the box of interest
+in_box = np.logical_and(np.logical_and(alpha[:,0] >= 0.40, alpha[:,0] <= 0.70), np.logical_and(alpha[:,1] <= 0.50, alpha[:,1] >= 0.35))
+subdivision, TP = arrangement(alpha[in_box], xg, yg)
+
+#%% Nice picture with bokeh 
+p = figure(width=400, height=400)
+p.multi_line(
+  xs=[line.coords.xy[0] for line in LL], 
+  ys=[line.coords.xy[1] for line in LL]
+)
+show(p)
+
+# %% Annealing ?
+from spirit.apparent_pairs import SpectralRI
+from combin import comb_to_rank
+
+Y0 = np.c_[f1(sx.faces(S,0)), f2(sx.faces(S,0))]
+Y1 = np.c_[f1(sx.faces(S,1)), f2(sx.faces(S,1))]
+Y2 = np.c_[f1(sx.faces(S,2)), f2(sx.faces(S,2))]
+
+RI = SpectralRI(n=sx.card(S,0), max_dim=2)
+RI._simplices[0] = np.arange(sx.card(S, 0))
+RI._simplices[1] = comb_to_rank(S.edges, order='colex', n=sx.card(S, 0))
+RI._simplices[2] = comb_to_rank(S.triangles, order='colex', n=sx.card(S, 0))
+RI._D[0] = RI.boundary_matrix(0)
+RI._D[1] = RI.boundary_matrix(1).astype(np.float64)
+RI._D[2] = RI.boundary_matrix(2).astype(np.float64)
+
+RI.query(1, a,b,c,d, method="cholesky", summands=False)
+
+RI._weights[0] = push_fast(Y0, a=np.tan(np.deg2rad(angle)), b=offset)
+RI._weights[1] = push_fast(Y1, a=np.tan(np.deg2rad(angle)), b=offset)
+RI._weights[2] = push_fast(Y2, a=np.tan(np.deg2rad(angle)), b=offset)
+RI._status[0] = np.zeros(sx.card(S,0))
+RI._status[1] = np.zeros(sx.card(S,1))
+RI._status[2] = np.zeros(sx.card(S,2))
+
+RI.query(1, 0.20, 0.80, method="cholesky", summands=False)
+RI.query(1, 0.20, 0.80, 1.20, 1.80, method="cholesky", summands=False)
+
+np.max(push_fast(Y2, a=np.tan(np.deg2rad(angle)), b=offset))
 
 # %% Construct a parameterized flter over convex-combination of a bilftration
 def push_fast(X, a, b):
